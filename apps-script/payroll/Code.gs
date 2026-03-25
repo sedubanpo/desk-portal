@@ -8,6 +8,7 @@ const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
 const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
+const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -25,6 +26,9 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
   appendTuitionPaymentEntry: true,
+  getDeskScheduleMonthData: true,
+  saveDeskScheduleEntry: true,
+  deleteDeskScheduleEntry: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
   savePayrollSettings: true
@@ -86,6 +90,9 @@ function handlePayrollApiRequest_(params) {
       saveTuitionStatusOnly: saveTuitionStatusOnly,
       saveTuitionFollowup: saveTuitionFollowup,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
+      getDeskScheduleMonthData: getDeskScheduleMonthData,
+      saveDeskScheduleEntry: saveDeskScheduleEntry,
+      deleteDeskScheduleEntry: deleteDeskScheduleEntry,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
       savePayrollSettings: savePayrollSettings
@@ -239,6 +246,191 @@ function loadPayrollTeacherSettings_() {
 function storePayrollTeacherSettings_(settings) {
   var data = settings && typeof settings === "object" ? settings : {};
   PropertiesService.getScriptProperties().setProperty(PAYROLL_TEACHER_SETTINGS_PROP, JSON.stringify(data));
+}
+
+function getDeskScheduleMonthData(payload) {
+  try {
+    var monthKey = normalizeDeskScheduleMonthKey_(payload && payload.monthKey);
+    if (!monthKey) return { success: false, message: "monthKey가 올바르지 않습니다." };
+    var basePath = buildDeskScheduleMonthPath_(monthKey);
+    var stored = firebaseRequestWithServiceAccount_("get", basePath) || null;
+    var entriesMap = stored && stored.entries ? stored.entries : stored;
+    var seeded = false;
+
+    if (!entriesMap || typeof entriesMap !== "object" || !Object.keys(entriesMap).length) {
+      entriesMap = {};
+      buildDefaultDeskScheduleMonthSeed_(monthKey).forEach(function(item) {
+        entriesMap[item.id] = item;
+      });
+      firebaseRequestWithServiceAccount_("put", basePath, {
+        monthKey: monthKey,
+        seededAt: new Date().toISOString(),
+        entries: entriesMap
+      });
+      seeded = true;
+    }
+
+    var entries = Object.keys(entriesMap).map(function(id) {
+      return normalizeDeskScheduleEntry_(entriesMap[id], id);
+    }).sort(compareDeskScheduleEntries_);
+
+    return {
+      success: true,
+      monthKey: monthKey,
+      seeded: seeded,
+      entries: entries
+    };
+  } catch (e) {
+    return { success: false, message: "근무표 조회 오류: " + e.message };
+  }
+}
+
+function saveDeskScheduleEntry(payload) {
+  try {
+    var req = payload || {};
+    var entry = normalizeDeskScheduleEntry_(req.entry || {}, req.entry && req.entry.id);
+    var monthKey = normalizeDeskScheduleMonthKey_(req.monthKey || entry.date.slice(0, 7));
+    if (!monthKey) return { success: false, message: "monthKey가 올바르지 않습니다." };
+    if (!entry.date || entry.date.slice(0, 7) !== monthKey) {
+      return { success: false, message: "근무일과 monthKey가 일치하지 않습니다." };
+    }
+    if (!entry.worker) return { success: false, message: "근무자 이름이 필요합니다." };
+    if (!entry.resident && (!entry.start || !entry.end)) {
+      return { success: false, message: "시작/종료 시간이 필요합니다." };
+    }
+    var path = buildDeskScheduleMonthPath_(monthKey) + "/entries/" + entry.id;
+    firebaseRequestWithServiceAccount_("put", path, entry);
+    return { success: true, monthKey: monthKey, entry: entry };
+  } catch (e) {
+    return { success: false, message: "근무표 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskScheduleEntry(payload) {
+  try {
+    var req = payload || {};
+    var monthKey = normalizeDeskScheduleMonthKey_(req.monthKey);
+    var id = String(req.id || "").trim();
+    if (!monthKey) return { success: false, message: "monthKey가 올바르지 않습니다." };
+    if (!id) return { success: false, message: "삭제할 일정 ID가 없습니다." };
+    firebaseRequestWithServiceAccount_("delete", buildDeskScheduleMonthPath_(monthKey) + "/entries/" + id);
+    return { success: true, monthKey: monthKey, id: id };
+  } catch (e) {
+    return { success: false, message: "근무표 삭제 오류: " + e.message };
+  }
+}
+
+function buildDeskScheduleMonthPath_(monthKey) {
+  return DESK_SCHEDULE_ROOT_PATH + "/" + monthKey;
+}
+
+function normalizeDeskScheduleMonthKey_(value) {
+  var text = String(value || "").trim();
+  return /^\d{4}-\d{2}$/.test(text) ? text : "";
+}
+
+function normalizeDeskScheduleEntry_(item, fallbackId) {
+  var entry = {
+    id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
+    date: String((item && item.date) || "").trim(),
+    worker: String((item && item.worker) || "").trim(),
+    role: String((item && item.role) || "").trim(),
+    start: String((item && item.start) || "").trim(),
+    end: String((item && item.end) || "").trim(),
+    resident: !!(item && (item.resident || item.isResident)),
+    note: String((item && item.note) || "").trim()
+  };
+  if (entry.resident) {
+    entry.start = "";
+    entry.end = "";
+  }
+  return entry;
+}
+
+function buildDeskScheduleEntryId_() {
+  return Utilities.getUuid().replace(/-/g, "");
+}
+
+function compareDeskScheduleEntries_(a, b) {
+  if (a.date !== b.date) return String(a.date || "").localeCompare(String(b.date || ""));
+  if (!!b.resident !== !!a.resident) return b.resident ? 1 : -1;
+  if (a.start !== b.start) return String(a.start || "").localeCompare(String(b.start || ""));
+  return String(a.worker || "").localeCompare(String(b.worker || ""), "ko");
+}
+
+function buildDefaultDeskScheduleMonthSeed_(monthKey) {
+  var parts = String(monthKey || "").split("-");
+  var year = parseInt(parts[0], 10);
+  var month = parseInt(parts[1], 10) - 1;
+  if (isNaN(year) || isNaN(month)) return [];
+
+  var rules = [
+    { worker: "홍성우", role: "총괄 팀장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 운영 총괄" },
+    { worker: "안종성", role: "오후 데스크", days: [2, 4, 5, 6], start: "14:00", end: "22:30", note: "상담/학부모 응대" },
+    { worker: "인유빈", role: "오전 데스크", days: [1, 3, 5, 0], start: "09:30", end: "18:00", note: "등원 응대 및 등록 안내" },
+    { worker: "이미현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
+    { worker: "유지연", role: "운영 지원", days: [2, 6, 0], start: "13:00", end: "19:00", note: "자료 정리 및 업무 지원" },
+    { worker: "김유민", role: "오전 데스크", days: [2, 4], start: "09:30", end: "17:00", note: "접수 및 행정 처리" },
+    { worker: "이창연", role: "주임", days: [3], start: "11:00", end: "18:00", note: "실무 운영 점검" },
+    { worker: "김유민", role: "야간 지원", days: [5], start: "17:30", end: "22:30", note: "금요일 마감 보조" }
+  ];
+
+  var items = [];
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (var day = 1; day <= daysInMonth; day++) {
+    var current = new Date(year, month, day);
+    var weekday = current.getDay();
+    var dateKey = Utilities.formatDate(current, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    var weekIndex = getDeskScheduleWeekIndex_(dateKey, monthKey);
+    rules.forEach(function(rule, idx) {
+      if (rule.days.indexOf(weekday) === -1) return;
+      if (rule.worker === "이창연" && weekIndex % 2 === 0) return;
+      if (rule.worker === "유지연" && weekIndex === 1 && weekday === 0) return;
+      var time = getDeskScheduleRuleTime_(rule, weekday, weekIndex);
+      var entry = normalizeDeskScheduleEntry_({
+        id: ["seed", monthKey, day, idx, rule.worker].join("_").replace(/\s+/g, ""),
+        date: dateKey,
+        worker: rule.worker,
+        role: rule.role,
+        start: time.start,
+        end: time.end,
+        resident: !!rule.resident,
+        note: time.note || rule.note || ""
+      });
+      items.push(entry);
+    });
+  }
+  return items;
+}
+
+function getDeskScheduleRuleTime_(rule, weekday, weekIndex) {
+  if (rule.resident) return { start: "", end: "", note: rule.note || "" };
+  var start = rule.start || "";
+  var end = rule.end || "";
+  if (rule.role === "오전 데스크" && weekday === 0) {
+    start = "10:00";
+    end = "17:30";
+  }
+  if (rule.role === "오후 데스크" && weekday === 6) {
+    start = "13:30";
+    end = "21:00";
+  }
+  if (rule.role === "운영 지원" && weekIndex === 3) {
+    start = "12:30";
+    end = "18:30";
+  }
+  return { start: start, end: end, note: rule.note || "" };
+}
+
+function getDeskScheduleWeekIndex_(dateKey, monthKey) {
+  var dateParts = String(dateKey || "").split("-");
+  var monthParts = String(monthKey || "").split("-");
+  var year = parseInt(monthParts[0], 10);
+  var month = parseInt(monthParts[1], 10) - 1;
+  var day = parseInt(dateParts[2], 10);
+  var first = new Date(year, month, 1);
+  var offset = (first.getDay() + 6) % 7;
+  return Math.floor((offset + day - 1) / 7) + 1;
 }
 
 function getFirebaseConfigFromProps_() {
