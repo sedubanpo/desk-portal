@@ -44,7 +44,7 @@
       width: min(1700px, 100%);
       margin: 0 auto;
       border-radius: 24px;
-      overflow: hidden;
+      overflow: visible;
       display: grid;
       grid-template-columns: 280px 1fr;
       min-height: calc(100vh - 48px);
@@ -559,7 +559,7 @@
     }
     .desk-calendar-layout {
       display: grid;
-      grid-template-columns: minmax(0, 2.2fr) 390px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 14px;
       align-items: start;
     }
@@ -573,18 +573,20 @@
     }
     .desk-calendar-board {
       padding: 10px;
-      overflow-x: auto;
+      position: relative;
+      overflow: visible;
     }
     .desk-calendar-weekdays {
       display: grid;
-      grid-template-columns: repeat(7, minmax(180px, 1fr)) 220px;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 8px;
       padding: 4px 2px 8px;
       position: sticky;
-      top: 8px;
-      z-index: 4;
+      top: 12px;
+      z-index: 12;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(10px);
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.06);
     }
     .desk-calendar-weekdays span {
       text-align: right;
@@ -593,13 +595,9 @@
       color: #607082;
       padding-right: 6px;
     }
-    .desk-weekday-summary {
-      text-align: left !important;
-      padding-left: 8px;
-    }
     .desk-calendar-grid {
       display: grid;
-      grid-template-columns: repeat(7, minmax(180px, 1fr)) 220px;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 8px;
       align-items: start;
     }
@@ -690,7 +688,7 @@
       transform: translateY(-1px);
     }
     .desk-week-summary {
-      min-height: 182px;
+      grid-column: 1 / -1;
       border: 1px solid #d9e7df;
       border-radius: 16px;
       background: linear-gradient(180deg, #fbfefc 0%, #f5faf7 100%);
@@ -716,9 +714,9 @@
       color: #607082;
     }
     .desk-week-summary-list {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
     }
     .desk-week-summary-item {
       display: flex;
@@ -774,10 +772,11 @@
       color: rgba(23, 48, 66, 0.68);
     }
     .desk-calendar-side {
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
+      padding: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
       gap: 12px;
+      align-items: start;
     }
     .desk-side-card {
       border: 1px solid #dce7e0;
@@ -4237,8 +4236,8 @@
       .desk-editor-layout,
       .desk-journal-layout,
       .desk-overview-grid { grid-template-columns: 1fr; }
-      .desk-calendar-weekdays,
-      .desk-calendar-grid { min-width: 1560px; }
+      .desk-week-summary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .desk-calendar-side { grid-template-columns: 1fr; }
       .desk-form-grid { grid-template-columns: 1fr 1fr; }
       .desk-mini-grid { grid-template-columns: 1fr; }
       .desk-toolbar-right { align-items: flex-start; margin-left: 0; }
@@ -8002,7 +8001,7 @@
           renderMonthOptions();
           renderSubjectOptions();
           renderTeacherOptions();
-          loadSettings();
+          if (state.privilegedAccessKey) loadSettings();
           renderSummary(res.summary || res);
           renderModeState();
           setTimeout(function() {
