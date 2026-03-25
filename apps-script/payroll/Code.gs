@@ -12,11 +12,29 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
 const FB_SECRET = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
+const PAYROLL_API_ALLOWED_METHODS = {
+  getPayrollBootstrapData: true,
+  getTuitionBootstrapData: true,
+  getTuitionMonthSummary: true,
+  getTuitionStudentMonthlyHistory: true,
+  getTuitionGuideDashboard: true,
+  getTuitionMonthlySalesOverview: true,
+  saveTuitionStatusOnly: true,
+  saveTuitionFollowup: true,
+  appendTuitionPaymentEntry: true,
+  getPayrollMonthSummary: true,
+  getPayrollSettings: true,
+  savePayrollSettings: true
+};
 
 function doGet(e) {
-  var view = e && e.parameter ? String(e.parameter.view || '').toLowerCase() : '';
+  var params = e && e.parameter ? e.parameter : {};
+  if (String(params.mode || "").toLowerCase() === "api") {
+    return handlePayrollApiRequest_(params);
+  }
+  var view = String(params.view || '').toLowerCase();
   var templateName = view === 'legacy' ? 'index' : 'payroll_portal';
-  var title = view === 'legacy' ? 'SEDU Teacher Portal' : 'SEDU Payroll Portal';
+  var title = view === 'legacy' ? 'SEDU Teacher Portal' : 'SEDU Desk Portal';
 
   return HtmlService.createTemplateFromFile(templateName).evaluate()
     .setTitle(title)
@@ -24,21 +42,97 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function verifyPayrollPortalPassword(inputPassword) {
-  var text = String(inputPassword || '').trim();
-  if (!text) return { success: false };
+function handlePayrollApiRequest_(params) {
+  try {
+    var fnName = String(params.fn || "").trim();
+    if (!fnName) return jsonOutput_({ success: false, message: "API 함수명이 없습니다." }, params);
+
+    var payload = parsePayrollApiPayload_(params.payload);
+    if (fnName === "verifyPayrollPortalPassword") {
+      return jsonOutput_(verifyPayrollPortalPassword(payload), params);
+    }
+    if (fnName === "verifyPayrollPrivilegedPassword") {
+      return jsonOutput_(verifyPayrollPrivilegedPassword(payload), params);
+    }
+    if (!PAYROLL_API_ALLOWED_METHODS[fnName]) {
+      return jsonOutput_({ success: false, message: "허용되지 않은 API 요청입니다." }, params);
+    }
+    if (!hasPayrollPortalAccess_(params.portalKey)) {
+      return jsonOutput_({ success: false, message: "포털 비밀번호 인증이 필요합니다." }, params);
+    }
+
+    var handlers = {
+      getPayrollBootstrapData: getPayrollBootstrapData,
+      getTuitionBootstrapData: getTuitionBootstrapData,
+      getTuitionMonthSummary: getTuitionMonthSummary,
+      getTuitionStudentMonthlyHistory: getTuitionStudentMonthlyHistory,
+      getTuitionGuideDashboard: getTuitionGuideDashboard,
+      getTuitionMonthlySalesOverview: getTuitionMonthlySalesOverview,
+      saveTuitionStatusOnly: saveTuitionStatusOnly,
+      saveTuitionFollowup: saveTuitionFollowup,
+      appendTuitionPaymentEntry: appendTuitionPaymentEntry,
+      getPayrollMonthSummary: getPayrollMonthSummary,
+      getPayrollSettings: getPayrollSettings,
+      savePayrollSettings: savePayrollSettings
+    };
+    var handler = handlers[fnName];
+    if (typeof handler !== "function") {
+      return jsonOutput_({ success: false, message: "서버 메서드를 찾을 수 없습니다." }, params);
+    }
+    var result = typeof payload === "undefined" ? handler() : handler(payload);
+    return jsonOutput_(result, params);
+  } catch (e) {
+    return jsonOutput_({ success: false, message: "API 처리 오류: " + e.message }, params);
+  }
+}
+
+function parsePayrollApiPayload_(raw) {
+  var text = String(raw || "");
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return text;
+  }
+}
+
+function jsonOutput_(obj, params) {
+  var callback = String((params && params.callback) || "").trim();
+  if (callback) {
+    var safeCallback = callback.replace(/[^\w.$]/g, "");
+    var body = safeCallback + "(" + JSON.stringify(obj) + ");";
+    return ContentService
+      .createTextOutput(body)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function hasPayrollPortalAccess_(inputPassword) {
+  var text = String(inputPassword || "").trim();
+  if (!text) return false;
   var allow = {
     'qksvhtjch': true,
     '반포서초': true,
     'tjchqksvh': true,
     '서초반포': true
   };
-  return { success: !!allow[text] };
+  return !!allow[text];
+}
+
+function hasPayrollPrivilegedAccess_(inputPassword) {
+  var text = String(inputPassword || "").trim();
+  return text === "에스학원12" || text === "dptmgkrdnjs12";
+}
+
+function verifyPayrollPortalPassword(inputPassword) {
+  return { success: hasPayrollPortalAccess_(inputPassword) };
 }
 
 function verifyPayrollPrivilegedPassword(inputPassword) {
-  var text = String(inputPassword || "").trim();
-  return { success: text === "에스학원12" || text === "dptmgkrdnjs12" };
+  return { success: hasPayrollPrivilegedAccess_(inputPassword) };
 }
 
 function getPayrollSettings() {

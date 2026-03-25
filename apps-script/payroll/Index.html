@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>강사 급여 정산 포털</title>
+  <title>데스크 포털</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
   <link rel="shortcut icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
@@ -3391,9 +3391,9 @@
     <section class="gate-box">
       <div class="gate-head">
         <img class="gate-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
-        <h1 class="gate-title">SEDU Payroll Access</h1>
+        <h1 class="gate-title">SEDU Desk Portal Access</h1>
       </div>
-      <p class="gate-desc">초기 진입 비밀번호를 입력해야 급여 정산 화면에 접근할 수 있습니다.</p>
+      <p class="gate-desc">초기 진입 비밀번호를 입력해야 데스크 포털 화면에 접근할 수 있습니다.</p>
       <input id="entryPasswordInput" class="gate-input" type="password" placeholder="비밀번호 입력">
       <div class="gate-row">
         <button id="entrySubmitBtn" class="gate-btn" type="button">입장</button>
@@ -3406,8 +3406,8 @@
     <aside class="sidebar">
       <section class="brand">
         <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
-        <h1 class="brand-title">SEDU Payroll</h1>
-        <p class="brand-sub">강사별 월 정산, 출결 인정 규칙, 매출/시수 기반 급여를 한 화면에서 처리합니다.</p>
+        <h1 class="brand-title">데스크 포털</h1>
+        <p class="brand-sub">운영 기록, 재원생 수강료 정산, 강사 시수 정산을 한 화면에서 관리합니다.</p>
       </section>
 
       <section class="sidebar-card">
@@ -4246,7 +4246,10 @@
   </div>
 
   <script>
+    var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbxsqZ3dWMNAUvIJtF2h0tnaMBvsXRQQgrMqdNmPDMpFBarlDAwJMpZsp4ddTAoHB09c/exec";
     var state = {
+      portalPassword: "",
+      privilegedPassword: "",
       months: [],
       selectedMonth: "",
       subjects: [],
@@ -4784,10 +4787,6 @@
     }
 
     function loadBootstrap() {
-      if (!canUseGoogleScript()) {
-        showClientMessage("Apps Script 웹앱 환경에서 실행해 주세요.");
-        return;
-      }
       setLoading(true, "초기 데이터를 불러오는 중입니다...");
       runServer("getPayrollBootstrapData")
         .then(function(res) {
@@ -4816,7 +4815,6 @@
     }
 
     function loadTuitionBootstrap() {
-      if (!canUseGoogleScript()) return;
       setLoading(true, "재원생 수강료 데이터를 불러오는 중입니다...");
       runServer("getTuitionBootstrapData")
         .then(function(res) {
@@ -4838,7 +4836,6 @@
     }
 
     function refreshTuitionSummary(forceReload) {
-      if (!canUseGoogleScript()) return;
       if (forceReload) {
         state.tuition.loaded = false;
         state.tuition.monthlySales = null;
@@ -6672,10 +6669,6 @@
         entryErrorTextEl.textContent = "비밀번호를 입력해 주세요.";
         return;
       }
-      if (!canUseGoogleScript()) {
-        entryErrorTextEl.textContent = "Apps Script 환경에서 실행해 주세요.";
-        return;
-      }
 
       entryErrorTextEl.textContent = "";
       entrySubmitBtnEl.disabled = true;
@@ -6687,6 +6680,7 @@
             entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
             return;
           }
+          state.portalPassword = password;
           entryGateEl.style.display = "none";
           renderModuleLayout();
           loadBootstrap();
@@ -6747,13 +6741,9 @@
         if (action && typeof action.onSuccess === "function") action.onSuccess();
       };
 
-      if (!canUseGoogleScript()) {
-        done(password === "에스학원12", "비밀번호가 올바르지 않습니다.");
-        return;
-      }
-
       runServer("verifyPayrollPrivilegedPassword", password)
         .then(function(res) {
+          if (res && res.success) state.privilegedPassword = password;
           done(!!(res && res.success), "비밀번호가 올바르지 않습니다.");
         })
         .catch(function(err) {
@@ -6762,7 +6752,6 @@
     }
 
     function refreshSummary(isMonthRefresh) {
-      if (!canUseGoogleScript()) return;
       var requestId = ++state.requestSeq;
       setLoading(true, "정산 데이터를 계산 중입니다...");
 
@@ -8312,6 +8301,9 @@
     }
 
     function runServer(fnName, payload) {
+      if (!canUseGoogleScript()) {
+        return apiJsonp(fnName, payload);
+      }
       return new Promise(function(resolve, reject) {
         var runner = google.script.run
           .withSuccessHandler(resolve)
@@ -8324,7 +8316,61 @@
     }
 
     function canUseGoogleScript() {
-      return typeof google !== "undefined" && google.script && google.script.run;
+      return !!(typeof google !== "undefined" && google.script && google.script.run);
+    }
+
+    function apiJsonp(fnName, payload) {
+      return new Promise(function(resolve, reject) {
+        if (!DESK_PORTAL_API_BASE) {
+          reject(new Error("API 연결 주소가 설정되지 않았습니다."));
+          return;
+        }
+
+        var cbName = "__deskPortalApiCb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+        var script = document.createElement("script");
+        var timer = null;
+        var settled = false;
+        var url = new URL(DESK_PORTAL_API_BASE);
+
+        url.searchParams.set("mode", "api");
+        url.searchParams.set("fn", fnName);
+        url.searchParams.set("callback", cbName);
+        if (state.portalPassword) url.searchParams.set("portalKey", state.portalPassword);
+        if (state.privilegedPassword) url.searchParams.set("privilegedKey", state.privilegedPassword);
+        if (typeof payload !== "undefined") {
+          url.searchParams.set("payload", JSON.stringify(payload));
+        }
+
+        function cleanup() {
+          if (timer) clearTimeout(timer);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        }
+
+        window[cbName] = function(res) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve(res || {});
+        };
+
+        script.onerror = function() {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(new Error("API 호출 실패"));
+        };
+
+        timer = setTimeout(function() {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(new Error("API 호출 시간 초과"));
+        }, 25000);
+
+        script.src = url.toString();
+        document.head.appendChild(script);
+      });
     }
 
     function setLoading(isLoading, text) {
