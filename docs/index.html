@@ -153,10 +153,13 @@
       min-height: 0;
     }
     .worker-item {
-      border: 1px solid rgba(210, 255, 233, 0.14);
+      border: 1px solid var(--desk-card-border, rgba(210, 255, 233, 0.14));
       border-radius: 12px;
       padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
+        var(--desk-card-tint, rgba(255, 255, 255, 0.05));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
     .worker-item .k {
       font-size: 11px;
@@ -676,9 +679,14 @@
       gap: 7px;
       min-height: 106px;
     }
+    .desk-day-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: auto;
+    }
     .desk-day-empty-slot {
-      flex: 1;
-      min-height: 58px;
+      min-height: 54px;
       border: 1px dashed #d6e4dc;
       border-radius: 14px;
       background: linear-gradient(180deg, #fbfefc 0%, #f4faf6 100%);
@@ -697,12 +705,39 @@
       background: #f2fbf5;
       transform: translateY(-1px);
     }
-    .desk-week-summary {
-      grid-column: 1 / -1;
+    .desk-week-summary-inline {
+      position: relative;
+      display: flex;
+      justify-content: flex-start;
+      margin-top: -2px;
+    }
+    .desk-week-summary-trigger {
+      border: 1px solid #cfe0d7;
+      background: #f5fbf7;
+      color: #315268;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-week-summary-trigger:hover {
+      border-color: #0d684d;
+      color: #0d684d;
+      background: #edf8f1;
+    }
+    .desk-week-summary-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      width: min(320px, calc(100vw - 96px));
       border: 1px solid #d9e7df;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #fbfefc 0%, #f5faf7 100%);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 18px 34px rgba(15, 60, 46, 0.14);
+      backdrop-filter: blur(12px);
       padding: 12px;
+      z-index: 25;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -724,9 +759,12 @@
       color: #607082;
     }
     .desk-week-summary-list {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-height: 240px;
+      overflow: auto;
+      padding-right: 2px;
     }
     .desk-week-summary-item {
       display: flex;
@@ -745,8 +783,24 @@
       color: #0d684d;
       font-weight: 900;
     }
+    .desk-day-copy-btn {
+      min-height: 34px;
+      border: 1px dashed #d0ddd5;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #607082;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+    .desk-day-copy-btn:hover {
+      border-color: #0d684d;
+      color: #0d684d;
+      background: #f4fbf7;
+    }
     .desk-shift-chip {
-      border: 1px solid transparent;
+      border: 1px solid var(--desk-card-border, transparent);
       border-radius: 14px;
       padding: 8px 10px;
       text-align: left;
@@ -757,24 +811,39 @@
       font-family: inherit;
     }
     .desk-shift-chip.tone-morning {
-      background: linear-gradient(180deg, #f6fbff 0%, #e5f0ff 100%);
-      border-color: #cfe0f7;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.36) 100%),
+        linear-gradient(135deg, rgba(59, 130, 246, 0.14) 0%, rgba(59, 130, 246, 0.02) 56%),
+        var(--desk-card-tint, #eef4ff);
+      border-color: var(--desk-card-border, #cfe0f7);
     }
     .desk-shift-chip.tone-afternoon {
-      background: linear-gradient(180deg, #f8f5ff 0%, #ece6ff 100%);
-      border-color: #d8cff7;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.36) 100%),
+        linear-gradient(135deg, rgba(139, 92, 246, 0.14) 0%, rgba(139, 92, 246, 0.02) 56%),
+        var(--desk-card-tint, #f3ecff);
+      border-color: var(--desk-card-border, #d8cff7);
     }
     .desk-shift-chip.tone-night {
-      background: linear-gradient(180deg, #f9f1ff 0%, #efe1ff 100%);
-      border-color: #dbc7fb;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.36) 100%),
+        linear-gradient(135deg, rgba(91, 70, 181, 0.16) 0%, rgba(91, 70, 181, 0.03) 56%),
+        var(--desk-card-tint, #f0e8ff);
+      border-color: var(--desk-card-border, #dbc7fb);
     }
     .desk-shift-chip.tone-resident {
-      background: linear-gradient(180deg, #fff7ef 0%, #fbe7d7 100%);
-      border-color: #f1d4bb;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.36) 100%),
+        linear-gradient(135deg, rgba(234, 88, 12, 0.14) 0%, rgba(234, 88, 12, 0.02) 56%),
+        var(--desk-card-tint, #fff3ea);
+      border-color: var(--desk-card-border, #f1d4bb);
     }
     .desk-shift-chip.tone-unavailable {
-      background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
-      border-color: #dde1e6;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.4) 100%),
+        linear-gradient(135deg, rgba(107, 114, 128, 0.12) 0%, rgba(107, 114, 128, 0.02) 56%),
+        var(--desk-card-tint, #f6f7f9);
+      border-color: var(--desk-card-border, #dde1e6);
     }
     .desk-shift-chip.active {
       box-shadow: 0 0 0 2px rgba(13, 104, 77, 0.18);
@@ -809,6 +878,25 @@
       font-size: 12px;
       font-weight: 800;
       color: rgba(23, 48, 66, 0.74);
+    }
+    .desk-shift-time-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-shift-order {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      color: #556b7c;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
     }
     .desk-shift-meta {
       font-size: 11px;
@@ -6008,6 +6096,7 @@
         workerFilter: "",
         toneFilter: "",
         expandedUnavailableDates: {},
+        openWeekSummaryKey: "",
         scheduleItems: [],
         loadedMonths: {},
         loadingMonths: {},
@@ -6667,7 +6756,9 @@
       var rowsHtml = [];
       for (var week = 0; week < 6; week += 1) {
         var weekCells = cells.slice(week * 7, (week + 1) * 7);
-        weekCells.forEach(function(cell) {
+        var weekSummary = buildDeskWeekSummaryData_(weekCells, grouped);
+        var weekSummaryKey = buildDeskWeekSummaryKey_(monthKey, week + 1);
+        weekCells.forEach(function(cell, cellIndex) {
           var dayItems = (grouped[cell.date] || []).slice().sort(compareDeskShift_);
           var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
           var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
@@ -6681,12 +6772,13 @@
               '<div class="desk-day-num">' + cell.day + '</div>' +
               '<div class="desk-day-count">' + dayItems.length + '건</div>' +
             '</div>' +
+            (cellIndex === 0 ? renderDeskWeekSummaryTrigger_(week + 1, weekSummary, weekSummaryKey) : '') +
             '<div class="desk-day-shifts">' +
-              (primaryItems.length ? primaryItems.map(function(item) {
+              (primaryItems.length ? primaryItems.map(function(item, itemIndex) {
                 var tone = getDeskShiftTone_(item);
-                return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+                return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
                   '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
-                  '<span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
+                  '<span class="desk-shift-time-row"><span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span><span class="desk-shift-order">' + escapeHtml(formatDeskShiftOrder_(itemIndex)) + '</span></span>' +
                   '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
                 '</button>';
               }).join("") : '') +
@@ -6696,23 +6788,25 @@
                   '<span class="desk-shift-meta">사유/메모는 팝업에서 수정</span>' +
                 '</button>' +
                 (showUnavailable ? unavailableItems.map(function(item) {
-                  return '<button type="button" class="desk-shift-chip tone-unavailable" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+                  return '<button type="button" class="desk-shift-chip tone-unavailable" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
                     '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
                     '<span class="desk-shift-time">근무 불가</span>' +
                     '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + (item.note ? (' <span style="display:inline-block;margin-left:6px;">' + escapeHtml(item.note) + '</span>') : '') + '</span>' +
                   '</button>';
                 }).join("") : '')
               ) : '') +
-              '<button type="button" class="desk-day-empty-slot" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
+              '<div class="desk-day-actions">' +
+                '<button type="button" class="desk-day-empty-slot" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
+                '<button type="button" class="desk-day-copy-btn" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '">지난주 같은 요일 복사</button>' +
+              '</div>' +
             '</div>' +
           '</article>');
         });
-        rowsHtml.push(renderDeskWeekSummary_(weekCells, grouped, week + 1));
       }
       deskCalendarGridEl.innerHTML = rowsHtml.join("");
     }
 
-    function renderDeskWeekSummary_(weekCells, grouped, labelIndex) {
+    function buildDeskWeekSummaryData_(weekCells, grouped) {
       var totals = {};
       (weekCells || []).forEach(function(cell) {
         var list = (grouped[cell.date] || []).slice();
@@ -6729,6 +6823,34 @@
         if (b.hours !== a.hours) return b.hours - a.hours;
         return String(a.name || "").localeCompare(String(b.name || ""), "ko");
       });
+      return ordered;
+    }
+
+    function buildDeskWeekSummaryKey_(monthKey, labelIndex) {
+      return String(monthKey || "") + "_week_" + String(labelIndex || "");
+    }
+
+    function renderDeskWeekSummaryTrigger_(labelIndex, ordered, weekSummaryKey) {
+      return '<div class="desk-week-summary-inline">' +
+        '<button type="button" class="desk-week-summary-trigger" data-desk-week-summary-toggle="' + escapeHtml(weekSummaryKey) + '">📊 ' + labelIndex + '주차 시간</button>' +
+        (state.desk.openWeekSummaryKey === weekSummaryKey ? (
+          '<div class="desk-week-summary-popover">' +
+        '<div class="desk-week-summary-head">' +
+          '<div class="desk-week-summary-title">' + labelIndex + '주차 근무시간</div>' +
+          '<div class="desk-week-summary-sub">' + (ordered.length ? ('집계 ' + ordered.length + '명') : '집계 없음') + '</div>' +
+        '</div>' +
+        '<div class="desk-week-summary-list">' +
+          (ordered.length ? ordered.map(function(item) {
+            return '<div class="desk-week-summary-item"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>';
+          }).join("") : '<div class="desk-empty">집계 가능한 근무시간이 없습니다.</div>') +
+        '</div>' +
+        '</div>'
+        ) : '') +
+      '</div>';
+    }
+
+    function renderDeskWeekSummary_(weekCells, grouped, labelIndex) {
+      var ordered = buildDeskWeekSummaryData_(weekCells, grouped);
       return '<aside class="desk-week-summary">' +
         '<div class="desk-week-summary-head">' +
           '<div class="desk-week-summary-title">' + labelIndex + '주차 근무시간</div>' +
@@ -6897,7 +7019,7 @@
       }
       deskTodayWorkerListEl.innerHTML = items.map(function(item) {
         var tone = getDeskShiftTone_(item);
-        return '<article class="worker-item tone-' + tone + '">' +
+        return '<article class="worker-item tone-' + tone + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
           '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
           '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
           '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
@@ -7526,6 +7648,105 @@
           tone: getDeskShiftTone_(item),
           time: formatDeskShiftTime_(item)
         };
+      });
+    }
+
+    function getDeskShiftCardStyle_(item) {
+      var palette = getDeskWorkerPalette_(item && item.worker || "");
+      return [
+        '--desk-card-tint:' + palette.bg,
+        '--desk-card-border:' + palette.border,
+        '--desk-card-text:' + palette.fg
+      ].join(";");
+    }
+
+    function formatDeskShiftOrder_(index) {
+      return String((Number(index) || 0) + 1) + "근무";
+    }
+
+    function shiftDeskDateKey_(dateKey, days) {
+      var parts = String(dateKey || "").split("-");
+      if (parts.length < 3) return "";
+      var date = new Date(Number(parts[0] || 0), Number(parts[1] || 1) - 1, Number(parts[2] || 1));
+      date.setDate(date.getDate() + Number(days || 0));
+      return getDeskDateKey_(date);
+    }
+
+    function hasDeskDayItems_(dateKey) {
+      return state.desk.scheduleItems.some(function(item) {
+        return item.date === dateKey;
+      });
+    }
+
+    function isSameDeskShiftSignature_(a, b) {
+      return String(a.worker || "") === String(b.worker || "") &&
+        String(a.role || "") === String(b.role || "") &&
+        String(a.start || "") === String(b.start || "") &&
+        String(a.end || "") === String(b.end || "") &&
+        !!a.resident === !!b.resident &&
+        !!a.unavailable === !!b.unavailable &&
+        String(a.note || "") === String(b.note || "");
+    }
+
+    function copyDeskPreviousWeekSchedule_(targetDateKey) {
+      var safeTargetDateKey = String(targetDateKey || "").trim();
+      if (!safeTargetDateKey) return;
+      var sourceDateKey = shiftDeskDateKey_(safeTargetDateKey, -7);
+      var sourceMonthKey = sourceDateKey.slice(0, 7);
+      var targetMonthKey = safeTargetDateKey.slice(0, 7);
+      ensureDeskMonthLoaded_(sourceMonthKey).then(function() {
+        var sourceItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === sourceDateKey;
+        }).sort(compareDeskShift_);
+        if (!sourceItems.length) {
+          alert("지난주 같은 요일에 복사할 근무표가 없습니다.");
+          return;
+        }
+        var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === safeTargetDateKey;
+        });
+        var pendingEntries = sourceItems.map(function(item) {
+          return normalizeDeskShift_(Object.assign({}, item, {
+            id: buildDeskShiftId_("desk", Date.now(), Math.random().toString(36).slice(2), item.worker),
+            date: safeTargetDateKey
+          }));
+        }).filter(function(item) {
+          return !existingTargetItems.some(function(existing) {
+            return isSameDeskShiftSignature_(existing, item);
+          });
+        });
+        if (!pendingEntries.length) {
+          alert("이미 같은 구성의 근무표가 있어 새로 복사할 일정이 없습니다.");
+          return;
+        }
+        setLoading(true, "지난주 같은 요일 근무표를 복사하는 중입니다...");
+        var savedEntries = [];
+        var chain = Promise.resolve();
+        pendingEntries.forEach(function(entry) {
+          chain = chain.then(function() {
+            return runServer("saveDeskScheduleEntry", {
+              monthKey: targetMonthKey,
+              entry: entry
+            }).then(function(res) {
+              if (!res || !res.success) {
+                throw new Error(res && res.message ? res.message : "근무표 복사 실패");
+              }
+              savedEntries.push(normalizeDeskShift_(res.entry || entry));
+            });
+          });
+        });
+        chain.then(function() {
+          var merged = getDeskMonthItems_(targetMonthKey).slice();
+          Array.prototype.push.apply(merged, savedEntries);
+          mergeDeskMonthItems_(targetMonthKey, merged);
+          state.desk.loadedMonths[targetMonthKey] = true;
+          state.desk.selectedDateKey = safeTargetDateKey;
+          renderDeskMonthlySchedule_();
+        }).catch(function(err) {
+          alert("지난주 근무표 복사 오류: " + (err.message || String(err)));
+        }).finally(function() {
+          setLoading(false);
+        });
       });
     }
 
@@ -8368,6 +8589,20 @@
 
       if (deskCalendarGridEl) {
         deskCalendarGridEl.addEventListener("click", function(event) {
+          var weekSummaryBtn = event.target.closest("[data-desk-week-summary-toggle]");
+          if (weekSummaryBtn) {
+            event.stopPropagation();
+            var summaryKey = weekSummaryBtn.getAttribute("data-desk-week-summary-toggle") || "";
+            state.desk.openWeekSummaryKey = state.desk.openWeekSummaryKey === summaryKey ? "" : summaryKey;
+            renderDeskMonthlySchedule_();
+            return;
+          }
+          var copyPrevWeekBtn = event.target.closest("[data-desk-copy-prev-week]");
+          if (copyPrevWeekBtn) {
+            event.stopPropagation();
+            copyDeskPreviousWeekSchedule_(copyPrevWeekBtn.getAttribute("data-desk-copy-prev-week") || "");
+            return;
+          }
           var addDateBtn = event.target.closest("[data-desk-add-date]");
           if (addDateBtn) {
             var addDate = addDateBtn.getAttribute("data-desk-add-date") || state.desk.selectedDateKey;
