@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>데스크 포털</title>
+  <title>데스크 관리</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
   <link rel="shortcut icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2316a34a'/%3E%3Cstop offset='100%25' stop-color='%230f766e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='url(%23g)'/%3E%3Cpath d='M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z' fill='white'/%3E%3C/svg%3E">
@@ -124,6 +124,54 @@
       color: #d1fae5;
       letter-spacing: 0.2px;
     }
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-section.hidden {
+      display: none;
+    }
+    .worker-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: rgba(212, 255, 233, 0.12);
+      color: #d1fae5;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid rgba(193, 242, 218, 0.25);
+      margin-bottom: 10px;
+    }
+    .worker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .worker-item {
+      border: 1px solid rgba(210, 255, 233, 0.14);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .worker-item .k {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(209, 250, 229, 0.72);
+      margin-bottom: 4px;
+    }
+    .worker-item .v {
+      font-size: 15px;
+      font-weight: 800;
+      color: #f0fdf4;
+    }
+    .worker-item .sub {
+      margin-top: 3px;
+      font-size: 11px;
+      color: rgba(236, 253, 245, 0.72);
+    }
 
     .sidebar-action {
       margin-top: 6px;
@@ -206,6 +254,123 @@
       padding: 18px;
       color: #385062;
       font-size: 14px;
+      font-weight: 700;
+    }
+    .desk-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .desk-subtabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid #d6e4dc;
+      background: linear-gradient(180deg, #fbfefc 0%, #f2f8f4 100%);
+    }
+    .desk-subtab {
+      border: 1px solid #c8d6cc;
+      background: #fff;
+      color: #385062;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .desk-subtab.active {
+      background: #0d684d;
+      color: #fff;
+      border-color: #0d684d;
+      box-shadow: 0 10px 18px rgba(13, 104, 77, 0.18);
+    }
+    .desk-panel {
+      border: 1px solid #d6e3dc;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 360px;
+    }
+    .desk-panel.hidden {
+      display: none;
+    }
+    .desk-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-panel-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-panel-sub {
+      margin: 6px 0 0;
+      color: #5b6777;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .desk-status-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #e6f6ee;
+      border: 1px solid #c3e4d2;
+      color: #116044;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .desk-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-overview-card {
+      border: 1px solid #d8e6de;
+      border-radius: 16px;
+      background: #fff;
+      padding: 16px;
+      min-height: 168px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .desk-overview-card h3 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      color: #173042;
+    }
+    .desk-overview-card p {
+      margin: 0;
+      color: #607082;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .desk-overview-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .desk-notice {
+      border: 1px dashed #bdd3c4;
+      border-radius: 14px;
+      background: #fbfefc;
+      padding: 14px 16px;
+      color: #456072;
+      font-size: 13px;
+      line-height: 1.6;
       font-weight: 700;
     }
     .tuition-shell {
@@ -3363,6 +3528,7 @@
       .salary-config { grid-template-columns: 1fr 1fr; }
       .layout { grid-template-columns: 1fr; }
       .topbar { grid-template-columns: 1fr 1fr; }
+      .desk-overview-grid { grid-template-columns: 1fr; }
       .table-filter-row { grid-template-columns: 1fr; }
       .teacher-bar { grid-template-columns: 1fr 1fr; }
       .day-detail-summary { grid-template-columns: 1fr 1fr; }
@@ -3383,6 +3549,7 @@
       .tuition-cal-detail-amount { font-size: 13px; }
       .tuition-cal-detail-sub { font-size: 12px; }
       .tuition-cal-detail-chip { font-size: 11px; }
+      .desk-panel-title { font-size: 20px; }
     }
   </style>
 </head>
@@ -3393,7 +3560,7 @@
         <img class="gate-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
         <h1 class="gate-title">SEDU Desk Portal Access</h1>
       </div>
-      <p class="gate-desc">초기 진입 비밀번호를 입력해야 데스크 포털 화면에 접근할 수 있습니다.</p>
+      <p class="gate-desc">초기 진입 비밀번호를 입력해야 데스크 관리 화면에 접근할 수 있습니다.</p>
       <input id="entryPasswordInput" class="gate-input" type="password" placeholder="비밀번호 입력">
       <div class="gate-row">
         <button id="entrySubmitBtn" class="gate-btn" type="button">입장</button>
@@ -3406,37 +3573,63 @@
     <aside class="sidebar">
       <section class="brand">
         <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
-        <h1 class="brand-title">데스크 포털</h1>
-        <p class="brand-sub">운영 기록, 재원생 수강료 정산, 강사 시수 정산을 한 화면에서 관리합니다.</p>
+        <h1 class="brand-title" id="brandTitle">데스크 관리</h1>
+        <p class="brand-sub" id="brandSub">근무 현황, 소모품, 업무일지를 한 화면에서 관리합니다.</p>
       </section>
 
-      <section class="sidebar-card">
-        <h3>정산 규칙</h3>
-        <ul class="bullet-list">
-          <li>`출석`, `보강(보충)`, `결석보강` 인정</li>
-          <li>`당일취소(당취)` 미인정</li>
-          <li>`프리`는 체크 시에만 인정</li>
-          <li>할인은 매출에서 차감 반영</li>
-        </ul>
-      </section>
+      <div class="sidebar-section" id="sidebarDeskSection">
+        <section class="sidebar-card">
+          <h3>오늘의 근무자</h3>
+          <div class="worker-date" id="deskWorkerDateLabel">오늘 기준</div>
+          <div class="worker-list">
+            <article class="worker-item">
+              <div class="k">오전 데스크</div>
+              <div class="v">배정 예정</div>
+              <div class="sub">월별 근무표 연동 전까지 자리만 먼저 구성합니다.</div>
+            </article>
+            <article class="worker-item">
+              <div class="k">오후 데스크</div>
+              <div class="v">배정 예정</div>
+              <div class="sub">근무표 기능이 연결되면 자동으로 표시될 수 있게 준비합니다.</div>
+            </article>
+            <article class="worker-item">
+              <div class="k">마감 담당</div>
+              <div class="v">배정 예정</div>
+              <div class="sub">데스크 관리의 기본 작업 기준 영역입니다.</div>
+            </article>
+          </div>
+        </section>
+      </div>
 
-      <section class="sidebar-card">
-        <h3>급여 모드</h3>
-        <ul class="bullet-list">
-          <li>비율제 기본 50%</li>
-          <li>시급제: 일자별 순수 수업시간 x 시급</li>
-          <li>일자별 매출 그래프 제공</li>
-        </ul>
-      </section>
+      <div class="sidebar-section hidden" id="sidebarPayrollSection">
+        <section class="sidebar-card">
+          <h3>정산 규칙</h3>
+          <ul class="bullet-list">
+            <li>`출석`, `보강(보충)`, `결석보강` 인정</li>
+            <li>`당일취소(당취)` 미인정</li>
+            <li>`프리`는 체크 시에만 인정</li>
+            <li>할인은 매출에서 차감 반영</li>
+          </ul>
+        </section>
 
-      <section class="sidebar-card">
-        <h3>실행 팁</h3>
-        <ul class="bullet-list">
-          <li>월 변경 시 `프리` 수동인정 체크는 초기화됩니다.</li>
-          <li>테이블에서 `프리 인정` 체크 후 바로 재계산됩니다.</li>
-          <li>시트 탭 이름은 `YY-MM` 형식이어야 합니다.</li>
-        </ul>
-      </section>
+        <section class="sidebar-card">
+          <h3>급여 모드</h3>
+          <ul class="bullet-list">
+            <li>비율제 기본 50%</li>
+            <li>시급제: 일자별 순수 수업시간 x 시급</li>
+            <li>일자별 매출 그래프 제공</li>
+          </ul>
+        </section>
+
+        <section class="sidebar-card">
+          <h3>실행 팁</h3>
+          <ul class="bullet-list">
+            <li>월 변경 시 `프리` 수동인정 체크는 초기화됩니다.</li>
+            <li>테이블에서 `프리 인정` 체크 후 바로 재계산됩니다.</li>
+            <li>시트 탭 이름은 `YY-MM` 형식이어야 합니다.</li>
+          </ul>
+        </section>
+      </div>
 
       <button class="sidebar-action" id="openSettingsBtn" type="button">
         <span class="sidebar-gear">⚙</span>
@@ -3446,7 +3639,7 @@
 
     <main class="main">
       <section class="module-tabs">
-        <button class="module-tab active" type="button" data-module="expense">데스크 포털</button>
+        <button class="module-tab active" type="button" data-module="expense">데스크 관리</button>
         <button class="module-tab" type="button" data-module="tuition">재원생 수강료 정산</button>
         <button class="module-tab" type="button" data-module="teacher">강사 시수 정산</button>
       </section>
@@ -3825,8 +4018,104 @@
         </div>
       </section>
 
-      <section class="module-placeholder" id="moduleExpense" style="display:none;">
-        데스크 포털 탭 레이아웃입니다. 상세 기능은 다음 단계에서 개발합니다.
+      <section id="moduleExpense" style="display:none;">
+        <div class="desk-shell">
+          <section class="desk-subtabs">
+            <button class="desk-subtab active" type="button" data-desk-tab="monthlySchedule">월별 근무표</button>
+            <button class="desk-subtab" type="button" data-desk-tab="supplies">소모품 관리</button>
+            <button class="desk-subtab" type="button" data-desk-tab="dailyJournal">일일 업무일지</button>
+          </section>
+
+          <section class="desk-panel" data-desk-panel="monthlySchedule">
+            <header class="desk-panel-head">
+              <div>
+                <h2 class="desk-panel-title">월별 근무표</h2>
+                <p class="desk-panel-sub">월 단위 근무 배치와 교대 흐름을 정리하는 기본 작업판입니다. 실제 표와 편집 기능은 다음 단계에서 연결합니다.</p>
+              </div>
+              <span class="desk-status-chip">초기 구조 반영 완료</span>
+            </header>
+            <div class="desk-overview-grid">
+              <article class="desk-overview-card">
+                <h3>근무표 보드</h3>
+                <p>월간 근무표 테이블과 담당자 배치 영역이 들어갈 자리입니다.</p>
+                <ul>
+                  <li>근무일별 담당자 배치</li>
+                  <li>오전/오후/마감 구분</li>
+                  <li>수정 이력 연결 예정</li>
+                </ul>
+              </article>
+              <article class="desk-overview-card">
+                <h3>교대 메모</h3>
+                <p>특이 일정, 대체 근무, 휴가 일정을 함께 관리할 수 있도록 준비합니다.</p>
+                <ul>
+                  <li>휴가/결원 메모</li>
+                  <li>대체 근무 기록</li>
+                  <li>주의 일정 표시</li>
+                </ul>
+              </article>
+              <article class="desk-overview-card">
+                <h3>오늘 연결 영역</h3>
+                <p>좌측의 오늘의 근무자 카드와 연결될 기준판입니다.</p>
+                <ul>
+                  <li>오늘 근무자 자동 추출</li>
+                  <li>담당 역할별 분류</li>
+                  <li>당일 공지 연동 예정</li>
+                </ul>
+              </article>
+            </div>
+            <div class="desk-notice">이번 단계에서는 월별 근무표 작업판의 구조만 먼저 반영했습니다. 실제 입력/저장 기능은 다음 기획에 맞춰 연결하면 됩니다.</div>
+          </section>
+
+          <section class="desk-panel hidden" data-desk-panel="supplies">
+            <header class="desk-panel-head">
+              <div>
+                <h2 class="desk-panel-title">소모품 관리</h2>
+                <p class="desk-panel-sub">재고 확인, 발주 필요 품목, 사용 기록을 관리하는 화면 자리입니다.</p>
+              </div>
+              <span class="desk-status-chip">준비 중</span>
+            </header>
+            <div class="desk-overview-grid">
+              <article class="desk-overview-card">
+                <h3>재고 현황</h3>
+                <p>필수 소모품 재고와 안전 재고 기준을 표시할 수 있습니다.</p>
+              </article>
+              <article class="desk-overview-card">
+                <h3>발주 체크</h3>
+                <p>부족 품목과 발주 예정일을 관리하는 섹션으로 확장할 수 있습니다.</p>
+              </article>
+              <article class="desk-overview-card">
+                <h3>사용 로그</h3>
+                <p>일자별 사용량 기록과 담당자 메모를 연결할 수 있는 영역입니다.</p>
+              </article>
+            </div>
+            <div class="desk-notice">소모품 관리 기능은 UI 자리만 먼저 열어두었습니다. 다음 단계에서 품목 구조와 저장 방식을 설계하면 됩니다.</div>
+          </section>
+
+          <section class="desk-panel hidden" data-desk-panel="dailyJournal">
+            <header class="desk-panel-head">
+              <div>
+                <h2 class="desk-panel-title">일일 업무일지</h2>
+                <p class="desk-panel-sub">당일 주요 이슈, 전달사항, 마감 체크리스트를 기록하는 기본 화면입니다.</p>
+              </div>
+              <span class="desk-status-chip">준비 중</span>
+            </header>
+            <div class="desk-overview-grid">
+              <article class="desk-overview-card">
+                <h3>업무 요약</h3>
+                <p>당일 처리한 업무와 특이사항을 간단히 남길 수 있는 자리입니다.</p>
+              </article>
+              <article class="desk-overview-card">
+                <h3>전달 사항</h3>
+                <p>다음 근무자에게 넘겨야 할 내용을 정리하는 섹션으로 사용할 수 있습니다.</p>
+              </article>
+              <article class="desk-overview-card">
+                <h3>마감 체크</h3>
+                <p>마감 완료 여부와 누락 확인 항목을 체크리스트 형태로 확장할 수 있습니다.</p>
+              </article>
+            </div>
+            <div class="desk-notice">일일 업무일지는 입력 흐름과 기록 보관 기준이 정해지면 바로 폼/리스트형으로 확장할 수 있도록 구조를 잡아두었습니다.</div>
+          </section>
+        </div>
       </section>
     </main>
   </div>
@@ -4271,6 +4560,9 @@
       tableCollapsed: true,
       detailTab: "detail",
       activeModule: "expense",
+      desk: {
+        activeTab: "monthlySchedule"
+      },
       tuition: {
         loaded: false,
         loadingPromise: null,
@@ -4369,6 +4661,13 @@
     var moduleTeacherEl = document.getElementById("moduleTeacher");
     var moduleTuitionEl = document.getElementById("moduleTuition");
     var moduleExpenseEl = document.getElementById("moduleExpense");
+    var brandTitleEl = document.getElementById("brandTitle");
+    var brandSubEl = document.getElementById("brandSub");
+    var sidebarDeskSectionEl = document.getElementById("sidebarDeskSection");
+    var sidebarPayrollSectionEl = document.getElementById("sidebarPayrollSection");
+    var deskWorkerDateLabelEl = document.getElementById("deskWorkerDateLabel");
+    var deskTabEls = document.querySelectorAll("[data-desk-tab]");
+    var deskPanelEls = document.querySelectorAll("[data-desk-panel]");
     var tuitionMonthSelectEl = document.getElementById("tuitionMonthSelect");
     var tuitionStatusFilterEl = document.getElementById("tuitionStatusFilter");
     var tuitionKeywordInputEl = document.getElementById("tuitionKeywordInput");
@@ -4501,8 +4800,48 @@
       moduleTeacherEl.style.display = teacherMode ? "" : "none";
       moduleTuitionEl.style.display = state.activeModule === "tuition" ? "" : "none";
       moduleExpenseEl.style.display = state.activeModule === "expense" ? "" : "none";
+      renderSidebarLayout_();
+      renderDeskLayout_();
       var gateOpen = entryGateEl && entryGateEl.style.display !== "none";
       if (state.activeModule === "tuition" && !gateOpen) ensureTuitionLoaded();
+    }
+
+    function renderSidebarLayout_() {
+      var configMap = {
+        expense: {
+          title: "데스크 관리",
+          sub: "근무 현황, 소모품, 업무일지를 한 화면에서 관리합니다."
+        },
+        tuition: {
+          title: "재원생 수강료 정산",
+          sub: "학생 수강료 현황, 수납 기록, 안내 대상을 한 화면에서 관리합니다."
+        },
+        teacher: {
+          title: "강사 시수 정산",
+          sub: "강사별 시수, 수업 매출, 지급 기준을 한 화면에서 정산합니다."
+        }
+      };
+      var config = configMap[state.activeModule] || configMap.expense;
+      if (brandTitleEl) brandTitleEl.textContent = config.title;
+      if (brandSubEl) brandSubEl.textContent = config.sub;
+      if (sidebarDeskSectionEl) sidebarDeskSectionEl.classList.toggle("hidden", state.activeModule !== "expense");
+      if (sidebarPayrollSectionEl) sidebarPayrollSectionEl.classList.toggle("hidden", state.activeModule === "expense");
+      if (deskWorkerDateLabelEl) deskWorkerDateLabelEl.textContent = formatDeskTodayLabel_();
+    }
+
+    function renderDeskLayout_() {
+      Array.prototype.forEach.call(deskTabEls, function(btn) {
+        btn.classList.toggle("active", (btn.getAttribute("data-desk-tab") || "") === state.desk.activeTab);
+      });
+      Array.prototype.forEach.call(deskPanelEls, function(panel) {
+        panel.classList.toggle("hidden", (panel.getAttribute("data-desk-panel") || "") !== state.desk.activeTab);
+      });
+    }
+
+    function formatDeskTodayLabel_() {
+      var now = new Date();
+      var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+      return (now.getMonth() + 1) + "월 " + now.getDate() + "일 (" + weekdays[now.getDay()] + ") 기준";
     }
 
     function bindEvents() {
@@ -4519,6 +4858,15 @@
           }
           state.activeModule = nextModule;
           renderModuleLayout();
+        });
+      });
+
+      Array.prototype.forEach.call(deskTabEls, function(btn) {
+        btn.addEventListener("click", function() {
+          var nextTab = btn.getAttribute("data-desk-tab") || "monthlySchedule";
+          if (nextTab === state.desk.activeTab) return;
+          state.desk.activeTab = nextTab;
+          renderDeskLayout_();
         });
       });
 
