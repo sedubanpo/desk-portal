@@ -756,6 +756,26 @@
       gap: 3px;
       font-family: inherit;
     }
+    .desk-shift-chip.tone-morning {
+      background: linear-gradient(180deg, #f6fbff 0%, #e5f0ff 100%);
+      border-color: #cfe0f7;
+    }
+    .desk-shift-chip.tone-afternoon {
+      background: linear-gradient(180deg, #f8f5ff 0%, #ece6ff 100%);
+      border-color: #d8cff7;
+    }
+    .desk-shift-chip.tone-night {
+      background: linear-gradient(180deg, #f9f1ff 0%, #efe1ff 100%);
+      border-color: #dbc7fb;
+    }
+    .desk-shift-chip.tone-resident {
+      background: linear-gradient(180deg, #fff7ef 0%, #fbe7d7 100%);
+      border-color: #f1d4bb;
+    }
+    .desk-shift-chip.tone-unavailable {
+      background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
+      border-color: #dde1e6;
+    }
     .desk-shift-chip.active {
       box-shadow: 0 0 0 2px rgba(13, 104, 77, 0.18);
       border-color: rgba(13, 104, 77, 0.22);
@@ -771,6 +791,20 @@
       font-weight: 900;
       color: #173042;
     }
+    .desk-worker-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: var(--desk-worker-bg, #e2e8f0);
+      color: var(--desk-worker-fg, #1e293b);
+      border: 1px solid var(--desk-worker-border, #cbd5e1);
+      font-size: 12px;
+      font-weight: 900;
+      width: fit-content;
+      max-width: 100%;
+      box-shadow: 0 6px 12px rgba(15, 23, 42, 0.06);
+    }
     .desk-shift-time {
       font-size: 12px;
       font-weight: 800;
@@ -780,6 +814,23 @@
       font-size: 11px;
       font-weight: 700;
       color: rgba(23, 48, 66, 0.68);
+    }
+    .desk-role-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #305064;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .desk-shift-chip .desk-role-badge {
+      margin-top: 2px;
     }
     .desk-calendar-side {
       padding: 0;
@@ -927,6 +978,27 @@
       justify-content: flex-end;
       gap: 8px;
       flex-wrap: wrap;
+    }
+    .desk-time-preset-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .desk-time-preset-btn {
+      border: 1px solid #cad8cf;
+      background: #fff;
+      color: #385062;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-time-preset-btn:hover {
+      border-color: #0d684d;
+      color: #0d684d;
+      background: #f2fbf5;
     }
     .desk-empty {
       border: 1px dashed #c7d8cf;
@@ -1100,6 +1172,49 @@
       background: #fff3db;
       color: #9a5800;
       border-color: #efd39c;
+    }
+    .desk-routine-card {
+      border: 1px solid #d8e6de;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .desk-routine-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .desk-routine-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .desk-routine-assign-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .desk-routine-assign-btn {
+      border: 1px solid #c8d6cc;
+      background: #fff;
+      color: #385062;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-routine-assign-btn.recommended {
+      background: #e7f8ef;
+      color: #0d684d;
+      border-color: #abd9c0;
     }
     .desk-task-actions,
     .desk-note-actions {
@@ -5079,8 +5194,10 @@
                             <option value="오후 데스크">오후 데스크</option>
                             <option value="마감 담당">마감 담당</option>
                             <option value="운영 지원">운영 지원</option>
-                            <option value="총괄 팀장">총괄 팀장</option>
+                            <option value="반포관 부원장">반포관 부원장</option>
                             <option value="주임">주임</option>
+                            <option value="청소 담당">청소 담당</option>
+                            <option value="야간 지원">야간 지원</option>
                           </select>
                         </div>
                         <div class="field">
@@ -5102,6 +5219,17 @@
                         <div class="field" style="grid-column:1 / -1;">
                           <label for="deskShiftNote">사유 / 메모</label>
                           <input id="deskShiftNote" class="modal-input" type="text" placeholder="교대 메모 / 특이사항 / 대체 근무 / 근무 불가 사유">
+                        </div>
+                        <div class="field" style="grid-column:1 / -1;">
+                          <label>저장된 시간 붙여넣기</label>
+                          <div class="desk-time-preset-bar" id="deskTimePresetBar">
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="morning">오전 09:30-18:00</button>
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="afternoon">오후 14:00-22:30</button>
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="close">마감 16:00-22:30</button>
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="support">지원 13:00-19:00</button>
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="lead">주임 11:00-18:00</button>
+                            <button class="desk-time-preset-btn" type="button" data-desk-time-preset="resident">상주</button>
+                          </div>
                         </div>
                       </div>
                       <div class="desk-form-meta">
@@ -5241,6 +5369,20 @@
                             <option value="기타">기타</option>
                           </select>
                         </div>
+                        <div class="field">
+                          <label for="deskJournalRoutineTargetRole">추천 대상 역할</label>
+                          <input id="deskJournalRoutineTargetRole" class="modal-input" type="text" list="deskRoleNameList" placeholder="예: 청소 담당 / 오전 데스크 / 반포관 부원장">
+                          <datalist id="deskRoleNameList">
+                            <option value="오전 데스크"></option>
+                            <option value="오후 데스크"></option>
+                            <option value="마감 담당"></option>
+                            <option value="운영 지원"></option>
+                            <option value="반포관 부원장"></option>
+                            <option value="주임"></option>
+                            <option value="청소 담당"></option>
+                            <option value="야간 지원"></option>
+                          </datalist>
+                        </div>
                       </div>
                       <div class="field" style="margin-top:10px;">
                         <label for="deskJournalTaskTitle">업무 제목</label>
@@ -5251,6 +5393,7 @@
                         <input id="deskJournalTaskNote" class="modal-input" type="text" placeholder="세부 기준, 전달 메모, 우선순위 등을 적어두세요">
                       </div>
                       <div class="desk-form-actions" style="margin-top:12px;">
+                        <button class="modal-action ghost" id="deskJournalSaveRoutineBtn" type="button">루틴업무 저장</button>
                         <button class="modal-action primary" type="submit">업무 추가</button>
                       </div>
                     </form>
@@ -5348,8 +5491,10 @@
               <option value="오후 데스크">오후 데스크</option>
               <option value="마감 담당">마감 담당</option>
               <option value="운영 지원">운영 지원</option>
-              <option value="총괄 팀장">총괄 팀장</option>
+              <option value="반포관 부원장">반포관 부원장</option>
               <option value="주임">주임</option>
+              <option value="청소 담당">청소 담당</option>
+              <option value="야간 지원">야간 지원</option>
             </select>
           </div>
           <div class="field">
@@ -5371,6 +5516,17 @@
           <div class="field" style="grid-column:1 / -1;">
             <label for="deskShiftModalNote">사유 / 메모</label>
             <input id="deskShiftModalNote" class="modal-input" type="text" placeholder="교대 메모 / 특이사항 / 대체 근무 / 근무 불가 사유">
+          </div>
+          <div class="field" style="grid-column:1 / -1;">
+            <label>저장된 시간 붙여넣기</label>
+            <div class="desk-time-preset-bar" id="deskModalTimePresetBar">
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="morning">오전 09:30-18:00</button>
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="afternoon">오후 14:00-22:30</button>
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="close">마감 16:00-22:30</button>
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="support">지원 13:00-19:00</button>
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="lead">주임 11:00-18:00</button>
+              <button class="desk-time-preset-btn" type="button" data-desk-modal-time-preset="resident">상주</button>
+            </div>
           </div>
         </div>
         <div class="desk-form-meta" style="margin-top:12px;">
@@ -5805,6 +5961,16 @@
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbyYnAq06DfZgA9_mBwsGAG6QuBlDn7OGv3EZ5mifUG7LenEkqzSGy2bOy4kfRl58tgL/exec";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
+    var DESK_ROUTINE_TEMPLATE_KEY = "__desk_routine_templates__";
+    var DESK_ROUTINE_TAB_KEY = "__routine__";
+    var DESK_TIME_PRESETS = {
+      morning: { role: "오전 데스크", start: "09:30", end: "18:00", resident: false },
+      afternoon: { role: "오후 데스크", start: "14:00", end: "22:30", resident: false },
+      close: { role: "마감 담당", start: "16:00", end: "22:30", resident: false },
+      support: { role: "운영 지원", start: "13:00", end: "19:00", resident: false },
+      lead: { role: "주임", start: "11:00", end: "18:00", resident: false },
+      resident: { role: "반포관 부원장", start: "", end: "", resident: true }
+    };
     var state = {
       portalAccessKey: "",
       privilegedAccessKey: "",
@@ -5995,6 +6161,7 @@
     var deskShiftDateEl = document.getElementById("deskShiftDate");
     var deskShiftWorkerEl = document.getElementById("deskShiftWorker");
     var deskShiftRoleEl = document.getElementById("deskShiftRole");
+    var deskTimePresetBarEl = document.getElementById("deskTimePresetBar");
     var deskShiftStartEl = document.getElementById("deskShiftStart");
     var deskShiftEndEl = document.getElementById("deskShiftEnd");
     var deskShiftResidentEl = document.getElementById("deskShiftResident");
@@ -6014,6 +6181,7 @@
     var deskShiftModalDateEl = document.getElementById("deskShiftModalDate");
     var deskShiftModalWorkerEl = document.getElementById("deskShiftModalWorker");
     var deskShiftModalRoleEl = document.getElementById("deskShiftModalRole");
+    var deskModalTimePresetBarEl = document.getElementById("deskModalTimePresetBar");
     var deskShiftModalStartEl = document.getElementById("deskShiftModalStart");
     var deskShiftModalEndEl = document.getElementById("deskShiftModalEnd");
     var deskShiftModalResidentEl = document.getElementById("deskShiftModalResident");
@@ -6035,8 +6203,10 @@
     var deskJournalTaskFormEl = document.getElementById("deskJournalTaskForm");
     var deskJournalAssignedWorkerEl = document.getElementById("deskJournalAssignedWorker");
     var deskJournalTaskCategoryEl = document.getElementById("deskJournalTaskCategory");
+    var deskJournalRoutineTargetRoleEl = document.getElementById("deskJournalRoutineTargetRole");
     var deskJournalTaskTitleEl = document.getElementById("deskJournalTaskTitle");
     var deskJournalTaskNoteEl = document.getElementById("deskJournalTaskNote");
+    var deskJournalSaveRoutineBtnEl = document.getElementById("deskJournalSaveRoutineBtn");
     var deskJournalTaskBoardEl = document.getElementById("deskJournalTaskBoard");
     var deskJournalMemoFormEl = document.getElementById("deskJournalMemoForm");
     var deskJournalMemoWorkerEl = document.getElementById("deskJournalMemoWorker");
@@ -6271,7 +6441,7 @@
 
     function buildDeskMonthSeed_(monthDate) {
       var rules = [
-        { worker: "홍성우", role: "총괄 팀장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 운영 총괄" },
+        { worker: "홍성우", role: "반포관 부원장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 반포관 총괄" },
         { worker: "안종성", role: "오후 데스크", days: [2, 4, 5, 6], start: "14:00", end: "22:30", note: "상담/학부모 응대" },
         { worker: "인유빈", role: "오전 데스크", days: [1, 3, 5, 0], start: "09:30", end: "18:00", note: "등원 응대 및 등록 안내" },
         { worker: "이미현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
@@ -6515,9 +6685,9 @@
               (primaryItems.length ? primaryItems.map(function(item) {
                 var tone = getDeskShiftTone_(item);
                 return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                  '<span class="desk-shift-name">' + escapeHtml(item.worker) + '</span>' +
+                  '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
                   '<span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
-                  '<span class="desk-shift-meta">' + escapeHtml(item.role || "-") + '</span>' +
+                  '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
                 '</button>';
               }).join("") : '') +
               (unavailableItems.length ? (
@@ -6527,9 +6697,9 @@
                 '</button>' +
                 (showUnavailable ? unavailableItems.map(function(item) {
                   return '<button type="button" class="desk-shift-chip tone-unavailable" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                    '<span class="desk-shift-name">' + escapeHtml(item.worker) + '</span>' +
+                    '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
                     '<span class="desk-shift-time">근무 불가</span>' +
-                    '<span class="desk-shift-meta">' + escapeHtml(item.note || item.role || "사유 미입력") + '</span>' +
+                    '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + (item.note ? (' <span style="display:inline-block;margin-left:6px;">' + escapeHtml(item.note) + '</span>') : '') + '</span>' +
                   '</button>';
                 }).join("") : '')
               ) : '') +
@@ -6590,10 +6760,10 @@
         var tone = getDeskShiftTone_(item);
         return '<article class="desk-day-shift-item">' +
           '<div class="desk-day-shift-item-top">' +
-            '<strong>' + escapeHtml(item.worker) + '</strong>' +
+            getDeskWorkerBadgeHtml_(item.worker) +
             '<span class="desk-badge tone-' + tone + '">' + escapeHtml(getDeskToneLabel_(tone)) + '</span>' +
           '</div>' +
-          '<p>' + escapeHtml(item.role || "-") + ' · ' + escapeHtml(formatDeskShiftTime_(item)) + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</p>' +
+          '<p>' + getDeskRoleBadgeHtml_(item) + ' <span style="margin-left:6px;">' + escapeHtml(formatDeskShiftTime_(item)) + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</span></p>' +
           '<p>' + escapeHtml(item.note || "메모 없음") + '</p>' +
           '<div style="margin-top:8px;"><button type="button" class="mini-btn" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button></div>' +
         '</article>';
@@ -6703,8 +6873,8 @@
         var tone = getDeskShiftTone_(item);
         return '<tr class="' + (item.id === state.desk.selectedShiftId ? 'active' : '') + '" data-desk-edit-shift="' + escapeHtml(item.id) + '">' +
           '<td>' + escapeHtml(formatDeskDateLabel_(item.date, true)) + '</td>' +
-          '<td>' + escapeHtml(item.worker) + '</td>' +
-          '<td>' + escapeHtml(item.role || "-") + '</td>' +
+          '<td>' + getDeskWorkerBadgeHtml_(item.worker) + '</td>' +
+          '<td>' + getDeskRoleBadgeHtml_(item) + '</td>' +
           '<td>' + escapeHtml(formatDeskShiftTime_(item)) + '</td>' +
           '<td><span class="desk-badge tone-' + tone + '">' + escapeHtml(getDeskToneLabel_(tone)) + '</span></td>' +
           '<td>' + getDeskWeekIndex_(item.date, state.desk.currentMonth) + '주차</td>' +
@@ -6728,8 +6898,8 @@
       deskTodayWorkerListEl.innerHTML = items.map(function(item) {
         var tone = getDeskShiftTone_(item);
         return '<article class="worker-item tone-' + tone + '">' +
-          '<div class="k">' + escapeHtml(item.role || "담당 미지정") + '</div>' +
-          '<div class="v">' + escapeHtml(item.worker) + '</div>' +
+          '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
+          '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
           '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
         '</article>';
       }).join("");
@@ -6832,7 +7002,7 @@
         if (!map[item.worker]) {
           map[item.worker] = {
             name: item.worker,
-            mainRole: item.role || "",
+            mainRole: getDeskDisplayRole_(item),
             roleCounts: {},
             weekly: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
             totalHours: 0,
@@ -6841,7 +7011,8 @@
           };
         }
         var row = map[item.worker];
-        row.roleCounts[item.role || "미분류"] = (row.roleCounts[item.role || "미분류"] || 0) + 1;
+        var displayRole = getDeskDisplayRole_(item);
+        row.roleCounts[displayRole || "미분류"] = (row.roleCounts[displayRole || "미분류"] || 0) + 1;
         var roleNames = Object.keys(row.roleCounts);
         row.mainRole = roleNames.sort(function(a, b) { return row.roleCounts[b] - row.roleCounts[a]; })[0] || row.mainRole;
         if (item.unavailable) return;
@@ -7270,6 +7441,7 @@
         dateKey: String((item && item.dateKey) || "").trim(),
         worker: String((item && item.worker) || "").trim(),
         category: String((item && item.category) || "일반").trim(),
+        routineTargetRole: String((item && item.routineTargetRole) || "").trim(),
         title: String((item && item.title) || "").trim(),
         note: String((item && item.note) || "").trim(),
         completed: !!(item && item.completed),
@@ -7301,13 +7473,89 @@
       return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
     }
 
+    function getDeskRoutineTemplates_() {
+      return getDeskDailyJournalTasks_(DESK_ROUTINE_TEMPLATE_KEY);
+    }
+
+    function getDeskDisplayRole_(item) {
+      var role = String(item && item.role || "").trim();
+      var worker = String(item && item.worker || "").trim();
+      if (worker === "홍성우") return "반포관 부원장";
+      if (role === "총괄 팀장") return "반포관 부원장";
+      return role || "담당 미지정";
+    }
+
+    function getDeskWorkerPalette_(name) {
+      var map = {
+        "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8" },
+        "안종성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb" },
+        "인유빈": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd" },
+        "이미현": { bg: "#f4e8ff", fg: "#7c3aed", border: "#ddc4ff" },
+        "유지연": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9" },
+        "김유민": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff" },
+        "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd" }
+      };
+      return map[name] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8" };
+    }
+
+    function getDeskWorkerBadgeStyle_(name) {
+      var palette = getDeskWorkerPalette_(String(name || "").trim());
+      return '--desk-worker-bg:' + palette.bg + ';--desk-worker-fg:' + palette.fg + ';--desk-worker-border:' + palette.border + ';';
+    }
+
+    function getDeskRoleBadgeHtml_(item) {
+      return '<span class="desk-role-badge">' + escapeHtml(getDeskDisplayRole_(item)) + '</span>';
+    }
+
+    function getDeskWorkerBadgeHtml_(name) {
+      return '<span class="desk-worker-badge" style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '">' + escapeHtml(name || "-") + '</span>';
+    }
+
+    function getDeskShiftWorkersForDate_(dateKey) {
+      var seen = {};
+      return state.desk.scheduleItems.filter(function(item) {
+        return item.date === dateKey && !item.unavailable;
+      }).sort(compareDeskShift_).filter(function(item) {
+        if (seen[item.worker]) return false;
+        seen[item.worker] = true;
+        return true;
+      }).map(function(item) {
+        return {
+          worker: item.worker,
+          role: getDeskDisplayRole_(item),
+          tone: getDeskShiftTone_(item),
+          time: formatDeskShiftTime_(item)
+        };
+      });
+    }
+
+    function applyDeskTimePreset_(presetKey, useModal) {
+      var preset = DESK_TIME_PRESETS[presetKey];
+      if (!preset) return;
+      var roleEl = useModal ? deskShiftModalRoleEl : deskShiftRoleEl;
+      var startEl = useModal ? deskShiftModalStartEl : deskShiftStartEl;
+      var endEl = useModal ? deskShiftModalEndEl : deskShiftEndEl;
+      var residentEl = useModal ? deskShiftModalResidentEl : deskShiftResidentEl;
+      var unavailableEl = useModal ? deskShiftModalUnavailableEl : deskShiftUnavailableEl;
+      if (roleEl) roleEl.value = preset.role || roleEl.value;
+      if (residentEl) residentEl.checked = !!preset.resident;
+      if (unavailableEl && preset.resident) unavailableEl.checked = false;
+      if (startEl) startEl.value = preset.start || "";
+      if (endEl) endEl.value = preset.end || "";
+      if (useModal) syncDeskShiftModalState_();
+      else syncDeskFormState_();
+    }
+
     function renderDeskDailyJournal_() {
       if (shouldDeferPortalDataLoad_()) return;
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
-      if (!state.desk.daily.loadedDates[dateKey]) {
+      if (!state.desk.daily.loadedDates[dateKey] || !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
         renderDeskDailyJournalLoadingState_();
-        ensureDeskDailyJournalLoaded_(dateKey);
+        Promise.all([
+          ensureDeskDailyJournalLoaded_(dateKey),
+          ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY)
+        ]);
         return;
       }
       var tasks = getDeskDailyJournalTasks_(dateKey);
@@ -7403,7 +7651,7 @@
     }
 
     function ensureDeskDailyWorkerSelection_(workers) {
-      var options = ["전체"].concat(workers || []);
+      var options = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       if (options.indexOf(state.desk.daily.selectedWorker) === -1) {
         state.desk.daily.selectedWorker = options[0] || "";
       }
@@ -7440,9 +7688,10 @@
 
     function renderDeskDailyWorkerTabs_(workers) {
       if (!deskJournalWorkerTabsEl) return;
-      var tabs = ["전체"].concat(workers || []);
+      var tabs = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       deskJournalWorkerTabsEl.innerHTML = tabs.map(function(name) {
-        return '<button type="button" class="desk-worker-tab' + (name === state.desk.daily.selectedWorker ? ' active' : '') + '" data-desk-journal-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+        var label = name === DESK_ROUTINE_TAB_KEY ? "루틴업무" : name;
+        return '<button type="button" class="desk-worker-tab' + (name === state.desk.daily.selectedWorker ? ' active' : '') + '" data-desk-journal-worker="' + escapeHtml(name) + '">' + escapeHtml(label) + '</button>';
       }).join("") || '<div class="desk-empty" style="width:100%;">표시할 근무자 탭이 없습니다. 먼저 업무를 배정하거나 근무표를 입력해 주세요.</div>';
     }
 
@@ -7469,6 +7718,10 @@
     function renderDeskDailyTaskBoard_(tasks) {
       if (!deskJournalTaskBoardEl) return;
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
+      if (selectedWorker === DESK_ROUTINE_TAB_KEY) {
+        renderDeskRoutineTaskBoard_();
+        return;
+      }
       var visible = (tasks || []).filter(function(item) {
         return selectedWorker === "전체" || item.worker === selectedWorker;
       });
@@ -7497,6 +7750,42 @@
           '<div class="desk-task-actions">' +
             (!item.completed ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '">사유 저장</button>' : '') +
             '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">업무 삭제</button>' +
+          '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function renderDeskRoutineTaskBoard_() {
+      if (!deskJournalTaskBoardEl) return;
+      var templates = getDeskRoutineTemplates_();
+      var todayWorkers = getDeskShiftWorkersForDate_(state.desk.daily.dateKey || getDeskDateKey_(new Date()));
+      if (!templates.length) {
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">아직 저장된 루틴업무가 없습니다. 위 입력 폼에 업무를 적은 뒤 `루틴업무 저장`을 눌러 기본 템플릿을 만들어 주세요.</div>';
+        return;
+      }
+      deskJournalTaskBoardEl.innerHTML = templates.map(function(item) {
+        var recommended = String(item.routineTargetRole || "").trim();
+        var matchingWorkers = todayWorkers.filter(function(worker) {
+          return !recommended || worker.role.indexOf(recommended) !== -1;
+        });
+        return '<article class="desk-routine-card">' +
+          '<div class="desk-routine-top">' +
+            '<div>' +
+              '<div class="desk-task-title">' + escapeHtml(item.title || "-") + '</div>' +
+              '<div class="desk-routine-meta">' +
+                '<span class="desk-badge tone-hybrid">' + escapeHtml(item.category || "일반") + '</span>' +
+                (recommended ? '<span class="desk-role-badge">추천 역할 · ' + escapeHtml(recommended) + '</span>' : '<span class="desk-role-badge">공통 루틴</span>') +
+              '</div>' +
+            '</div>' +
+            '<button class="modal-action ghost" type="button" data-desk-routine-delete="' + escapeHtml(item.id) + '">루틴 삭제</button>' +
+          '</div>' +
+          (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
+          '<div class="desk-routine-assign-row">' +
+            (todayWorkers.length ? todayWorkers.map(function(worker) {
+              var isRecommended = !recommended || worker.role.indexOf(recommended) !== -1;
+              return '<button class="desk-routine-assign-btn' + (isRecommended ? ' recommended' : '') + '" type="button" data-desk-routine-assign="' + escapeHtml(item.id) + '" data-desk-routine-worker="' + escapeHtml(worker.worker) + '">' + escapeHtml(worker.worker + " 배정") + '</button>';
+            }).join("") : '<span class="desk-muted">선택 날짜의 근무자가 아직 없습니다.</span>') +
+            (matchingWorkers.length > 1 ? '<button class="modal-action primary" type="button" data-desk-routine-assign-group="' + escapeHtml(item.id) + '">추천 근무자 전체 배정</button>' : '') +
           '</div>' +
         '</article>';
       }).join("");
@@ -7596,7 +7885,7 @@
           '<div class="desk-report-section-title">근무 정보</div>' +
           '<div class="desk-report-pill-row">' +
             (shifts.length ? shifts.map(function(item) {
-              return '<span class="desk-report-pill">' + escapeHtml((item.role || "-") + ' · ' + formatDeskShiftTime_(item)) + '</span>';
+              return '<span class="desk-report-pill">' + escapeHtml(getDeskDisplayRole_(item) + ' · ' + formatDeskShiftTime_(item)) + '</span>';
             }).join("") : '<span class="desk-report-pill">등록된 근무시간 없음</span>') +
           '</div>' +
         '</section>' +
@@ -7684,7 +7973,7 @@
       lines.push("1. 근무 정보");
       if (shifts.length) {
         shifts.forEach(function(item) {
-          lines.push("- " + (item.role || "-") + " : " + formatDeskShiftTime_(item));
+          lines.push("- " + getDeskDisplayRole_(item) + " : " + formatDeskShiftTime_(item));
         });
       } else {
         lines.push("- 등록된 근무시간 없음");
@@ -7751,12 +8040,35 @@
       deskJournalCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
     }
 
-    function saveDeskDailyTaskFromForm_() {
-      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+    function collectDeskDailyTaskDraft_() {
       var worker = String(deskJournalAssignedWorkerEl && deskJournalAssignedWorkerEl.value || "").trim();
       var category = String(deskJournalTaskCategoryEl && deskJournalTaskCategoryEl.value || "일반").trim();
+      var routineTargetRole = String(deskJournalRoutineTargetRoleEl && deskJournalRoutineTargetRoleEl.value || "").trim();
       var title = String(deskJournalTaskTitleEl && deskJournalTaskTitleEl.value || "").trim();
       var note = String(deskJournalTaskNoteEl && deskJournalTaskNoteEl.value || "").trim();
+      return {
+        worker: worker,
+        category: category,
+        routineTargetRole: routineTargetRole,
+        title: title,
+        note: note
+      };
+    }
+
+    function clearDeskDailyTaskDraft_() {
+      if (deskJournalAssignedWorkerEl) deskJournalAssignedWorkerEl.value = "";
+      if (deskJournalTaskTitleEl) deskJournalTaskTitleEl.value = "";
+      if (deskJournalTaskNoteEl) deskJournalTaskNoteEl.value = "";
+      if (deskJournalRoutineTargetRoleEl) deskJournalRoutineTargetRoleEl.value = "";
+    }
+
+    function saveDeskDailyTaskFromForm_() {
+      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      var draft = collectDeskDailyTaskDraft_();
+      var worker = draft.worker;
+      var category = draft.category;
+      var title = draft.title;
+      var note = draft.note;
       if (!worker) {
         alert("업무를 배정할 근무자 이름을 입력해 주세요.");
         return;
@@ -7770,15 +8082,93 @@
         dateKey: dateKey,
         worker: worker,
         category: category,
+        routineTargetRole: draft.routineTargetRole,
         title: title,
         note: note,
         completed: false,
         unresolvedReason: ""
       }, function() {
-        if (deskJournalTaskTitleEl) deskJournalTaskTitleEl.value = "";
-        if (deskJournalTaskNoteEl) deskJournalTaskNoteEl.value = "";
+        clearDeskDailyTaskDraft_();
         state.desk.daily.selectedWorker = worker;
         state.desk.daily.reportWorker = worker;
+      });
+    }
+
+    function saveDeskRoutineTaskFromForm_() {
+      var draft = collectDeskDailyTaskDraft_();
+      if (!draft.title) {
+        alert("루틴으로 저장할 업무 제목을 입력해 주세요.");
+        return;
+      }
+      upsertDeskDailyTask_({
+        id: buildDeskShiftId_("routine", Date.now(), Math.random().toString(36).slice(2)),
+        dateKey: DESK_ROUTINE_TEMPLATE_KEY,
+        worker: "루틴업무",
+        category: draft.category,
+        routineTargetRole: draft.routineTargetRole,
+        title: draft.title,
+        note: draft.note,
+        completed: false,
+        unresolvedReason: ""
+      }, function() {
+        clearDeskDailyTaskDraft_();
+        state.desk.daily.selectedWorker = DESK_ROUTINE_TAB_KEY;
+      });
+    }
+
+    function assignDeskRoutineTask_(templateId, worker) {
+      var template = getDeskRoutineTemplates_().find(function(item) { return item.id === templateId; });
+      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      if (!template || !worker || !dateKey) return;
+      var existing = getDeskDailyJournalTasks_(dateKey).find(function(item) {
+        return item.worker === worker && item.title === template.title && item.category === template.category;
+      });
+      if (existing) {
+        alert("이미 같은 업무가 " + worker + "에게 배정되어 있습니다.");
+        return;
+      }
+      upsertDeskDailyTask_({
+        id: buildDeskShiftId_("task", Date.now(), Math.random().toString(36).slice(2)),
+        dateKey: dateKey,
+        worker: worker,
+        category: template.category,
+        routineTargetRole: template.routineTargetRole || "",
+        title: template.title,
+        note: template.note,
+        completed: false,
+        unresolvedReason: ""
+      }, function() {
+        state.desk.daily.selectedWorker = worker;
+        state.desk.daily.reportWorker = worker;
+      });
+    }
+
+    function assignDeskRoutineTaskToRecommended_(templateId) {
+      var template = getDeskRoutineTemplates_().find(function(item) { return item.id === templateId; });
+      if (!template) return;
+      var workers = getDeskShiftWorkersForDate_(state.desk.daily.dateKey || getDeskDateKey_(new Date())).filter(function(worker) {
+        return !template.routineTargetRole || worker.role.indexOf(template.routineTargetRole) !== -1;
+      });
+      if (!workers.length) {
+        alert("추천 역할과 맞는 오늘 근무자가 없습니다.");
+        return;
+      }
+      workers.forEach(function(worker) {
+        var existing = getDeskDailyJournalTasks_(state.desk.daily.dateKey || getDeskDateKey_(new Date())).find(function(item) {
+          return item.worker === worker.worker && item.title === template.title && item.category === template.category;
+        });
+        if (existing) return;
+        upsertDeskDailyTask_({
+          id: buildDeskShiftId_("task", Date.now(), Math.random().toString(36).slice(2), worker.worker),
+          dateKey: state.desk.daily.dateKey || getDeskDateKey_(new Date()),
+          worker: worker.worker,
+          category: template.category,
+          routineTargetRole: template.routineTargetRole || "",
+          title: template.title,
+          note: template.note,
+          completed: false,
+          unresolvedReason: ""
+        });
       });
     }
 
@@ -7805,8 +8195,8 @@
       });
     }
 
-    function deleteDeskDailyTask_(taskId) {
-      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+    function deleteDeskDailyTask_(taskId, overrideDateKey) {
+      var dateKey = overrideDateKey || state.desk.daily.dateKey || getDeskDateKey_(new Date());
       runServer("deleteDeskDailyJournalTask", {
         dateKey: dateKey,
         id: taskId
@@ -8033,6 +8423,13 @@
       if (deskShiftStartEl) deskShiftStartEl.addEventListener("input", syncDeskFormState_);
       if (deskShiftEndEl) deskShiftEndEl.addEventListener("input", syncDeskFormState_);
       if (deskShiftRoleEl) deskShiftRoleEl.addEventListener("change", syncDeskFormState_);
+      if (deskTimePresetBarEl) {
+        deskTimePresetBarEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-time-preset]");
+          if (!btn) return;
+          applyDeskTimePreset_(btn.getAttribute("data-desk-time-preset") || "", false);
+        });
+      }
 
       if (deskResetShiftBtnEl) {
         deskResetShiftBtnEl.addEventListener("click", function() {
@@ -8068,6 +8465,13 @@
       if (deskShiftModalStartEl) deskShiftModalStartEl.addEventListener("input", syncDeskShiftModalState_);
       if (deskShiftModalEndEl) deskShiftModalEndEl.addEventListener("input", syncDeskShiftModalState_);
       if (deskShiftModalRoleEl) deskShiftModalRoleEl.addEventListener("change", syncDeskShiftModalState_);
+      if (deskModalTimePresetBarEl) {
+        deskModalTimePresetBarEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-modal-time-preset]");
+          if (!btn) return;
+          applyDeskTimePreset_(btn.getAttribute("data-desk-modal-time-preset") || "", true);
+        });
+      }
       if (deskShiftModalFormEl) {
         deskShiftModalFormEl.addEventListener("submit", function(event) {
           event.preventDefault();
@@ -8114,11 +8518,11 @@
           if (!btn) return;
           state.desk.daily.selectedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
           state.desk.daily.memoPage = 1;
-          if (state.desk.daily.selectedWorker !== "전체") {
+          if (state.desk.daily.selectedWorker !== "전체" && state.desk.daily.selectedWorker !== DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.reportWorker = state.desk.daily.selectedWorker;
           }
           if (deskJournalMemoWorkerEl) {
-            deskJournalMemoWorkerEl.value = state.desk.daily.selectedWorker === "전체" ? "" : state.desk.daily.selectedWorker;
+            deskJournalMemoWorkerEl.value = (state.desk.daily.selectedWorker === "전체" || state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY) ? "" : state.desk.daily.selectedWorker;
           }
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
@@ -8128,6 +8532,11 @@
         deskJournalTaskFormEl.addEventListener("submit", function(event) {
           event.preventDefault();
           saveDeskDailyTaskFromForm_();
+        });
+      }
+      if (deskJournalSaveRoutineBtnEl) {
+        deskJournalSaveRoutineBtnEl.addEventListener("click", function() {
+          saveDeskRoutineTaskFromForm_();
         });
       }
       if (deskJournalTaskBoardEl) {
@@ -8144,6 +8553,25 @@
           }));
         });
         deskJournalTaskBoardEl.addEventListener("click", function(event) {
+          var routineAssignBtn = event.target.closest("[data-desk-routine-assign]");
+          if (routineAssignBtn) {
+            assignDeskRoutineTask_(
+              routineAssignBtn.getAttribute("data-desk-routine-assign") || "",
+              routineAssignBtn.getAttribute("data-desk-routine-worker") || ""
+            );
+            return;
+          }
+          var routineAssignGroupBtn = event.target.closest("[data-desk-routine-assign-group]");
+          if (routineAssignGroupBtn) {
+            assignDeskRoutineTaskToRecommended_(routineAssignGroupBtn.getAttribute("data-desk-routine-assign-group") || "");
+            return;
+          }
+          var routineDeleteBtn = event.target.closest("[data-desk-routine-delete]");
+          if (routineDeleteBtn) {
+            if (!confirm("이 루틴업무를 삭제할까요?")) return;
+            deleteDeskDailyTask_(routineDeleteBtn.getAttribute("data-desk-routine-delete") || "", DESK_ROUTINE_TEMPLATE_KEY);
+            return;
+          }
           var saveBtn = event.target.closest("[data-desk-journal-task-save]");
           if (saveBtn) {
             var saveId = saveBtn.getAttribute("data-desk-journal-task-save") || "";
