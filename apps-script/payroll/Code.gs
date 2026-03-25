@@ -9,6 +9,7 @@ const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
 const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
+const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -29,6 +30,11 @@ const PAYROLL_API_ALLOWED_METHODS = {
   getDeskScheduleMonthData: true,
   saveDeskScheduleEntry: true,
   deleteDeskScheduleEntry: true,
+  getDeskDailyJournalData: true,
+  saveDeskDailyJournalTask: true,
+  deleteDeskDailyJournalTask: true,
+  saveDeskDailyJournalMemo: true,
+  deleteDeskDailyJournalMemo: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
   savePayrollSettings: true
@@ -93,6 +99,11 @@ function handlePayrollApiRequest_(params) {
       getDeskScheduleMonthData: getDeskScheduleMonthData,
       saveDeskScheduleEntry: saveDeskScheduleEntry,
       deleteDeskScheduleEntry: deleteDeskScheduleEntry,
+      getDeskDailyJournalData: getDeskDailyJournalData,
+      saveDeskDailyJournalTask: saveDeskDailyJournalTask,
+      deleteDeskDailyJournalTask: deleteDeskDailyJournalTask,
+      saveDeskDailyJournalMemo: saveDeskDailyJournalMemo,
+      deleteDeskDailyJournalMemo: deleteDeskDailyJournalMemo,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
       savePayrollSettings: savePayrollSettings
@@ -295,7 +306,7 @@ function saveDeskScheduleEntry(payload) {
       return { success: false, message: "근무일과 monthKey가 일치하지 않습니다." };
     }
     if (!entry.worker) return { success: false, message: "근무자 이름이 필요합니다." };
-    if (!entry.resident && (!entry.start || !entry.end)) {
+    if (!entry.resident && !entry.unavailable && (!entry.start || !entry.end)) {
       return { success: false, message: "시작/종료 시간이 필요합니다." };
     }
     var path = buildDeskScheduleMonthPath_(monthKey) + "/entries/" + entry.id;
@@ -324,9 +335,18 @@ function buildDeskScheduleMonthPath_(monthKey) {
   return DESK_SCHEDULE_ROOT_PATH + "/" + monthKey;
 }
 
+function buildDeskDailyJournalPath_(dateKey) {
+  return DESK_DAILY_JOURNAL_ROOT_PATH + "/" + dateKey;
+}
+
 function normalizeDeskScheduleMonthKey_(value) {
   var text = String(value || "").trim();
   return /^\d{4}-\d{2}$/.test(text) ? text : "";
+}
+
+function normalizeDeskDateKey_(value) {
+  var text = String(value || "").trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
 }
 
 function normalizeDeskScheduleEntry_(item, fallbackId) {
@@ -338,12 +358,14 @@ function normalizeDeskScheduleEntry_(item, fallbackId) {
     start: String((item && item.start) || "").trim(),
     end: String((item && item.end) || "").trim(),
     resident: !!(item && (item.resident || item.isResident)),
+    unavailable: !!(item && (item.unavailable || item.isUnavailable)),
     note: String((item && item.note) || "").trim()
   };
-  if (entry.resident) {
+  if (entry.resident || entry.unavailable) {
     entry.start = "";
     entry.end = "";
   }
+  if (entry.unavailable) entry.resident = false;
   return entry;
 }
 
@@ -353,9 +375,137 @@ function buildDeskScheduleEntryId_() {
 
 function compareDeskScheduleEntries_(a, b) {
   if (a.date !== b.date) return String(a.date || "").localeCompare(String(b.date || ""));
+  if (!!a.unavailable !== !!b.unavailable) return a.unavailable ? 1 : -1;
   if (!!b.resident !== !!a.resident) return b.resident ? 1 : -1;
   if (a.start !== b.start) return String(a.start || "").localeCompare(String(b.start || ""));
   return String(a.worker || "").localeCompare(String(b.worker || ""), "ko");
+}
+
+function getDeskDailyJournalData(payload) {
+  try {
+    var dateKey = normalizeDeskDateKey_(payload && payload.dateKey);
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    var stored = firebaseRequestWithServiceAccount_("get", buildDeskDailyJournalPath_(dateKey)) || {};
+    var tasksMap = stored && stored.tasks ? stored.tasks : {};
+    var memosMap = stored && stored.memos ? stored.memos : {};
+
+    var tasks = Object.keys(tasksMap).map(function(id) {
+      return normalizeDeskDailyJournalTask_(tasksMap[id], id, dateKey);
+    }).sort(compareDeskDailyJournalTasks_);
+    var memos = Object.keys(memosMap).map(function(id) {
+      return normalizeDeskDailyJournalMemo_(memosMap[id], id, dateKey);
+    }).sort(compareDeskDailyJournalMemos_);
+
+    return {
+      success: true,
+      dateKey: dateKey,
+      tasks: tasks,
+      memos: memos
+    };
+  } catch (e) {
+    return { success: false, message: "일일 업무일지 조회 오류: " + e.message };
+  }
+}
+
+function saveDeskDailyJournalTask(payload) {
+  try {
+    var req = payload || {};
+    var dateKey = normalizeDeskDateKey_(req.dateKey || (req.task && req.task.dateKey));
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    var task = normalizeDeskDailyJournalTask_(req.task || {}, req.task && req.task.id, dateKey);
+    if (!task.worker) return { success: false, message: "업무 대상 근무자가 필요합니다." };
+    if (!task.title) return { success: false, message: "업무 제목을 입력해 주세요." };
+    firebaseRequestWithServiceAccount_("put", buildDeskDailyJournalPath_(dateKey) + "/tasks/" + task.id, task);
+    return { success: true, dateKey: dateKey, task: task };
+  } catch (e) {
+    return { success: false, message: "일일 업무 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskDailyJournalTask(payload) {
+  try {
+    var req = payload || {};
+    var dateKey = normalizeDeskDateKey_(req.dateKey);
+    var id = String(req.id || "").trim();
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    if (!id) return { success: false, message: "삭제할 업무 ID가 없습니다." };
+    firebaseRequestWithServiceAccount_("delete", buildDeskDailyJournalPath_(dateKey) + "/tasks/" + id);
+    return { success: true, dateKey: dateKey, id: id };
+  } catch (e) {
+    return { success: false, message: "일일 업무 삭제 오류: " + e.message };
+  }
+}
+
+function saveDeskDailyJournalMemo(payload) {
+  try {
+    var req = payload || {};
+    var dateKey = normalizeDeskDateKey_(req.dateKey || (req.memo && req.memo.dateKey));
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    var memo = normalizeDeskDailyJournalMemo_(req.memo || {}, req.memo && req.memo.id, dateKey);
+    if (!memo.worker) return { success: false, message: "기록 근무자 이름이 필요합니다." };
+    if (!memo.text) return { success: false, message: "기록 내용을 입력해 주세요." };
+    firebaseRequestWithServiceAccount_("put", buildDeskDailyJournalPath_(dateKey) + "/memos/" + memo.id, memo);
+    return { success: true, dateKey: dateKey, memo: memo };
+  } catch (e) {
+    return { success: false, message: "근무 기록 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskDailyJournalMemo(payload) {
+  try {
+    var req = payload || {};
+    var dateKey = normalizeDeskDateKey_(req.dateKey);
+    var id = String(req.id || "").trim();
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    if (!id) return { success: false, message: "삭제할 기록 ID가 없습니다." };
+    firebaseRequestWithServiceAccount_("delete", buildDeskDailyJournalPath_(dateKey) + "/memos/" + id);
+    return { success: true, dateKey: dateKey, id: id };
+  } catch (e) {
+    return { success: false, message: "근무 기록 삭제 오류: " + e.message };
+  }
+}
+
+function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
+  var now = new Date().toISOString();
+  var task = {
+    id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
+    dateKey: normalizeDeskDateKey_((item && item.dateKey) || dateKey),
+    worker: String((item && item.worker) || "").trim(),
+    category: String((item && item.category) || "일반").trim(),
+    title: String((item && item.title) || "").trim(),
+    note: String((item && item.note) || "").trim(),
+    completed: !!(item && item.completed),
+    unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
+    createdAt: String((item && item.createdAt) || now).trim(),
+    updatedAt: now
+  };
+  if (task.completed) {
+    task.unresolvedReason = "";
+  }
+  return task;
+}
+
+function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
+  var now = new Date().toISOString();
+  return {
+    id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
+    dateKey: normalizeDeskDateKey_((item && item.dateKey) || dateKey),
+    worker: String((item && item.worker) || "").trim(),
+    text: String((item && item.text) || "").trim(),
+    createdAt: String((item && item.createdAt) || now).trim(),
+    updatedAt: now
+  };
+}
+
+function compareDeskDailyJournalTasks_(a, b) {
+  if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
+  if (a.category !== b.category) return String(a.category || "").localeCompare(String(b.category || ""), "ko");
+  if (a.worker !== b.worker) return String(a.worker || "").localeCompare(String(b.worker || ""), "ko");
+  return String(a.title || "").localeCompare(String(b.title || ""), "ko");
+}
+
+function compareDeskDailyJournalMemos_(a, b) {
+  return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
 }
 
 function buildDefaultDeskScheduleMonthSeed_(monthKey) {
