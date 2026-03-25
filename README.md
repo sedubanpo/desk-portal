@@ -17,6 +17,8 @@ desk-portal/
     payroll/
       Code.gs
       Index.html
+  docs/
+    index.html
   scripts/
     sync_from_canonical.sh
     sync_to_canonical.sh
@@ -80,6 +82,27 @@ bash scripts/sync_to_canonical.sh
 - `Index.html` 내용 붙여넣기
 - 저장
 - 웹앱 새 버전 배포가 필요하면 새 배포 실행
+
+## GitHub Pages 연결
+
+이 repo는 GitHub Pages에서 정적 소개 페이지를 띄우고, 실제 서비스는 GAS 웹앱으로 연결하는 구조를 권장합니다.
+
+### Pages 설정
+
+1. GitHub repo의 `Settings`로 이동합니다.
+2. `Pages` 메뉴를 엽니다.
+3. `Build and deployment`에서 `Deploy from a branch`를 선택합니다.
+4. Branch는 `main`, Folder는 `/docs`로 설정합니다.
+5. 저장 후 `https://sedubanpo.github.io/desk-portal/`에서 확인합니다.
+
+### 정적 페이지 목적
+
+- 프로젝트 소개
+- 현재 모듈 안내
+- 소스 코드 경로 안내
+- 실제 GAS 웹앱 링크 허브
+
+`docs/index.html`은 GitHub Pages용 정적 메인 페이지입니다. 실제 운영 URL이 확정되면 페이지 안의 웹앱 링크 상수만 수정하면 됩니다.
 
 ## 나중에 clasp를 붙일 때
 
