@@ -6701,7 +6701,7 @@
             entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
             return;
           }
-          state.portalAccessKey = res.token || "";
+          state.portalAccessKey = res.token || password;
           entryGateEl.style.display = "none";
           renderModuleLayout();
           loadBootstrap();
@@ -6764,7 +6764,7 @@
 
       runServer("verifyPayrollPrivilegedPassword", password)
         .then(function(res) {
-          if (res && res.success) state.privilegedAccessKey = res.token || "";
+          if (res && res.success) state.privilegedAccessKey = res.token || password;
           done(!!(res && res.success), "비밀번호가 올바르지 않습니다.");
         })
         .catch(function(err) {
