@@ -573,12 +573,18 @@
     }
     .desk-calendar-board {
       padding: 10px;
+      overflow-x: auto;
     }
     .desk-calendar-weekdays {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(180px, 1fr)) 220px;
       gap: 8px;
       padding: 4px 2px 8px;
+      position: sticky;
+      top: 8px;
+      z-index: 4;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
     }
     .desk-calendar-weekdays span {
       text-align: right;
@@ -587,10 +593,15 @@
       color: #607082;
       padding-right: 6px;
     }
+    .desk-weekday-summary {
+      text-align: left !important;
+      padding-left: 8px;
+    }
     .desk-calendar-grid {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(180px, 1fr)) 220px;
       gap: 8px;
+      align-items: start;
     }
     .desk-calendar-day {
       min-height: 182px;
@@ -613,8 +624,9 @@
       background: #f6faf7;
     }
     .desk-calendar-day.today {
-      border-color: #8ecfae;
-      box-shadow: inset 0 0 0 1px rgba(13, 104, 77, 0.1);
+      border-color: #0d684d;
+      background: linear-gradient(180deg, #f7fff9 0%, #effbf2 100%);
+      box-shadow: inset 0 0 0 2px rgba(13, 104, 77, 0.12), 0 12px 24px rgba(13, 104, 77, 0.08);
     }
     .desk-calendar-day.selected {
       border-color: #0d684d;
@@ -631,6 +643,17 @@
       font-weight: 900;
       color: #173042;
     }
+    .desk-calendar-day.today .desk-day-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: #0d684d;
+      color: #fff;
+      box-shadow: 0 10px 18px rgba(13, 104, 77, 0.18);
+    }
     .desk-day-count {
       font-size: 11px;
       font-weight: 800;
@@ -643,6 +666,76 @@
       display: flex;
       flex-direction: column;
       gap: 7px;
+      min-height: 106px;
+    }
+    .desk-day-empty-slot {
+      flex: 1;
+      min-height: 58px;
+      border: 1px dashed #d6e4dc;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fbfefc 0%, #f4faf6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5f7285;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+    .desk-day-empty-slot:hover {
+      border-color: #0d684d;
+      color: #0d684d;
+      background: #f2fbf5;
+      transform: translateY(-1px);
+    }
+    .desk-week-summary {
+      min-height: 182px;
+      border: 1px solid #d9e7df;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fbfefc 0%, #f5faf7 100%);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .desk-week-summary-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .desk-week-summary-title {
+      font-size: 13px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-week-summary-sub {
+      font-size: 11px;
+      font-weight: 800;
+      color: #607082;
+    }
+    .desk-week-summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .desk-week-summary-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px solid #e1ebe5;
+      font-size: 12px;
+      font-weight: 800;
+      color: #334155;
+    }
+    .desk-week-summary-item .hrs {
+      color: #0d684d;
+      font-weight: 900;
     }
     .desk-shift-chip {
       border: 1px solid transparent;
@@ -4144,6 +4237,8 @@
       .desk-editor-layout,
       .desk-journal-layout,
       .desk-overview-grid { grid-template-columns: 1fr; }
+      .desk-calendar-weekdays,
+      .desk-calendar-grid { min-width: 1560px; }
       .desk-form-grid { grid-template-columns: 1fr 1fr; }
       .desk-mini-grid { grid-template-columns: 1fr; }
       .desk-toolbar-right { align-items: flex-start; margin-left: 0; }
@@ -5512,6 +5607,10 @@
       teacherGroups: [],
       teachers: [],
       selectedTeacher: "",
+      payroll: {
+        loaded: false,
+        loadingPromise: null
+      },
       salaryMode: "ratio",
       ratioPercent: 50,
       hourlyRate: 30000,
@@ -5872,6 +5971,7 @@
       renderDeskLayout_();
       var gateOpen = entryGateEl && entryGateEl.style.display !== "none";
       if (state.activeModule === "tuition" && !gateOpen) ensureTuitionLoaded();
+      if (state.activeModule === "teacher" && !gateOpen && state.privilegedAccessKey) ensurePayrollLoaded_();
     }
 
     function shouldDeferPortalDataLoad_() {
@@ -6176,46 +6276,82 @@
         if (!grouped[item.date]) grouped[item.date] = [];
         grouped[item.date].push(item);
       });
-      deskCalendarGridEl.innerHTML = cells.map(function(cell) {
-        var dayItems = (grouped[cell.date] || []).slice().sort(compareDeskShift_);
-        var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
-        var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
-        var showUnavailable = !!state.desk.expandedUnavailableDates[cell.date];
-        return '<article class="desk-calendar-day' +
-          (cell.outside ? ' outside' : '') +
-          (cell.date === getDeskDateKey_(new Date()) ? ' today' : '') +
-          (cell.date === state.desk.selectedDateKey ? ' selected' : '') +
-          '" data-desk-date="' + escapeHtml(cell.date) + '">' +
-          '<div class="desk-day-head">' +
-            '<div class="desk-day-num">' + cell.day + '</div>' +
-            '<div class="desk-day-count">' + dayItems.length + '건</div>' +
-          '</div>' +
-          '<div class="desk-day-shifts">' +
-            (dayItems.length ? primaryItems.map(function(item) {
-              var tone = getDeskShiftTone_(item);
-              return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                '<span class="desk-shift-name">' + escapeHtml(item.worker) + '</span>' +
-                '<span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
-                '<span class="desk-shift-meta">' + escapeHtml(item.role || "-") + '</span>' +
-              '</button>';
-            }).join("") : '') +
-            (unavailableItems.length ? (
-              '<button type="button" class="desk-shift-chip collapsed tone-unavailable" data-desk-toggle-unavailable="' + escapeHtml(cell.date) + '">' +
-                '<span class="desk-shift-name">근무 불가 ' + unavailableItems.length + '명 ' + (showUnavailable ? '접기' : '보기') + '</span>' +
-                '<span class="desk-shift-meta">사유/메모는 팝업에서 수정</span>' +
-              '</button>' +
-              (showUnavailable ? unavailableItems.map(function(item) {
-                return '<button type="button" class="desk-shift-chip tone-unavailable" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+      var rowsHtml = [];
+      for (var week = 0; week < 6; week += 1) {
+        var weekCells = cells.slice(week * 7, (week + 1) * 7);
+        weekCells.forEach(function(cell) {
+          var dayItems = (grouped[cell.date] || []).slice().sort(compareDeskShift_);
+          var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
+          var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
+          var showUnavailable = !!state.desk.expandedUnavailableDates[cell.date];
+          rowsHtml.push('<article class="desk-calendar-day' +
+            (cell.outside ? ' outside' : '') +
+            (cell.date === getDeskDateKey_(new Date()) ? ' today' : '') +
+            (cell.date === state.desk.selectedDateKey ? ' selected' : '') +
+            '" data-desk-date="' + escapeHtml(cell.date) + '">' +
+            '<div class="desk-day-head">' +
+              '<div class="desk-day-num">' + cell.day + '</div>' +
+              '<div class="desk-day-count">' + dayItems.length + '건</div>' +
+            '</div>' +
+            '<div class="desk-day-shifts">' +
+              (primaryItems.length ? primaryItems.map(function(item) {
+                var tone = getDeskShiftTone_(item);
+                return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
                   '<span class="desk-shift-name">' + escapeHtml(item.worker) + '</span>' +
-                  '<span class="desk-shift-time">근무 불가</span>' +
-                  '<span class="desk-shift-meta">' + escapeHtml(item.note || item.role || "사유 미입력") + '</span>' +
+                  '<span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
+                  '<span class="desk-shift-meta">' + escapeHtml(item.role || "-") + '</span>' +
                 '</button>';
-              }).join("") : '')
-            ) : '') +
-            (!primaryItems.length && !unavailableItems.length ? '<div class="desk-empty">등록된 근무 일정이 없습니다.</div>' : '') +
-          '</div>' +
-        '</article>';
-      }).join("");
+              }).join("") : '') +
+              (unavailableItems.length ? (
+                '<button type="button" class="desk-shift-chip collapsed tone-unavailable" data-desk-toggle-unavailable="' + escapeHtml(cell.date) + '">' +
+                  '<span class="desk-shift-name">근무 불가 ' + unavailableItems.length + '명 ' + (showUnavailable ? '접기' : '보기') + '</span>' +
+                  '<span class="desk-shift-meta">사유/메모는 팝업에서 수정</span>' +
+                '</button>' +
+                (showUnavailable ? unavailableItems.map(function(item) {
+                  return '<button type="button" class="desk-shift-chip tone-unavailable" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+                    '<span class="desk-shift-name">' + escapeHtml(item.worker) + '</span>' +
+                    '<span class="desk-shift-time">근무 불가</span>' +
+                    '<span class="desk-shift-meta">' + escapeHtml(item.note || item.role || "사유 미입력") + '</span>' +
+                  '</button>';
+                }).join("") : '')
+              ) : '') +
+              '<button type="button" class="desk-day-empty-slot" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
+            '</div>' +
+          '</article>');
+        });
+        rowsHtml.push(renderDeskWeekSummary_(weekCells, grouped, week + 1));
+      }
+      deskCalendarGridEl.innerHTML = rowsHtml.join("");
+    }
+
+    function renderDeskWeekSummary_(weekCells, grouped, labelIndex) {
+      var totals = {};
+      (weekCells || []).forEach(function(cell) {
+        var list = (grouped[cell.date] || []).slice();
+        list.forEach(function(item) {
+          if (item.unavailable) return;
+          var hours = getDeskCountedHours_(item);
+          if (!hours) return;
+          totals[item.worker] = (totals[item.worker] || 0) + hours;
+        });
+      });
+      var ordered = Object.keys(totals).map(function(name) {
+        return { name: name, hours: totals[name] };
+      }).sort(function(a, b) {
+        if (b.hours !== a.hours) return b.hours - a.hours;
+        return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+      });
+      return '<aside class="desk-week-summary">' +
+        '<div class="desk-week-summary-head">' +
+          '<div class="desk-week-summary-title">' + labelIndex + '주차 근무시간</div>' +
+          '<div class="desk-week-summary-sub">' + (ordered.length ? ('집계 ' + ordered.length + '명') : '집계 없음') + '</div>' +
+        '</div>' +
+        '<div class="desk-week-summary-list">' +
+          (ordered.length ? ordered.map(function(item) {
+            return '<div class="desk-week-summary-item"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>';
+          }).join("") : '<div class="desk-empty">집계 가능한 근무시간이 없습니다.</div>') +
+        '</div>' +
+      '</aside>';
     }
 
     function renderDeskSelectedDatePanel_(items) {
@@ -7299,6 +7435,7 @@
             requestPrivilegedAccess_("강사 시수 정산", function() {
               state.activeModule = "teacher";
               renderModuleLayout();
+              ensurePayrollLoaded_();
             });
             return;
           }
@@ -7376,6 +7513,14 @@
 
       if (deskCalendarGridEl) {
         deskCalendarGridEl.addEventListener("click", function(event) {
+          var addDateBtn = event.target.closest("[data-desk-add-date]");
+          if (addDateBtn) {
+            var addDate = addDateBtn.getAttribute("data-desk-add-date") || state.desk.selectedDateKey;
+            state.desk.selectedDateKey = addDate;
+            state.desk.selectedShiftId = "";
+            openDeskShiftModal_("", addDate);
+            return;
+          }
           var unavailableToggle = event.target.closest("[data-desk-toggle-unavailable]");
           if (unavailableToggle) {
             var toggleDate = unavailableToggle.getAttribute("data-desk-toggle-unavailable") || "";
@@ -7847,9 +7992,10 @@
 
     function loadBootstrap() {
       setLoading(true, "초기 데이터를 불러오는 중입니다...");
-      runServer("getPayrollBootstrapData")
+      state.payroll.loadingPromise = runServer("getPayrollBootstrapData")
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "초기 로드 실패");
+          state.payroll.loaded = true;
           state.months = res.months || [];
           state.selectedMonth = res.selectedMonth || (state.months[0] || "");
           applySummaryMeta(res.summary || res);
@@ -7867,8 +8013,17 @@
           showClientMessage(err.message || String(err));
         })
         .finally(function() {
+          state.payroll.loadingPromise = null;
           setLoading(false);
         });
+      return state.payroll.loadingPromise;
+    }
+
+    function ensurePayrollLoaded_() {
+      if (state.payroll.loaded) return Promise.resolve();
+      if (state.payroll.loadingPromise) return state.payroll.loadingPromise;
+      if (!state.privilegedAccessKey && !canUseGoogleScript()) return Promise.resolve();
+      return loadBootstrap();
     }
 
     function ensureTuitionLoaded() {
@@ -9762,7 +9917,6 @@
           state.portalAccessKey = res.token || password;
           entryGateEl.style.display = "none";
           renderModuleLayout();
-          loadBootstrap();
         })
         .catch(function() {
           entryErrorTextEl.textContent = "비밀번호 확인 중 오류가 발생했습니다.";
