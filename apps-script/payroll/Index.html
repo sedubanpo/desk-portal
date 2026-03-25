@@ -5868,9 +5868,14 @@
       moduleTuitionEl.style.display = state.activeModule === "tuition" ? "" : "none";
       moduleExpenseEl.style.display = state.activeModule === "expense" ? "" : "none";
       renderSidebarLayout_();
+      if (shouldDeferPortalDataLoad_()) return;
       renderDeskLayout_();
       var gateOpen = entryGateEl && entryGateEl.style.display !== "none";
       if (state.activeModule === "tuition" && !gateOpen) ensureTuitionLoaded();
+    }
+
+    function shouldDeferPortalDataLoad_() {
+      return !canUseGoogleScript() && !state.portalAccessKey;
     }
 
     function renderSidebarLayout_() {
@@ -6062,6 +6067,7 @@
     }
 
     function renderDeskMonthlySchedule_() {
+      if (shouldDeferPortalDataLoad_()) return;
       ensureDeskSelectedDate_();
       syncDeskMonthControl_();
       if (!state.desk.loadedMonths[state.desk.currentMonth]) {
@@ -6093,6 +6099,7 @@
     function ensureDeskMonthLoaded_(monthKey, force) {
       var key = String(monthKey || "").trim();
       if (!key) return Promise.resolve();
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
       if (!force && state.desk.loadedMonths[key]) return Promise.resolve();
       if (state.desk.loadingMonths[key]) return state.desk.loadingMonths[key];
 
@@ -6941,6 +6948,7 @@
     }
 
     function renderDeskDailyJournal_() {
+      if (shouldDeferPortalDataLoad_()) return;
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
       if (!state.desk.daily.loadedDates[dateKey]) {
@@ -6970,6 +6978,7 @@
     function ensureDeskDailyJournalLoaded_(dateKey, force) {
       var key = String(dateKey || "").trim();
       if (!key) return Promise.resolve();
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
       if (!force && state.desk.daily.loadedDates[key]) return Promise.resolve();
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
       var request = runServer("getDeskDailyJournalData", { dateKey: key })
