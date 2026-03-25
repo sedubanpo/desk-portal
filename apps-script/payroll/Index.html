@@ -4273,6 +4273,7 @@
       activeModule: "expense",
       tuition: {
         loaded: false,
+        loadingPromise: null,
         months: [],
         selectedMonth: "",
         statusFilter: "",
@@ -4800,6 +4801,9 @@
           loadSettings();
           renderSummary(res.summary || res);
           renderModeState();
+          setTimeout(function() {
+            loadTuitionBootstrap({ silent: true }).catch(function() {});
+          }, 0);
         })
         .catch(function(err) {
           showClientMessage(err.message || String(err));
@@ -4810,13 +4814,21 @@
     }
 
     function ensureTuitionLoaded() {
-      if (state.tuition.loaded) return;
-      loadTuitionBootstrap();
+      if (state.tuition.loaded) return Promise.resolve();
+      return loadTuitionBootstrap();
     }
 
-    function loadTuitionBootstrap() {
-      setLoading(true, "재원생 수강료 데이터를 불러오는 중입니다...");
-      runServer("getTuitionBootstrapData")
+    function loadTuitionBootstrap(options) {
+      options = options || {};
+      if (state.tuition.loaded) return Promise.resolve();
+      if (state.tuition.loadingPromise) return state.tuition.loadingPromise;
+
+      var silent = !!options.silent;
+      if (!silent) {
+        setLoading(true, "재원생 수강료 데이터를 불러오는 중입니다...");
+      }
+
+      var request = runServer("getTuitionBootstrapData")
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 초기 로드 실패");
           state.tuition.loaded = true;
@@ -4828,11 +4840,20 @@
           renderTuitionSummary(res.summary || res);
         })
         .catch(function(err) {
-          alert("수강료 탭 로드 오류: " + (err.message || String(err)));
+          if (!silent) {
+            alert("수강료 탭 로드 오류: " + (err.message || String(err)));
+          }
+          throw err;
         })
         .finally(function() {
-          setLoading(false);
+          state.tuition.loadingPromise = null;
+          if (!silent) {
+            setLoading(false);
+          }
         });
+
+      state.tuition.loadingPromise = request;
+      return request;
     }
 
     function refreshTuitionSummary(forceReload) {
