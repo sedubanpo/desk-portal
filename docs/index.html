@@ -3,69 +3,319 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Desk Portal Redirect</title>
-  <meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbxsqZ3dWMNAUvIJtF2h0tnaMBvsXRQQgrMqdNmPDMpFBarlDAwJMpZsp4ddTAoHB09c/exec">
+  <title>Desk Portal</title>
   <style>
+    :root {
+      --bg: #f3f7f4;
+      --surface: #ffffff;
+      --line: #d6e3db;
+      --ink: #10201a;
+      --sub: #567063;
+      --accent: #147a5a;
+      --accent-2: #0f5b44;
+      --soft: #e8f5ee;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
       font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-      background: linear-gradient(180deg, #f3f7f4 0%, #eaf4ee 100%);
-      color: #183329;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(20, 122, 90, 0.18), transparent 28%),
+        linear-gradient(180deg, #f7fbf8 0%, var(--bg) 100%);
     }
 
-    .box {
-      width: min(520px, 100%);
+    a { color: inherit; }
+
+    .wrap {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .hero {
       padding: 28px;
-      border: 1px solid #cfe4d8;
-      border-radius: 20px;
-      background: #ffffff;
-      box-shadow: 0 20px 48px rgba(16, 32, 26, 0.12);
-      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(15, 91, 68, 0.98), rgba(20, 122, 90, 0.92)),
+        #0f5b44;
+      color: #f4fff9;
+      box-shadow: 0 24px 60px rgba(16, 32, 26, 0.14);
     }
 
-    h1 {
-      margin: 0 0 10px;
-      font-size: 28px;
-      letter-spacing: -0.03em;
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
-    p {
+    .hero h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
       margin: 0;
+      max-width: 720px;
+      color: rgba(244, 255, 249, 0.86);
+      font-size: 16px;
       line-height: 1.6;
-      color: #567063;
-      font-size: 15px;
       font-weight: 600;
     }
 
-    a {
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
       display: inline-flex;
-      margin-top: 18px;
       align-items: center;
       justify-content: center;
       min-height: 46px;
-      padding: 0 18px;
+      padding: 0 16px;
       border-radius: 14px;
-      background: #147a5a;
-      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: #f4fff9;
       text-decoration: none;
       font-size: 14px;
       font-weight: 800;
     }
+
+    .btn.primary {
+      background: #f4fff9;
+      color: var(--accent-2);
+      border-color: #f4fff9;
+    }
+
+    .btn.disabled {
+      opacity: 0.55;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .section {
+      margin-top: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--surface);
+    }
+
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .section p {
+      margin: 0;
+      color: var(--sub);
+      line-height: 1.65;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+    }
+
+    .card .k {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .card .v {
+      margin-top: 8px;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .card .d {
+      margin-top: 8px;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .paths {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .path {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--soft);
+      border: 1px solid #cfe4d8;
+    }
+
+    .path .label {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--accent-2);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .path code {
+      display: block;
+      margin-top: 6px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #183329;
+      font-weight: 700;
+    }
+
+    .note {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px dashed #bfd7c8;
+      background: #f9fcfa;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .foot {
+      margin-top: 16px;
+      color: #6a8578;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 22px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>데스크포털로 이동 중입니다</h1>
-    <p>잠시 후 실제 데스크포털 웹앱으로 자동 이동합니다.</p>
-    <a href="https://script.google.com/macros/s/AKfycbxsqZ3dWMNAUvIJtF2h0tnaMBvsXRQQgrMqdNmPDMpFBarlDAwJMpZsp4ddTAoHB09c/exec">바로 열기</a>
+  <script>
+    const DESK_PORTAL_WEBAPP_URL = "";
+  </script>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Desk Portal / GitHub Pages</div>
+      <h1>데스크포털 소스 허브</h1>
+      <p>
+        이 저장소는 데스크포털의 GitHub 원본입니다. 실제 서비스는 Google Apps Script 웹앱으로 운영하고,
+        이 페이지는 프로젝트 소개, 소스 구조, 운영 링크 안내를 위한 정적 진입 페이지로 사용합니다.
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="https://github.com/sedubanpo/desk-portal" target="_blank" rel="noreferrer">GitHub 저장소 열기</a>
+        <a class="btn" href="https://github.com/sedubanpo/desk-portal/tree/main/apps-script/payroll" target="_blank" rel="noreferrer">Apps Script 소스 보기</a>
+        <a class="btn disabled" id="webappBtn" href="#">운영 웹앱 URL 연결 예정</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>현재 구성</h2>
+      <p>
+        데스크포털은 수강료 정산, 강사 시수 정산, 운영 관리 성격의 도구를 담는 내부 포털입니다.
+        GitHub는 코드 원본과 변경 이력을 관리하고, 실제 사용자 실행은 GAS 웹앱에서 이어집니다.
+      </p>
+      <div class="grid">
+        <article class="card">
+          <div class="k">Module</div>
+          <div class="v">재원생 수강료 정산</div>
+          <div class="d">수납 입력, 최근 수납, 월별 매출, 안내 대시보드, 학생 월별 수강료 이력 관리</div>
+        </article>
+        <article class="card">
+          <div class="k">Module</div>
+          <div class="v">강사 시수 정산</div>
+          <div class="d">출결, 인정 시수, 정산 방식, 월별 요약과 상세 테이블을 함께 다루는 정산 포털</div>
+        </article>
+        <article class="card">
+          <div class="k">Workflow</div>
+          <div class="v">GitHub → GAS</div>
+          <div class="d">코드는 GitHub에서 관리하고, 필요 시 canonical 파일과 Apps Script 편집기로 반영합니다</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>주요 경로</h2>
+      <p>현재 Pages는 정적 안내 페이지이고, 실제 앱 코드는 아래 경로를 기준으로 관리합니다.</p>
+      <div class="paths">
+        <div class="path">
+          <div class="label">Apps Script Source</div>
+          <code>apps-script/payroll/Code.gs
+apps-script/payroll/Index.html</code>
+        </div>
+        <div class="path">
+          <div class="label">GitHub Pages</div>
+          <code>docs/index.html</code>
+        </div>
+        <div class="path">
+          <div class="label">Sync Scripts</div>
+          <code>scripts/sync_from_canonical.sh
+scripts/sync_to_canonical.sh</code>
+        </div>
+      </div>
+      <div class="note">
+        운영 웹앱 URL이 준비되면 이 파일 상단의 <code>DESK_PORTAL_WEBAPP_URL</code> 값만 채우면 됩니다.
+        그러면 상단 버튼이 실제 GAS 웹앱 링크로 바뀝니다.
+      </div>
+    </section>
+
+    <div class="foot">sedubanpo / desk-portal</div>
   </div>
 
   <script>
-    window.location.replace("https://script.google.com/macros/s/AKfycbxsqZ3dWMNAUvIJtF2h0tnaMBvsXRQQgrMqdNmPDMpFBarlDAwJMpZsp4ddTAoHB09c/exec");
+    (function() {
+      var btn = document.getElementById("webappBtn");
+      if (!btn) return;
+      if (DESK_PORTAL_WEBAPP_URL) {
+        btn.classList.remove("disabled");
+        btn.href = DESK_PORTAL_WEBAPP_URL;
+        btn.target = "_blank";
+        btn.rel = "noreferrer";
+        btn.textContent = "운영 웹앱 열기";
+      }
+    })();
   </script>
 </body>
 </html>
