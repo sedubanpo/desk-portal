@@ -4248,8 +4248,8 @@
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbxJ-LjDXEwyBib0HaDh8En7mw8lyovrQGr00G9iRN7JrBq2hR3sb1PBmOamOBfzoHXk/exec";
     var state = {
-      portalPassword: "",
-      privilegedPassword: "",
+      portalAccessKey: "",
+      privilegedAccessKey: "",
       months: [],
       selectedMonth: "",
       subjects: [],
@@ -6680,7 +6680,7 @@
             entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
             return;
           }
-          state.portalPassword = password;
+          state.portalAccessKey = res.token || "";
           entryGateEl.style.display = "none";
           renderModuleLayout();
           loadBootstrap();
@@ -6743,7 +6743,7 @@
 
       runServer("verifyPayrollPrivilegedPassword", password)
         .then(function(res) {
-          if (res && res.success) state.privilegedPassword = password;
+          if (res && res.success) state.privilegedAccessKey = res.token || "";
           done(!!(res && res.success), "비밀번호가 올바르지 않습니다.");
         })
         .catch(function(err) {
@@ -7172,7 +7172,7 @@
         });
       });
 
-      runServer("savePayrollSettings", { monthName: state.selectedMonth, updates: updates })
+      savePayrollSettingsRequest_(updates)
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
           state.teacherSettings = res.settings || {};
@@ -7183,6 +7183,31 @@
         .catch(function(err) {
           alert("설정 저장 오류: " + (err.message || String(err)));
         });
+    }
+
+    function savePayrollSettingsRequest_(updates) {
+      var payload = {
+        monthName: state.selectedMonth,
+        updates: updates
+      };
+      if (canUseGoogleScript()) {
+        return runServer("savePayrollSettings", payload);
+      }
+
+      var latestSettings = null;
+      return updates.reduce(function(chain, update) {
+        return chain.then(function() {
+          return runServer("savePayrollSettings", {
+            monthName: state.selectedMonth,
+            updates: [update]
+          });
+        }).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
+          latestSettings = res.settings || latestSettings;
+        });
+      }, Promise.resolve()).then(function() {
+        return { success: true, settings: latestSettings || {} };
+      });
     }
 
     function buildPayload() {
@@ -8335,8 +8360,8 @@
         url.searchParams.set("mode", "api");
         url.searchParams.set("fn", fnName);
         url.searchParams.set("callback", cbName);
-        if (state.portalPassword) url.searchParams.set("portalKey", state.portalPassword);
-        if (state.privilegedPassword) url.searchParams.set("privilegedKey", state.privilegedPassword);
+        if (state.portalAccessKey) url.searchParams.set("portalKey", state.portalAccessKey);
+        if (state.privilegedAccessKey) url.searchParams.set("privilegedKey", state.privilegedAccessKey);
         if (typeof payload !== "undefined") {
           url.searchParams.set("payload", JSON.stringify(payload));
         }

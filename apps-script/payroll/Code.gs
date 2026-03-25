@@ -12,6 +12,9 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
 const FB_SECRET = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
+const PAYROLL_API_TOKEN_TTL_SECONDS = 60 * 60 * 8;
+const PAYROLL_PORTAL_TOKEN_PREFIX = "desk_portal_portal_token:";
+const PAYROLL_PRIVILEGED_TOKEN_PREFIX = "desk_portal_privileged_token:";
 const PAYROLL_API_ALLOWED_METHODS = {
   getPayrollBootstrapData: true,
   getTuitionBootstrapData: true,
@@ -22,6 +25,12 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
   appendTuitionPaymentEntry: true,
+  getPayrollMonthSummary: true,
+  getPayrollSettings: true,
+  savePayrollSettings: true
+};
+const PAYROLL_API_PRIVILEGED_METHODS = {
+  getPayrollBootstrapData: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
   savePayrollSettings: true
@@ -52,6 +61,9 @@ function handlePayrollApiRequest_(params) {
       return jsonOutput_(verifyPayrollPortalPassword(payload), params);
     }
     if (fnName === "verifyPayrollPrivilegedPassword") {
+      if (!hasPayrollPortalAccess_(params.portalKey)) {
+        return jsonOutput_({ success: false, message: "포털 비밀번호 인증이 필요합니다." }, params);
+      }
       return jsonOutput_(verifyPayrollPrivilegedPassword(payload), params);
     }
     if (!PAYROLL_API_ALLOWED_METHODS[fnName]) {
@@ -59,6 +71,9 @@ function handlePayrollApiRequest_(params) {
     }
     if (!hasPayrollPortalAccess_(params.portalKey)) {
       return jsonOutput_({ success: false, message: "포털 비밀번호 인증이 필요합니다." }, params);
+    }
+    if (PAYROLL_API_PRIVILEGED_METHODS[fnName] && !hasPayrollPrivilegedAccess_(params.privilegedKey)) {
+      return jsonOutput_({ success: false, message: "관리 권한 비밀번호 인증이 필요합니다." }, params);
     }
 
     var handlers = {
@@ -113,6 +128,7 @@ function jsonOutput_(obj, params) {
 function hasPayrollPortalAccess_(inputPassword) {
   var text = String(inputPassword || "").trim();
   if (!text) return false;
+  if (hasPayrollToken_(PAYROLL_PORTAL_TOKEN_PREFIX, text)) return true;
   var allow = {
     'qksvhtjch': true,
     '반포서초': true,
@@ -124,15 +140,40 @@ function hasPayrollPortalAccess_(inputPassword) {
 
 function hasPayrollPrivilegedAccess_(inputPassword) {
   var text = String(inputPassword || "").trim();
+  if (!text) return false;
+  if (hasPayrollToken_(PAYROLL_PRIVILEGED_TOKEN_PREFIX, text)) return true;
   return text === "에스학원12" || text === "dptmgkrdnjs12";
 }
 
 function verifyPayrollPortalPassword(inputPassword) {
-  return { success: hasPayrollPortalAccess_(inputPassword) };
+  if (!hasPayrollPortalAccess_(inputPassword)) return { success: false };
+  return {
+    success: true,
+    token: issuePayrollToken_("portal")
+  };
 }
 
 function verifyPayrollPrivilegedPassword(inputPassword) {
-  return { success: hasPayrollPrivilegedAccess_(inputPassword) };
+  if (!hasPayrollPrivilegedAccess_(inputPassword)) return { success: false };
+  return {
+    success: true,
+    token: issuePayrollToken_("privileged")
+  };
+}
+
+function issuePayrollToken_(scope) {
+  var prefix = scope === "privileged" ? PAYROLL_PRIVILEGED_TOKEN_PREFIX : PAYROLL_PORTAL_TOKEN_PREFIX;
+  var token = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "").slice(0, 8);
+  CacheService.getScriptCache().put(prefix + token, "1", PAYROLL_API_TOKEN_TTL_SECONDS);
+  return token;
+}
+
+function hasPayrollToken_(prefix, token) {
+  try {
+    return !!CacheService.getScriptCache().get(prefix + token);
+  } catch (e) {
+    return false;
+  }
 }
 
 function getPayrollSettings() {
