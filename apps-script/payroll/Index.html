@@ -152,11 +152,9 @@
       gap: 10px;
       min-height: 0;
     }
-    .worker-item,
-    .staff-card {
+    .worker-item {
       position: relative;
       overflow: hidden;
-      isolation: isolate;
       border: 1px solid var(--desk-card-border, rgba(210, 255, 233, 0.14));
       border-radius: 12px;
       padding: 10px 12px;
@@ -164,69 +162,20 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
         var(--desk-card-tint, rgba(255, 255, 255, 0.05));
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      z-index: 1;
     }
-    .staff-card .wave-bg,
-    .worker-item .wave-bg {
+    .worker-item-inner {
       position: relative;
-      z-index: -1;
-    }
-    .wave-bg {
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      height: var(--fill-level, 0%);
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 0;
-      transition: height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-      background:
-        linear-gradient(180deg, rgba(133, 218, 255, 0.32), rgba(97, 180, 255, 0.5) 55%, rgba(66, 146, 230, 0.66)),
-        linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0));
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.4),
-        inset 0 10px 16px rgba(255,255,255,0.12);
-      backdrop-filter: blur(4px);
-    }
-    .wave-bg::before,
-    .wave-bg::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      width: 300%;
-      padding-top: 300%;
-      bottom: 90%;
-      border-radius: 40%;
-      transform: translateX(-50%);
-      animation: rotateWave 5s linear infinite;
-    }
-    .wave-bg::before {
-      background: rgba(255, 255, 255, 0.42);
-      opacity: 0.96;
-    }
-    .wave-bg::after {
-      border-radius: 42%;
-      bottom: 88%;
-      background: rgba(203, 241, 255, 0.28);
-      animation-duration: 8s;
-      animation-direction: reverse;
-      opacity: 0.9;
-    }
-    .card-content {
-      position: relative;
-      z-index: 10;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      min-height: 132px;
+      min-height: 128px;
     }
     .worker-item-meta-row {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
       gap: 10px;
-      margin-top: auto;
+      margin-top: 8px;
     }
     .worker-item-progress-label {
       display: flex;
@@ -234,55 +183,66 @@
       gap: 2px;
       font-size: 11px;
       font-weight: 900;
-      color: rgba(244, 251, 255, 0.98);
-      text-shadow: 0 1px 2px rgba(7, 40, 54, 0.16);
+      color: #2f5364;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.32);
     }
     .worker-item-progress-label strong {
-      color: #ffffff;
+      color: #17384b;
+    }
+    .worker-item-progress {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .worker-item-progress-track {
+      width: 100%;
+      height: 16px;
+      border-radius: 999px;
+      padding: 2px;
+      background: rgba(255, 255, 255, 0.86);
+      border: 2px solid rgba(96, 196, 21, 0.9);
+      box-shadow:
+        inset 0 1px 2px rgba(15, 23, 42, 0.08),
+        0 1px 0 rgba(255, 255, 255, 0.6);
+      overflow: hidden;
+    }
+    .worker-item-progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #7ddc16 0%, #5fbe0c 60%, #49a106 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .percent-badge {
       align-self: flex-start;
       padding: 6px 10px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.88);
-      color: #155e75;
+      color: #0c6d47;
       font-size: 12px;
       font-weight: 900;
       box-shadow: 0 8px 16px rgba(31, 75, 99, 0.14);
     }
-    .staff-card.resident .wave-bg,
-    .worker-item.resident .wave-bg {
-      background:
-        linear-gradient(180deg, rgba(255, 225, 188, 0.26), rgba(247, 186, 114, 0.36) 55%, rgba(228, 145, 71, 0.48)),
-        linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0));
-    }
-    .staff-card.resident .wave-bg::after,
-    .worker-item.resident .wave-bg::after {
-      background: rgba(255, 226, 169, 0.26);
-    }
-    .staff-card.resident .percent-badge,
     .worker-item.resident .percent-badge {
       color: #9a5a11;
-    }
-    @keyframes rotateWave {
-      from { transform: translateX(-50%) rotate(0deg); }
-      to { transform: translateX(-50%) rotate(360deg); }
     }
     .worker-item .k {
       font-size: 11px;
       font-weight: 700;
-      color: rgba(209, 250, 229, 0.72);
+      color: rgba(43, 76, 94, 0.84);
       margin-bottom: 4px;
     }
     .worker-item .v {
       font-size: 15px;
       font-weight: 800;
-      color: #f0fdf4;
+      color: #17384b;
     }
     .worker-item .sub {
       margin-top: 3px;
       font-size: 11px;
-      color: rgba(236, 253, 245, 0.72);
+      color: rgba(51, 89, 110, 0.86);
     }
 
     .sidebar-action {
@@ -7462,30 +7422,32 @@
       }
       deskTodayWorkerListEl.innerHTML = items.map(function(item) {
         var tone = getDeskShiftTone_(item);
-        return '<article class="worker-item staff-card tone-' + tone + (item.resident ? ' resident' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '"' +
+        return '<article class="worker-item tone-' + tone + (item.resident ? ' resident' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '"' +
           ' data-desk-worker-card="1" data-desk-worker-date="' + escapeHtml(item.date || "") + '"' +
           ' data-desk-worker-start="' + escapeHtml(item.start || "") + '"' +
           ' data-desk-worker-end="' + escapeHtml(item.end || "") + '"' +
           ' data-desk-worker-resident="' + (item.resident ? '1' : '0') + '">' +
-          '<div class="wave-bg"></div>' +
-          '<div class="card-content">' +
+          '<div class="worker-item-inner">' +
             '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
             '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
             '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
-            '<div class="worker-item-meta-row">' +
-              '<div class="worker-item-progress-label"><span data-desk-worker-left>근무 전</span><strong data-desk-worker-right>-</strong></div>' +
-              '<div class="percent-badge" data-desk-worker-percent>0%</div>' +
+            '<div class="worker-item-progress">' +
+              '<div class="worker-item-progress-track"><div class="worker-item-progress-fill" data-desk-worker-fill></div></div>' +
+              '<div class="worker-item-meta-row">' +
+                '<div class="worker-item-progress-label"><span data-desk-worker-left>근무 전</span><strong data-desk-worker-right>-</strong></div>' +
+                '<div class="percent-badge" data-desk-worker-percent>0%</div>' +
+              '</div>' +
             '</div>' +
           '</div>' +
         '</article>';
       }).join("");
-      updateDeskTodayWorkerLiquidState_();
+      updateDeskTodayWorkerProgressState_();
       if (deskTodayWorkerMetaEl) {
         deskTodayWorkerMetaEl.textContent = "오늘 일정 " + items.length + "건 · 집계 대상 " + formatDeskHours_(sumDeskCountedHours_(items));
       }
     }
 
-    function updateDeskTodayWorkerLiquidState_() {
+    function updateDeskTodayWorkerProgressState_() {
       Array.prototype.forEach.call(document.querySelectorAll('#deskTodayWorkerList [data-desk-worker-card="1"]'), function(card) {
         var item = {
           date: card.getAttribute("data-desk-worker-date") || "",
@@ -7495,9 +7457,11 @@
         };
         var progress = getDeskTodayWorkerProgress_(item);
         card.style.setProperty("--fill-level", progress.percent + "%");
+        var fillEl = card.querySelector("[data-desk-worker-fill]");
         var percentEl = card.querySelector("[data-desk-worker-percent]");
         var leftEl = card.querySelector("[data-desk-worker-left]");
         var rightEl = card.querySelector("[data-desk-worker-right]");
+        if (fillEl) fillEl.style.width = progress.percent + "%";
         if (percentEl) percentEl.textContent = progress.percent + "%";
         if (leftEl) leftEl.textContent = progress.leftLabel;
         if (rightEl) rightEl.textContent = progress.rightLabel;
