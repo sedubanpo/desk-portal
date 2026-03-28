@@ -38,6 +38,8 @@ const PAYROLL_API_ALLOWED_METHODS = {
   deleteDeskDailyJournalMemo: true,
   getDeskSuppliesData: true,
   adjustDeskSupplyConsumable: true,
+  saveDeskSupplyConsumable: true,
+  deleteDeskSupplyConsumable: true,
   saveDeskSupplyAsset: true,
   deleteDeskSupplyAsset: true,
   saveDeskSupplyPurchaseState: true,
@@ -112,6 +114,8 @@ function handlePayrollApiRequest_(params) {
       deleteDeskDailyJournalMemo: deleteDeskDailyJournalMemo,
       getDeskSuppliesData: getDeskSuppliesData,
       adjustDeskSupplyConsumable: adjustDeskSupplyConsumable,
+      saveDeskSupplyConsumable: saveDeskSupplyConsumable,
+      deleteDeskSupplyConsumable: deleteDeskSupplyConsumable,
       saveDeskSupplyAsset: saveDeskSupplyAsset,
       deleteDeskSupplyAsset: deleteDeskSupplyAsset,
       saveDeskSupplyPurchaseState: saveDeskSupplyPurchaseState,
@@ -471,6 +475,44 @@ function adjustDeskSupplyConsumable(payload) {
     return { success: true, data: data };
   } catch (e) {
     return { success: false, message: "소모품 수량 조정 오류: " + e.message };
+  }
+}
+
+function saveDeskSupplyConsumable(payload) {
+  try {
+    var req = payload || {};
+    var item = normalizeDeskSupplyConsumable_(req.item || {}, req.item && req.item.id);
+    if (!item.itemName) return { success: false, message: "품목명을 입력해 주세요." };
+    if (!item.productName) return { success: false, message: "제품명을 입력해 주세요." };
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    var nextItems = data.consumables.filter(function(existing) { return existing.id !== item.id; });
+    nextItems.unshift(item);
+    data.consumables = nextItems;
+    data.purchaseSelections = normalizeDeskSupplySelectionMap_(data.purchaseSelections, data.consumables);
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data, item: item };
+  } catch (e) {
+    return { success: false, message: "소모품 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskSupplyConsumable(payload) {
+  try {
+    var req = payload || {};
+    var id = String(req.id || "").trim();
+    if (!id) return { success: false, message: "삭제할 품목 ID가 없습니다." };
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    data.consumables = data.consumables.filter(function(item) { return item.id !== id; });
+    if (data.purchaseSelections && typeof data.purchaseSelections === "object") {
+      delete data.purchaseSelections[id];
+    }
+    data.purchaseSelections = normalizeDeskSupplySelectionMap_(data.purchaseSelections, data.consumables);
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data, id: id };
+  } catch (e) {
+    return { success: false, message: "소모품 삭제 오류: " + e.message };
   }
 }
 

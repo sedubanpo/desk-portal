@@ -670,6 +670,7 @@
     .desk-supply-actions {
       display: inline-flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .desk-supply-stepper {
       width: 36px;
@@ -6110,7 +6111,7 @@
                 <div class="desk-supply-grid">
                   <article class="desk-supply-card">
                     <h3>소모품 현황</h3>
-                    <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 눌러 바로 반영할 수 있습니다.</p>
+                    <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 누르고 필요하면 품목 자체도 수정/삭제할 수 있습니다.</p>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table">
                         <thead>
@@ -6118,7 +6119,7 @@
                             <th>품목명 / 제품명</th>
                             <th>수량</th>
                             <th>상태</th>
-                            <th>조정</th>
+                            <th>조정 / 관리</th>
                           </tr>
                         </thead>
                         <tbody id="deskSupplyInventoryBody"></tbody>
@@ -6126,7 +6127,38 @@
                     </div>
                   </article>
                   <aside class="desk-supply-card">
-                    <h3>빠른 확인</h3>
+                    <h3>소모품 입력 / 수정</h3>
+                    <p>새 소모품을 등록하거나 기존 품목을 수정할 수 있습니다.</p>
+                    <form class="desk-asset-form" id="deskConsumableForm">
+                      <div class="field">
+                        <label for="deskConsumableItemName">품목명</label>
+                        <input id="deskConsumableItemName" class="desk-inline-input" type="text" placeholder="예: 물티슈">
+                      </div>
+                      <div class="field">
+                        <label for="deskConsumableProduct">제품명</label>
+                        <input id="deskConsumableProduct" class="desk-inline-input" type="text" placeholder="예: 데스크용 물티슈 100매">
+                      </div>
+                      <div class="field">
+                        <label for="deskConsumableUnit">단위</label>
+                        <input id="deskConsumableUnit" class="desk-inline-input" type="text" placeholder="예: 개">
+                      </div>
+                      <div class="field">
+                        <label for="deskConsumableQty">현재 수량</label>
+                        <input id="deskConsumableQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
+                      </div>
+                      <div class="field">
+                        <label for="deskConsumableMaxQty">최대 수량</label>
+                        <input id="deskConsumableMaxQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
+                      </div>
+                      <div class="field">
+                        <label for="deskConsumableSafetyQty">안전 재고</label>
+                        <input id="deskConsumableSafetyQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
+                      </div>
+                      <div class="field full desk-form-actions-row">
+                        <button class="desk-ghost-btn hidden" id="deskConsumableCancelBtn" type="button">수정 취소</button>
+                        <button class="desk-primary-btn" id="deskConsumableSubmitBtn" type="submit">소모품 등록</button>
+                      </div>
+                    </form>
                     <div class="desk-supply-quick" id="deskSupplyQuickWrap"></div>
                   </aside>
                 </div>
@@ -6167,8 +6199,9 @@
                         <label for="deskAssetNote">비고</label>
                         <input id="deskAssetNote" class="desk-inline-input" type="text" placeholder="예: 충전기 포함, 보호필름 교체 필요">
                       </div>
-                      <div class="field full" style="display:flex;justify-content:flex-end;">
-                        <button class="desk-primary-btn" type="submit">물품 등록</button>
+                      <div class="field full desk-form-actions-row">
+                        <button class="desk-ghost-btn hidden" id="deskAssetCancelBtn" type="button">수정 취소</button>
+                        <button class="desk-primary-btn" id="deskAssetSubmitBtn" type="submit">물품 등록</button>
                       </div>
                     </form>
                   </article>
@@ -6950,6 +6983,8 @@
           loaded: false,
           loadingPromise: null,
           saveTimer: null,
+          editingConsumableId: "",
+          editingAssetId: "",
           consumables: [],
           assets: [],
           purchaseSelections: {},
@@ -7086,6 +7121,15 @@
     var deskSupplyTotalSubEl = document.getElementById("deskSupplyTotalSub");
     var deskSupplyPurchaseCountEl = document.getElementById("deskSupplyPurchaseCount");
     var deskSupplyPurchaseSubEl = document.getElementById("deskSupplyPurchaseSub");
+    var deskConsumableFormEl = document.getElementById("deskConsumableForm");
+    var deskConsumableItemNameEl = document.getElementById("deskConsumableItemName");
+    var deskConsumableProductEl = document.getElementById("deskConsumableProduct");
+    var deskConsumableUnitEl = document.getElementById("deskConsumableUnit");
+    var deskConsumableQtyEl = document.getElementById("deskConsumableQty");
+    var deskConsumableMaxQtyEl = document.getElementById("deskConsumableMaxQty");
+    var deskConsumableSafetyQtyEl = document.getElementById("deskConsumableSafetyQty");
+    var deskConsumableSubmitBtnEl = document.getElementById("deskConsumableSubmitBtn");
+    var deskConsumableCancelBtnEl = document.getElementById("deskConsumableCancelBtn");
     var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
     var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
     var deskAssetFormEl = document.getElementById("deskAssetForm");
@@ -7095,6 +7139,8 @@
     var deskAssetManagerEl = document.getElementById("deskAssetManager");
     var deskAssetStatusEl = document.getElementById("deskAssetStatus");
     var deskAssetNoteEl = document.getElementById("deskAssetNote");
+    var deskAssetSubmitBtnEl = document.getElementById("deskAssetSubmitBtn");
+    var deskAssetCancelBtnEl = document.getElementById("deskAssetCancelBtn");
     var deskAssetTableBodyEl = document.getElementById("deskAssetTableBody");
     var deskPurchaseItemListEl = document.getElementById("deskPurchaseItemList");
     var deskPurchaseTargetEl = document.getElementById("deskPurchaseTarget");
@@ -7380,6 +7426,8 @@
       state.desk.supplies.loaded = false;
       state.desk.supplies.loadingPromise = null;
       state.desk.supplies.saveTimer = null;
+      state.desk.supplies.editingConsumableId = "";
+      state.desk.supplies.editingAssetId = "";
       state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
       state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
       state.desk.supplies.purchaseSelections = {};
@@ -7395,6 +7443,8 @@
       state.desk.selectedDateKey = getDeskDateKey_(today);
       state.desk.daily.dateKey = getDeskDateKey_(today);
       ensureDeskSelectedDate_();
+      resetDeskConsumableForm_();
+      resetDeskAssetForm_();
     }
 
     function getDefaultDeskConsumables_() {
@@ -7453,6 +7503,53 @@
       state.desk.supplies.purchaseRequestTarget = String(source.purchaseRequestTarget || "대표님").trim() || "대표님";
       state.desk.supplies.purchaseRequestNote = String(source.purchaseRequestNote || "");
       ensureDeskSupplySelections_();
+    }
+
+    function resetDeskConsumableForm_() {
+      state.desk.supplies.editingConsumableId = "";
+      if (deskConsumableFormEl) deskConsumableFormEl.reset();
+      if (deskConsumableQtyEl) deskConsumableQtyEl.value = 0;
+      if (deskConsumableMaxQtyEl) deskConsumableMaxQtyEl.value = 1;
+      if (deskConsumableSafetyQtyEl) deskConsumableSafetyQtyEl.value = 0;
+      if (deskConsumableUnitEl) deskConsumableUnitEl.value = "개";
+      if (deskConsumableSubmitBtnEl) deskConsumableSubmitBtnEl.textContent = "소모품 등록";
+      if (deskConsumableCancelBtnEl) deskConsumableCancelBtnEl.classList.add("hidden");
+    }
+
+    function loadDeskConsumableIntoForm_(id) {
+      var item = (state.desk.supplies.consumables || []).filter(function(entry) { return entry.id === id; })[0];
+      if (!item) return;
+      state.desk.supplies.editingConsumableId = item.id;
+      if (deskConsumableItemNameEl) deskConsumableItemNameEl.value = item.itemName || "";
+      if (deskConsumableProductEl) deskConsumableProductEl.value = item.productName || "";
+      if (deskConsumableUnitEl) deskConsumableUnitEl.value = item.unit || "개";
+      if (deskConsumableQtyEl) deskConsumableQtyEl.value = Number(item.qty || 0);
+      if (deskConsumableMaxQtyEl) deskConsumableMaxQtyEl.value = Number(item.maxQty || 1);
+      if (deskConsumableSafetyQtyEl) deskConsumableSafetyQtyEl.value = Number(item.safetyQty || 0);
+      if (deskConsumableSubmitBtnEl) deskConsumableSubmitBtnEl.textContent = "소모품 수정";
+      if (deskConsumableCancelBtnEl) deskConsumableCancelBtnEl.classList.remove("hidden");
+    }
+
+    function resetDeskAssetForm_() {
+      state.desk.supplies.editingAssetId = "";
+      if (deskAssetFormEl) deskAssetFormEl.reset();
+      if (deskAssetStatusEl) deskAssetStatusEl.value = "정상";
+      if (deskAssetSubmitBtnEl) deskAssetSubmitBtnEl.textContent = "물품 등록";
+      if (deskAssetCancelBtnEl) deskAssetCancelBtnEl.classList.add("hidden");
+    }
+
+    function loadDeskAssetIntoForm_(id) {
+      var item = (state.desk.supplies.assets || []).filter(function(entry) { return entry.id === id; })[0];
+      if (!item) return;
+      state.desk.supplies.editingAssetId = item.id;
+      if (deskAssetTypeEl) deskAssetTypeEl.value = item.type || "";
+      if (deskAssetProductEl) deskAssetProductEl.value = item.productName || "";
+      if (deskAssetLocationEl) deskAssetLocationEl.value = item.location || "";
+      if (deskAssetManagerEl) deskAssetManagerEl.value = item.manager || "";
+      if (deskAssetStatusEl) deskAssetStatusEl.value = item.status || "정상";
+      if (deskAssetNoteEl) deskAssetNoteEl.value = item.note || "";
+      if (deskAssetSubmitBtnEl) deskAssetSubmitBtnEl.textContent = "물품 수정";
+      if (deskAssetCancelBtnEl) deskAssetCancelBtnEl.classList.remove("hidden");
     }
 
     function ensureDeskSuppliesLoaded_() {
@@ -7552,6 +7649,8 @@
           '<td><div class="desk-supply-actions">' +
             '<button class="desk-supply-stepper minus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="-1">-</button>' +
             '<button class="desk-supply-stepper plus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="1">+</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-consumable-edit="' + escapeHtml(item.id) + '">수정</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-consumable-delete="' + escapeHtml(item.id) + '">삭제</button>' +
           '</div></td>' +
         '</tr>';
       }).join("");
@@ -7591,6 +7690,52 @@
       });
     }
 
+    function saveDeskConsumableFromForm_() {
+      var itemName = String(deskConsumableItemNameEl && deskConsumableItemNameEl.value || "").trim();
+      var productName = String(deskConsumableProductEl && deskConsumableProductEl.value || "").trim();
+      var unit = String(deskConsumableUnitEl && deskConsumableUnitEl.value || "").trim() || "개";
+      var qty = Math.max(0, Number(deskConsumableQtyEl && deskConsumableQtyEl.value || 0));
+      var maxQty = Math.max(1, Number(deskConsumableMaxQtyEl && deskConsumableMaxQtyEl.value || 1));
+      var safetyQty = Math.max(0, Number(deskConsumableSafetyQtyEl && deskConsumableSafetyQtyEl.value || 0));
+      if (!itemName || !productName) {
+        alert("품목명과 제품명을 입력해 주세요.");
+        return;
+      }
+      runServer("saveDeskSupplyConsumable", {
+        item: {
+          id: state.desk.supplies.editingConsumableId || ("desk_supply_" + Date.now()),
+          itemName: itemName,
+          productName: productName,
+          unit: unit,
+          qty: qty,
+          maxQty: maxQty,
+          safetyQty: Math.min(safetyQty, maxQty)
+        }
+      }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품을 저장하지 못했습니다.");
+        applyDeskSuppliesData_(res.data || {});
+        resetDeskConsumableForm_();
+        renderDeskSupplies_();
+      }).catch(function(err) {
+        showClientMessage(err && err.message ? err.message : "소모품을 저장하지 못했습니다.");
+      });
+    }
+
+    function deleteDeskConsumable_(id) {
+      runServer("deleteDeskSupplyConsumable", { id: id })
+        .then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품을 삭제하지 못했습니다.");
+          applyDeskSuppliesData_(res.data || {});
+          if (state.desk.supplies.editingConsumableId === id) {
+            resetDeskConsumableForm_();
+          }
+          renderDeskSupplies_();
+        })
+        .catch(function(err) {
+          showClientMessage(err && err.message ? err.message : "소모품을 삭제하지 못했습니다.");
+        });
+    }
+
     function renderDeskAssets_() {
       if (!deskAssetTableBodyEl) return;
       var items = state.desk.supplies.assets || [];
@@ -7602,7 +7747,10 @@
           '<td>' + escapeHtml(item.manager) + '</td>' +
           '<td><span class="desk-supply-status ' + getDeskAssetStatusClass_(item.status) + '">' + escapeHtml(item.status) + '</span></td>' +
           '<td>' + escapeHtml(item.note || "-") + '</td>' +
-          '<td><button class="desk-ghost-btn" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '">삭제</button></td>' +
+          '<td><div class="desk-supply-actions">' +
+            '<button class="desk-ghost-btn" type="button" data-desk-asset-edit="' + escapeHtml(item.id) + '">수정</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+          '</div></td>' +
         '</tr>';
       }).join("") : '<tr><td colspan="7">등록된 공용 물품이 없습니다. 상단 폼에서 새 물품을 등록해 주세요.</td></tr>';
     }
@@ -7622,19 +7770,18 @@
       }
       runServer("saveDeskSupplyAsset", {
         asset: {
-        id: "desk_asset_" + Date.now(),
-        type: type,
-        productName: product,
-        location: String(deskAssetLocationEl && deskAssetLocationEl.value || "").trim(),
-        manager: String(deskAssetManagerEl && deskAssetManagerEl.value || "").trim(),
-        status: String(deskAssetStatusEl && deskAssetStatusEl.value || "정상"),
-        note: String(deskAssetNoteEl && deskAssetNoteEl.value || "").trim()
-      }
+          id: state.desk.supplies.editingAssetId || ("desk_asset_" + Date.now()),
+          type: type,
+          productName: product,
+          location: String(deskAssetLocationEl && deskAssetLocationEl.value || "").trim(),
+          manager: String(deskAssetManagerEl && deskAssetManagerEl.value || "").trim(),
+          status: String(deskAssetStatusEl && deskAssetStatusEl.value || "정상"),
+          note: String(deskAssetNoteEl && deskAssetNoteEl.value || "").trim()
+        }
       }).then(function(res) {
         if (!res || !res.success) throw new Error(res && res.message ? res.message : "공용 물품을 저장하지 못했습니다.");
         applyDeskSuppliesData_(res.data || {});
-        if (deskAssetFormEl) deskAssetFormEl.reset();
-        if (deskAssetStatusEl) deskAssetStatusEl.value = "정상";
+        resetDeskAssetForm_();
         renderDeskSupplies_();
       }).catch(function(err) {
         showClientMessage(err && err.message ? err.message : "공용 물품을 저장하지 못했습니다.");
@@ -7646,6 +7793,9 @@
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "공용 물품을 삭제하지 못했습니다.");
           applyDeskSuppliesData_(res.data || {});
+          if (state.desk.supplies.editingAssetId === id) {
+            resetDeskAssetForm_();
+          }
           renderDeskSupplies_();
         })
         .catch(function(err) {
@@ -10122,12 +10272,36 @@
 
       if (deskSupplyInventoryBodyEl) {
         deskSupplyInventoryBodyEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-consumable-edit]");
+          if (editBtn) {
+            loadDeskConsumableIntoForm_(editBtn.getAttribute("data-desk-consumable-edit") || "");
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-consumable-delete]");
+          if (deleteBtn) {
+            if (!confirm("이 소모품을 목록에서 삭제할까요?")) return;
+            deleteDeskConsumable_(deleteBtn.getAttribute("data-desk-consumable-delete") || "");
+            return;
+          }
           var btn = event.target.closest("[data-desk-supply-adjust]");
           if (!btn) return;
           adjustDeskConsumableQty_(
             btn.getAttribute("data-desk-supply-adjust") || "",
             Number(btn.getAttribute("data-desk-supply-delta") || 0)
           );
+        });
+      }
+
+      if (deskConsumableFormEl) {
+        deskConsumableFormEl.addEventListener("submit", function(event) {
+          event.preventDefault();
+          saveDeskConsumableFromForm_();
+        });
+      }
+
+      if (deskConsumableCancelBtnEl) {
+        deskConsumableCancelBtnEl.addEventListener("click", function() {
+          resetDeskConsumableForm_();
         });
       }
 
@@ -10138,8 +10312,19 @@
         });
       }
 
+      if (deskAssetCancelBtnEl) {
+        deskAssetCancelBtnEl.addEventListener("click", function() {
+          resetDeskAssetForm_();
+        });
+      }
+
       if (deskAssetTableBodyEl) {
         deskAssetTableBodyEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-asset-edit]");
+          if (editBtn) {
+            loadDeskAssetIntoForm_(editBtn.getAttribute("data-desk-asset-edit") || "");
+            return;
+          }
           var btn = event.target.closest("[data-desk-asset-delete]");
           if (!btn) return;
           if (!confirm("이 공용 물품을 목록에서 삭제할까요?")) return;
