@@ -1224,6 +1224,19 @@
       gap: 14px;
       align-items: start;
     }
+    .desk-journal-layout.worker-focus {
+      grid-template-columns: minmax(420px, 1.08fr) minmax(0, 1fr);
+    }
+    .desk-journal-layout.worker-focus .desk-journal-main {
+      order: 2;
+    }
+    .desk-journal-layout.worker-focus .desk-journal-side {
+      order: 1;
+    }
+    .desk-journal-layout.worker-focus #deskJournalMemoEditorCard {
+      box-shadow: 0 18px 34px rgba(13, 104, 77, 0.09);
+      border-color: #cfe4d7;
+    }
     .desk-journal-main,
     .desk-journal-side {
       display: flex;
@@ -1253,6 +1266,72 @@
       font-size: 12px;
       font-weight: 800;
       color: #607082;
+    }
+    .desk-memo-compose-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .desk-memo-compose-input {
+      min-height: 58px;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+    }
+    .desk-memo-submit-btn {
+      min-width: 118px;
+      min-height: 58px;
+      border: 1px solid #0d684d;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #0d684d 0%, #0f7b59 100%);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 14px 24px rgba(13, 104, 77, 0.18);
+    }
+    .desk-memo-submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 26px rgba(13, 104, 77, 0.2);
+    }
+    .desk-memo-submit-btn.saving {
+      pointer-events: none;
+      background: linear-gradient(180deg, #1a7e5f 0%, #0d684d 100%);
+      border-color: #0d684d;
+      opacity: 0.96;
+    }
+    .desk-memo-submit-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+    .desk-memo-submit-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+    }
+    .desk-memo-save-status {
+      min-height: 18px;
+      margin-top: 8px;
+      font-size: 12px;
+      font-weight: 900;
+      color: #0d684d;
+    }
+    .desk-memo-save-status.saving {
+      color: #0d684d;
+    }
+    .desk-memo-save-status.saved {
+      color: #0f7b59;
+    }
+    .desk-memo-save-status.error {
+      color: #b91c1c;
     }
     .desk-journal-pagination {
       display: inline-flex;
@@ -5614,11 +5693,11 @@
 
               <section class="desk-journal-worker-tabs" id="deskJournalWorkerTabs"></section>
 
-              <section class="desk-journal-layout">
+              <section class="desk-journal-layout" id="deskJournalLayout">
                 <div class="desk-journal-main">
-                  <article class="desk-editor-card">
-                    <div class="desk-side-title">업무 배정</div>
-                    <div class="desk-side-sub">배정 근무자, 업무 제목, 업무 메모 중심으로 간단히 입력합니다. 루틴업무 탭에서는 라벨과 중요 여부를 추가로 관리할 수 있습니다.</div>
+                  <article class="desk-editor-card" id="deskJournalTaskEditorCard">
+                    <div class="desk-side-title">업무 관리자</div>
+                    <div class="desk-side-sub">업무 관리자 탭에서만 업무 템플릿을 저장하고, 오늘 근무자에게 간단히 배정합니다.</div>
                     <form id="deskJournalTaskForm">
                       <div class="desk-mini-grid">
                         <div class="field">
@@ -5648,7 +5727,7 @@
                             <option value="수납"></option>
                             <option value="공지"></option>
                           </datalist>
-                          <div class="desk-routine-meta-hint">루틴업무 탭에서 라벨별로 묶어 보고, 선택 근무자에게 간단히 배정합니다.</div>
+                          <div class="desk-routine-meta-hint">업무 관리자 탭에서 라벨별로 묶어 보고, 선택 근무자에게 간단히 배정합니다.</div>
                         </div>
                         <div class="field">
                           <label for="deskJournalRoutineImportant" style="display:block;">중요 표시</label>
@@ -5656,7 +5735,7 @@
                         </div>
                       </div>
                       <div class="desk-form-actions" style="margin-top:12px;">
-                        <button class="modal-action ghost" id="deskJournalSaveRoutineBtn" type="button">루틴업무 저장</button>
+                        <button class="modal-action ghost" id="deskJournalSaveRoutineBtn" type="button">루틴 저장</button>
                         <button class="modal-action primary" type="submit">업무 추가</button>
                       </div>
                     </form>
@@ -5670,9 +5749,9 @@
                 </div>
 
                 <div class="desk-journal-side">
-                  <article class="desk-editor-card">
+                  <article class="desk-editor-card" id="deskJournalMemoEditorCard">
                     <div class="desk-side-title">근무 중 발생 기록</div>
-                    <div class="desk-side-sub">선택한 근무자 탭 기준으로 Enter 저장이 가능하도록 구성합니다.</div>
+                    <div class="desk-side-sub">선택한 근무자 탭 기준으로 바로 기록하고, `Enter` 또는 저장 버튼으로 즉시 반영합니다.</div>
                     <form id="deskJournalMemoForm">
                       <div class="field">
                         <label for="deskJournalMemoWorker">기록 근무자</label>
@@ -5680,8 +5759,12 @@
                       </div>
                       <div class="field" style="margin-top:10px;">
                         <label for="deskJournalMemoInput">기록 입력</label>
-                        <input id="deskJournalMemoInput" class="modal-input" type="text" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달">
-                        <div class="desk-routine-meta-hint">저장 뒤 각 기록 카드에서 시간을 직접 수정하면 보고용 화면에도 같은 시간으로 반영됩니다.</div>
+                        <div class="desk-memo-compose-row">
+                          <input id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" type="text" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달">
+                          <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><span class="desk-memo-submit-icon">↵</span> 저장</button>
+                        </div>
+                        <div class="desk-memo-submit-hint">입력 후 Enter로도 바로 저장됩니다.</div>
+                        <div class="desk-memo-save-status" id="deskJournalMemoSaveStatus"></div>
                       </div>
                     </form>
                     <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
@@ -6469,7 +6552,9 @@
     var deskJournalPendingSummaryEl = document.getElementById("deskJournalPendingSummary");
     var deskJournalWorkerSummaryEl = document.getElementById("deskJournalWorkerSummary");
     var deskJournalWorkerTabsEl = document.getElementById("deskJournalWorkerTabs");
+    var deskJournalLayoutEl = document.getElementById("deskJournalLayout");
     var deskJournalTaskFormEl = document.getElementById("deskJournalTaskForm");
+    var deskJournalTaskEditorCardEl = document.getElementById("deskJournalTaskEditorCard");
     var deskJournalAssignedWorkerEl = document.getElementById("deskJournalAssignedWorker");
     var deskJournalTaskTitleEl = document.getElementById("deskJournalTaskTitle");
     var deskJournalTaskNoteEl = document.getElementById("deskJournalTaskNote");
@@ -6479,8 +6564,11 @@
     var deskJournalSaveRoutineBtnEl = document.getElementById("deskJournalSaveRoutineBtn");
     var deskJournalTaskBoardEl = document.getElementById("deskJournalTaskBoard");
     var deskJournalMemoFormEl = document.getElementById("deskJournalMemoForm");
+    var deskJournalMemoEditorCardEl = document.getElementById("deskJournalMemoEditorCard");
     var deskJournalMemoWorkerEl = document.getElementById("deskJournalMemoWorker");
     var deskJournalMemoInputEl = document.getElementById("deskJournalMemoInput");
+    var deskJournalMemoSubmitBtnEl = document.getElementById("deskJournalMemoSubmitBtn");
+    var deskJournalMemoSaveStatusEl = document.getElementById("deskJournalMemoSaveStatus");
     var deskJournalMemoListEl = document.getElementById("deskJournalMemoList");
     var deskJournalMemoMetaEl = document.getElementById("deskJournalMemoMeta");
     var deskJournalMemoPaginationEl = document.getElementById("deskJournalMemoPagination");
@@ -8048,6 +8136,7 @@
     function renderDeskDailyJournal_() {
       if (shouldDeferPortalDataLoad_()) return;
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      state.desk.daily.dateKey = dateKey;
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
       if (!state.desk.daily.loadedDates[dateKey] || !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
         renderDeskDailyJournalLoadingState_();
@@ -8189,26 +8278,33 @@
       if (!deskJournalWorkerTabsEl) return;
       var tabs = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       deskJournalWorkerTabsEl.innerHTML = tabs.map(function(name) {
-        var label = name === DESK_ROUTINE_TAB_KEY ? "루틴업무" : name;
+        var label = name === DESK_ROUTINE_TAB_KEY ? "업무 관리자" : name;
         return '<button type="button" class="desk-worker-tab' + (name === state.desk.daily.selectedWorker ? ' active' : '') + '" data-desk-journal-worker="' + escapeHtml(name) + '">' + escapeHtml(label) + '</button>';
       }).join("") || '<div class="desk-empty" style="width:100%;">표시할 근무자 탭이 없습니다. 먼저 업무를 배정하거나 근무표를 입력해 주세요.</div>';
     }
 
     function renderDeskDailyWorkerInputs_(workers) {
       var names = (workers || []).slice();
+      var isRoutineManager = state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY;
       if (deskJournalWorkerNameListEl) {
         deskJournalWorkerNameListEl.innerHTML = names.map(function(name) {
           return '<option value="' + escapeHtml(name) + '"></option>';
         }).join("");
       }
+      if (deskJournalLayoutEl) {
+        deskJournalLayoutEl.classList.toggle("worker-focus", !isRoutineManager);
+      }
+      if (deskJournalTaskEditorCardEl) {
+        deskJournalTaskEditorCardEl.style.display = isRoutineManager ? "" : "none";
+      }
       if (deskRoutineMetaRowEl) {
-        deskRoutineMetaRowEl.classList.toggle("active", state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY);
+        deskRoutineMetaRowEl.classList.toggle("active", isRoutineManager);
       }
       if (deskJournalSaveRoutineBtnEl) {
-        deskJournalSaveRoutineBtnEl.style.display = state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY ? "" : "none";
+        deskJournalSaveRoutineBtnEl.style.display = isRoutineManager ? "" : "none";
       }
       if (deskJournalAssignedWorkerEl) {
-        deskJournalAssignedWorkerEl.placeholder = state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY
+        deskJournalAssignedWorkerEl.placeholder = isRoutineManager
           ? "루틴 저장 시에는 비워두거나 대표 근무자를 적어둘 수 있습니다"
           : "예: 안종성";
       }
@@ -8287,7 +8383,7 @@
         state.desk.daily.routineLabelFilter = "전체";
       }
       if (!templates.length) {
-        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">아직 저장된 루틴업무가 없습니다. 위 입력 폼에 업무를 적은 뒤 `루틴업무 저장`을 눌러 기본 템플릿을 만들어 주세요.</div>';
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">아직 저장된 업무 템플릿이 없습니다. 위 입력 폼에 업무를 적은 뒤 `루틴 저장`을 눌러 기본 템플릿을 만들어 주세요.</div>';
         return;
       }
       var visible = templates.filter(function(item) {
@@ -8322,7 +8418,7 @@
             (todayWorkers.length ? '<button class="modal-action primary" type="button" data-desk-routine-assign-group="' + escapeHtml(item.id) + '">오늘 근무자 전체 배정</button>' : '') +
           '</div>' +
         '</article>';
-      }).join("") : '<div class="desk-empty">선택한 라벨에 해당하는 루틴업무가 없습니다.</div>');
+      }).join("") : '<div class="desk-empty">선택한 라벨에 해당하는 업무 템플릿이 없습니다.</div>');
     }
 
     function renderDeskDailyMemoPanel_(memos) {
@@ -8462,10 +8558,6 @@
                   '<div class="desk-report-item-title">' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '</div>' +
                   '<div class="desk-report-item-meta">' + escapeHtml(item.worker || "-") + '</div>' +
                 '</div>' +
-                '<div class="desk-note-time-row">' +
-                  '<input class="desk-note-time-input" type="time" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
-                  '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간 수정</button>' +
-                '</div>' +
                 '<div class="desk-report-item-text">' + escapeHtml(item.text || "") + '</div>' +
               '</article>';
             }).join("") : '<div class="desk-empty">근무 중 발생 기록이 아직 없습니다.</div>') +
@@ -8586,6 +8678,33 @@
       if (!deskJournalCopyStatusEl) return;
       deskJournalCopyStatusEl.textContent = text || "";
       deskJournalCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
+    }
+
+    var deskMemoSaveStatusTimer_ = null;
+
+    function setDeskMemoSavingState_(isSaving) {
+      if (!deskJournalMemoSubmitBtnEl) return;
+      deskJournalMemoSubmitBtnEl.disabled = !!isSaving;
+      deskJournalMemoSubmitBtnEl.classList.toggle("saving", !!isSaving);
+      deskJournalMemoSubmitBtnEl.innerHTML = isSaving
+        ? '<span class="desk-memo-submit-icon">↻</span> 저장 중'
+        : '<span class="desk-memo-submit-icon">↵</span> 저장';
+    }
+
+    function showDeskMemoSaveStatus_(text, tone) {
+      if (!deskJournalMemoSaveStatusEl) return;
+      deskJournalMemoSaveStatusEl.textContent = text || "";
+      deskJournalMemoSaveStatusEl.className = "desk-memo-save-status" + (tone ? (" " + tone) : "");
+      setDeskMemoSavingState_(tone === "saving");
+      if (deskMemoSaveStatusTimer_) clearTimeout(deskMemoSaveStatusTimer_);
+      if (text && tone !== "saving") {
+        deskMemoSaveStatusTimer_ = setTimeout(function() {
+          if (!deskJournalMemoSaveStatusEl) return;
+          deskJournalMemoSaveStatusEl.textContent = "";
+          deskJournalMemoSaveStatusEl.className = "desk-memo-save-status";
+          setDeskMemoSavingState_(false);
+        }, 1800);
+      }
     }
 
     function collectDeskDailyTaskDraft_() {
@@ -8731,6 +8850,7 @@
         tasks.push(normalizeDeskDailyTask_(res.task || item));
         mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
         state.desk.daily.loadedDates[dateKey] = true;
+        state.desk.daily.dateKey = dateKey;
         if (typeof done === "function") done();
         renderDeskDailyJournal_();
       }).catch(function(err) {
@@ -8764,6 +8884,7 @@
         return;
       }
       if (!text) return;
+      showDeskMemoSaveStatus_("저장 중...", "saving");
       upsertDeskDailyMemo_({
         id: buildDeskShiftId_("memo", Date.now(), Math.random().toString(36).slice(2)),
         dateKey: dateKey,
@@ -8774,6 +8895,7 @@
         state.desk.daily.selectedWorker = worker;
         state.desk.daily.reportWorker = worker;
         state.desk.daily.memoPage = 1;
+        showDeskMemoSaveStatus_("저장되었습니다.", "saved");
       });
     }
 
@@ -8790,9 +8912,11 @@
         var memos = getDeskDailyJournalMemos_(dateKey).filter(function(row) { return row.id !== item.id; });
         memos.push(normalizeDeskDailyMemo_(res.memo || item));
         mergeDeskDailyJournalData_(dateKey, getDeskDailyJournalTasks_(dateKey), memos);
+        state.desk.daily.dateKey = dateKey;
         if (typeof done === "function") done();
         renderDeskDailyJournal_();
       }).catch(function(err) {
+        showDeskMemoSaveStatus_("저장 실패", "error");
         alert("기록 저장 오류: " + (err.message || String(err)));
       });
     }
@@ -9164,7 +9288,7 @@
           }
           var routineDeleteBtn = event.target.closest("[data-desk-routine-delete]");
           if (routineDeleteBtn) {
-            if (!confirm("이 루틴업무를 삭제할까요?")) return;
+            if (!confirm("이 업무 템플릿을 삭제할까요?")) return;
             deleteDeskDailyTask_(routineDeleteBtn.getAttribute("data-desk-routine-delete") || "", DESK_ROUTINE_TEMPLATE_KEY);
             return;
           }
@@ -9248,21 +9372,6 @@
           state.desk.daily.reportWorker = deskJournalReportWorkerEl.value || "";
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
-        });
-      }
-      if (deskJournalReportPreviewEl) {
-        deskJournalReportPreviewEl.addEventListener("click", function(event) {
-          var saveBtn = event.target.closest("[data-desk-journal-memo-time-save]");
-          if (!saveBtn) return;
-          var memoId = saveBtn.getAttribute("data-desk-journal-memo-time-save") || "";
-          var input = saveBtn.closest("[data-desk-journal-memo-card]") && saveBtn.closest("[data-desk-journal-memo-card]").querySelector('[data-desk-journal-memo-time="' + memoId + '"]');
-          saveDeskDailyMemoTime_(memoId, input && input.value || "");
-        });
-        deskJournalReportPreviewEl.addEventListener("keydown", function(event) {
-          var input = event.target.closest("[data-desk-journal-memo-time]");
-          if (!input || event.key !== "Enter") return;
-          event.preventDefault();
-          saveDeskDailyMemoTime_(input.getAttribute("data-desk-journal-memo-time") || "", input.value || "");
         });
       }
       if (deskJournalCopyTextBtnEl) {
