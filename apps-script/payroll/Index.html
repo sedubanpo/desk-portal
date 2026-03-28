@@ -453,6 +453,393 @@
       overflow-wrap: anywhere;
       flex: 0 0 auto;
     }
+    .desk-supply-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-supply-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-supply-kpi {
+      border: 1px solid #d8e6de;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 108px;
+    }
+    .desk-supply-kpi-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+    }
+    .desk-supply-kpi-value {
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-supply-kpi-sub {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4d6476;
+    }
+    .desk-supply-tabs {
+      display: inline-flex;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 18px;
+      border: 1px solid #d9e7df;
+      background: linear-gradient(180deg, #fbfefc 0%, #f2f8f4 100%);
+      align-self: flex-start;
+      flex-wrap: wrap;
+    }
+    .desk-supply-tab {
+      border: 1px solid #c8d8cf;
+      border-radius: 14px;
+      background: #fff;
+      color: #365062;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .desk-supply-tab.active {
+      background: linear-gradient(135deg, #17794f, #14b87a);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 12px 24px rgba(23, 121, 79, 0.22);
+    }
+    .desk-supply-panel.hidden {
+      display: none;
+    }
+    .desk-supply-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.85fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .desk-supply-card {
+      border: 1px solid #d8e6de;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-supply-card h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-supply-card p {
+      margin: 0;
+      color: #607082;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .desk-supply-table-wrap {
+      overflow: auto;
+      border-radius: 16px;
+      border: 1px solid #dbe8e1;
+      background: #fff;
+    }
+    .desk-supply-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 840px;
+    }
+    .desk-supply-table th,
+    .desk-supply-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #e7f0eb;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+    .desk-supply-table th {
+      background: #f3faf6;
+      color: #496273;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .desk-supply-name {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .desk-supply-name strong {
+      font-size: 15px;
+      color: #173042;
+    }
+    .desk-supply-name span {
+      color: #607082;
+    }
+    .desk-supply-stock {
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-supply-stock-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #173042;
+    }
+    .desk-supply-stock-track {
+      position: relative;
+      height: 16px;
+      border-radius: 999px;
+      overflow: hidden;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(204, 215, 208, 0.75) 0,
+          rgba(204, 215, 208, 0.75) calc(20% - 2px),
+          rgba(255, 255, 255, 0.95) calc(20% - 2px),
+          rgba(255, 255, 255, 0.95) 20%
+        );
+      border: 2px solid #2c3137;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    }
+    .desk-supply-stock-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0;
+      border-radius: inherit;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #7fd15d 0,
+          #7fd15d calc(20% - 2px),
+          #eef9e5 calc(20% - 2px),
+          #eef9e5 20%
+        );
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .desk-supply-stock-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #607082;
+    }
+    .desk-supply-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .desk-supply-status.ok {
+      background: #e8f8ee;
+      border-color: #b8e6ca;
+      color: #116044;
+    }
+    .desk-supply-status.low {
+      background: #fff6e3;
+      border-color: #f2d18a;
+      color: #9a5a11;
+    }
+    .desk-supply-status.out {
+      background: #fde8e8;
+      border-color: #f2b8b8;
+      color: #b42318;
+    }
+    .desk-supply-actions {
+      display: inline-flex;
+      gap: 8px;
+    }
+    .desk-supply-stepper {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid #d0ddd5;
+      background: #fff;
+      color: #173042;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .desk-supply-stepper.minus {
+      color: #a04d1c;
+      background: #fff7ed;
+      border-color: #f4c79f;
+    }
+    .desk-supply-stepper.plus {
+      color: #0f6d4a;
+      background: #eefcf5;
+      border-color: #bce8cd;
+    }
+    .desk-supply-quick {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-supply-quick-card {
+      border: 1px solid #dce9e2;
+      border-radius: 16px;
+      background: #fbfefc;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-supply-quick-card strong {
+      font-size: 15px;
+      color: #173042;
+    }
+    .desk-supply-quick-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #51697a;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .desk-asset-form {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-asset-form .field.full {
+      grid-column: 1 / -1;
+    }
+    .desk-inline-input,
+    .desk-inline-select,
+    .desk-inline-textarea {
+      width: 100%;
+      border: 1px solid #c9d8d0;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 14px;
+      font: inherit;
+      color: #173042;
+      outline: none;
+    }
+    .desk-inline-textarea {
+      min-height: 108px;
+      resize: vertical;
+    }
+    .desk-primary-btn,
+    .desk-ghost-btn {
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .desk-primary-btn {
+      border: 0;
+      background: linear-gradient(135deg, #17794f, #14b87a);
+      color: #fff;
+      box-shadow: 0 14px 24px rgba(23, 121, 79, 0.18);
+    }
+    .desk-ghost-btn {
+      border: 1px solid #cbd8d1;
+      background: #fff;
+      color: #274457;
+    }
+    .desk-asset-table .desk-supply-status {
+      min-width: 72px;
+      justify-content: center;
+    }
+    .desk-purchase-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.95fr);
+      gap: 14px;
+    }
+    .desk-purchase-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .desk-purchase-item {
+      border: 1px solid #dce9e2;
+      border-radius: 16px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .desk-purchase-item.low {
+      background: linear-gradient(180deg, #fffaf0 0%, #fff4e1 100%);
+      border-color: #f0d29f;
+    }
+    .desk-purchase-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #17794f;
+    }
+    .desk-purchase-item-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .desk-purchase-item-title strong {
+      font-size: 15px;
+      color: #173042;
+    }
+    .desk-purchase-item-title span {
+      font-size: 12px;
+      color: #607082;
+      line-height: 1.45;
+    }
+    .desk-purchase-item-qty {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #496273;
+    }
+    .desk-purchase-item-qty input {
+      width: 78px;
+      border: 1px solid #ccd9d2;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      color: #173042;
+      background: #fff;
+    }
+    .desk-purchase-message {
+      min-height: 280px;
+      resize: vertical;
+      white-space: pre-wrap;
+    }
+    .desk-form-actions-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .desk-month-shell {
       display: flex;
       flex-direction: column;
@@ -5690,25 +6077,155 @@
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">소모품 관리</h2>
-                <p class="desk-panel-sub">재고 확인, 발주 필요 품목, 사용 기록을 관리하는 화면 자리입니다.</p>
+                <p class="desk-panel-sub">소모품 재고, 공용 물품 현황, 대표님께 올릴 구매 요청 문안을 한 화면에서 관리합니다.</p>
               </div>
-              <span class="desk-status-chip">준비 중</span>
+              <span class="desk-status-chip">로컬 저장</span>
             </header>
-            <div class="desk-overview-grid">
-              <article class="desk-overview-card">
-                <h3>재고 현황</h3>
-                <p>필수 소모품 재고와 안전 재고 기준을 표시할 수 있습니다.</p>
-              </article>
-              <article class="desk-overview-card">
-                <h3>발주 체크</h3>
-                <p>부족 품목과 발주 예정일을 관리하는 섹션으로 확장할 수 있습니다.</p>
-              </article>
-              <article class="desk-overview-card">
-                <h3>사용 로그</h3>
-                <p>일자별 사용량 기록과 담당자 메모를 연결할 수 있는 영역입니다.</p>
-              </article>
+            <div class="desk-supply-shell">
+              <section class="desk-supply-summary">
+                <article class="desk-supply-kpi">
+                  <div class="desk-supply-kpi-label">부족 재고 품목</div>
+                  <div class="desk-supply-kpi-value" id="deskSupplyLowCount">0개</div>
+                  <div class="desk-supply-kpi-sub" id="deskSupplyLowSub">안전 재고 이하 품목 없음</div>
+                </article>
+                <article class="desk-supply-kpi">
+                  <div class="desk-supply-kpi-label">소모품 총 재고</div>
+                  <div class="desk-supply-kpi-value" id="deskSupplyTotalQty">0개</div>
+                  <div class="desk-supply-kpi-sub" id="deskSupplyTotalSub">등록 품목 기준 총 수량</div>
+                </article>
+                <article class="desk-supply-kpi">
+                  <div class="desk-supply-kpi-label">구매 요청 후보</div>
+                  <div class="desk-supply-kpi-value" id="deskSupplyPurchaseCount">0개</div>
+                  <div class="desk-supply-kpi-sub" id="deskSupplyPurchaseSub">구매 요청 탭에서 문안 생성</div>
+                </article>
+              </section>
+
+              <section class="desk-supply-tabs">
+                <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">소모품 현황</button>
+                <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets">물품 관리</button>
+                <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase">구매 요청</button>
+              </section>
+
+              <section class="desk-supply-panel" data-desk-supplies-panel="inventory">
+                <div class="desk-supply-grid">
+                  <article class="desk-supply-card">
+                    <h3>소모품 현황</h3>
+                    <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 눌러 바로 반영할 수 있습니다.</p>
+                    <div class="desk-supply-table-wrap">
+                      <table class="desk-supply-table">
+                        <thead>
+                          <tr>
+                            <th>품목명 / 제품명</th>
+                            <th>수량</th>
+                            <th>상태</th>
+                            <th>조정</th>
+                          </tr>
+                        </thead>
+                        <tbody id="deskSupplyInventoryBody"></tbody>
+                      </table>
+                    </div>
+                  </article>
+                  <aside class="desk-supply-card">
+                    <h3>빠른 확인</h3>
+                    <div class="desk-supply-quick" id="deskSupplyQuickWrap"></div>
+                  </aside>
+                </div>
+              </section>
+
+              <section class="desk-supply-panel hidden" data-desk-supplies-panel="assets">
+                <div class="desk-supply-grid">
+                  <article class="desk-supply-card">
+                    <h3>공용 물품 등록</h3>
+                    <p>데스크탑, 태블릿, 프린터 같은 공용 장비를 등록하고 위치와 상태를 함께 남길 수 있습니다.</p>
+                    <form class="desk-asset-form" id="deskAssetForm">
+                      <div class="field">
+                        <label for="deskAssetType">물품 분류</label>
+                        <input id="deskAssetType" class="desk-inline-input" type="text" placeholder="예: 데스크탑, 태블릿, 프린터">
+                      </div>
+                      <div class="field">
+                        <label for="deskAssetProduct">제품명 / 모델명</label>
+                        <input id="deskAssetProduct" class="desk-inline-input" type="text" placeholder="예: iPad Air 5세대">
+                      </div>
+                      <div class="field">
+                        <label for="deskAssetLocation">배치 위치</label>
+                        <input id="deskAssetLocation" class="desk-inline-input" type="text" placeholder="예: 반포관 데스크">
+                      </div>
+                      <div class="field">
+                        <label for="deskAssetManager">담당 / 사용 주체</label>
+                        <input id="deskAssetManager" class="desk-inline-input" type="text" placeholder="예: 데스크 공용">
+                      </div>
+                      <div class="field">
+                        <label for="deskAssetStatus">상태</label>
+                        <select id="deskAssetStatus" class="desk-inline-select">
+                          <option value="정상">정상</option>
+                          <option value="점검 필요">점검 필요</option>
+                          <option value="교체 검토">교체 검토</option>
+                          <option value="대여중">대여중</option>
+                        </select>
+                      </div>
+                      <div class="field full">
+                        <label for="deskAssetNote">비고</label>
+                        <input id="deskAssetNote" class="desk-inline-input" type="text" placeholder="예: 충전기 포함, 보호필름 교체 필요">
+                      </div>
+                      <div class="field full" style="display:flex;justify-content:flex-end;">
+                        <button class="desk-primary-btn" type="submit">물품 등록</button>
+                      </div>
+                    </form>
+                  </article>
+                  <article class="desk-supply-card">
+                    <h3>물품 현황</h3>
+                    <div class="desk-supply-table-wrap">
+                      <table class="desk-supply-table desk-asset-table">
+                        <thead>
+                          <tr>
+                            <th>분류</th>
+                            <th>제품명</th>
+                            <th>위치</th>
+                            <th>담당</th>
+                            <th>상태</th>
+                            <th>비고</th>
+                            <th>관리</th>
+                          </tr>
+                        </thead>
+                        <tbody id="deskAssetTableBody"></tbody>
+                      </table>
+                    </div>
+                  </article>
+                </div>
+              </section>
+
+              <section class="desk-supply-panel hidden" data-desk-supplies-panel="purchase">
+                <div class="desk-purchase-grid">
+                  <article class="desk-supply-card">
+                    <h3>구매 요청 품목 선택</h3>
+                    <p>[소모품 현황] 기준 현재 재고와 안전 재고를 가져와서, 대표님께 요청할 품목을 선택할 수 있습니다.</p>
+                    <div class="desk-purchase-list" id="deskPurchaseItemList"></div>
+                  </article>
+                  <article class="desk-supply-card">
+                    <h3>구매 요청 문안</h3>
+                    <div class="field">
+                      <label for="deskPurchaseTarget">요청 대상</label>
+                      <input id="deskPurchaseTarget" class="desk-inline-input" type="text" value="대표님" placeholder="예: 대표님">
+                    </div>
+                    <div class="field">
+                      <label for="deskPurchaseRequestNote">추가 메모</label>
+                      <textarea id="deskPurchaseRequestNote" class="desk-inline-textarea" placeholder="예: 금주 내 구매 가능 여부 확인 부탁드립니다."></textarea>
+                    </div>
+                    <div class="field">
+                      <label for="deskPurchaseMessage">생성된 요청 문안</label>
+                      <textarea id="deskPurchaseMessage" class="desk-inline-textarea desk-purchase-message" readonly></textarea>
+                    </div>
+                    <div class="desk-form-actions-row">
+                      <button class="desk-ghost-btn" id="deskPurchaseRefreshBtn" type="button">문안 새로 생성</button>
+                      <button class="desk-primary-btn" id="deskPurchaseCopyBtn" type="button">구매 요청 복사</button>
+                    </div>
+                    <div class="desk-notice" id="deskPurchaseCopyStatus">필요 품목을 선택하면 대표님께 전달할 구매 요청 문안이 자동 생성됩니다.</div>
+                  </article>
+                </div>
+              </section>
+
+              <div class="desk-notice">소모품 관리 데이터는 현재 이 브라우저에 저장됩니다. 이후 원하시면 Firebase 또는 시트 저장으로 확장해 같은 내용을 여러 PC에서 공유할 수 있습니다.</div>
             </div>
-            <div class="desk-notice">소모품 관리 기능은 UI 자리만 먼저 열어두었습니다. 다음 단계에서 품목 구조와 저장 방식을 설계하면 됩니다.</div>
           </section>
 
           <section class="desk-panel hidden" data-desk-panel="dailyJournal">
@@ -6375,6 +6892,7 @@
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbyYnAq06DfZgA9_mBwsGAG6QuBlDn7OGv3EZ5mifUG7LenEkqzSGy2bOy4kfRl58tgL/exec";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
+    var DESK_SUPPLIES_STORAGE_KEY = "desk_portal_supplies_v1";
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
@@ -6416,6 +6934,7 @@
       activeModule: "expense",
       desk: {
         activeTab: "monthlySchedule",
+        suppliesTab: "inventory",
         view: "calendar",
         currentMonth: "",
         selectedDateKey: "",
@@ -6428,6 +6947,13 @@
         scheduleItems: [],
         loadedMonths: {},
         loadingMonths: {},
+        supplies: {
+          consumables: [],
+          assets: [],
+          purchaseSelections: {},
+          purchaseRequestTarget: "대표님",
+          purchaseRequestNote: ""
+        },
         daily: {
           dateKey: "",
           selectedWorker: "",
@@ -6548,8 +7074,33 @@
     var deskTodayWorkerMetaEl = document.getElementById("deskTodayWorkerMeta");
     var deskTabEls = document.querySelectorAll("[data-desk-tab]");
     var deskPanelEls = document.querySelectorAll("[data-desk-panel]");
+    var deskSupplyTabEls = document.querySelectorAll("[data-desk-supplies-tab]");
+    var deskSupplyPanelEls = document.querySelectorAll("[data-desk-supplies-panel]");
     var deskViewTabEls = document.querySelectorAll("[data-desk-view]");
     var deskViewPanelEls = document.querySelectorAll("[data-desk-view-panel]");
+    var deskSupplyLowCountEl = document.getElementById("deskSupplyLowCount");
+    var deskSupplyLowSubEl = document.getElementById("deskSupplyLowSub");
+    var deskSupplyTotalQtyEl = document.getElementById("deskSupplyTotalQty");
+    var deskSupplyTotalSubEl = document.getElementById("deskSupplyTotalSub");
+    var deskSupplyPurchaseCountEl = document.getElementById("deskSupplyPurchaseCount");
+    var deskSupplyPurchaseSubEl = document.getElementById("deskSupplyPurchaseSub");
+    var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
+    var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
+    var deskAssetFormEl = document.getElementById("deskAssetForm");
+    var deskAssetTypeEl = document.getElementById("deskAssetType");
+    var deskAssetProductEl = document.getElementById("deskAssetProduct");
+    var deskAssetLocationEl = document.getElementById("deskAssetLocation");
+    var deskAssetManagerEl = document.getElementById("deskAssetManager");
+    var deskAssetStatusEl = document.getElementById("deskAssetStatus");
+    var deskAssetNoteEl = document.getElementById("deskAssetNote");
+    var deskAssetTableBodyEl = document.getElementById("deskAssetTableBody");
+    var deskPurchaseItemListEl = document.getElementById("deskPurchaseItemList");
+    var deskPurchaseTargetEl = document.getElementById("deskPurchaseTarget");
+    var deskPurchaseRequestNoteEl = document.getElementById("deskPurchaseRequestNote");
+    var deskPurchaseMessageEl = document.getElementById("deskPurchaseMessage");
+    var deskPurchaseRefreshBtnEl = document.getElementById("deskPurchaseRefreshBtn");
+    var deskPurchaseCopyBtnEl = document.getElementById("deskPurchaseCopyBtn");
+    var deskPurchaseCopyStatusEl = document.getElementById("deskPurchaseCopyStatus");
     var deskMonthInputEl = document.getElementById("deskMonthInput");
     var deskPrevMonthBtnEl = document.getElementById("deskPrevMonthBtn");
     var deskNextMonthBtnEl = document.getElementById("deskNextMonthBtn");
@@ -6824,6 +7375,7 @@
       state.desk.expandedUnavailableDates = {};
       state.desk.loadedMonths = {};
       state.desk.loadingMonths = {};
+      loadDeskSupplies_();
       state.desk.daily.tasks = [];
       state.desk.daily.memos = [];
       state.desk.daily.loadedDates = {};
@@ -6833,6 +7385,332 @@
       state.desk.selectedDateKey = getDeskDateKey_(today);
       state.desk.daily.dateKey = getDeskDateKey_(today);
       ensureDeskSelectedDate_();
+    }
+
+    function getDefaultDeskConsumables_() {
+      return [
+        { id: "wet_tissue", itemName: "물티슈", productName: "데스크용 물티슈 100매", qty: 6, maxQty: 10, safetyQty: 4, unit: "개" },
+        { id: "box_tissue", itemName: "곽티슈", productName: "클리넥스 200매", qty: 12, maxQty: 20, safetyQty: 8, unit: "개" },
+        { id: "paper_cup", itemName: "종이컵", productName: "테이크아웃컵 1줄", qty: 5, maxQty: 8, safetyQty: 3, unit: "줄" },
+        { id: "trash_bag", itemName: "쓰레기봉투", productName: "20L 검정봉투", qty: 3, maxQty: 6, safetyQty: 2, unit: "묶음" },
+        { id: "sanitizer", itemName: "손소독제", productName: "대용량 리필 500ml", qty: 2, maxQty: 5, safetyQty: 2, unit: "병" },
+        { id: "marker", itemName: "보드마카", productName: "화이트보드 마카 세트", qty: 4, maxQty: 8, safetyQty: 3, unit: "세트" }
+      ];
+    }
+
+    function getDefaultDeskAssets_() {
+      return [
+        { id: "asset_desktop_1", type: "데스크탑", productName: "DELL OptiPlex 데스크 PC", location: "반포관 데스크", manager: "데스크 공용", status: "정상", note: "학생 등록 및 결제 업무용" },
+        { id: "asset_tablet_1", type: "태블릿", productName: "iPad Air 5세대", location: "상담 테이블", manager: "상담용 공용", status: "정상", note: "학부모 상담 및 안내 자료" },
+        { id: "asset_printer_1", type: "프린터", productName: "HP LaserJet Pro", location: "데스크 뒤편", manager: "데스크 공용", status: "점검 필요", note: "토너 잔량 확인 필요" }
+      ];
+    }
+
+    function normalizeDeskConsumable_(item, index) {
+      var source = item || {};
+      var maxQty = Math.max(1, Number(source.maxQty || 1));
+      var qty = Math.max(0, Math.min(maxQty, Number(source.qty || 0)));
+      var safetyQty = Math.max(0, Math.min(maxQty, Number(source.safetyQty || 0)));
+      return {
+        id: String(source.id || ("desk_supply_" + index)),
+        itemName: String(source.itemName || "품목명"),
+        productName: String(source.productName || "제품명 미입력"),
+        qty: qty,
+        maxQty: maxQty,
+        safetyQty: safetyQty,
+        unit: String(source.unit || "개")
+      };
+    }
+
+    function normalizeDeskAsset_(item, index) {
+      var source = item || {};
+      return {
+        id: String(source.id || ("desk_asset_" + index)),
+        type: String(source.type || "기타"),
+        productName: String(source.productName || "제품명 미입력"),
+        location: String(source.location || "-"),
+        manager: String(source.manager || "-"),
+        status: String(source.status || "정상"),
+        note: String(source.note || "")
+      };
+    }
+
+    function loadDeskSupplies_() {
+      var saved = null;
+      try {
+        saved = localStorage.getItem(DESK_SUPPLIES_STORAGE_KEY);
+      } catch (err) {}
+      if (saved) {
+        try {
+          var parsed = JSON.parse(saved);
+          state.desk.supplies.consumables = (parsed.consumables || []).map(normalizeDeskConsumable_);
+          state.desk.supplies.assets = (parsed.assets || []).map(normalizeDeskAsset_);
+          state.desk.supplies.purchaseSelections = parsed.purchaseSelections || {};
+          state.desk.supplies.purchaseRequestTarget = String(parsed.purchaseRequestTarget || "대표님");
+          state.desk.supplies.purchaseRequestNote = String(parsed.purchaseRequestNote || "");
+        } catch (err) {
+          state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
+          state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
+        }
+      } else {
+        state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
+        state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
+      }
+      ensureDeskSupplySelections_();
+      saveDeskSupplies_();
+    }
+
+    function saveDeskSupplies_() {
+      try {
+        localStorage.setItem(DESK_SUPPLIES_STORAGE_KEY, JSON.stringify({
+          consumables: state.desk.supplies.consumables,
+          assets: state.desk.supplies.assets,
+          purchaseSelections: state.desk.supplies.purchaseSelections,
+          purchaseRequestTarget: state.desk.supplies.purchaseRequestTarget,
+          purchaseRequestNote: state.desk.supplies.purchaseRequestNote
+        }));
+      } catch (err) {}
+    }
+
+    function ensureDeskSupplySelections_() {
+      var map = state.desk.supplies.purchaseSelections || {};
+      state.desk.supplies.consumables.forEach(function(item) {
+        var recommended = Math.max(1, item.maxQty - item.qty);
+        if (!map[item.id]) {
+          map[item.id] = {
+            selected: item.qty <= item.safetyQty,
+            requestQty: recommended
+          };
+          return;
+        }
+        map[item.id].requestQty = Math.max(1, Number(map[item.id].requestQty || recommended));
+        map[item.id].selected = !!map[item.id].selected;
+      });
+      state.desk.supplies.purchaseSelections = map;
+    }
+
+    function renderDeskSupplies_() {
+      Array.prototype.forEach.call(deskSupplyTabEls, function(btn) {
+        btn.classList.toggle("active", (btn.getAttribute("data-desk-supplies-tab") || "") === state.desk.suppliesTab);
+      });
+      Array.prototype.forEach.call(deskSupplyPanelEls, function(panel) {
+        panel.classList.toggle("hidden", (panel.getAttribute("data-desk-supplies-panel") || "") !== state.desk.suppliesTab);
+      });
+      ensureDeskSupplySelections_();
+      renderDeskSupplySummary_();
+      renderDeskSupplyInventory_();
+      renderDeskAssets_();
+      renderDeskPurchaseRequest_();
+    }
+
+    function renderDeskSupplySummary_() {
+      var items = state.desk.supplies.consumables || [];
+      var lowItems = items.filter(function(item) { return item.qty <= item.safetyQty; });
+      var totalQty = items.reduce(function(acc, item) { return acc + Number(item.qty || 0); }, 0);
+      var selectedCount = items.filter(function(item) {
+        return !!(state.desk.supplies.purchaseSelections[item.id] && state.desk.supplies.purchaseSelections[item.id].selected);
+      }).length;
+      if (deskSupplyLowCountEl) deskSupplyLowCountEl.textContent = lowItems.length + "개";
+      if (deskSupplyLowSubEl) deskSupplyLowSubEl.textContent = lowItems.length ? lowItems.map(function(item) { return item.itemName; }).slice(0, 3).join(", ") : "안전 재고 이하 품목 없음";
+      if (deskSupplyTotalQtyEl) deskSupplyTotalQtyEl.textContent = totalQty + "개";
+      if (deskSupplyTotalSubEl) deskSupplyTotalSubEl.textContent = items.length + "개 등록 품목 기준";
+      if (deskSupplyPurchaseCountEl) deskSupplyPurchaseCountEl.textContent = selectedCount + "개";
+      if (deskSupplyPurchaseSubEl) deskSupplyPurchaseSubEl.textContent = selectedCount ? "선택 품목 기준 문안 준비 완료" : "구매 요청 탭에서 품목 선택";
+    }
+
+    function renderDeskSupplyInventory_() {
+      if (!deskSupplyInventoryBodyEl) return;
+      var items = state.desk.supplies.consumables || [];
+      deskSupplyInventoryBodyEl.innerHTML = items.map(function(item) {
+        var ratio = Math.round((item.qty / item.maxQty) * 100);
+        var status = getDeskSupplyStatus_(item);
+        return '<tr>' +
+          '<td><div class="desk-supply-name"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + '</span></div></td>' +
+          '<td><div class="desk-supply-stock">' +
+            '<div class="desk-supply-stock-top"><span>' + item.qty + item.unit + '</span><strong>' + ratio + '%</strong></div>' +
+            '<div class="desk-supply-stock-track"><div class="desk-supply-stock-fill" style="width:' + ratio + '%;"></div></div>' +
+            '<div class="desk-supply-stock-meta"><span>최대 ' + item.maxQty + item.unit + '</span><span>안전 재고 ' + item.safetyQty + item.unit + '</span></div>' +
+          '</div></td>' +
+          '<td><span class="desk-supply-status ' + status.key + '">' + escapeHtml(status.label) + '</span></td>' +
+          '<td><div class="desk-supply-actions">' +
+            '<button class="desk-supply-stepper minus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="-1">-</button>' +
+            '<button class="desk-supply-stepper plus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="1">+</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join("");
+      if (deskSupplyQuickWrapEl) {
+        var lowItems = items.filter(function(item) { return item.qty <= item.safetyQty; });
+        var healthyItems = items.filter(function(item) { return item.qty > item.safetyQty; }).sort(function(a, b) { return b.qty - a.qty; });
+        deskSupplyQuickWrapEl.innerHTML =
+          '<article class="desk-supply-quick-card"><strong>보충 우선 품목</strong>' +
+            (lowItems.length
+              ? '<ul>' + lowItems.map(function(item) { return '<li>' + escapeHtml(item.itemName) + ' · 현재 ' + item.qty + item.unit + ' / 안전 ' + item.safetyQty + item.unit + '</li>'; }).join("") + '</ul>'
+              : '<p>지금은 긴급 보충이 필요한 소모품이 없습니다.</p>') +
+          '</article>' +
+          '<article class="desk-supply-quick-card"><strong>여유 재고 품목</strong>' +
+            (healthyItems.length
+              ? '<ul>' + healthyItems.slice(0, 4).map(function(item) { return '<li>' + escapeHtml(item.itemName) + ' · 현재 ' + item.qty + item.unit + '</li>'; }).join("") + '</ul>'
+              : '<p>등록된 소모품이 없습니다.</p>') +
+          '</article>';
+      }
+    }
+
+    function getDeskSupplyStatus_(item) {
+      if (!item || item.qty <= 0) return { key: "out", label: "재고 없음" };
+      if (item.qty <= item.safetyQty) return { key: "low", label: "보충 필요" };
+      return { key: "ok", label: "안정 재고" };
+    }
+
+    function adjustDeskConsumableQty_(id, delta) {
+      var target = (state.desk.supplies.consumables || []).find(function(item) { return item.id === id; });
+      if (!target) return;
+      var nextQty = Math.max(0, Math.min(target.maxQty, target.qty + delta));
+      target.qty = nextQty;
+      ensureDeskSupplySelections_();
+      saveDeskSupplies_();
+      renderDeskSupplies_();
+    }
+
+    function renderDeskAssets_() {
+      if (!deskAssetTableBodyEl) return;
+      var items = state.desk.supplies.assets || [];
+      deskAssetTableBodyEl.innerHTML = items.length ? items.map(function(item) {
+        return '<tr>' +
+          '<td>' + escapeHtml(item.type) + '</td>' +
+          '<td>' + escapeHtml(item.productName) + '</td>' +
+          '<td>' + escapeHtml(item.location) + '</td>' +
+          '<td>' + escapeHtml(item.manager) + '</td>' +
+          '<td><span class="desk-supply-status ' + getDeskAssetStatusClass_(item.status) + '">' + escapeHtml(item.status) + '</span></td>' +
+          '<td>' + escapeHtml(item.note || "-") + '</td>' +
+          '<td><button class="desk-ghost-btn" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '">삭제</button></td>' +
+        '</tr>';
+      }).join("") : '<tr><td colspan="7">등록된 공용 물품이 없습니다. 상단 폼에서 새 물품을 등록해 주세요.</td></tr>';
+    }
+
+    function getDeskAssetStatusClass_(status) {
+      if (status === "점검 필요") return "low";
+      if (status === "교체 검토") return "out";
+      return "ok";
+    }
+
+    function saveDeskAssetFromForm_() {
+      var type = String(deskAssetTypeEl && deskAssetTypeEl.value || "").trim();
+      var product = String(deskAssetProductEl && deskAssetProductEl.value || "").trim();
+      if (!type || !product) {
+        alert("물품 분류와 제품명은 입력해 주세요.");
+        return;
+      }
+      state.desk.supplies.assets.unshift(normalizeDeskAsset_({
+        id: "desk_asset_" + Date.now(),
+        type: type,
+        productName: product,
+        location: String(deskAssetLocationEl && deskAssetLocationEl.value || "").trim(),
+        manager: String(deskAssetManagerEl && deskAssetManagerEl.value || "").trim(),
+        status: String(deskAssetStatusEl && deskAssetStatusEl.value || "정상"),
+        note: String(deskAssetNoteEl && deskAssetNoteEl.value || "").trim()
+      }));
+      if (deskAssetFormEl) deskAssetFormEl.reset();
+      if (deskAssetStatusEl) deskAssetStatusEl.value = "정상";
+      saveDeskSupplies_();
+      renderDeskSupplies_();
+    }
+
+    function deleteDeskAsset_(id) {
+      state.desk.supplies.assets = (state.desk.supplies.assets || []).filter(function(item) {
+        return item.id !== id;
+      });
+      saveDeskSupplies_();
+      renderDeskSupplies_();
+    }
+
+    function renderDeskPurchaseRequest_() {
+      if (deskPurchaseTargetEl) deskPurchaseTargetEl.value = state.desk.supplies.purchaseRequestTarget || "대표님";
+      if (deskPurchaseRequestNoteEl) deskPurchaseRequestNoteEl.value = state.desk.supplies.purchaseRequestNote || "";
+      if (deskPurchaseItemListEl) {
+        deskPurchaseItemListEl.innerHTML = (state.desk.supplies.consumables || []).map(function(item) {
+          var selection = state.desk.supplies.purchaseSelections[item.id] || { selected: false, requestQty: Math.max(1, item.maxQty - item.qty) };
+          return '<label class="desk-purchase-item ' + (item.qty <= item.safetyQty ? 'low' : '') + '">' +
+            '<input type="checkbox" data-desk-purchase-select="' + escapeHtml(item.id) + '"' + (selection.selected ? ' checked' : '') + '>' +
+            '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + ' · 현재 ' + item.qty + item.unit + ' / 안전 ' + item.safetyQty + item.unit + '</span></div>' +
+            '<div class="desk-purchase-item-qty">요청 수량 <input type="number" min="1" step="1" data-desk-purchase-qty="' + escapeHtml(item.id) + '" value="' + Number(selection.requestQty || 1) + '"></div>' +
+          '</label>';
+        }).join("");
+      }
+      refreshDeskPurchaseMessage_();
+    }
+
+    function refreshDeskPurchaseMessage_() {
+      if (deskPurchaseMessageEl) deskPurchaseMessageEl.value = buildDeskPurchaseRequestMessage_();
+    }
+
+    function buildDeskPurchaseRequestMessage_() {
+      var target = String(state.desk.supplies.purchaseRequestTarget || "대표님").trim() || "대표님";
+      var note = String(state.desk.supplies.purchaseRequestNote || "").trim();
+      var selectedItems = (state.desk.supplies.consumables || []).filter(function(item) {
+        return !!(state.desk.supplies.purchaseSelections[item.id] && state.desk.supplies.purchaseSelections[item.id].selected);
+      });
+      if (!selectedItems.length) {
+        return target + ",\n\n구매 요청할 소모품을 아직 선택하지 않았습니다.\n[구매 요청] 탭에서 필요한 품목을 선택해 주세요.";
+      }
+      var lines = selectedItems.map(function(item) {
+        var selection = state.desk.supplies.purchaseSelections[item.id] || {};
+        return "- " + item.itemName + " (" + item.productName + ") : 현재 " + item.qty + item.unit + " / 요청 " + Math.max(1, Number(selection.requestQty || 1)) + item.unit;
+      });
+      return [
+        target + ",",
+        "",
+        "데스크 소모품 구매 요청드립니다.",
+        "현재 재고를 확인해 보니 아래 품목 보충이 필요합니다.",
+        "",
+        lines.join("\n"),
+        "",
+        note || "확인 부탁드립니다. 감사합니다."
+      ].join("\n");
+    }
+
+    function updateDeskPurchaseSelection_(id, patch) {
+      ensureDeskSupplySelections_();
+      var current = state.desk.supplies.purchaseSelections[id] || { selected: false, requestQty: 1 };
+      state.desk.supplies.purchaseSelections[id] = Object.assign({}, current, patch);
+      saveDeskSupplies_();
+      renderDeskSupplies_();
+    }
+
+    function copyDeskPurchaseRequest_() {
+      if (!deskPurchaseMessageEl) return;
+      var text = String(deskPurchaseMessageEl.value || "").trim();
+      if (!text) {
+        if (deskPurchaseCopyStatusEl) deskPurchaseCopyStatusEl.textContent = "복사할 구매 요청 문안이 없습니다.";
+        return;
+      }
+      function copied(msg, isError) {
+        if (!deskPurchaseCopyStatusEl) return;
+        deskPurchaseCopyStatusEl.textContent = msg;
+        deskPurchaseCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(function() { copied("구매 요청 문안을 복사했습니다."); })
+          .catch(function() {
+            deskPurchaseMessageEl.focus();
+            deskPurchaseMessageEl.select();
+            try {
+              document.execCommand("copy");
+              copied("구매 요청 문안을 복사했습니다.");
+            } catch (err) {
+              copied("복사에 실패했습니다. 수동 복사해 주세요.", true);
+            }
+          });
+      } else {
+        deskPurchaseMessageEl.focus();
+        deskPurchaseMessageEl.select();
+        try {
+          document.execCommand("copy");
+          copied("구매 요청 문안을 복사했습니다.");
+        } catch (err) {
+          copied("복사에 실패했습니다. 수동 복사해 주세요.", true);
+        }
+      }
     }
 
     function loadDeskScheduleItems_() {
@@ -6972,6 +7850,7 @@
       renderDeskViewState_();
       renderDeskTodayWorkers_();
       if (state.desk.activeTab === "monthlySchedule") renderDeskMonthlySchedule_();
+      if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
     }
 
@@ -9178,6 +10057,87 @@
           renderDeskLayout_();
         });
       });
+
+      Array.prototype.forEach.call(deskSupplyTabEls, function(btn) {
+        btn.addEventListener("click", function() {
+          var nextTab = btn.getAttribute("data-desk-supplies-tab") || "inventory";
+          if (nextTab === state.desk.suppliesTab) return;
+          state.desk.suppliesTab = nextTab;
+          renderDeskSupplies_();
+        });
+      });
+
+      if (deskSupplyInventoryBodyEl) {
+        deskSupplyInventoryBodyEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-supply-adjust]");
+          if (!btn) return;
+          adjustDeskConsumableQty_(
+            btn.getAttribute("data-desk-supply-adjust") || "",
+            Number(btn.getAttribute("data-desk-supply-delta") || 0)
+          );
+        });
+      }
+
+      if (deskAssetFormEl) {
+        deskAssetFormEl.addEventListener("submit", function(event) {
+          event.preventDefault();
+          saveDeskAssetFromForm_();
+        });
+      }
+
+      if (deskAssetTableBodyEl) {
+        deskAssetTableBodyEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-asset-delete]");
+          if (!btn) return;
+          if (!confirm("이 공용 물품을 목록에서 삭제할까요?")) return;
+          deleteDeskAsset_(btn.getAttribute("data-desk-asset-delete") || "");
+        });
+      }
+
+      if (deskPurchaseItemListEl) {
+        deskPurchaseItemListEl.addEventListener("change", function(event) {
+          var check = event.target.closest("[data-desk-purchase-select]");
+          if (check) {
+            updateDeskPurchaseSelection_(check.getAttribute("data-desk-purchase-select") || "", {
+              selected: !!check.checked
+            });
+            return;
+          }
+          var qtyInput = event.target.closest("[data-desk-purchase-qty]");
+          if (!qtyInput) return;
+          updateDeskPurchaseSelection_(qtyInput.getAttribute("data-desk-purchase-qty") || "", {
+            requestQty: Math.max(1, Number(qtyInput.value || 1))
+          });
+        });
+      }
+
+      if (deskPurchaseTargetEl) {
+        deskPurchaseTargetEl.addEventListener("input", function() {
+          state.desk.supplies.purchaseRequestTarget = String(deskPurchaseTargetEl.value || "").trim() || "대표님";
+          saveDeskSupplies_();
+          refreshDeskPurchaseMessage_();
+        });
+      }
+
+      if (deskPurchaseRequestNoteEl) {
+        deskPurchaseRequestNoteEl.addEventListener("input", function() {
+          state.desk.supplies.purchaseRequestNote = String(deskPurchaseRequestNoteEl.value || "");
+          saveDeskSupplies_();
+          refreshDeskPurchaseMessage_();
+        });
+      }
+
+      if (deskPurchaseRefreshBtnEl) {
+        deskPurchaseRefreshBtnEl.addEventListener("click", function() {
+          renderDeskPurchaseRequest_();
+        });
+      }
+
+      if (deskPurchaseCopyBtnEl) {
+        deskPurchaseCopyBtnEl.addEventListener("click", function() {
+          copyDeskPurchaseRequest_();
+        });
+      }
 
       Array.prototype.forEach.call(deskViewTabEls, function(btn) {
         btn.addEventListener("click", function() {
