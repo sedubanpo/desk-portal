@@ -153,6 +153,8 @@
       min-height: 0;
     }
     .worker-item {
+      position: relative;
+      overflow: hidden;
       border: 1px solid var(--desk-card-border, rgba(210, 255, 233, 0.14));
       border-radius: 12px;
       padding: 10px 12px;
@@ -160,6 +162,62 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
         var(--desk-card-tint, rgba(255, 255, 255, 0.05));
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    .worker-item-progress {
+      position: relative;
+      margin-top: 10px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      overflow: hidden;
+    }
+    .worker-item-progress-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: var(--desk-progress, 0%);
+      min-width: 8px;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(13, 104, 77, 0.28), rgba(13, 104, 77, 0.42));
+    }
+    .worker-item-progress-wave {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14px -2px, rgba(255,255,255,0.92) 0 10px, transparent 11px) 0 3px / 28px 14px repeat-x,
+        radial-gradient(circle at 28px 13px, rgba(255,255,255,0.68) 0 10px, transparent 11px) 0 0 / 28px 14px repeat-x;
+      opacity: 0.9;
+      animation: deskWaveFlow 2.6s linear infinite;
+      mix-blend-mode: screen;
+    }
+    .worker-item-progress-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 10px;
+      font-weight: 900;
+      color: rgba(236, 253, 245, 0.78);
+    }
+    .worker-item-progress-label strong {
+      color: #f0fdf4;
+    }
+    .worker-item-progress.resident {
+      background: rgba(255,255,255,0.14);
+    }
+    .worker-item-progress.resident .worker-item-progress-fill {
+      width: 100%;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.34));
+    }
+    .worker-item-progress.resident .worker-item-progress-wave {
+      opacity: 0.5;
+      animation-duration: 3.4s;
+    }
+    @keyframes deskWaveFlow {
+      from { background-position: 0 3px, 0 0; }
+      to { background-position: 56px 3px, 56px 0; }
     }
     .worker-item .k {
       font-size: 11px;
@@ -6691,6 +6749,7 @@
     var pendingPrivilegedAction_ = null;
     var loadingProgressTimer = null;
     var loadingProgressValue = 0;
+    var deskTodayWorkerTimer_ = null;
     var entryGateEl = document.getElementById("entryGate");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
     var entrySubmitBtnEl = document.getElementById("entrySubmitBtn");
@@ -6702,6 +6761,10 @@
       bindEntryGateEvents();
       showEntryGate();
       renderModuleLayout();
+      deskTodayWorkerTimer_ = setInterval(function() {
+        if (shouldDeferPortalDataLoad_()) return;
+        renderDeskTodayWorkers_();
+      }, 60000);
     });
 
     function renderModuleLayout() {
@@ -7350,15 +7413,94 @@
       }
       deskTodayWorkerListEl.innerHTML = items.map(function(item) {
         var tone = getDeskShiftTone_(item);
+        var progress = getDeskTodayWorkerProgress_(item);
         return '<article class="worker-item tone-' + tone + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
           '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
           '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
           '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
+          '<div class="worker-item-progress' + (item.resident ? ' resident' : '') + '" style="--desk-progress:' + escapeHtml(progress.percent + '%') + ';">' +
+            '<div class="worker-item-progress-fill"><div class="worker-item-progress-wave"></div></div>' +
+          '</div>' +
+          '<div class="worker-item-progress-label"><span>' + escapeHtml(progress.leftLabel) + '</span><strong>' + escapeHtml(progress.rightLabel) + '</strong></div>' +
         '</article>';
       }).join("");
       if (deskTodayWorkerMetaEl) {
         deskTodayWorkerMetaEl.textContent = "오늘 일정 " + items.length + "건 · 집계 대상 " + formatDeskHours_(sumDeskCountedHours_(items));
       }
+    }
+
+    function getDeskTodayWorkerProgress_(item) {
+      if (!item || item.resident) {
+        return {
+          percent: 100,
+          leftLabel: "상주 근무",
+          rightLabel: "시간 집계 제외"
+        };
+      }
+      if (!item.start || !item.end) {
+        return {
+          percent: 0,
+          leftLabel: "시간 미설정",
+          rightLabel: "진행 계산 불가"
+        };
+      }
+      var startDate = buildDeskDateTimeFromParts_(item.date, item.start);
+      var endDate = buildDeskDateTimeFromParts_(item.date, item.end);
+      if (!startDate || !endDate || endDate.getTime() <= startDate.getTime()) {
+        return {
+          percent: 0,
+          leftLabel: "시간 확인 필요",
+          rightLabel: "진행 계산 불가"
+        };
+      }
+      var now = new Date();
+      var totalMs = endDate.getTime() - startDate.getTime();
+      var elapsedMs = Math.min(Math.max(now.getTime() - startDate.getTime(), 0), totalMs);
+      var remainingMs = Math.max(endDate.getTime() - now.getTime(), 0);
+      var percent = Math.max(0, Math.min(100, Math.round((elapsedMs / totalMs) * 100)));
+      if (now.getTime() < startDate.getTime()) {
+        return {
+          percent: 4,
+          leftLabel: "근무 전",
+          rightLabel: "시작까지 " + formatDeskDurationLabel_(startDate.getTime() - now.getTime())
+        };
+      }
+      if (now.getTime() >= endDate.getTime()) {
+        return {
+          percent: 100,
+          leftLabel: "근무 종료",
+          rightLabel: "근무 완료"
+        };
+      }
+      return {
+        percent: percent,
+        leftLabel: "진행 " + percent + "%",
+        rightLabel: "남은 " + formatDeskDurationLabel_(remainingMs)
+      };
+    }
+
+    function buildDeskDateTimeFromParts_(dateKey, timeValue) {
+      var dateText = String(dateKey || "");
+      var timeText = String(timeValue || "");
+      if (!dateText || !timeText || timeText.indexOf(":") === -1) return null;
+      var dateParts = dateText.split("-");
+      var timeParts = timeText.split(":");
+      var year = Number(dateParts[0] || 0);
+      var month = Number(dateParts[1] || 1) - 1;
+      var day = Number(dateParts[2] || 1);
+      var hour = Number(timeParts[0] || 0);
+      var minute = Number(timeParts[1] || 0);
+      var date = new Date(year, month, day, hour, minute, 0, 0);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    function formatDeskDurationLabel_(ms) {
+      var totalMinutes = Math.max(0, Math.round(ms / 60000));
+      var hours = Math.floor(totalMinutes / 60);
+      var minutes = totalMinutes % 60;
+      if (hours && minutes) return hours + "시간 " + minutes + "분";
+      if (hours) return hours + "시간";
+      return minutes + "분";
     }
 
     function ensureDeskSelectedDate_() {
@@ -8876,6 +9018,7 @@
     }
 
     function saveDeskDailyMemoFromForm_() {
+      if (deskJournalMemoSubmitBtnEl && deskJournalMemoSubmitBtnEl.disabled) return;
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var worker = String(deskJournalMemoWorkerEl && deskJournalMemoWorkerEl.value || "").trim();
       var text = String(deskJournalMemoInputEl && deskJournalMemoInputEl.value || "").trim();
@@ -9326,13 +9469,6 @@
       }
       if (deskJournalMemoFormEl) {
         deskJournalMemoFormEl.addEventListener("submit", function(event) {
-          event.preventDefault();
-          saveDeskDailyMemoFromForm_();
-        });
-      }
-      if (deskJournalMemoInputEl) {
-        deskJournalMemoInputEl.addEventListener("keydown", function(event) {
-          if (event.key !== "Enter" || event.shiftKey) return;
           event.preventDefault();
           saveDeskDailyMemoFromForm_();
         });
