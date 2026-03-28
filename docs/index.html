@@ -163,40 +163,75 @@
         var(--desk-card-tint, rgba(255, 255, 255, 0.05));
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
+    .worker-item-inner {
+      position: relative;
+      z-index: 2;
+    }
+    .worker-item-water {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      height: 50px;
+      border-radius: 18px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .worker-item-water-fill {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: var(--desk-water-height, 0%);
+      min-height: 0;
+      border-radius: 16px 16px 18px 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, rgba(104, 225, 210, 0.24), rgba(73, 170, 224, 0.36));
+      backdrop-filter: blur(3px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .worker-item-water-surface {
+      position: absolute;
+      left: -8%;
+      width: 116%;
+      top: -8px;
+      height: 20px;
+      background:
+        radial-gradient(ellipse at 15% 55%, rgba(226,255,255,0.95) 0 16%, transparent 18%) 0 8px/64px 18px repeat-x,
+        radial-gradient(ellipse at 55% 35%, rgba(155,232,255,0.78) 0 18%, transparent 20%) 0 0/74px 20px repeat-x,
+        linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.02));
+      opacity: 0.88;
+      animation: deskCardWave 3.1s linear infinite;
+      filter: saturate(1.08);
+    }
+    .worker-item-water-foam {
+      position: absolute;
+      inset: 6px 12px auto 12px;
+      height: 10px;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.58) 0 2px, transparent 2.5px) 0 0/24px 10px repeat-x;
+      opacity: 0.75;
+      animation: deskFoamDrift 4.6s linear infinite;
+    }
+    .worker-item-water-glow {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 60%);
+      opacity: 0.6;
+    }
     .worker-item-progress {
       position: relative;
       margin-top: 10px;
-      height: 12px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.18);
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      overflow: hidden;
-    }
-    .worker-item-progress-fill {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: var(--desk-progress, 0%);
-      min-width: 8px;
-      border-radius: inherit;
-      background: linear-gradient(90deg, rgba(13, 104, 77, 0.28), rgba(13, 104, 77, 0.42));
-    }
-    .worker-item-progress-wave {
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 14px -2px, rgba(255,255,255,0.92) 0 10px, transparent 11px) 0 3px / 28px 14px repeat-x,
-        radial-gradient(circle at 28px 13px, rgba(255,255,255,0.68) 0 10px, transparent 11px) 0 0 / 28px 14px repeat-x;
-      opacity: 0.9;
-      animation: deskWaveFlow 2.6s linear infinite;
-      mix-blend-mode: screen;
+      padding-top: 56px;
     }
     .worker-item-progress-label {
       display: flex;
       justify-content: space-between;
       gap: 8px;
-      margin-top: 6px;
+      margin-top: 2px;
       font-size: 10px;
       font-weight: 900;
       color: rgba(236, 253, 245, 0.78);
@@ -205,19 +240,25 @@
       color: #f0fdf4;
     }
     .worker-item-progress.resident {
-      background: rgba(255,255,255,0.14);
+      padding-top: 56px;
     }
-    .worker-item-progress.resident .worker-item-progress-fill {
-      width: 100%;
-      background: linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.34));
+    .worker-item-progress.resident .worker-item-water-fill {
+      height: 84%;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02)),
+        linear-gradient(180deg, rgba(255, 211, 130, 0.2), rgba(255, 176, 90, 0.34));
     }
-    .worker-item-progress.resident .worker-item-progress-wave {
-      opacity: 0.5;
-      animation-duration: 3.4s;
+    .worker-item-progress.resident .worker-item-water-surface {
+      opacity: 0.64;
+      animation-duration: 4s;
     }
-    @keyframes deskWaveFlow {
-      from { background-position: 0 3px, 0 0; }
-      to { background-position: 56px 3px, 56px 0; }
+    @keyframes deskCardWave {
+      from { transform: translateX(0); }
+      to { transform: translateX(56px); }
+    }
+    @keyframes deskFoamDrift {
+      from { transform: translateX(0); }
+      to { transform: translateX(24px); }
     }
     .worker-item .k {
       font-size: 11px;
@@ -7415,13 +7456,21 @@
         var tone = getDeskShiftTone_(item);
         var progress = getDeskTodayWorkerProgress_(item);
         return '<article class="worker-item tone-' + tone + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
-          '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
-          '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
-          '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
-          '<div class="worker-item-progress' + (item.resident ? ' resident' : '') + '" style="--desk-progress:' + escapeHtml(progress.percent + '%') + ';">' +
-            '<div class="worker-item-progress-fill"><div class="worker-item-progress-wave"></div></div>' +
+          '<div class="worker-item-inner">' +
+            '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
+            '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
+            '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
+            '<div class="worker-item-progress' + (item.resident ? ' resident' : '') + '">' +
+              '<div class="worker-item-water" style="--desk-water-height:' + escapeHtml(progress.percent + '%') + ';">' +
+                '<div class="worker-item-water-fill">' +
+                  '<div class="worker-item-water-surface"></div>' +
+                  '<div class="worker-item-water-foam"></div>' +
+                  '<div class="worker-item-water-glow"></div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="worker-item-progress-label"><span>' + escapeHtml(progress.leftLabel) + '</span><strong>' + escapeHtml(progress.rightLabel) + '</strong></div>' +
+            '</div>' +
           '</div>' +
-          '<div class="worker-item-progress-label"><span>' + escapeHtml(progress.leftLabel) + '</span><strong>' + escapeHtml(progress.rightLabel) + '</strong></div>' +
         '</article>';
       }).join("");
       if (deskTodayWorkerMetaEl) {
@@ -7455,26 +7504,25 @@
       }
       var now = new Date();
       var totalMs = endDate.getTime() - startDate.getTime();
-      var elapsedMs = Math.min(Math.max(now.getTime() - startDate.getTime(), 0), totalMs);
       var remainingMs = Math.max(endDate.getTime() - now.getTime(), 0);
-      var percent = Math.max(0, Math.min(100, Math.round((elapsedMs / totalMs) * 100)));
+      var percent = Math.max(0, Math.min(100, Math.round((remainingMs / totalMs) * 100)));
       if (now.getTime() < startDate.getTime()) {
         return {
-          percent: 4,
+          percent: 96,
           leftLabel: "근무 전",
           rightLabel: "시작까지 " + formatDeskDurationLabel_(startDate.getTime() - now.getTime())
         };
       }
       if (now.getTime() >= endDate.getTime()) {
         return {
-          percent: 100,
+          percent: 0,
           leftLabel: "근무 종료",
           rightLabel: "근무 완료"
         };
       }
       return {
         percent: percent,
-        leftLabel: "진행 " + percent + "%",
+        leftLabel: "잔여 " + percent + "%",
         rightLabel: "남은 " + formatDeskDurationLabel_(remainingMs)
       };
     }
