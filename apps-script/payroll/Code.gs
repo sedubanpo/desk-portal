@@ -10,6 +10,7 @@ const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
+const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -35,6 +36,11 @@ const PAYROLL_API_ALLOWED_METHODS = {
   deleteDeskDailyJournalTask: true,
   saveDeskDailyJournalMemo: true,
   deleteDeskDailyJournalMemo: true,
+  getDeskSuppliesData: true,
+  adjustDeskSupplyConsumable: true,
+  saveDeskSupplyAsset: true,
+  deleteDeskSupplyAsset: true,
+  saveDeskSupplyPurchaseState: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
   savePayrollSettings: true
@@ -104,6 +110,11 @@ function handlePayrollApiRequest_(params) {
       deleteDeskDailyJournalTask: deleteDeskDailyJournalTask,
       saveDeskDailyJournalMemo: saveDeskDailyJournalMemo,
       deleteDeskDailyJournalMemo: deleteDeskDailyJournalMemo,
+      getDeskSuppliesData: getDeskSuppliesData,
+      adjustDeskSupplyConsumable: adjustDeskSupplyConsumable,
+      saveDeskSupplyAsset: saveDeskSupplyAsset,
+      deleteDeskSupplyAsset: deleteDeskSupplyAsset,
+      saveDeskSupplyPurchaseState: saveDeskSupplyPurchaseState,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
       savePayrollSettings: savePayrollSettings
@@ -337,6 +348,184 @@ function buildDeskScheduleMonthPath_(monthKey) {
 
 function buildDeskDailyJournalPath_(dateKey) {
   return DESK_DAILY_JOURNAL_ROOT_PATH + "/" + dateKey;
+}
+
+function buildDeskSuppliesPath_() {
+  return DESK_SUPPLIES_ROOT_PATH;
+}
+
+function getDefaultDeskSupplyConsumables_() {
+  return [
+    { id: "wet_tissue", itemName: "물티슈", productName: "데스크용 물티슈 100매", qty: 6, maxQty: 10, safetyQty: 4, unit: "개" },
+    { id: "box_tissue", itemName: "곽티슈", productName: "클리넥스 200매", qty: 12, maxQty: 20, safetyQty: 8, unit: "개" },
+    { id: "paper_cup", itemName: "종이컵", productName: "테이크아웃컵 1줄", qty: 5, maxQty: 8, safetyQty: 3, unit: "줄" },
+    { id: "trash_bag", itemName: "쓰레기봉투", productName: "20L 검정봉투", qty: 3, maxQty: 6, safetyQty: 2, unit: "묶음" },
+    { id: "sanitizer", itemName: "손소독제", productName: "대용량 리필 500ml", qty: 2, maxQty: 5, safetyQty: 2, unit: "병" },
+    { id: "marker", itemName: "보드마카", productName: "화이트보드 마카 세트", qty: 4, maxQty: 8, safetyQty: 3, unit: "세트" }
+  ];
+}
+
+function getDefaultDeskSupplyAssets_() {
+  return [
+    { id: "asset_desktop_1", type: "데스크탑", productName: "DELL OptiPlex 데스크 PC", location: "반포관 데스크", manager: "데스크 공용", status: "정상", note: "학생 등록 및 결제 업무용" },
+    { id: "asset_tablet_1", type: "태블릿", productName: "iPad Air 5세대", location: "상담 테이블", manager: "상담용 공용", status: "정상", note: "학부모 상담 및 안내 자료" },
+    { id: "asset_printer_1", type: "프린터", productName: "HP LaserJet Pro", location: "데스크 뒤편", manager: "데스크 공용", status: "점검 필요", note: "토너 잔량 확인 필요" }
+  ];
+}
+
+function normalizeDeskSupplyConsumable_(item, fallbackId) {
+  var source = item || {};
+  var maxQty = Math.max(1, Number(source.maxQty || 1));
+  var qty = Math.max(0, Math.min(maxQty, Number(source.qty || 0)));
+  var safetyQty = Math.max(0, Math.min(maxQty, Number(source.safetyQty || 0)));
+  return {
+    id: String(source.id || fallbackId || ("desk_supply_" + Utilities.getUuid().replace(/-/g, "").slice(0, 8))).trim(),
+    itemName: String(source.itemName || "품목명").trim(),
+    productName: String(source.productName || "제품명 미입력").trim(),
+    qty: qty,
+    maxQty: maxQty,
+    safetyQty: safetyQty,
+    unit: String(source.unit || "개").trim()
+  };
+}
+
+function normalizeDeskSupplyAsset_(item, fallbackId) {
+  var source = item || {};
+  return {
+    id: String(source.id || fallbackId || Utilities.getUuid().replace(/-/g, "")).trim(),
+    type: String(source.type || "기타").trim(),
+    productName: String(source.productName || "제품명 미입력").trim(),
+    location: String(source.location || "-").trim(),
+    manager: String(source.manager || "-").trim(),
+    status: String(source.status || "정상").trim(),
+    note: String(source.note || "").trim()
+  };
+}
+
+function normalizeDeskSupplySelectionMap_(map, consumables) {
+  var source = map && typeof map === "object" ? map : {};
+  var result = {};
+  (consumables || []).forEach(function(item) {
+    var current = source[item.id] && typeof source[item.id] === "object" ? source[item.id] : {};
+    var recommended = Math.max(1, Number(item.maxQty || 1) - Number(item.qty || 0));
+    result[item.id] = {
+      selected: typeof current.selected === "boolean" ? current.selected : Number(item.qty || 0) <= Number(item.safetyQty || 0),
+      requestQty: Math.max(1, Number(current.requestQty || recommended))
+    };
+  });
+  return result;
+}
+
+function normalizeDeskSuppliesData_(stored) {
+  var data = stored && typeof stored === "object" ? stored : {};
+  var consumablesSource = Array.isArray(data.consumables) && data.consumables.length
+    ? data.consumables
+    : getDefaultDeskSupplyConsumables_();
+  var assetsSource = Array.isArray(data.assets) && data.assets.length
+    ? data.assets
+    : getDefaultDeskSupplyAssets_();
+  var consumables = consumablesSource.map(function(item, idx) {
+    return normalizeDeskSupplyConsumable_(item, item && item.id ? item.id : ("desk_supply_" + idx));
+  });
+  var assets = assetsSource.map(function(item, idx) {
+    return normalizeDeskSupplyAsset_(item, item && item.id ? item.id : ("desk_asset_" + idx));
+  });
+  return {
+    consumables: consumables,
+    assets: assets,
+    purchaseSelections: normalizeDeskSupplySelectionMap_(data.purchaseSelections, consumables),
+    purchaseRequestTarget: String(data.purchaseRequestTarget || "대표님").trim() || "대표님",
+    purchaseRequestNote: String(data.purchaseRequestNote || "").trim()
+  };
+}
+
+function getDeskSuppliesData() {
+  try {
+    var path = buildDeskSuppliesPath_();
+    var stored = firebaseRequestWithServiceAccount_("get", path) || null;
+    var seeded = !stored || typeof stored !== "object" || !Object.keys(stored).length;
+    var data = normalizeDeskSuppliesData_(stored);
+    if (seeded) {
+      firebaseRequestWithServiceAccount_("put", path, data);
+    }
+    return { success: true, data: data, seeded: seeded };
+  } catch (e) {
+    return { success: false, message: "소모품 데이터 조회 오류: " + e.message };
+  }
+}
+
+function adjustDeskSupplyConsumable(payload) {
+  try {
+    var req = payload || {};
+    var id = String(req.id || "").trim();
+    var delta = Number(req.delta || 0);
+    if (!id) return { success: false, message: "품목 ID가 없습니다." };
+    if (!delta) return { success: false, message: "조정 수량이 없습니다." };
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    var target = data.consumables.filter(function(item) { return item.id === id; })[0];
+    if (!target) return { success: false, message: "조정할 품목을 찾을 수 없습니다." };
+    target.qty = Math.max(0, Math.min(target.maxQty, Number(target.qty || 0) + delta));
+    data.purchaseSelections = normalizeDeskSupplySelectionMap_(data.purchaseSelections, data.consumables);
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data };
+  } catch (e) {
+    return { success: false, message: "소모품 수량 조정 오류: " + e.message };
+  }
+}
+
+function saveDeskSupplyAsset(payload) {
+  try {
+    var req = payload || {};
+    var asset = normalizeDeskSupplyAsset_(req.asset || {}, req.asset && req.asset.id);
+    if (!asset.type) return { success: false, message: "물품 분류가 필요합니다." };
+    if (!asset.productName) return { success: false, message: "제품명을 입력해 주세요." };
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    var nextAssets = data.assets.filter(function(item) { return item.id !== asset.id; });
+    nextAssets.unshift(asset);
+    data.assets = nextAssets;
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data, asset: asset };
+  } catch (e) {
+    return { success: false, message: "물품 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskSupplyAsset(payload) {
+  try {
+    var req = payload || {};
+    var id = String(req.id || "").trim();
+    if (!id) return { success: false, message: "삭제할 물품 ID가 없습니다." };
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    data.assets = data.assets.filter(function(item) { return item.id !== id; });
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data, id: id };
+  } catch (e) {
+    return { success: false, message: "물품 삭제 오류: " + e.message };
+  }
+}
+
+function saveDeskSupplyPurchaseState(payload) {
+  try {
+    var req = payload || {};
+    var path = buildDeskSuppliesPath_();
+    var data = normalizeDeskSuppliesData_(firebaseRequestWithServiceAccount_("get", path) || null);
+    if (req.purchaseSelections && typeof req.purchaseSelections === "object") {
+      data.purchaseSelections = normalizeDeskSupplySelectionMap_(req.purchaseSelections, data.consumables);
+    }
+    if (typeof req.purchaseRequestTarget !== "undefined") {
+      data.purchaseRequestTarget = String(req.purchaseRequestTarget || "대표님").trim() || "대표님";
+    }
+    if (typeof req.purchaseRequestNote !== "undefined") {
+      data.purchaseRequestNote = String(req.purchaseRequestNote || "").trim();
+    }
+    firebaseRequestWithServiceAccount_("put", path, data);
+    return { success: true, data: data };
+  } catch (e) {
+    return { success: false, message: "구매 요청 상태 저장 오류: " + e.message };
+  }
 }
 
 function normalizeDeskScheduleMonthKey_(value) {

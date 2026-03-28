@@ -6892,7 +6892,6 @@
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbyYnAq06DfZgA9_mBwsGAG6QuBlDn7OGv3EZ5mifUG7LenEkqzSGy2bOy4kfRl58tgL/exec";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
-    var DESK_SUPPLIES_STORAGE_KEY = "desk_portal_supplies_v1";
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
@@ -6948,6 +6947,9 @@
         loadedMonths: {},
         loadingMonths: {},
         supplies: {
+          loaded: false,
+          loadingPromise: null,
+          saveTimer: null,
           consumables: [],
           assets: [],
           purchaseSelections: {},
@@ -7375,7 +7377,15 @@
       state.desk.expandedUnavailableDates = {};
       state.desk.loadedMonths = {};
       state.desk.loadingMonths = {};
-      loadDeskSupplies_();
+      state.desk.supplies.loaded = false;
+      state.desk.supplies.loadingPromise = null;
+      state.desk.supplies.saveTimer = null;
+      state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
+      state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
+      state.desk.supplies.purchaseSelections = {};
+      state.desk.supplies.purchaseRequestTarget = "대표님";
+      state.desk.supplies.purchaseRequestNote = "";
+      ensureDeskSupplySelections_();
       state.desk.daily.tasks = [];
       state.desk.daily.memos = [];
       state.desk.daily.loadedDates = {};
@@ -7435,41 +7445,38 @@
       };
     }
 
-    function loadDeskSupplies_() {
-      var saved = null;
-      try {
-        saved = localStorage.getItem(DESK_SUPPLIES_STORAGE_KEY);
-      } catch (err) {}
-      if (saved) {
-        try {
-          var parsed = JSON.parse(saved);
-          state.desk.supplies.consumables = (parsed.consumables || []).map(normalizeDeskConsumable_);
-          state.desk.supplies.assets = (parsed.assets || []).map(normalizeDeskAsset_);
-          state.desk.supplies.purchaseSelections = parsed.purchaseSelections || {};
-          state.desk.supplies.purchaseRequestTarget = String(parsed.purchaseRequestTarget || "대표님");
-          state.desk.supplies.purchaseRequestNote = String(parsed.purchaseRequestNote || "");
-        } catch (err) {
-          state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
-          state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
-        }
-      } else {
-        state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
-        state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
-      }
+    function applyDeskSuppliesData_(data) {
+      var source = data || {};
+      state.desk.supplies.consumables = (source.consumables || []).map(normalizeDeskConsumable_);
+      state.desk.supplies.assets = (source.assets || []).map(normalizeDeskAsset_);
+      state.desk.supplies.purchaseSelections = source.purchaseSelections || {};
+      state.desk.supplies.purchaseRequestTarget = String(source.purchaseRequestTarget || "대표님").trim() || "대표님";
+      state.desk.supplies.purchaseRequestNote = String(source.purchaseRequestNote || "");
       ensureDeskSupplySelections_();
-      saveDeskSupplies_();
     }
 
-    function saveDeskSupplies_() {
-      try {
-        localStorage.setItem(DESK_SUPPLIES_STORAGE_KEY, JSON.stringify({
-          consumables: state.desk.supplies.consumables,
-          assets: state.desk.supplies.assets,
-          purchaseSelections: state.desk.supplies.purchaseSelections,
-          purchaseRequestTarget: state.desk.supplies.purchaseRequestTarget,
-          purchaseRequestNote: state.desk.supplies.purchaseRequestNote
-        }));
-      } catch (err) {}
+    function ensureDeskSuppliesLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      if (state.desk.supplies.loaded) return Promise.resolve();
+      if (state.desk.supplies.loadingPromise) return state.desk.supplies.loadingPromise;
+      state.desk.supplies.loadingPromise = runServer("getDeskSuppliesData")
+        .then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
+          }
+          applyDeskSuppliesData_(res.data || {});
+          state.desk.supplies.loaded = true;
+          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
+            renderDeskSupplies_();
+          }
+        })
+        .catch(function(err) {
+          showClientMessage(err && err.message ? err.message : "소모품 데이터를 불러오지 못했습니다.");
+        })
+        .finally(function() {
+          state.desk.supplies.loadingPromise = null;
+        });
+      return state.desk.supplies.loadingPromise;
     }
 
     function ensureDeskSupplySelections_() {
@@ -7496,6 +7503,16 @@
       Array.prototype.forEach.call(deskSupplyPanelEls, function(panel) {
         panel.classList.toggle("hidden", (panel.getAttribute("data-desk-supplies-panel") || "") !== state.desk.suppliesTab);
       });
+      if (shouldDeferPortalDataLoad_()) return;
+      if (!state.desk.supplies.loaded) {
+        if (deskSupplyInventoryBodyEl) deskSupplyInventoryBodyEl.innerHTML = '<tr><td colspan="4">소모품 데이터를 불러오는 중입니다...</td></tr>';
+        if (deskSupplyQuickWrapEl) deskSupplyQuickWrapEl.innerHTML = '<article class="desk-supply-quick-card"><p>재고 현황을 불러오는 중입니다.</p></article>';
+        if (deskAssetTableBodyEl) deskAssetTableBodyEl.innerHTML = '<tr><td colspan="7">공용 물품 데이터를 불러오는 중입니다...</td></tr>';
+        if (deskPurchaseItemListEl) deskPurchaseItemListEl.innerHTML = '<div class="desk-notice">구매 요청용 재고 현황을 불러오는 중입니다.</div>';
+        if (deskPurchaseMessageEl) deskPurchaseMessageEl.value = "소모품 데이터를 불러오는 중입니다...";
+        ensureDeskSuppliesLoaded_();
+        return;
+      }
       ensureDeskSupplySelections_();
       renderDeskSupplySummary_();
       renderDeskSupplyInventory_();
@@ -7562,13 +7579,16 @@
     }
 
     function adjustDeskConsumableQty_(id, delta) {
-      var target = (state.desk.supplies.consumables || []).find(function(item) { return item.id === id; });
-      if (!target) return;
-      var nextQty = Math.max(0, Math.min(target.maxQty, target.qty + delta));
-      target.qty = nextQty;
-      ensureDeskSupplySelections_();
-      saveDeskSupplies_();
-      renderDeskSupplies_();
+      runServer("adjustDeskSupplyConsumable", {
+        id: id,
+        delta: delta
+      }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품 수량을 저장하지 못했습니다.");
+        applyDeskSuppliesData_(res.data || {});
+        renderDeskSupplies_();
+      }).catch(function(err) {
+        showClientMessage(err && err.message ? err.message : "소모품 수량을 저장하지 못했습니다.");
+      });
     }
 
     function renderDeskAssets_() {
@@ -7600,7 +7620,8 @@
         alert("물품 분류와 제품명은 입력해 주세요.");
         return;
       }
-      state.desk.supplies.assets.unshift(normalizeDeskAsset_({
+      runServer("saveDeskSupplyAsset", {
+        asset: {
         id: "desk_asset_" + Date.now(),
         type: type,
         productName: product,
@@ -7608,19 +7629,28 @@
         manager: String(deskAssetManagerEl && deskAssetManagerEl.value || "").trim(),
         status: String(deskAssetStatusEl && deskAssetStatusEl.value || "정상"),
         note: String(deskAssetNoteEl && deskAssetNoteEl.value || "").trim()
-      }));
-      if (deskAssetFormEl) deskAssetFormEl.reset();
-      if (deskAssetStatusEl) deskAssetStatusEl.value = "정상";
-      saveDeskSupplies_();
-      renderDeskSupplies_();
+      }
+      }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "공용 물품을 저장하지 못했습니다.");
+        applyDeskSuppliesData_(res.data || {});
+        if (deskAssetFormEl) deskAssetFormEl.reset();
+        if (deskAssetStatusEl) deskAssetStatusEl.value = "정상";
+        renderDeskSupplies_();
+      }).catch(function(err) {
+        showClientMessage(err && err.message ? err.message : "공용 물품을 저장하지 못했습니다.");
+      });
     }
 
     function deleteDeskAsset_(id) {
-      state.desk.supplies.assets = (state.desk.supplies.assets || []).filter(function(item) {
-        return item.id !== id;
-      });
-      saveDeskSupplies_();
-      renderDeskSupplies_();
+      runServer("deleteDeskSupplyAsset", { id: id })
+        .then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "공용 물품을 삭제하지 못했습니다.");
+          applyDeskSuppliesData_(res.data || {});
+          renderDeskSupplies_();
+        })
+        .catch(function(err) {
+          showClientMessage(err && err.message ? err.message : "공용 물품을 삭제하지 못했습니다.");
+        });
     }
 
     function renderDeskPurchaseRequest_() {
@@ -7672,8 +7702,31 @@
       ensureDeskSupplySelections_();
       var current = state.desk.supplies.purchaseSelections[id] || { selected: false, requestQty: 1 };
       state.desk.supplies.purchaseSelections[id] = Object.assign({}, current, patch);
-      saveDeskSupplies_();
-      renderDeskSupplies_();
+      refreshDeskPurchaseMessage_();
+      scheduleDeskSuppliesPurchaseSave_();
+    }
+
+    function scheduleDeskSuppliesPurchaseSave_() {
+      if (state.desk.supplies.saveTimer) {
+        clearTimeout(state.desk.supplies.saveTimer);
+      }
+      state.desk.supplies.saveTimer = setTimeout(function() {
+        state.desk.supplies.saveTimer = null;
+        runServer("saveDeskSupplyPurchaseState", {
+          purchaseSelections: state.desk.supplies.purchaseSelections,
+          purchaseRequestTarget: state.desk.supplies.purchaseRequestTarget,
+          purchaseRequestNote: state.desk.supplies.purchaseRequestNote
+        }).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "구매 요청 상태를 저장하지 못했습니다.");
+          applyDeskSuppliesData_(res.data || {});
+          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
+            renderDeskPurchaseRequest_();
+            renderDeskSupplySummary_();
+          }
+        }).catch(function(err) {
+          showClientMessage(err && err.message ? err.message : "구매 요청 상태를 저장하지 못했습니다.");
+        });
+      }, 300);
     }
 
     function copyDeskPurchaseRequest_() {
@@ -10114,16 +10167,16 @@
       if (deskPurchaseTargetEl) {
         deskPurchaseTargetEl.addEventListener("input", function() {
           state.desk.supplies.purchaseRequestTarget = String(deskPurchaseTargetEl.value || "").trim() || "대표님";
-          saveDeskSupplies_();
           refreshDeskPurchaseMessage_();
+          scheduleDeskSuppliesPurchaseSave_();
         });
       }
 
       if (deskPurchaseRequestNoteEl) {
         deskPurchaseRequestNoteEl.addEventListener("input", function() {
           state.desk.supplies.purchaseRequestNote = String(deskPurchaseRequestNoteEl.value || "");
-          saveDeskSupplies_();
           refreshDeskPurchaseMessage_();
+          scheduleDeskSuppliesPurchaseSave_();
         });
       }
 
