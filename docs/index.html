@@ -915,7 +915,8 @@
       font-weight: 800;
       color: #4b5d70;
     }
-    .desk-filter-field select {
+    .desk-filter-field select,
+    .desk-filter-field input {
       border: 1px solid #c8d6cc;
       border-radius: 12px;
       padding: 9px 12px;
@@ -924,6 +925,9 @@
       font-size: 13px;
       font-weight: 700;
       font-family: inherit;
+    }
+    .desk-filter-field input::placeholder {
+      color: #8aa096;
     }
     .desk-legend-item,
     .desk-tone-preview {
@@ -1539,12 +1543,76 @@
       font-weight: 900;
       border: 1px solid transparent;
     }
+    .desk-item-action-row {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-insight-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-insight-tab {
+      border: 1px solid #d5e4db;
+      background: #fff;
+      color: #486173;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-insight-tab.active {
+      background: linear-gradient(180deg, #0d684d 0%, #118260 100%);
+      border-color: #0d684d;
+      color: #fff;
+      box-shadow: 0 10px 18px rgba(13, 104, 77, 0.14);
+    }
+    .desk-insight-item strong.muted {
+      color: #557084;
+      font-size: 12px;
+      font-weight: 800;
+    }
     .desk-analytics-layout,
     .desk-editor-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.7fr) minmax(360px, 1fr);
       gap: 14px;
       align-items: start;
+    }
+    .desk-inline-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .desk-inline-stat-card {
+      border: 1px solid #dbe8e1;
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #f5faf7 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 108px;
+    }
+    .desk-inline-stat-card .label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #597285;
+    }
+    .desk-inline-stat-card .value {
+      font-size: 26px;
+      font-weight: 900;
+      color: #173042;
+      line-height: 1.1;
+    }
+    .desk-inline-stat-card .sub {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b7d8f;
+      line-height: 1.5;
     }
     .desk-editor-card {
       padding: 14px;
@@ -5870,6 +5938,10 @@
                       <select id="deskWorkerFilter"></select>
                     </div>
                     <div class="desk-filter-field">
+                      <label for="deskWorkerSearch">근무표 검색</label>
+                      <input id="deskWorkerSearch" type="search" placeholder="근무자명 검색" list="deskWorkerNameList">
+                    </div>
+                    <div class="desk-filter-field">
                       <label for="deskToneFilter">시간대 필터</label>
                       <select id="deskToneFilter">
                         <option value="">전체</option>
@@ -5936,6 +6008,7 @@
                     </article>
                     <article class="desk-side-card">
                       <div class="desk-side-title">이번 달 운영 포인트</div>
+                      <div class="desk-insight-tabs" id="deskInsightTabs"></div>
                       <div class="desk-insight-list" id="deskInsightsList"></div>
                     </article>
                   </aside>
@@ -5946,6 +6019,7 @@
                 <div class="desk-analytics-layout">
                   <article class="desk-editor-card">
                     <div class="desk-side-title">근무자별 주차/월별 집계</div>
+                    <div class="desk-inline-stat-grid" id="deskAnalyticsStatGrid"></div>
                     <div class="desk-table-wrap">
                       <table class="desk-schedule-table">
                         <thead>
@@ -6042,6 +6116,7 @@
                       </div>
                       <div class="desk-form-actions">
                         <button class="modal-action ghost" id="deskResetShiftBtn" type="button">새 일정으로 초기화</button>
+                        <button class="modal-action ghost" id="deskCopyNextShiftBtn" type="button">다음 날짜 복사</button>
                         <button class="modal-action ghost" id="deskDeleteShiftBtn" type="button">선택 일정 삭제</button>
                         <button class="modal-action primary" id="deskSaveShiftBtn" type="submit">일정 저장</button>
                       </div>
@@ -6500,6 +6575,7 @@
         <div class="modal-foot" style="margin-top:14px;">
           <div></div>
           <div class="desk-form-actions">
+            <button class="modal-action ghost" id="deskShiftModalCopyNextBtn" type="button">다음 날짜 복사</button>
             <button class="modal-action ghost" id="deskShiftModalDeleteBtn" type="button">삭제</button>
             <button class="modal-action primary" type="submit">저장</button>
           </div>
@@ -6972,7 +7048,9 @@
         selectedDateKey: "",
         selectedShiftId: "",
         workerFilter: "",
+        workerSearch: "",
         toneFilter: "",
+        activeInsightTab: "overview",
         expandedUnavailableDates: {},
         expandedPastWeekKeys: {},
         openWeekSummaryKey: "",
@@ -7155,6 +7233,7 @@
     var deskFocusTodayBtnEl = document.getElementById("deskFocusTodayBtn");
     var deskNewShiftBtnEl = document.getElementById("deskNewShiftBtn");
     var deskWorkerFilterEl = document.getElementById("deskWorkerFilter");
+    var deskWorkerSearchEl = document.getElementById("deskWorkerSearch");
     var deskToneFilterEl = document.getElementById("deskToneFilter");
     var deskKpiShiftCountEl = document.getElementById("deskKpiShiftCount");
     var deskKpiShiftCountSubEl = document.getElementById("deskKpiShiftCountSub");
@@ -7171,8 +7250,10 @@
     var deskSelectedDateTitleEl = document.getElementById("deskSelectedDateTitle");
     var deskSelectedDateSubEl = document.getElementById("deskSelectedDateSub");
     var deskSelectedDateListEl = document.getElementById("deskSelectedDateList");
+    var deskInsightTabsEl = document.getElementById("deskInsightTabs");
     var deskInsightsListEl = document.getElementById("deskInsightsList");
     var deskAnalyticsBodyEl = document.getElementById("deskAnalyticsBody");
+    var deskAnalyticsStatGridEl = document.getElementById("deskAnalyticsStatGrid");
     var deskAnalyticsHighlightsEl = document.getElementById("deskAnalyticsHighlights");
     var deskShiftFormEl = document.getElementById("deskShiftForm");
     var deskShiftIdEl = document.getElementById("deskShiftId");
@@ -7188,6 +7269,7 @@
     var deskShiftTonePreviewEl = document.getElementById("deskShiftTonePreview");
     var deskShiftComputedHoursEl = document.getElementById("deskShiftComputedHours");
     var deskResetShiftBtnEl = document.getElementById("deskResetShiftBtn");
+    var deskCopyNextShiftBtnEl = document.getElementById("deskCopyNextShiftBtn");
     var deskDeleteShiftBtnEl = document.getElementById("deskDeleteShiftBtn");
     var deskWorkerNameListEl = document.getElementById("deskWorkerNameList");
     var deskScheduleTableBodyEl = document.getElementById("deskScheduleTableBody");
@@ -7207,6 +7289,7 @@
     var deskShiftModalNoteEl = document.getElementById("deskShiftModalNote");
     var deskShiftModalTonePreviewEl = document.getElementById("deskShiftModalTonePreview");
     var deskShiftModalComputedHoursEl = document.getElementById("deskShiftModalComputedHours");
+    var deskShiftModalCopyNextBtnEl = document.getElementById("deskShiftModalCopyNextBtn");
     var deskShiftModalDeleteBtnEl = document.getElementById("deskShiftModalDeleteBtn");
     var deskJournalPrevDateBtnEl = document.getElementById("deskJournalPrevDateBtn");
     var deskJournalDateInputEl = document.getElementById("deskJournalDateInput");
@@ -8091,7 +8174,9 @@
     function renderDeskLoadingState_() {
       if (deskCalendarGridEl) deskCalendarGridEl.innerHTML = '<div class="desk-empty" style="grid-column:1 / -1;">월별 근무표 데이터를 불러오는 중입니다...</div>';
       if (deskSelectedDateListEl) deskSelectedDateListEl.innerHTML = '<div class="desk-empty">선택 날짜 일정 정보를 준비하고 있습니다.</div>';
+      if (deskInsightTabsEl) deskInsightTabsEl.innerHTML = "";
       if (deskInsightsListEl) deskInsightsListEl.innerHTML = '<div class="desk-empty">운영 포인트를 계산하는 중입니다.</div>';
+      if (deskAnalyticsStatGridEl) deskAnalyticsStatGridEl.innerHTML = "";
       if (deskAnalyticsBodyEl) deskAnalyticsBodyEl.innerHTML = '<tr><td colspan="11">근무자 집계를 불러오는 중입니다.</td></tr>';
       if (deskAnalyticsHighlightsEl) deskAnalyticsHighlightsEl.innerHTML = '<div class="desk-empty">집계 하이라이트를 불러오는 중입니다.</div>';
       if (deskScheduleTableBodyEl) deskScheduleTableBodyEl.innerHTML = '<tr><td colspan="7">월간 일정 목록을 불러오는 중입니다.</td></tr>';
@@ -8163,6 +8248,7 @@
         return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
       }).join("");
       deskWorkerFilterEl.value = current;
+      if (deskWorkerSearchEl) deskWorkerSearchEl.value = state.desk.workerSearch || "";
       if (deskWorkerNameListEl) {
         deskWorkerNameListEl.innerHTML = workers.map(function(name) {
           return '<option value="' + escapeHtml(name) + '"></option>';
@@ -8372,41 +8458,212 @@
           '</div>' +
           '<p>' + getDeskRoleBadgeHtml_(item) + ' <span style="margin-left:6px;">' + escapeHtml(formatDeskShiftTime_(item)) + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</span></p>' +
           '<p>' + escapeHtml(item.note || "메모 없음") + '</p>' +
-          '<div style="margin-top:8px;"><button type="button" class="mini-btn" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button></div>' +
+          '<div class="desk-item-action-row">' +
+            '<button type="button" class="mini-btn" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button>' +
+            '<button type="button" class="mini-btn" data-desk-copy-next-shift="' + escapeHtml(item.id) + '">다음 날짜 복사</button>' +
+          '</div>' +
         '</article>';
       }).join("");
     }
 
-    function renderDeskInsights_(items) {
-      if (!deskInsightsListEl) return;
+    function getDeskWeeklyTotals_(items) {
+      var totals = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      (items || []).forEach(function(item) {
+        if (item.unavailable || item.resident) return;
+        var weekIndex = getDeskWeekIndex_(item.date, state.desk.currentMonth);
+        totals[weekIndex] = (totals[weekIndex] || 0) + getDeskCountedHours_(item);
+      });
+      return totals;
+    }
+
+    function getDeskWorkerPeakWeek_(item) {
+      var bestWeek = 0;
+      var bestHours = 0;
+      var nonzeroWeeks = [];
+      for (var i = 1; i <= 6; i += 1) {
+        var hours = Number(item.weekly[i] || 0);
+        if (hours > bestHours) {
+          bestHours = hours;
+          bestWeek = i;
+        }
+        if (hours > 0) nonzeroWeeks.push({ week: i, hours: hours });
+      }
+      return {
+        bestWeek: bestWeek,
+        bestHours: bestHours,
+        nonzeroWeeks: nonzeroWeeks
+      };
+    }
+
+    function getDeskVarianceLeader_(analytics) {
+      var best = null;
+      Object.keys(analytics || {}).forEach(function(name) {
+        var item = analytics[name];
+        var nonzeroWeeks = [];
+        for (var i = 1; i <= 6; i += 1) {
+          var hours = Number(item.weekly[i] || 0);
+          if (hours > 0) nonzeroWeeks.push({ week: i, hours: hours });
+        }
+        if (!nonzeroWeeks.length) return;
+        var maxItem = nonzeroWeeks[0];
+        var minItem = nonzeroWeeks[0];
+        nonzeroWeeks.forEach(function(entry) {
+          if (entry.hours > maxItem.hours) maxItem = entry;
+          if (entry.hours < minItem.hours) minItem = entry;
+        });
+        var spread = Math.max(0, maxItem.hours - minItem.hours);
+        if (!best || spread > best.spread) {
+          best = {
+            name: name,
+            spread: spread,
+            maxWeek: maxItem.week,
+            maxHours: maxItem.hours,
+            minWeek: minItem.week,
+            minHours: minItem.hours
+          };
+        }
+      });
+      return best;
+    }
+
+    function buildDeskInsightTabsData_(items) {
       var summary = summarizeDeskMonth_(items);
-      var insights = [];
-      if (summary.busiestDayText) {
-        insights.push({
-          title: "가장 바쁜 날짜",
-          body: summary.busiestDayText + " · 일정 " + summary.busiestDayCount + "건이 배치되었습니다."
-        });
-      }
-      if (summary.topWorker) {
-        insights.push({
-          title: "최다 근무시간",
-          body: summary.topWorker + " · 월 집계 " + formatDeskHours_(summary.topWorkerHours) + "입니다."
-        });
-      }
-      insights.push({
-        title: "야간/마감 커버",
-        body: "야간·마감 근무 " + summary.nightCount + "건, 상주 배치일 " + summary.residentDays + "일입니다."
+      var analytics = buildDeskWorkerAnalytics_(items);
+      var workers = Object.keys(analytics).map(function(name) {
+        return analytics[name];
+      }).filter(function(item) {
+        return item.totalHours > 0 || item.residentDays > 0 || item.nightCount > 0;
+      }).sort(function(a, b) {
+        if (b.totalHours !== a.totalHours) return b.totalHours - a.totalHours;
+        return String(a.name || "").localeCompare(String(b.name || ""), "ko");
       });
-      if (summary.unavailableCount) {
-        insights.push({
-          title: "근무 불가 기록",
-          body: "이번 달 근무 불가 기록 " + summary.unavailableCount + "건이 있으며, 캘린더에서는 접힘 상태로 요약 표시됩니다."
+      var weeklyTotals = getDeskWeeklyTotals_(items);
+      var peakWeek = { index: 0, hours: 0 };
+      var lowWeek = null;
+      for (var week = 1; week <= 6; week += 1) {
+        var weeklyHours = Number(weeklyTotals[week] || 0);
+        if (weeklyHours > peakWeek.hours) peakWeek = { index: week, hours: weeklyHours };
+        if (weeklyHours > 0 && (!lowWeek || weeklyHours < lowWeek.hours)) {
+          lowWeek = { index: week, hours: weeklyHours };
+        }
+      }
+      var avgHours = workers.length ? (summary.countedHours / workers.length) : 0;
+      var dayHours = {};
+      (items || []).forEach(function(item) {
+        if (item.unavailable || item.resident) return;
+        dayHours[item.date] = (dayHours[item.date] || 0) + getDeskCountedHours_(item);
+      });
+      var busiestHoursDate = "";
+      var busiestHours = 0;
+      Object.keys(dayHours).forEach(function(dateKey) {
+        if (dayHours[dateKey] > busiestHours) {
+          busiestHours = dayHours[dateKey];
+          busiestHoursDate = dateKey;
+        }
+      });
+      var varianceLeader = getDeskVarianceLeader_(analytics);
+      var unavailableWorkers = [];
+      (items || []).forEach(function(item) {
+        if (item.unavailable && unavailableWorkers.indexOf(item.worker) === -1) unavailableWorkers.push(item.worker);
+      });
+      unavailableWorkers.sort(function(a, b) {
+        return String(a || "").localeCompare(String(b || ""), "ko");
+      });
+      var weekItems = [];
+      for (var idx = 1; idx <= 6; idx += 1) {
+        var weekHoursTotal = Number(weeklyTotals[idx] || 0);
+        if (!weekHoursTotal) continue;
+        var leader = workers.slice().sort(function(a, b) {
+          return Number(b.weekly[idx] || 0) - Number(a.weekly[idx] || 0);
+        })[0];
+        weekItems.push({
+          title: idx + "주차 총 근무시간",
+          body: formatDeskHours_(weekHoursTotal) + " · " + (leader && leader.weekly[idx] ? (leader.name + " 최다 " + formatDeskHours_(leader.weekly[idx])) : "선두 근무자 없음")
         });
       }
-      insights.push({
-        title: "운영 메모",
-        body: "상주 근무자는 일정에는 표시되지만 월 근무시간 집계에서는 제외됩니다. 잦은 스케줄 변경은 편집 탭에서 바로 수정할 수 있습니다."
+      var topWorkers = workers.slice(0, 4).map(function(item, index) {
+        var peak = getDeskWorkerPeakWeek_(item);
+        return {
+          title: "TOP " + (index + 1) + " · " + item.name,
+          body: "월 " + formatDeskHours_(item.totalHours) + " · 최고 " + (peak.bestWeek ? (peak.bestWeek + "주차 " + formatDeskHours_(peak.bestHours)) : "주차 데이터 없음")
+        };
       });
+      return {
+        overview: [
+          summary.busiestDayText ? {
+            title: "가장 바쁜 날짜",
+            body: summary.busiestDayText + " · 일정 " + summary.busiestDayCount + "건 · 집계 " + formatDeskHours_(busiestHours) + "입니다."
+          } : null,
+          summary.topWorker ? {
+            title: "최다 근무시간",
+            body: summary.topWorker + " · 월 집계 " + formatDeskHours_(summary.topWorkerHours) + "입니다."
+          } : null,
+          {
+            title: "운영 밀도",
+            body: "근무자 " + summary.workerCount + "명 · 일정 " + summary.shiftCount + "건 · 상주 제외 총 " + formatDeskHours_(summary.countedHours) + "입니다."
+          }
+        ].filter(Boolean),
+        hours: [
+          {
+            title: "평균 월 근무시간",
+            body: workers.length ? ("집계 대상 " + workers.length + "명 평균 " + formatDeskHours_(avgHours) + "입니다.") : "집계 가능한 근무시간이 없습니다."
+          }
+        ].concat(topWorkers),
+        variance: [
+          peakWeek.index ? {
+            title: "주차 변동폭",
+            body: lowWeek ? ("최고 " + peakWeek.index + "주차 " + formatDeskHours_(peakWeek.hours) + " · 최저 " + lowWeek.index + "주차 " + formatDeskHours_(lowWeek.hours) + " · 편차 " + formatDeskHours_(Math.max(0, peakWeek.hours - lowWeek.hours)) + "입니다.") : ("가장 높은 주는 " + peakWeek.index + "주차 " + formatDeskHours_(peakWeek.hours) + "입니다.")
+          } : {
+            title: "주차 변동폭",
+            body: "주차별 변동을 계산할 데이터가 없습니다."
+          },
+          varianceLeader ? {
+            title: "가장 변동폭 큰 근무자",
+            body: varianceLeader.name + " · " + varianceLeader.maxWeek + "주차 " + formatDeskHours_(varianceLeader.maxHours) + " / " + varianceLeader.minWeek + "주차 " + formatDeskHours_(varianceLeader.minHours) + " · 차이 " + formatDeskHours_(varianceLeader.spread) + "입니다."
+          } : {
+            title: "근무자 편차",
+            body: "근무자별 주차 변동을 계산할 데이터가 충분하지 않습니다."
+          }
+        ],
+        weekly: weekItems.length ? weekItems : [{
+          title: "주차별 분석",
+          body: "표시할 주차별 근무시간 데이터가 없습니다."
+        }],
+        exceptions: [
+          {
+            title: "야간/마감 커버",
+            body: "야간·마감 근무 " + summary.nightCount + "건 · 상주 배치일 " + summary.residentDays + "일입니다."
+          },
+          {
+            title: "근무 불가 기록",
+            body: summary.unavailableCount ? ("이번 달 근무 불가 " + summary.unavailableCount + "건 · " + unavailableWorkers.join(", ") + "이(가) 포함됩니다.") : "이번 달 근무 불가 기록은 없습니다."
+          },
+          {
+            title: "운영 메모",
+            body: "상주 근무자는 일정에는 표시되지만 월 근무시간 집계에서는 제외됩니다. 검색과 필터를 함께 사용해 필요한 근무자만 좁혀 볼 수 있습니다."
+          }
+        ]
+      };
+    }
+
+    function renderDeskInsights_(items) {
+      var tabs = [
+        { key: "overview", label: "개요" },
+        { key: "hours", label: "근무시간" },
+        { key: "variance", label: "변동폭" },
+        { key: "weekly", label: "주차별" },
+        { key: "exceptions", label: "이슈" }
+      ];
+      if (deskInsightTabsEl) {
+        deskInsightTabsEl.innerHTML = tabs.map(function(tab) {
+          return '<button type="button" class="desk-insight-tab' + (state.desk.activeInsightTab === tab.key ? ' active' : '') + '" data-desk-insight-tab="' + tab.key + '">' + escapeHtml(tab.label) + '</button>';
+        }).join("");
+      }
+      if (!deskInsightsListEl) return;
+      var data = buildDeskInsightTabsData_(items);
+      var activeTab = data[state.desk.activeInsightTab] ? state.desk.activeInsightTab : "overview";
+      state.desk.activeInsightTab = activeTab;
+      var insights = data[activeTab] || [];
       deskInsightsListEl.innerHTML = insights.map(function(item) {
         return '<article class="desk-insight-item">' +
           '<div class="desk-insight-item-top"><strong>' + escapeHtml(item.title) + '</strong></div>' +
@@ -8421,9 +8678,12 @@
       var workers = Object.keys(workerMap).sort(function(a, b) { return a.localeCompare(b, "ko"); });
       if (!workers.length) {
         deskAnalyticsBodyEl.innerHTML = '<tr><td colspan="11">집계할 일정이 없습니다.</td></tr>';
+        if (deskAnalyticsStatGridEl) deskAnalyticsStatGridEl.innerHTML = "";
         deskAnalyticsHighlightsEl.innerHTML = '<div class="desk-empty">표시할 하이라이트가 없습니다.</div>';
         return;
       }
+      var summary = summarizeDeskMonth_(items);
+      var weeklyTotals = getDeskWeeklyTotals_(items);
       deskAnalyticsBodyEl.innerHTML = workers.map(function(name) {
         var item = workerMap[name];
         return '<tr>' +
@@ -8443,10 +8703,57 @@
       var ordered = workers.map(function(name) { return workerMap[name]; }).sort(function(a, b) {
         return b.totalHours - a.totalHours;
       });
-      deskAnalyticsHighlightsEl.innerHTML = ordered.slice(0, 4).map(function(item, index) {
+      if (deskAnalyticsStatGridEl) {
+        var analyticsLeader = ordered[0] || null;
+        var weeklyPeakIndex = 0;
+        var weeklyPeakHours = 0;
+        for (var week = 1; week <= 6; week += 1) {
+          var candidate = Number(weeklyTotals[week] || 0);
+          if (candidate > weeklyPeakHours) {
+            weeklyPeakHours = candidate;
+            weeklyPeakIndex = week;
+          }
+        }
+        deskAnalyticsStatGridEl.innerHTML = [
+          {
+            label: "집계 근무자",
+            value: workers.length + "명",
+            sub: "검색/필터 반영 기준"
+          },
+          {
+            label: "평균 월 근무시간",
+            value: formatDeskHours_(workers.length ? (summary.countedHours / workers.length) : 0),
+            sub: "상주·근무 불가 제외"
+          },
+          {
+            label: "최다 월 근무자",
+            value: analyticsLeader ? analyticsLeader.name : "-",
+            sub: analyticsLeader ? ("월 " + formatDeskHours_(analyticsLeader.totalHours)) : "집계 없음"
+          },
+          {
+            label: "최고 주차 총근무",
+            value: weeklyPeakIndex ? (weeklyPeakIndex + "주차") : "-",
+            sub: weeklyPeakIndex ? formatDeskHours_(weeklyPeakHours) : "주차 집계 없음"
+          }
+        ].map(function(card) {
+          return '<article class="desk-inline-stat-card">' +
+            '<div class="label">' + escapeHtml(card.label) + '</div>' +
+            '<div class="value">' + escapeHtml(card.value) + '</div>' +
+            '<div class="sub">' + escapeHtml(card.sub) + '</div>' +
+          '</article>';
+        }).join("");
+      }
+      deskAnalyticsHighlightsEl.innerHTML = ordered.map(function(item, index) {
+        var peak = getDeskWorkerPeakWeek_(item);
+        var weeklyText = [];
+        for (var week = 1; week <= 6; week += 1) {
+          if (item.weekly[week]) weeklyText.push(week + "주차 " + formatDeskHours_(item.weekly[week]));
+        }
         return '<article class="desk-highlight-item">' +
           '<strong>TOP ' + (index + 1) + ' · ' + escapeHtml(item.name) + '</strong>' +
-          '<p>' + escapeHtml(item.mainRole || "-") + ' · 월 합계 ' + formatDeskHours_(item.totalHours) + ' · 야간 ' + item.nightCount + '건 · 상주 ' + item.residentDays + '일</p>' +
+          '<p>' + escapeHtml(item.mainRole || "-") + ' · 월 합계 ' + formatDeskHours_(item.totalHours) + '</p>' +
+          '<p>' + (peak.bestWeek ? ('최고 ' + peak.bestWeek + '주차 ' + formatDeskHours_(peak.bestHours)) : '주차별 집계 없음') + ' · 야간 ' + item.nightCount + '건 · 상주 ' + item.residentDays + '일</p>' +
+          '<p>' + escapeHtml(weeklyText.join(" · ") || "주차별 근무시간 없음") + '</p>' +
         '</article>';
       }).join("");
     }
@@ -8643,9 +8950,15 @@
       });
     }
 
+    function normalizeDeskSearchValue_(value) {
+      return String(value || "").replace(/\s+/g, "").toLowerCase();
+    }
+
     function getDeskVisibleDeskItems_(items) {
+      var workerSearch = normalizeDeskSearchValue_(state.desk.workerSearch);
       return (items || []).filter(function(item) {
         if (state.desk.workerFilter && item.worker !== state.desk.workerFilter) return false;
+        if (workerSearch && normalizeDeskSearchValue_(item.worker).indexOf(workerSearch) === -1) return false;
         if (state.desk.toneFilter && getDeskShiftTone_(item) !== state.desk.toneFilter) return false;
         return true;
       });
@@ -8926,6 +9239,7 @@
           : ("집계 대상 근무시간 " + formatDeskHours_(getDeskCountedHours_(previewItem)));
       }
       if (deskDeleteShiftBtnEl) deskDeleteShiftBtnEl.disabled = !state.desk.selectedShiftId;
+      if (deskCopyNextShiftBtnEl) deskCopyNextShiftBtnEl.disabled = !state.desk.selectedShiftId;
       if (deskShiftIdEl) deskShiftIdEl.value = state.desk.selectedShiftId || "";
       if (!state.desk.selectedShiftId && deskShiftDateEl && !deskShiftDateEl.value) deskShiftDateEl.value = state.desk.selectedDateKey || getDeskDateKey_(new Date());
     }
@@ -9078,6 +9392,7 @@
           : ("집계 대상 근무시간 " + formatDeskHours_(getDeskCountedHours_(previewItem)));
       }
       if (deskShiftModalDeleteBtnEl) deskShiftModalDeleteBtnEl.disabled = !(deskShiftModalIdEl && deskShiftModalIdEl.value);
+      if (deskShiftModalCopyNextBtnEl) deskShiftModalCopyNextBtnEl.disabled = !(deskShiftModalIdEl && deskShiftModalIdEl.value);
     }
 
     function saveDeskShiftFromModal_() {
@@ -9372,6 +9687,54 @@
           renderDeskMonthlySchedule_();
         }).catch(function(err) {
           alert("지난주 근무표 복사 오류: " + (err.message || String(err)));
+        }).finally(function() {
+          setLoading(false);
+        });
+      });
+    }
+
+    function copyDeskShiftToNextDate_(shiftId) {
+      var sourceItem = state.desk.scheduleItems.find(function(item) {
+        return item.id === shiftId;
+      });
+      if (!sourceItem) return;
+      var targetDateKey = shiftDeskDateKey_(sourceItem.date, 1);
+      var targetMonthKey = targetDateKey.slice(0, 7);
+      var ensureTargetMonth = state.desk.loadedMonths[targetMonthKey]
+        ? Promise.resolve()
+        : ensureDeskMonthLoaded_(targetMonthKey);
+      ensureTargetMonth.then(function() {
+        var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === targetDateKey;
+        });
+        var entry = normalizeDeskShift_(Object.assign({}, sourceItem, {
+          id: buildDeskShiftId_("desk", Date.now(), Math.random().toString(36).slice(2), sourceItem.worker),
+          date: targetDateKey
+        }));
+        if (existingTargetItems.some(function(existing) {
+          return isSameDeskShiftSignature_(existing, entry);
+        })) {
+          alert("다음 날짜에 이미 같은 구성의 일정이 있어 복사하지 않았습니다.");
+          return;
+        }
+        setLoading(true, "선택한 근무 셀을 다음 날짜로 복사하는 중입니다...");
+        runServer("saveDeskScheduleEntry", {
+          monthKey: targetMonthKey,
+          entry: entry
+        }).then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "다음 날짜 복사 실패");
+          }
+          var merged = getDeskMonthItems_(targetMonthKey).slice();
+          merged.push(normalizeDeskShift_(res.entry || entry));
+          mergeDeskMonthItems_(targetMonthKey, merged);
+          state.desk.loadedMonths[targetMonthKey] = true;
+          state.desk.currentMonth = targetMonthKey;
+          state.desk.selectedDateKey = targetDateKey;
+          state.desk.selectedShiftId = res && res.entry ? res.entry.id : entry.id;
+          renderDeskMonthlySchedule_();
+        }).catch(function(err) {
+          alert("다음 날짜 복사 오류: " + (err.message || String(err)));
         }).finally(function() {
           setLoading(false);
         });
@@ -10422,6 +10785,13 @@
         });
       }
 
+      if (deskWorkerSearchEl) {
+        deskWorkerSearchEl.addEventListener("input", function() {
+          state.desk.workerSearch = deskWorkerSearchEl.value || "";
+          renderDeskMonthlySchedule_();
+        });
+      }
+
       if (deskToneFilterEl) {
         deskToneFilterEl.addEventListener("change", function() {
           state.desk.toneFilter = deskToneFilterEl.value || "";
@@ -10491,9 +10861,23 @@
 
       if (deskSelectedDateListEl) {
         deskSelectedDateListEl.addEventListener("click", function(event) {
+          var copyBtn = event.target.closest("[data-desk-copy-next-shift]");
+          if (copyBtn) {
+            copyDeskShiftToNextDate_(copyBtn.getAttribute("data-desk-copy-next-shift") || "");
+            return;
+          }
           var btn = event.target.closest("[data-desk-edit-shift]");
           if (!btn) return;
           openDeskShiftModal_(btn.getAttribute("data-desk-edit-shift") || "", state.desk.selectedDateKey);
+        });
+      }
+
+      if (deskInsightTabsEl) {
+        deskInsightTabsEl.addEventListener("click", function(event) {
+          var tabBtn = event.target.closest("[data-desk-insight-tab]");
+          if (!tabBtn) return;
+          state.desk.activeInsightTab = tabBtn.getAttribute("data-desk-insight-tab") || "overview";
+          renderDeskMonthlySchedule_();
         });
       }
 
@@ -10525,6 +10909,13 @@
       if (deskResetShiftBtnEl) {
         deskResetShiftBtnEl.addEventListener("click", function() {
           resetDeskShiftForm_(state.desk.selectedDateKey || getDeskDateKey_(new Date()));
+        });
+      }
+
+      if (deskCopyNextShiftBtnEl) {
+        deskCopyNextShiftBtnEl.addEventListener("click", function() {
+          if (!state.desk.selectedShiftId) return;
+          copyDeskShiftToNextDate_(state.desk.selectedShiftId);
         });
       }
 
@@ -10574,6 +10965,13 @@
           if (!(deskShiftModalIdEl && deskShiftModalIdEl.value)) return;
           if (!confirm("선택한 근무 일정을 삭제할까요?")) return;
           deleteDeskShiftFromModal_();
+        });
+      }
+      if (deskShiftModalCopyNextBtnEl) {
+        deskShiftModalCopyNextBtnEl.addEventListener("click", function() {
+          if (!(deskShiftModalIdEl && deskShiftModalIdEl.value)) return;
+          copyDeskShiftToNextDate_(deskShiftModalIdEl.value);
+          closeDeskShiftModal_();
         });
       }
 
