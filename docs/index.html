@@ -7206,6 +7206,9 @@
 
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbzyvz5KFxcjb3cU1EDjj3PulryM9JmjTrDVEyS3HhoUUpX91bQYTK8zWqby1t7IiprD/exec";
+    var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
+    var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
+    var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
@@ -7290,7 +7293,10 @@
           tasks: [],
           memos: [],
           loadedDates: {},
-          loadingDates: {}
+          loadingDates: {},
+          realtimeEnabled: true,
+          realtimeSources: {},
+          realtimeSnapshots: {}
         }
       },
       tuition: {
@@ -10009,6 +10015,134 @@
       return safeDate + "T" + safeTime + ":00";
     }
 
+    function buildDeskDailyJournalRealtimeUrl_(dateKey, childPath, stream) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return "";
+      var path = DESK_DAILY_JOURNAL_RT_PATH + "/" + encodeURIComponent(safeDateKey);
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      var url = DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return url;
+    }
+
+    function deskRealtimeFetchJson_(method, url, payload) {
+      var options = {
+        method: method,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      };
+      if (payload !== undefined && payload !== null) {
+        options.body = JSON.stringify(payload);
+      }
+      return fetch(url, options).then(function(res) {
+        if (!res.ok) {
+          throw new Error("Firebase 요청 실패 (" + res.status + ")");
+        }
+        return res.text();
+      }).then(function(text) {
+        return text ? JSON.parse(text) : null;
+      });
+    }
+
+    function cloneDeskDailyJournalSnapshot_(snapshot) {
+      return JSON.parse(JSON.stringify(snapshot || { tasks: {}, memos: {} }));
+    }
+
+    function normalizeDeskDailyJournalSnapshot_(snapshot) {
+      var safe = snapshot && typeof snapshot === "object" ? snapshot : {};
+      return {
+        tasks: safe.tasks && typeof safe.tasks === "object" ? safe.tasks : {},
+        memos: safe.memos && typeof safe.memos === "object" ? safe.memos : {}
+      };
+    }
+
+    function applyDeskDailyJournalSnapshot_(dateKey, snapshot) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return;
+      var normalized = normalizeDeskDailyJournalSnapshot_(snapshot);
+      state.desk.daily.realtimeSnapshots[safeDateKey] = cloneDeskDailyJournalSnapshot_(normalized);
+      var tasks = Object.keys(normalized.tasks).map(function(id) {
+        return normalizeDeskDailyTask_(normalized.tasks[id]);
+      });
+      var memos = Object.keys(normalized.memos).map(function(id) {
+        return normalizeDeskDailyMemo_(normalized.memos[id]);
+      });
+      mergeDeskDailyJournalData_(safeDateKey, tasks, memos);
+      state.desk.daily.loadedDates[safeDateKey] = true;
+      if (state.desk.activeTab === "dailyJournal") {
+        renderDeskDailyJournal_();
+      }
+    }
+
+    function patchDeskDailyJournalSnapshot_(dateKey, path, value) {
+      var safeDateKey = String(dateKey || "").trim();
+      var normalizedPath = String(path || "/");
+      var snapshot = cloneDeskDailyJournalSnapshot_(state.desk.daily.realtimeSnapshots[safeDateKey] || {});
+      if (normalizedPath === "/" || normalizedPath === "") {
+        applyDeskDailyJournalSnapshot_(safeDateKey, value || {});
+        return;
+      }
+      var segments = normalizedPath.replace(/^\/+|\/+$/g, "").split("/").filter(Boolean);
+      if (!segments.length) {
+        applyDeskDailyJournalSnapshot_(safeDateKey, value || {});
+        return;
+      }
+      var cursor = snapshot;
+      for (var i = 0; i < segments.length - 1; i += 1) {
+        var key = segments[i];
+        if (!cursor[key] || typeof cursor[key] !== "object") cursor[key] = {};
+        cursor = cursor[key];
+      }
+      var leafKey = segments[segments.length - 1];
+      if (value === null) {
+        delete cursor[leafKey];
+      } else {
+        cursor[leafKey] = value;
+      }
+      applyDeskDailyJournalSnapshot_(safeDateKey, snapshot);
+    }
+
+    function startDeskDailyJournalRealtime_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || !state.desk.daily.realtimeEnabled || typeof EventSource === "undefined") {
+        return;
+      }
+      if (state.desk.daily.realtimeSources[safeDateKey]) return;
+      var source = new EventSource(buildDeskDailyJournalRealtimeUrl_(safeDateKey, "", true));
+      source.addEventListener("put", function(event) {
+        try {
+          var payload = JSON.parse(event.data || "{}");
+          patchDeskDailyJournalSnapshot_(safeDateKey, payload.path, payload.data);
+        } catch (err) {
+          console.warn("desk daily realtime put parse error", err);
+        }
+      });
+      source.addEventListener("patch", function(event) {
+        try {
+          var payload = JSON.parse(event.data || "{}");
+          patchDeskDailyJournalSnapshot_(safeDateKey, payload.path, payload.data);
+        } catch (err) {
+          console.warn("desk daily realtime patch parse error", err);
+        }
+      });
+      source.onerror = function() {
+        if (state.desk.daily.realtimeSources[safeDateKey] === source) {
+          source.close();
+          delete state.desk.daily.realtimeSources[safeDateKey];
+          setTimeout(function() {
+            if (state.desk.daily.realtimeEnabled) {
+              startDeskDailyJournalRealtime_(safeDateKey);
+            }
+          }, 3000);
+        }
+      };
+      state.desk.daily.realtimeSources[safeDateKey] = source;
+    }
+
     function getDeskDisplayRole_(item) {
       var role = String(item && item.role || "").trim();
       var worker = String(item && item.worker || "").trim();
@@ -10266,9 +10400,29 @@
       var key = String(dateKey || "").trim();
       if (!key) return Promise.resolve();
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      startDeskDailyJournalRealtime_(key);
       if (!force && state.desk.daily.loadedDates[key]) return Promise.resolve();
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
-      var request = runServer("getDeskDailyJournalData", { dateKey: key })
+      var request;
+      if (state.desk.daily.realtimeEnabled) {
+        request = deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(key), null)
+          .then(function(snapshot) {
+            applyDeskDailyJournalSnapshot_(key, snapshot || {});
+          })
+          .catch(function(err) {
+            console.warn("desk daily realtime load fallback", err);
+            return runServer("getDeskDailyJournalData", { dateKey: key })
+              .then(function(res) {
+                if (!res || !res.success) {
+                  throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
+                }
+                mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
+                state.desk.daily.loadedDates[key] = true;
+                if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
+              });
+          });
+      } else {
+        request = runServer("getDeskDailyJournalData", { dateKey: key })
         .then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
@@ -10276,7 +10430,9 @@
           mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
           state.desk.daily.loadedDates[key] = true;
           if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
-        })
+        });
+      }
+      request = request
         .catch(function(err) {
           alert("일일 업무일지 로드 오류: " + (err.message || String(err)));
         })
@@ -10928,42 +11084,47 @@
 
     function upsertDeskDailyTask_(task, done) {
       var item = normalizeDeskDailyTask_(task);
-      runServer("saveDeskDailyJournalTask", {
-        dateKey: item.dateKey,
-        task: item
-      }).then(function(res) {
-        if (!res || !res.success) {
-          throw new Error(res && res.message ? res.message : "업무 저장 실패");
-        }
-        var dateKey = res.dateKey || item.dateKey;
-        var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(row) {
-          return row.id !== item.id;
-        });
-        tasks.push(normalizeDeskDailyTask_(res.task || item));
-        mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
-        state.desk.daily.loadedDates[dateKey] = true;
-        state.desk.daily.dateKey = dateKey;
-        if (typeof done === "function") done();
-        renderDeskDailyJournal_();
-      }).catch(function(err) {
+      var existingTasks = getDeskDailyJournalTasks_(item.dateKey).filter(function(row) {
+        return row.id !== item.id;
+      });
+      existingTasks.push(item);
+      mergeDeskDailyJournalData_(item.dateKey, existingTasks, getDeskDailyJournalMemos_(item.dateKey));
+      state.desk.daily.loadedDates[item.dateKey] = true;
+      state.desk.daily.dateKey = item.dateKey;
+      if (typeof done === "function") done();
+      renderDeskDailyJournal_();
+      var request = state.desk.daily.realtimeEnabled
+        ? deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "tasks/" + item.id), item)
+        : runServer("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item });
+      Promise.resolve(request).catch(function(err) {
         alert("업무 저장 오류: " + (err.message || String(err)));
+        runServer("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
+          .then(function() {
+            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+          })
+          .catch(function() {
+            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+          });
       });
     }
 
     function deleteDeskDailyTask_(taskId, overrideDateKey) {
       var dateKey = overrideDateKey || state.desk.daily.dateKey || getDeskDateKey_(new Date());
-      runServer("deleteDeskDailyJournalTask", {
-        dateKey: dateKey,
-        id: taskId
-      }).then(function(res) {
-        if (!res || !res.success) {
-          throw new Error(res && res.message ? res.message : "업무 삭제 실패");
-        }
-        var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) { return item.id !== taskId; });
-        mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
-        renderDeskDailyJournal_();
-      }).catch(function(err) {
+      var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) { return item.id !== taskId; });
+      mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
+      renderDeskDailyJournal_();
+      var request = state.desk.daily.realtimeEnabled
+        ? deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "tasks/" + taskId), null)
+        : runServer("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId });
+      Promise.resolve(request).catch(function(err) {
         alert("업무 삭제 오류: " + (err.message || String(err)));
+        runServer("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
+          .then(function() {
+            ensureDeskDailyJournalLoaded_(dateKey, true);
+          })
+          .catch(function() {
+            ensureDeskDailyJournalLoaded_(dateKey, true);
+          });
       });
     }
 
@@ -10994,23 +11155,25 @@
 
     function upsertDeskDailyMemo_(memo, done) {
       var item = normalizeDeskDailyMemo_(memo);
-      runServer("saveDeskDailyJournalMemo", {
-        dateKey: item.dateKey,
-        memo: item
-      }).then(function(res) {
-        if (!res || !res.success) {
-          throw new Error(res && res.message ? res.message : "기록 저장 실패");
-        }
-        var dateKey = res.dateKey || item.dateKey;
-        var memos = getDeskDailyJournalMemos_(dateKey).filter(function(row) { return row.id !== item.id; });
-        memos.push(normalizeDeskDailyMemo_(res.memo || item));
-        mergeDeskDailyJournalData_(dateKey, getDeskDailyJournalTasks_(dateKey), memos);
-        state.desk.daily.dateKey = dateKey;
-        if (typeof done === "function") done();
-        renderDeskDailyJournal_();
-      }).catch(function(err) {
+      var memos = getDeskDailyJournalMemos_(item.dateKey).filter(function(row) { return row.id !== item.id; });
+      memos.push(item);
+      mergeDeskDailyJournalData_(item.dateKey, getDeskDailyJournalTasks_(item.dateKey), memos);
+      state.desk.daily.dateKey = item.dateKey;
+      if (typeof done === "function") done();
+      renderDeskDailyJournal_();
+      var request = state.desk.daily.realtimeEnabled
+        ? deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "memos/" + item.id), item)
+        : runServer("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item });
+      Promise.resolve(request).catch(function(err) {
         showDeskMemoSaveStatus_("저장 실패", "error");
         alert("기록 저장 오류: " + (err.message || String(err)));
+        runServer("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
+          .then(function() {
+            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+          })
+          .catch(function() {
+            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+          });
       });
     }
 
@@ -11032,19 +11195,22 @@
 
     function deleteDeskDailyMemo_(memoId) {
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
-      runServer("deleteDeskDailyJournalMemo", {
-        dateKey: dateKey,
-        id: memoId
-      }).then(function(res) {
-        if (!res || !res.success) {
-          throw new Error(res && res.message ? res.message : "기록 삭제 실패");
-        }
-        var memos = getDeskDailyJournalMemos_(dateKey).filter(function(item) { return item.id !== memoId; });
-        mergeDeskDailyJournalData_(dateKey, getDeskDailyJournalTasks_(dateKey), memos);
-        state.desk.daily.memoPage = 1;
-        renderDeskDailyJournal_();
-      }).catch(function(err) {
+      var memos = getDeskDailyJournalMemos_(dateKey).filter(function(item) { return item.id !== memoId; });
+      mergeDeskDailyJournalData_(dateKey, getDeskDailyJournalTasks_(dateKey), memos);
+      state.desk.daily.memoPage = 1;
+      renderDeskDailyJournal_();
+      var request = state.desk.daily.realtimeEnabled
+        ? deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "memos/" + memoId), null)
+        : runServer("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId });
+      Promise.resolve(request).catch(function(err) {
         alert("기록 삭제 오류: " + (err.message || String(err)));
+        runServer("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
+          .then(function() {
+            ensureDeskDailyJournalLoaded_(dateKey, true);
+          })
+          .catch(function() {
+            ensureDeskDailyJournalLoaded_(dateKey, true);
+          });
       });
     }
 
