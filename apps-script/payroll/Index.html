@@ -1317,9 +1317,8 @@
     }
     .desk-week-summary-item {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       gap: 8px;
-      align-items: center;
       padding: 8px 10px;
       border-radius: 12px;
       background: #fff;
@@ -1328,9 +1327,44 @@
       font-weight: 800;
       color: #334155;
     }
+    .desk-week-summary-item-main {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
     .desk-week-summary-item .hrs {
       color: #0d684d;
       font-weight: 900;
+    }
+    .desk-week-summary-bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #ecf3ef;
+      overflow: hidden;
+      border: 1px solid #d8e6de;
+    }
+    .desk-week-summary-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #7ccf48 0%, #42b93b 100%);
+      transition: width 0.18s ease;
+    }
+    .desk-week-summary-bar-fill.mid {
+      background: linear-gradient(90deg, #f0d35d 0%, #e6a93f 100%);
+    }
+    .desk-week-summary-bar-fill.high {
+      background: linear-gradient(90deg, #f58d57 0%, #e25b4d 100%);
+    }
+    .desk-week-summary-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #607082;
     }
     .desk-day-copy-btn {
       min-height: 34px;
@@ -1446,6 +1480,25 @@
       font-size: 10px;
       font-weight: 900;
       white-space: nowrap;
+    }
+    .desk-time-badge-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .desk-duration-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      color: #305064;
+      font-size: 10px;
+      font-weight: 900;
+      white-space: nowrap;
+      box-shadow: 0 5px 10px rgba(15, 23, 42, 0.04);
     }
     .desk-shift-meta {
       font-size: 11px;
@@ -1574,6 +1627,97 @@
       color: #557084;
       font-size: 12px;
       font-weight: 800;
+    }
+    .desk-insight-worker-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #cfe0d7;
+      background: #f7fbf8;
+      color: #173042;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+    .desk-insight-worker-btn:hover,
+    .desk-insight-worker-btn.active {
+      border-color: #0d684d;
+      background: #edf8f1;
+      color: #0d684d;
+    }
+    .desk-mini-calendar {
+      margin-top: 10px;
+      border: 1px solid #d9e7df;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-mini-calendar-head {
+      font-size: 12px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-mini-calendar-weekdays,
+    .desk-mini-calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .desk-mini-calendar-weekdays span {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 900;
+      color: #7a8d9e;
+    }
+    .desk-mini-calendar-cell {
+      min-height: 28px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f7f5;
+      color: #718392;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid transparent;
+    }
+    .desk-mini-calendar-cell.worked {
+      background: linear-gradient(180deg, #0d684d 0%, #189164 100%);
+      color: #fff;
+      box-shadow: 0 8px 14px rgba(13, 104, 77, 0.16);
+    }
+    .desk-mini-calendar-cell.blank {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .desk-tag-chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .desk-tag-chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #eef8f3;
+      color: #0d684d;
+      border: 1px solid #cfe7db;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .desk-tag-chip.muted {
+      background: #f5f8f6;
+      color: #7890a0;
+      border-color: #d9e5de;
     }
     .desk-analytics-layout,
     .desk-editor-layout {
@@ -6187,6 +6331,16 @@
                   <article class="desk-supply-card">
                     <h3>소모품 현황</h3>
                     <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 누르고 필요하면 품목 자체도 수정/삭제할 수 있습니다.</p>
+                    <div class="desk-supply-filter-row">
+                      <div class="field">
+                        <label for="deskSupplySearch">물품 검색</label>
+                        <input id="deskSupplySearch" class="desk-inline-input" type="search" placeholder="품목명, 제품명 검색">
+                      </div>
+                      <div class="field">
+                        <label for="deskSupplyTagSearch">태그 검색</label>
+                        <input id="deskSupplyTagSearch" class="desk-inline-input" type="search" placeholder="예: #청소, #데스크">
+                      </div>
+                    </div>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table">
                         <thead>
@@ -6212,6 +6366,10 @@
                       <div class="field">
                         <label for="deskConsumableProduct">제품명</label>
                         <input id="deskConsumableProduct" class="desk-inline-input" type="text" placeholder="예: 데스크용 물티슈 100매">
+                      </div>
+                      <div class="field full">
+                        <label for="deskConsumableTags">태그(#)</label>
+                        <input id="deskConsumableTags" class="desk-inline-input" type="text" placeholder="예: #데스크 #청소 #화장실">
                       </div>
                       <div class="field">
                         <label for="deskConsumableUnit">단위</label>
@@ -6282,6 +6440,12 @@
                   </article>
                   <article class="desk-supply-card">
                     <h3>물품 현황</h3>
+                    <div class="desk-supply-filter-row single">
+                      <div class="field full">
+                        <label for="deskAssetSearch">물품 검색</label>
+                        <input id="deskAssetSearch" class="desk-inline-input" type="search" placeholder="분류, 제품명, 위치, 담당, 상태 검색">
+                      </div>
+                    </div>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table desk-asset-table">
                         <thead>
@@ -6308,6 +6472,48 @@
                     <h3>구매 요청 품목 선택</h3>
                     <p>[소모품 현황] 기준 현재 재고와 안전 재고를 가져와서, 대표님께 요청할 품목을 선택할 수 있습니다.</p>
                     <div class="desk-purchase-list" id="deskPurchaseItemList"></div>
+                    <div class="desk-purchase-divider"></div>
+                    <h3>신규 구매 요청 등록</h3>
+                    <p>기존 재고에 없는 품목도 바로 요청 목록에 추가할 수 있습니다. 판매처, 링크, 요청일을 함께 저장해 두면 진행상황을 추적하기 좋습니다.</p>
+                    <form class="desk-asset-form" id="deskPurchaseCustomForm">
+                      <div class="field">
+                        <label for="deskPurchaseCustomItemName">신규 품목명</label>
+                        <input id="deskPurchaseCustomItemName" class="desk-inline-input" type="text" placeholder="예: A4 라벨지">
+                      </div>
+                      <div class="field">
+                        <label for="deskPurchaseCustomProductName">제품명</label>
+                        <input id="deskPurchaseCustomProductName" class="desk-inline-input" type="text" placeholder="예: 프린터 전용 라벨지 100매">
+                      </div>
+                      <div class="field">
+                        <label for="deskPurchaseCustomVendor">판매처</label>
+                        <input id="deskPurchaseCustomVendor" class="desk-inline-input" type="text" placeholder="예: 쿠팡, 네이버 스마트스토어">
+                      </div>
+                      <div class="field">
+                        <label for="deskPurchaseCustomLink">링크</label>
+                        <input id="deskPurchaseCustomLink" class="desk-inline-input" type="url" placeholder="https://">
+                      </div>
+                      <div class="field">
+                        <label for="deskPurchaseCustomRequestDate">요청 날짜</label>
+                        <input id="deskPurchaseCustomRequestDate" class="desk-inline-input" type="date">
+                      </div>
+                      <div class="field">
+                        <label for="deskPurchaseCustomQty">요청 수량</label>
+                        <input id="deskPurchaseCustomQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
+                      </div>
+                      <div class="field full">
+                        <label for="deskPurchaseCustomTags">태그(#)</label>
+                        <input id="deskPurchaseCustomTags" class="desk-inline-input" type="text" placeholder="예: #신규 #구매검토 #라벨지">
+                      </div>
+                      <div class="field full">
+                        <label for="deskPurchaseCustomNote">요청 메모</label>
+                        <input id="deskPurchaseCustomNote" class="desk-inline-input" type="text" placeholder="예: 기존 제품 대체용, 급하지 않음">
+                      </div>
+                      <div class="field full desk-form-actions-row">
+                        <button class="desk-ghost-btn hidden" id="deskPurchaseCustomCancelBtn" type="button">수정 취소</button>
+                        <button class="desk-primary-btn" id="deskPurchaseCustomSubmitBtn" type="submit">신규 요청 추가</button>
+                      </div>
+                    </form>
+                    <div class="desk-purchase-custom-list" id="deskPurchaseCustomList"></div>
                   </article>
                   <article class="desk-supply-card">
                     <h3>구매 요청 문안</h3>
@@ -7063,9 +7269,14 @@
           saveTimer: null,
           editingConsumableId: "",
           editingAssetId: "",
+          editingPurchaseCustomId: "",
+          searchText: "",
+          tagSearch: "",
+          assetSearchText: "",
           consumables: [],
           assets: [],
           purchaseSelections: {},
+          purchaseCustomRequests: [],
           purchaseRequestTarget: "대표님",
           purchaseRequestNote: ""
         },
@@ -7202,12 +7413,15 @@
     var deskConsumableFormEl = document.getElementById("deskConsumableForm");
     var deskConsumableItemNameEl = document.getElementById("deskConsumableItemName");
     var deskConsumableProductEl = document.getElementById("deskConsumableProduct");
+    var deskConsumableTagsEl = document.getElementById("deskConsumableTags");
     var deskConsumableUnitEl = document.getElementById("deskConsumableUnit");
     var deskConsumableQtyEl = document.getElementById("deskConsumableQty");
     var deskConsumableMaxQtyEl = document.getElementById("deskConsumableMaxQty");
     var deskConsumableSafetyQtyEl = document.getElementById("deskConsumableSafetyQty");
     var deskConsumableSubmitBtnEl = document.getElementById("deskConsumableSubmitBtn");
     var deskConsumableCancelBtnEl = document.getElementById("deskConsumableCancelBtn");
+    var deskSupplySearchEl = document.getElementById("deskSupplySearch");
+    var deskSupplyTagSearchEl = document.getElementById("deskSupplyTagSearch");
     var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
     var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
     var deskAssetFormEl = document.getElementById("deskAssetForm");
@@ -7220,7 +7434,20 @@
     var deskAssetSubmitBtnEl = document.getElementById("deskAssetSubmitBtn");
     var deskAssetCancelBtnEl = document.getElementById("deskAssetCancelBtn");
     var deskAssetTableBodyEl = document.getElementById("deskAssetTableBody");
+    var deskAssetSearchEl = document.getElementById("deskAssetSearch");
     var deskPurchaseItemListEl = document.getElementById("deskPurchaseItemList");
+    var deskPurchaseCustomFormEl = document.getElementById("deskPurchaseCustomForm");
+    var deskPurchaseCustomItemNameEl = document.getElementById("deskPurchaseCustomItemName");
+    var deskPurchaseCustomProductNameEl = document.getElementById("deskPurchaseCustomProductName");
+    var deskPurchaseCustomVendorEl = document.getElementById("deskPurchaseCustomVendor");
+    var deskPurchaseCustomLinkEl = document.getElementById("deskPurchaseCustomLink");
+    var deskPurchaseCustomRequestDateEl = document.getElementById("deskPurchaseCustomRequestDate");
+    var deskPurchaseCustomQtyEl = document.getElementById("deskPurchaseCustomQty");
+    var deskPurchaseCustomTagsEl = document.getElementById("deskPurchaseCustomTags");
+    var deskPurchaseCustomNoteEl = document.getElementById("deskPurchaseCustomNote");
+    var deskPurchaseCustomSubmitBtnEl = document.getElementById("deskPurchaseCustomSubmitBtn");
+    var deskPurchaseCustomCancelBtnEl = document.getElementById("deskPurchaseCustomCancelBtn");
+    var deskPurchaseCustomListEl = document.getElementById("deskPurchaseCustomList");
     var deskPurchaseTargetEl = document.getElementById("deskPurchaseTarget");
     var deskPurchaseRequestNoteEl = document.getElementById("deskPurchaseRequestNote");
     var deskPurchaseMessageEl = document.getElementById("deskPurchaseMessage");
@@ -7511,9 +7738,14 @@
       state.desk.supplies.saveTimer = null;
       state.desk.supplies.editingConsumableId = "";
       state.desk.supplies.editingAssetId = "";
+      state.desk.supplies.editingPurchaseCustomId = "";
+      state.desk.supplies.searchText = "";
+      state.desk.supplies.tagSearch = "";
+      state.desk.supplies.assetSearchText = "";
       state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
       state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
       state.desk.supplies.purchaseSelections = {};
+      state.desk.supplies.purchaseCustomRequests = [];
       state.desk.supplies.purchaseRequestTarget = "대표님";
       state.desk.supplies.purchaseRequestNote = "";
       ensureDeskSupplySelections_();
@@ -7532,12 +7764,12 @@
 
     function getDefaultDeskConsumables_() {
       return [
-        { id: "wet_tissue", itemName: "물티슈", productName: "데스크용 물티슈 100매", qty: 6, maxQty: 10, safetyQty: 4, unit: "개" },
-        { id: "box_tissue", itemName: "곽티슈", productName: "클리넥스 200매", qty: 12, maxQty: 20, safetyQty: 8, unit: "개" },
-        { id: "paper_cup", itemName: "종이컵", productName: "테이크아웃컵 1줄", qty: 5, maxQty: 8, safetyQty: 3, unit: "줄" },
-        { id: "trash_bag", itemName: "쓰레기봉투", productName: "20L 검정봉투", qty: 3, maxQty: 6, safetyQty: 2, unit: "묶음" },
-        { id: "sanitizer", itemName: "손소독제", productName: "대용량 리필 500ml", qty: 2, maxQty: 5, safetyQty: 2, unit: "병" },
-        { id: "marker", itemName: "보드마카", productName: "화이트보드 마카 세트", qty: 4, maxQty: 8, safetyQty: 3, unit: "세트" }
+        { id: "wet_tissue", itemName: "물티슈", productName: "데스크용 물티슈 100매", qty: 6, maxQty: 10, safetyQty: 4, unit: "개", tags: ["#청소", "#데스크"] },
+        { id: "box_tissue", itemName: "곽티슈", productName: "클리넥스 200매", qty: 12, maxQty: 20, safetyQty: 8, unit: "개", tags: ["#상담", "#데스크"] },
+        { id: "paper_cup", itemName: "종이컵", productName: "테이크아웃컵 1줄", qty: 5, maxQty: 8, safetyQty: 3, unit: "줄", tags: ["#탕비", "#공용"] },
+        { id: "trash_bag", itemName: "쓰레기봉투", productName: "20L 검정봉투", qty: 3, maxQty: 6, safetyQty: 2, unit: "묶음", tags: ["#청소", "#분리수거"] },
+        { id: "sanitizer", itemName: "손소독제", productName: "대용량 리필 500ml", qty: 2, maxQty: 5, safetyQty: 2, unit: "병", tags: ["#위생", "#데스크"] },
+        { id: "marker", itemName: "보드마카", productName: "화이트보드 마카 세트", qty: 4, maxQty: 8, safetyQty: 3, unit: "세트", tags: ["#강의실", "#교구"] }
       ];
     }
 
@@ -7561,7 +7793,8 @@
         qty: qty,
         maxQty: maxQty,
         safetyQty: safetyQty,
-        unit: String(source.unit || "개")
+        unit: String(source.unit || "개"),
+        tags: parseDeskTagList_(source.tags)
       };
     }
 
@@ -7578,11 +7811,109 @@
       };
     }
 
+    function normalizeDeskPurchaseCustomRequest_(item, index) {
+      var source = item || {};
+      return {
+        id: String(source.id || ("desk_purchase_" + index)),
+        itemName: String(source.itemName || "신규 품목"),
+        productName: String(source.productName || "제품명 미입력"),
+        vendor: String(source.vendor || ""),
+        link: String(source.link || ""),
+        requestDate: String(source.requestDate || getDeskDateKey_(new Date())),
+        requestQty: Math.max(1, Number(source.requestQty || 1)),
+        note: String(source.note || ""),
+        tags: parseDeskTagList_(source.tags)
+      };
+    }
+
+    function parseDeskTagList_(value) {
+      if (Array.isArray(value)) {
+        return value
+          .map(function(tag) { return String(tag || "").trim(); })
+          .filter(Boolean)
+          .map(function(tag) { return tag.charAt(0) === "#" ? tag : ("#" + tag); });
+      }
+      return String(value || "")
+        .split(/[,\s]+/)
+        .map(function(tag) { return String(tag || "").trim(); })
+        .filter(Boolean)
+        .map(function(tag) { return tag.charAt(0) === "#" ? tag : ("#" + tag); })
+        .filter(function(tag, idx, list) { return list.indexOf(tag) === idx; });
+    }
+
+    function formatDeskTagList_(tags) {
+      return parseDeskTagList_(tags).join(" ");
+    }
+
+    function renderDeskTagChips_(tags) {
+      var list = parseDeskTagList_(tags);
+      if (!list.length) return '<span class="desk-tag-chip muted">#태그없음</span>';
+      return list.map(function(tag) {
+        return '<span class="desk-tag-chip">' + escapeHtml(tag) + '</span>';
+      }).join("");
+    }
+
+    function getDeskElapsedDays_(dateKey) {
+      if (!dateKey) return 0;
+      var parts = String(dateKey).split("-");
+      if (parts.length !== 3) return 0;
+      var base = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      var today = new Date();
+      var start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      return Math.max(0, Math.floor((start.getTime() - base.getTime()) / 86400000));
+    }
+
+    function getDeskShiftDurationHours_(item) {
+      var hours = getDeskCountedHours_(item);
+      if (!hours && !item.resident && !item.unavailable) {
+        var start = parseDeskTimeToMinutes_(item.startTime);
+        var end = parseDeskTimeToMinutes_(item.endTime);
+        if (end > start) hours = (end - start) / 60;
+      }
+      return Math.max(0, Number(hours || 0));
+    }
+
+    function renderDeskDurationBadge_(item) {
+      if (!item || item.resident || item.unavailable) return "";
+      var hours = getDeskShiftDurationHours_(item);
+      if (!hours) return "";
+      return '<span class="desk-duration-badge">' + escapeHtml(formatDeskHours_(hours)) + '</span>';
+    }
+
+    function buildDeskWorkerMiniCalendar_(workerName, items) {
+      var monthKey = state.desk.currentMonth || getDeskMonthKey_(new Date());
+      var info = getDeskMonthDateInfo_(monthKey);
+      var year = Number(info.year);
+      var month = Number(info.month);
+      var first = new Date(year, month - 1, 1);
+      var startOffset = (first.getDay() + 6) % 7;
+      var totalDays = new Date(year, month, 0).getDate();
+      var workedDates = {};
+      (items || []).forEach(function(item) {
+        if (item.worker !== workerName || item.unavailable) return;
+        workedDates[item.date] = true;
+      });
+      var cells = [];
+      for (var blank = 0; blank < startOffset; blank += 1) {
+        cells.push('<span class="desk-mini-calendar-cell blank"></span>');
+      }
+      for (var day = 1; day <= totalDays; day += 1) {
+        var dateKey = monthKey + "-" + pad2_(day);
+        cells.push('<span class="desk-mini-calendar-cell' + (workedDates[dateKey] ? ' worked' : '') + '">' + day + '</span>');
+      }
+      return '<div class="desk-mini-calendar">' +
+        '<div class="desk-mini-calendar-head">' + escapeHtml(workerName) + ' · ' + year + '년 ' + month + '월</div>' +
+        '<div class="desk-mini-calendar-weekdays"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>' +
+        '<div class="desk-mini-calendar-grid">' + cells.join("") + '</div>' +
+      '</div>';
+    }
+
     function applyDeskSuppliesData_(data) {
       var source = data || {};
       state.desk.supplies.consumables = (source.consumables || []).map(normalizeDeskConsumable_);
       state.desk.supplies.assets = (source.assets || []).map(normalizeDeskAsset_);
       state.desk.supplies.purchaseSelections = source.purchaseSelections || {};
+      state.desk.supplies.purchaseCustomRequests = (source.purchaseCustomRequests || []).map(normalizeDeskPurchaseCustomRequest_);
       state.desk.supplies.purchaseRequestTarget = String(source.purchaseRequestTarget || "대표님").trim() || "대표님";
       state.desk.supplies.purchaseRequestNote = String(source.purchaseRequestNote || "");
       ensureDeskSupplySelections_();
@@ -7591,6 +7922,7 @@
     function resetDeskConsumableForm_() {
       state.desk.supplies.editingConsumableId = "";
       if (deskConsumableFormEl) deskConsumableFormEl.reset();
+      if (deskConsumableTagsEl) deskConsumableTagsEl.value = "";
       if (deskConsumableQtyEl) deskConsumableQtyEl.value = 0;
       if (deskConsumableMaxQtyEl) deskConsumableMaxQtyEl.value = 1;
       if (deskConsumableSafetyQtyEl) deskConsumableSafetyQtyEl.value = 0;
@@ -7605,6 +7937,7 @@
       state.desk.supplies.editingConsumableId = item.id;
       if (deskConsumableItemNameEl) deskConsumableItemNameEl.value = item.itemName || "";
       if (deskConsumableProductEl) deskConsumableProductEl.value = item.productName || "";
+      if (deskConsumableTagsEl) deskConsumableTagsEl.value = formatDeskTagList_(item.tags);
       if (deskConsumableUnitEl) deskConsumableUnitEl.value = item.unit || "개";
       if (deskConsumableQtyEl) deskConsumableQtyEl.value = Number(item.qty || 0);
       if (deskConsumableMaxQtyEl) deskConsumableMaxQtyEl.value = Number(item.maxQty || 1);
@@ -7706,7 +8039,7 @@
       var totalQty = items.reduce(function(acc, item) { return acc + Number(item.qty || 0); }, 0);
       var selectedCount = items.filter(function(item) {
         return !!(state.desk.supplies.purchaseSelections[item.id] && state.desk.supplies.purchaseSelections[item.id].selected);
-      }).length;
+      }).length + (state.desk.supplies.purchaseCustomRequests || []).length;
       if (deskSupplyLowCountEl) deskSupplyLowCountEl.textContent = lowItems.length + "개";
       if (deskSupplyLowSubEl) deskSupplyLowSubEl.textContent = lowItems.length ? lowItems.map(function(item) { return item.itemName; }).slice(0, 3).join(", ") : "안전 재고 이하 품목 없음";
       if (deskSupplyTotalQtyEl) deskSupplyTotalQtyEl.textContent = totalQty + "개";
@@ -7718,11 +8051,23 @@
     function renderDeskSupplyInventory_() {
       if (!deskSupplyInventoryBodyEl) return;
       var items = state.desk.supplies.consumables || [];
-      deskSupplyInventoryBodyEl.innerHTML = items.map(function(item) {
+      var keyword = normalizeDeskSearchValue_(state.desk.supplies.searchText);
+      var tagKeyword = normalizeDeskSearchValue_(state.desk.supplies.tagSearch);
+      var visibleItems = items.filter(function(item) {
+        var haystack = normalizeDeskSearchValue_([item.itemName, item.productName, item.unit].join(" "));
+        var tagHaystack = normalizeDeskSearchValue_(formatDeskTagList_(item.tags));
+        if (keyword && haystack.indexOf(keyword) === -1 && tagHaystack.indexOf(keyword) === -1) return false;
+        if (tagKeyword && tagHaystack.indexOf(tagKeyword) === -1) return false;
+        return true;
+      });
+      if (!visibleItems.length) {
+        deskSupplyInventoryBodyEl.innerHTML = '<tr><td colspan="4">검색 조건에 맞는 소모품이 없습니다.</td></tr>';
+      } else {
+      deskSupplyInventoryBodyEl.innerHTML = visibleItems.map(function(item) {
         var ratio = Math.round((item.qty / item.maxQty) * 100);
         var status = getDeskSupplyStatus_(item);
         return '<tr>' +
-          '<td><div class="desk-supply-name"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + '</span></div></td>' +
+          '<td><div class="desk-supply-name"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + '</span><div class="desk-tag-chip-row">' + renderDeskTagChips_(item.tags) + '</div></div></td>' +
           '<td><div class="desk-supply-stock">' +
             '<div class="desk-supply-stock-top"><span>' + item.qty + item.unit + '</span><strong>' + ratio + '%</strong></div>' +
             '<div class="desk-supply-stock-track"><div class="desk-supply-stock-fill" style="width:' + ratio + '%;"></div></div>' +
@@ -7737,9 +8082,10 @@
           '</div></td>' +
         '</tr>';
       }).join("");
+      }
       if (deskSupplyQuickWrapEl) {
-        var lowItems = items.filter(function(item) { return item.qty <= item.safetyQty; });
-        var healthyItems = items.filter(function(item) { return item.qty > item.safetyQty; }).sort(function(a, b) { return b.qty - a.qty; });
+        var lowItems = visibleItems.filter(function(item) { return item.qty <= item.safetyQty; });
+        var healthyItems = visibleItems.filter(function(item) { return item.qty > item.safetyQty; }).sort(function(a, b) { return b.qty - a.qty; });
         deskSupplyQuickWrapEl.innerHTML =
           '<article class="desk-supply-quick-card"><strong>보충 우선 품목</strong>' +
             (lowItems.length
@@ -7776,6 +8122,7 @@
     function saveDeskConsumableFromForm_() {
       var itemName = String(deskConsumableItemNameEl && deskConsumableItemNameEl.value || "").trim();
       var productName = String(deskConsumableProductEl && deskConsumableProductEl.value || "").trim();
+      var tags = parseDeskTagList_(deskConsumableTagsEl && deskConsumableTagsEl.value || "");
       var unit = String(deskConsumableUnitEl && deskConsumableUnitEl.value || "").trim() || "개";
       var qty = Math.max(0, Number(deskConsumableQtyEl && deskConsumableQtyEl.value || 0));
       var maxQty = Math.max(1, Number(deskConsumableMaxQtyEl && deskConsumableMaxQtyEl.value || 1));
@@ -7789,6 +8136,7 @@
           id: state.desk.supplies.editingConsumableId || ("desk_supply_" + Date.now()),
           itemName: itemName,
           productName: productName,
+          tags: tags,
           unit: unit,
           qty: qty,
           maxQty: maxQty,
@@ -7822,7 +8170,13 @@
     function renderDeskAssets_() {
       if (!deskAssetTableBodyEl) return;
       var items = state.desk.supplies.assets || [];
-      deskAssetTableBodyEl.innerHTML = items.length ? items.map(function(item) {
+      var keyword = normalizeDeskSearchValue_(state.desk.supplies.assetSearchText);
+      var visibleItems = items.filter(function(item) {
+        if (!keyword) return true;
+        var haystack = normalizeDeskSearchValue_([item.type, item.productName, item.location, item.manager, item.status, item.note].join(" "));
+        return haystack.indexOf(keyword) !== -1;
+      });
+      deskAssetTableBodyEl.innerHTML = visibleItems.length ? visibleItems.map(function(item) {
         return '<tr>' +
           '<td>' + escapeHtml(item.type) + '</td>' +
           '<td>' + escapeHtml(item.productName) + '</td>' +
@@ -7835,7 +8189,7 @@
             '<button class="desk-ghost-btn" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '">삭제</button>' +
           '</div></td>' +
         '</tr>';
-      }).join("") : '<tr><td colspan="7">등록된 공용 물품이 없습니다. 상단 폼에서 새 물품을 등록해 주세요.</td></tr>';
+      }).join("") : '<tr><td colspan="7">검색 조건에 맞는 공용 물품이 없습니다.</td></tr>';
     }
 
     function getDeskAssetStatusClass_(status) {
@@ -7886,6 +8240,72 @@
         });
     }
 
+    function resetDeskPurchaseCustomForm_() {
+      state.desk.supplies.editingPurchaseCustomId = "";
+      if (deskPurchaseCustomFormEl) deskPurchaseCustomFormEl.reset();
+      if (deskPurchaseCustomQtyEl) deskPurchaseCustomQtyEl.value = 1;
+      if (deskPurchaseCustomRequestDateEl) deskPurchaseCustomRequestDateEl.value = getDeskDateKey_(new Date());
+      if (deskPurchaseCustomSubmitBtnEl) deskPurchaseCustomSubmitBtnEl.textContent = "신규 요청 추가";
+      if (deskPurchaseCustomCancelBtnEl) deskPurchaseCustomCancelBtnEl.classList.add("hidden");
+    }
+
+    function loadDeskPurchaseCustomIntoForm_(id) {
+      var item = (state.desk.supplies.purchaseCustomRequests || []).filter(function(entry) { return entry.id === id; })[0];
+      if (!item) return;
+      state.desk.supplies.editingPurchaseCustomId = item.id;
+      if (deskPurchaseCustomItemNameEl) deskPurchaseCustomItemNameEl.value = item.itemName || "";
+      if (deskPurchaseCustomProductNameEl) deskPurchaseCustomProductNameEl.value = item.productName || "";
+      if (deskPurchaseCustomVendorEl) deskPurchaseCustomVendorEl.value = item.vendor || "";
+      if (deskPurchaseCustomLinkEl) deskPurchaseCustomLinkEl.value = item.link || "";
+      if (deskPurchaseCustomRequestDateEl) deskPurchaseCustomRequestDateEl.value = item.requestDate || "";
+      if (deskPurchaseCustomQtyEl) deskPurchaseCustomQtyEl.value = Number(item.requestQty || 1);
+      if (deskPurchaseCustomTagsEl) deskPurchaseCustomTagsEl.value = formatDeskTagList_(item.tags);
+      if (deskPurchaseCustomNoteEl) deskPurchaseCustomNoteEl.value = item.note || "";
+      if (deskPurchaseCustomSubmitBtnEl) deskPurchaseCustomSubmitBtnEl.textContent = "요청 수정 저장";
+      if (deskPurchaseCustomCancelBtnEl) deskPurchaseCustomCancelBtnEl.classList.remove("hidden");
+    }
+
+    function saveDeskPurchaseCustomFromForm_() {
+      var itemName = String(deskPurchaseCustomItemNameEl && deskPurchaseCustomItemNameEl.value || "").trim();
+      var productName = String(deskPurchaseCustomProductNameEl && deskPurchaseCustomProductNameEl.value || "").trim();
+      if (!itemName || !productName) {
+        alert("신규 품목명과 제품명은 입력해 주세요.");
+        return;
+      }
+      var list = (state.desk.supplies.purchaseCustomRequests || []).slice();
+      var payload = normalizeDeskPurchaseCustomRequest_({
+        id: state.desk.supplies.editingPurchaseCustomId || ("desk_purchase_" + Date.now()),
+        itemName: itemName,
+        productName: productName,
+        vendor: String(deskPurchaseCustomVendorEl && deskPurchaseCustomVendorEl.value || "").trim(),
+        link: String(deskPurchaseCustomLinkEl && deskPurchaseCustomLinkEl.value || "").trim(),
+        requestDate: String(deskPurchaseCustomRequestDateEl && deskPurchaseCustomRequestDateEl.value || getDeskDateKey_(new Date())).trim(),
+        requestQty: Math.max(1, Number(deskPurchaseCustomQtyEl && deskPurchaseCustomQtyEl.value || 1)),
+        tags: parseDeskTagList_(deskPurchaseCustomTagsEl && deskPurchaseCustomTagsEl.value || ""),
+        note: String(deskPurchaseCustomNoteEl && deskPurchaseCustomNoteEl.value || "").trim()
+      });
+      var existingIndex = list.findIndex(function(entry) { return entry.id === payload.id; });
+      if (existingIndex >= 0) list[existingIndex] = payload;
+      else list.unshift(payload);
+      state.desk.supplies.purchaseCustomRequests = list;
+      resetDeskPurchaseCustomForm_();
+      renderDeskPurchaseRequest_();
+      renderDeskSupplySummary_();
+      scheduleDeskSuppliesPurchaseSave_();
+    }
+
+    function deleteDeskPurchaseCustom_(id) {
+      state.desk.supplies.purchaseCustomRequests = (state.desk.supplies.purchaseCustomRequests || []).filter(function(item) {
+        return item.id !== id;
+      });
+      if (state.desk.supplies.editingPurchaseCustomId === id) {
+        resetDeskPurchaseCustomForm_();
+      }
+      renderDeskPurchaseRequest_();
+      renderDeskSupplySummary_();
+      scheduleDeskSuppliesPurchaseSave_();
+    }
+
     function renderDeskPurchaseRequest_() {
       if (deskPurchaseTargetEl) deskPurchaseTargetEl.value = state.desk.supplies.purchaseRequestTarget || "대표님";
       if (deskPurchaseRequestNoteEl) deskPurchaseRequestNoteEl.value = state.desk.supplies.purchaseRequestNote || "";
@@ -7894,10 +8314,26 @@
           var selection = state.desk.supplies.purchaseSelections[item.id] || { selected: false, requestQty: Math.max(1, item.maxQty - item.qty) };
           return '<label class="desk-purchase-item ' + (item.qty <= item.safetyQty ? 'low' : '') + '">' +
             '<input type="checkbox" data-desk-purchase-select="' + escapeHtml(item.id) + '"' + (selection.selected ? ' checked' : '') + '>' +
-            '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + ' · 현재 ' + item.qty + item.unit + ' / 안전 ' + item.safetyQty + item.unit + '</span></div>' +
+            '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + ' · 현재 ' + item.qty + item.unit + ' / 안전 ' + item.safetyQty + item.unit + '</span><div class="desk-tag-chip-row">' + renderDeskTagChips_(item.tags) + '</div></div>' +
             '<div class="desk-purchase-item-qty">요청 수량 <input type="number" min="1" step="1" data-desk-purchase-qty="' + escapeHtml(item.id) + '" value="' + Number(selection.requestQty || 1) + '"></div>' +
           '</label>';
         }).join("");
+      }
+      if (deskPurchaseCustomListEl) {
+        var customItems = state.desk.supplies.purchaseCustomRequests || [];
+        deskPurchaseCustomListEl.innerHTML = customItems.length ? customItems.map(function(item) {
+          var days = getDeskElapsedDays_(item.requestDate);
+          return '<article class="desk-purchase-custom-item">' +
+            '<div class="desk-purchase-custom-top"><strong>' + escapeHtml(item.itemName) + '</strong><div class="desk-item-action-row">' +
+              '<button type="button" class="desk-ghost-btn" data-desk-purchase-custom-edit="' + escapeHtml(item.id) + '">수정</button>' +
+              '<button type="button" class="desk-ghost-btn" data-desk-purchase-custom-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+            '</div></div>' +
+            '<p>' + escapeHtml(item.productName || "제품명 미입력") + '</p>' +
+            '<p>판매처 ' + escapeHtml(item.vendor || "-") + ' · 요청일 ' + escapeHtml(item.requestDate || "-") + ' · 경과 ' + days + '일</p>' +
+            '<p>' + (item.link ? ('<a href="' + escapeHtml(item.link) + '" target="_blank" rel="noopener noreferrer">상품 링크 보기</a>') : '링크 없음') + '</p>' +
+            '<div class="desk-tag-chip-row">' + renderDeskTagChips_(item.tags) + '</div>' +
+          '</article>';
+        }).join("") : '<div class="desk-notice">아직 등록된 신규 구매 요청 물품이 없습니다.</div>';
       }
       refreshDeskPurchaseMessage_();
     }
@@ -7912,13 +8348,20 @@
       var selectedItems = (state.desk.supplies.consumables || []).filter(function(item) {
         return !!(state.desk.supplies.purchaseSelections[item.id] && state.desk.supplies.purchaseSelections[item.id].selected);
       });
-      if (!selectedItems.length) {
+      var customItems = (state.desk.supplies.purchaseCustomRequests || []).slice();
+      if (!selectedItems.length && !customItems.length) {
         return target + ",\n\n구매 요청할 소모품을 아직 선택하지 않았습니다.\n[구매 요청] 탭에서 필요한 품목을 선택해 주세요.";
       }
       var lines = selectedItems.map(function(item) {
         var selection = state.desk.supplies.purchaseSelections[item.id] || {};
         return "- " + item.itemName + " (" + item.productName + ") : 현재 " + item.qty + item.unit + " / 요청 " + Math.max(1, Number(selection.requestQty || 1)) + item.unit;
-      });
+      }).concat(customItems.map(function(item) {
+        var extras = [];
+        if (item.vendor) extras.push("판매처 " + item.vendor);
+        if (item.requestDate) extras.push("요청일 " + item.requestDate + " (" + getDeskElapsedDays_(item.requestDate) + "일 경과)");
+        if (item.link) extras.push("링크 " + item.link);
+        return "- " + item.itemName + " (" + item.productName + ") : 요청 " + item.requestQty + "개" + (extras.length ? " / " + extras.join(" / ") : "");
+      }));
       return [
         target + ",",
         "",
@@ -7947,6 +8390,7 @@
         state.desk.supplies.saveTimer = null;
         runServer("saveDeskSupplyPurchaseState", {
           purchaseSelections: state.desk.supplies.purchaseSelections,
+          purchaseCustomRequests: state.desk.supplies.purchaseCustomRequests,
           purchaseRequestTarget: state.desk.supplies.purchaseRequestTarget,
           purchaseRequestNote: state.desk.supplies.purchaseRequestNote
         }).then(function(res) {
@@ -8312,7 +8756,7 @@
                 var tone = getDeskShiftTone_(item);
                 return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
                   '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
-                  '<span class="desk-shift-time-row"><span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span><span class="desk-shift-order">' + escapeHtml(formatDeskShiftOrder_(itemIndex)) + '</span></span>' +
+                  '<span class="desk-shift-time-row"><span class="desk-time-badge-row"><span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span><span class="desk-shift-order">' + escapeHtml(formatDeskShiftOrder_(itemIndex)) + '</span></span>' +
                   '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
                 '</button>';
               }).join("") : '') +
@@ -8389,7 +8833,12 @@
         });
       });
       var ordered = Object.keys(totals).map(function(name) {
-        return { name: name, hours: totals[name] };
+        var hours = totals[name];
+        return {
+          name: name,
+          hours: hours,
+          ratio: Math.max(0, Math.min(100, (hours / 56) * 100))
+        };
       }).sort(function(a, b) {
         if (b.hours !== a.hours) return b.hours - a.hours;
         return String(a.name || "").localeCompare(String(b.name || ""), "ko");
@@ -8412,7 +8861,12 @@
         '</div>' +
         '<div class="desk-week-summary-list">' +
           (ordered.length ? ordered.map(function(item) {
-            return '<div class="desk-week-summary-item"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>';
+            var toneClass = item.ratio >= 75 ? ' high' : (item.ratio >= 45 ? ' mid' : '');
+            return '<div class="desk-week-summary-item">' +
+              '<div class="desk-week-summary-item-main"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>' +
+              '<div class="desk-week-summary-bar"><div class="desk-week-summary-bar-fill' + toneClass + '" style="width:' + item.ratio + '%;"></div></div>' +
+              '<div class="desk-week-summary-meta"><span>주 최대 56시간 기준</span><span>' + Math.round(item.ratio) + '%</span></div>' +
+            '</div>';
           }).join("") : '<div class="desk-empty">집계 가능한 근무시간이 없습니다.</div>') +
         '</div>' +
         '</div>'
@@ -8429,7 +8883,12 @@
         '</div>' +
         '<div class="desk-week-summary-list">' +
           (ordered.length ? ordered.map(function(item) {
-            return '<div class="desk-week-summary-item"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>';
+            var toneClass = item.ratio >= 75 ? ' high' : (item.ratio >= 45 ? ' mid' : '');
+            return '<div class="desk-week-summary-item">' +
+              '<div class="desk-week-summary-item-main"><span>' + escapeHtml(item.name) + '</span><span class="hrs">' + escapeHtml(formatDeskHours_(item.hours)) + '</span></div>' +
+              '<div class="desk-week-summary-bar"><div class="desk-week-summary-bar-fill' + toneClass + '" style="width:' + item.ratio + '%;"></div></div>' +
+              '<div class="desk-week-summary-meta"><span>주 최대 56시간 기준</span><span>' + Math.round(item.ratio) + '%</span></div>' +
+            '</div>';
           }).join("") : '<div class="desk-empty">집계 가능한 근무시간이 없습니다.</div>') +
         '</div>' +
       '</aside>';
@@ -8456,7 +8915,7 @@
             getDeskWorkerBadgeHtml_(item.worker) +
             '<span class="desk-badge tone-' + tone + '">' + escapeHtml(getDeskToneLabel_(tone)) + '</span>' +
           '</div>' +
-          '<p>' + getDeskRoleBadgeHtml_(item) + ' <span style="margin-left:6px;">' + escapeHtml(formatDeskShiftTime_(item)) + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</span></p>' +
+          '<p>' + getDeskRoleBadgeHtml_(item) + ' <span style="margin-left:6px;" class="desk-time-badge-row"><span>' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span>' + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</p>' +
           '<p>' + escapeHtml(item.note || "메모 없음") + '</p>' +
           '<div class="desk-item-action-row">' +
             '<button type="button" class="mini-btn" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button>' +
@@ -8584,6 +9043,7 @@
       var topWorkers = workers.slice(0, 4).map(function(item, index) {
         var peak = getDeskWorkerPeakWeek_(item);
         return {
+          workerName: item.name,
           title: "TOP " + (index + 1) + " · " + item.name,
           body: "월 " + formatDeskHours_(item.totalHours) + " · 최고 " + (peak.bestWeek ? (peak.bestWeek + "주차 " + formatDeskHours_(peak.bestHours)) : "주차 데이터 없음")
         };
@@ -8665,9 +9125,16 @@
       state.desk.activeInsightTab = activeTab;
       var insights = data[activeTab] || [];
       deskInsightsListEl.innerHTML = insights.map(function(item) {
+        var workerButton = item.workerName
+          ? '<button type="button" class="desk-insight-worker-btn' + (state.desk.openInsightWorker === item.workerName ? ' active' : '') + '" data-desk-insight-worker="' + escapeHtml(item.workerName) + '">' + escapeHtml(item.title) + '</button>'
+          : '<strong>' + escapeHtml(item.title) + '</strong>';
+        var miniCalendar = item.workerName && state.desk.openInsightWorker === item.workerName
+          ? buildDeskWorkerMiniCalendar_(item.workerName, items)
+          : '';
         return '<article class="desk-insight-item">' +
-          '<div class="desk-insight-item-top"><strong>' + escapeHtml(item.title) + '</strong></div>' +
+          '<div class="desk-insight-item-top">' + workerButton + '</div>' +
           '<p>' + escapeHtml(item.body) + '</p>' +
+          miniCalendar +
         '</article>';
       }).join("");
     }
@@ -8789,7 +9256,7 @@
           '<td>' + escapeHtml(formatDeskDateLabel_(item.date, true)) + '</td>' +
           '<td>' + getDeskWorkerBadgeHtml_(item.worker) + '</td>' +
           '<td>' + getDeskRoleBadgeHtml_(item) + '</td>' +
-          '<td>' + escapeHtml(formatDeskShiftTime_(item)) + '</td>' +
+          '<td><span class="desk-time-badge-row"><span>' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span></td>' +
           '<td><span class="desk-badge tone-' + tone + '">' + escapeHtml(getDeskToneLabel_(tone)) + '</span></td>' +
           '<td>' + getDeskWeekIndex_(item.date, state.desk.currentMonth) + '주차</td>' +
           '<td>' + escapeHtml(item.note || "-") + '</td>' +
@@ -8819,7 +9286,7 @@
           '<div class="worker-item-inner">' +
             '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
             '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
-            '<div class="sub">' + escapeHtml(formatDeskShiftTime_(item)) + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
+            '<div class="sub"><span class="desk-time-badge-row"><span>' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span>' + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
             '<div class="worker-item-progress">' +
               '<div class="worker-item-progress-track"><div class="worker-item-progress-fill" data-desk-worker-fill></div></div>' +
               '<div class="worker-item-meta-row">' +
@@ -10668,6 +11135,20 @@
         });
       }
 
+      if (deskSupplySearchEl) {
+        deskSupplySearchEl.addEventListener("input", function() {
+          state.desk.supplies.searchText = String(deskSupplySearchEl.value || "");
+          renderDeskSupplyInventory_();
+        });
+      }
+
+      if (deskSupplyTagSearchEl) {
+        deskSupplyTagSearchEl.addEventListener("input", function() {
+          state.desk.supplies.tagSearch = String(deskSupplyTagSearchEl.value || "");
+          renderDeskSupplyInventory_();
+        });
+      }
+
       if (deskAssetFormEl) {
         deskAssetFormEl.addEventListener("submit", function(event) {
           event.preventDefault();
@@ -10678,6 +11159,13 @@
       if (deskAssetCancelBtnEl) {
         deskAssetCancelBtnEl.addEventListener("click", function() {
           resetDeskAssetForm_();
+        });
+      }
+
+      if (deskAssetSearchEl) {
+        deskAssetSearchEl.addEventListener("input", function() {
+          state.desk.supplies.assetSearchText = String(deskAssetSearchEl.value || "");
+          renderDeskAssets_();
         });
       }
 
@@ -10737,6 +11225,33 @@
       if (deskPurchaseCopyBtnEl) {
         deskPurchaseCopyBtnEl.addEventListener("click", function() {
           copyDeskPurchaseRequest_();
+        });
+      }
+
+      if (deskPurchaseCustomFormEl) {
+        deskPurchaseCustomFormEl.addEventListener("submit", function(event) {
+          event.preventDefault();
+          saveDeskPurchaseCustomFromForm_();
+        });
+      }
+
+      if (deskPurchaseCustomCancelBtnEl) {
+        deskPurchaseCustomCancelBtnEl.addEventListener("click", function() {
+          resetDeskPurchaseCustomForm_();
+        });
+      }
+
+      if (deskPurchaseCustomListEl) {
+        deskPurchaseCustomListEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-purchase-custom-edit]");
+          if (editBtn) {
+            loadDeskPurchaseCustomIntoForm_(editBtn.getAttribute("data-desk-purchase-custom-edit") || "");
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-purchase-custom-delete]");
+          if (!deleteBtn) return;
+          if (!confirm("이 신규 구매 요청 품목을 삭제할까요?")) return;
+          deleteDeskPurchaseCustom_(deleteBtn.getAttribute("data-desk-purchase-custom-delete") || "");
         });
       }
 
@@ -10877,6 +11392,16 @@
           var tabBtn = event.target.closest("[data-desk-insight-tab]");
           if (!tabBtn) return;
           state.desk.activeInsightTab = tabBtn.getAttribute("data-desk-insight-tab") || "overview";
+          renderDeskMonthlySchedule_();
+        });
+      }
+
+      if (deskInsightsListEl) {
+        deskInsightsListEl.addEventListener("click", function(event) {
+          var workerBtn = event.target.closest("[data-desk-insight-worker]");
+          if (!workerBtn) return;
+          var workerName = workerBtn.getAttribute("data-desk-insight-worker") || "";
+          state.desk.openInsightWorker = state.desk.openInsightWorker === workerName ? "" : workerName;
           renderDeskMonthlySchedule_();
         });
       }
