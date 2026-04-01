@@ -458,6 +458,13 @@
       flex-direction: column;
       gap: 14px;
     }
+    .desk-supply-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
     .desk-supply-summary {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -553,6 +560,17 @@
       font-weight: 900;
       color: #173042;
     }
+    .desk-supply-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-supply-card-head-copy {
+      flex: 0 0 auto;
+      align-self: center;
+    }
     .desk-supply-card p {
       margin: 0;
       color: #607082;
@@ -568,7 +586,7 @@
     .desk-supply-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 720px;
+      min-width: 640px;
     }
     .desk-supply-table th,
     .desk-supply-table td {
@@ -590,7 +608,7 @@
     }
     .desk-supply-table th:last-child,
     .desk-supply-table td:last-child {
-      width: 176px;
+      width: 132px;
     }
     .desk-supply-name {
       display: flex;
@@ -686,9 +704,10 @@
     }
     .desk-supply-actions {
       display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      min-width: 156px;
+      gap: 5px;
+      flex-wrap: nowrap;
+      min-width: 116px;
+      justify-content: flex-end;
     }
     .desk-supply-stepper {
       width: 36px;
@@ -714,6 +733,27 @@
       background: #eefcf5;
       border-color: #bce8cd;
     }
+    .desk-supply-mini-btn {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      border: 1px solid #d2ddd6;
+      background: #fff;
+      color: #274457;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -0.01em;
+    }
+    .desk-supply-mini-btn.delete {
+      color: #b42318;
+      background: #fff5f4;
+      border-color: #f0c6c2;
+    }
     .desk-supply-quick {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -721,31 +761,70 @@
     }
     .desk-supply-sync-status {
       display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      min-width: 210px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid #d7e6dd;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+      color: #173042;
+      box-shadow: 0 10px 24px rgba(19, 48, 66, 0.06);
+    }
+    .desk-supply-sync-status-row {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-supply-sync-status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #14b87a;
+      box-shadow: 0 0 0 5px rgba(20, 184, 122, 0.15);
+    }
+    .desk-supply-sync-status-sub {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+      line-height: 1.45;
+    }
+    .desk-supply-sync-status.pending .desk-supply-sync-status-dot {
+      background: #f59e0b;
+      box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.16);
+    }
+    .desk-supply-sync-status.error .desk-supply-sync-status-dot {
+      background: #dc2626;
+      box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.16);
+    }
+    .desk-supply-copy-status {
+      min-height: 18px;
       font-size: 12px;
       font-weight: 800;
       color: #496273;
     }
-    .desk-supply-sync-status::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: #14b87a;
-      box-shadow: 0 0 0 4px rgba(20, 184, 122, 0.16);
-    }
-    .desk-supply-sync-status.pending::before {
-      background: #f59e0b;
-      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
-    }
-    .desk-supply-sync-status.error::before {
-      background: #dc2626;
-      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.16);
-    }
-    @media (max-width: 2048px) {
+    @media (max-width: 1360px) {
       .desk-supply-grid {
         grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    @media (max-width: 960px) {
+      .desk-supply-summary {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-supply-quick {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-supply-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+      .desk-supply-table {
+        min-width: 560px;
       }
     }
     .desk-supply-quick-card {
@@ -6372,17 +6451,31 @@
                 </article>
               </section>
 
-              <section class="desk-supply-tabs">
-                <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">소모품 현황</button>
-                <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets">물품 관리</button>
-                <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase">구매 요청</button>
-              </section>
+              <div class="desk-supply-toolbar">
+                <section class="desk-supply-tabs">
+                  <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">소모품 현황</button>
+                  <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets">물품 관리</button>
+                  <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase">구매 요청</button>
+                </section>
+                <section class="desk-supply-sync-status" id="deskSupplySyncStatus" aria-live="polite">
+                  <div class="desk-supply-sync-status-row">
+                    <span class="desk-supply-sync-status-dot" aria-hidden="true"></span>
+                    <span id="deskSupplySyncLabel">동기화 준비 중</span>
+                  </div>
+                  <div class="desk-supply-sync-status-sub" id="deskSupplySyncSub">Firebase 연결 상태를 확인하고 있습니다.</div>
+                </section>
+              </div>
 
               <section class="desk-supply-panel" data-desk-supplies-panel="inventory">
                 <div class="desk-supply-grid">
-                  <article class="desk-supply-card">
-                    <h3>소모품 현황</h3>
-                    <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 누르고 필요하면 품목 자체도 수정/삭제할 수 있습니다.</p>
+                  <article class="desk-supply-card" id="deskSupplyInventoryCapture">
+                    <div class="desk-supply-card-head">
+                      <div>
+                        <h3>소모품 현황</h3>
+                        <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 누르고 필요하면 품목 자체도 수정/삭제할 수 있습니다.</p>
+                      </div>
+                      <button class="desk-ghost-btn desk-supply-card-head-copy" id="deskSupplyCopyImageBtn" type="button" data-desk-copy-hide="true">소모품 현황 이미지 복사</button>
+                    </div>
                     <div class="desk-supply-filter-row">
                       <div class="field">
                         <label for="deskSupplySearch">물품 검색</label>
@@ -6406,6 +6499,7 @@
                         <tbody id="deskSupplyInventoryBody"></tbody>
                       </table>
                     </div>
+                    <div class="desk-supply-copy-status" id="deskSupplyCopyStatus" data-desk-copy-hide="true"></div>
                   </article>
                   <aside class="desk-supply-card">
                     <h3>소모품 입력 / 수정</h3>
@@ -7327,6 +7421,7 @@
           realtimeSource: null,
           realtimeSnapshot: null,
           syncStatus: "idle",
+          lastSyncAt: "",
           editingConsumableId: "",
           editingAssetId: "",
           editingPurchaseCustomId: "",
@@ -7473,6 +7568,9 @@
     var deskSupplyTotalSubEl = document.getElementById("deskSupplyTotalSub");
     var deskSupplyPurchaseCountEl = document.getElementById("deskSupplyPurchaseCount");
     var deskSupplyPurchaseSubEl = document.getElementById("deskSupplyPurchaseSub");
+    var deskSupplySyncStatusEl = document.getElementById("deskSupplySyncStatus");
+    var deskSupplySyncLabelEl = document.getElementById("deskSupplySyncLabel");
+    var deskSupplySyncSubEl = document.getElementById("deskSupplySyncSub");
     var deskConsumableFormEl = document.getElementById("deskConsumableForm");
     var deskConsumableItemNameEl = document.getElementById("deskConsumableItemName");
     var deskConsumableProductEl = document.getElementById("deskConsumableProduct");
@@ -7487,6 +7585,8 @@
     var deskSupplyTagSearchEl = document.getElementById("deskSupplyTagSearch");
     var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
     var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
+    var deskSupplyCopyImageBtnEl = document.getElementById("deskSupplyCopyImageBtn");
+    var deskSupplyCopyStatusEl = document.getElementById("deskSupplyCopyStatus");
     var deskAssetFormEl = document.getElementById("deskAssetForm");
     var deskAssetTypeEl = document.getElementById("deskAssetType");
     var deskAssetProductEl = document.getElementById("deskAssetProduct");
@@ -7805,6 +7905,7 @@
       state.desk.supplies.realtimeSource = null;
       state.desk.supplies.realtimeSnapshot = null;
       state.desk.supplies.syncStatus = "idle";
+      state.desk.supplies.lastSyncAt = "";
       state.desk.supplies.editingConsumableId = "";
       state.desk.supplies.editingAssetId = "";
       state.desk.supplies.editingPurchaseCustomId = "";
@@ -8014,8 +8115,48 @@
       });
     }
 
+    function markDeskSuppliesSynced_(timeText) {
+      state.desk.supplies.lastSyncAt = timeText || new Date().toISOString();
+    }
+
     function setDeskSuppliesSyncStatus_(status) {
       state.desk.supplies.syncStatus = status || "idle";
+    }
+
+    function formatDeskSuppliesSyncTime_(text) {
+      if (!text) return "마지막 동기화 기록 없음";
+      var date = new Date(text);
+      if (isNaN(date.getTime())) return String(text);
+      return "마지막 동기화 " + (date.getMonth() + 1) + "/" + date.getDate() + " " + pad2_(date.getHours()) + ":" + pad2_(date.getMinutes());
+    }
+
+    function renderDeskSuppliesSyncStatus_() {
+      if (!deskSupplySyncStatusEl) return;
+      var status = state.desk.supplies.syncStatus || "idle";
+      var realtimeEnabled = state.desk.supplies.realtimeEnabled !== false;
+      deskSupplySyncStatusEl.classList.remove("pending", "error");
+      if (status === "pending") deskSupplySyncStatusEl.classList.add("pending");
+      if (status === "error") deskSupplySyncStatusEl.classList.add("error");
+      if (deskSupplySyncLabelEl) {
+        deskSupplySyncLabelEl.textContent =
+          !realtimeEnabled ? "동기화 제한" :
+          status === "pending" ? "동기화 중" :
+          status === "error" ? "동기화 오류" :
+          "동기화 완료";
+      }
+      if (deskSupplySyncSubEl) {
+        deskSupplySyncSubEl.textContent =
+          !realtimeEnabled ? "실시간 연결 없이 마지막으로 불러온 데이터 기준으로 표시 중입니다." :
+          status === "pending" ? "Firebase에 최신 변경 내용을 저장하고 있습니다." :
+          status === "error" ? "연결 또는 저장 오류가 있어 자동 재시도를 기다리는 중입니다." :
+          formatDeskSuppliesSyncTime_(state.desk.supplies.lastSyncAt);
+      }
+    }
+
+    function showDeskSupplyCopyStatus_(text, isError) {
+      if (!deskSupplyCopyStatusEl) return;
+      deskSupplyCopyStatusEl.textContent = text || "";
+      deskSupplyCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
     }
 
     function applyDeskSuppliesData_(data) {
@@ -8062,6 +8203,7 @@
         try {
           var payload = JSON.parse(event.data || "{}");
           patchDeskSuppliesSnapshot_(payload.path, payload.data);
+          markDeskSuppliesSynced_();
           setDeskSuppliesSyncStatus_("idle");
           if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
             renderDeskSupplies_();
@@ -8074,6 +8216,7 @@
         try {
           var payload = JSON.parse(event.data || "{}");
           patchDeskSuppliesSnapshot_(payload.path, payload.data);
+          markDeskSuppliesSynced_();
           setDeskSuppliesSyncStatus_("idle");
           if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
             renderDeskSupplies_();
@@ -8106,6 +8249,7 @@
       }
       return deskRealtimeFetchJson_("PUT", buildDeskSuppliesRealtimeUrl_("", false), payload)
         .then(function() {
+          markDeskSuppliesSynced_();
           setDeskSuppliesSyncStatus_("idle");
           state.desk.supplies.realtimeSnapshot = cloneDeskSuppliesSnapshot_(payload);
           return payload;
@@ -8148,6 +8292,7 @@
             });
           }
           applyDeskSuppliesData_(snapshot || {});
+          markDeskSuppliesSynced_();
           return snapshot;
         })
         .then(function() {
@@ -8165,6 +8310,7 @@
                 throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
               }
               applyDeskSuppliesData_(res.data || {});
+              markDeskSuppliesSynced_();
               state.desk.supplies.loaded = true;
               state.desk.supplies.realtimeEnabled = false;
               if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
@@ -8254,6 +8400,7 @@
       Array.prototype.forEach.call(deskSupplyPanelEls, function(panel) {
         panel.classList.toggle("hidden", (panel.getAttribute("data-desk-supplies-panel") || "") !== state.desk.suppliesTab);
       });
+      renderDeskSuppliesSyncStatus_();
       if (shouldDeferPortalDataLoad_()) return;
       if (!state.desk.supplies.loaded) {
         if (deskSupplyInventoryBodyEl) deskSupplyInventoryBodyEl.innerHTML = '<tr><td colspan="4">소모품 데이터를 불러오는 중입니다...</td></tr>';
@@ -8315,8 +8462,8 @@
           '<td><div class="desk-supply-actions">' +
             '<button class="desk-supply-stepper minus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="-1">-</button>' +
             '<button class="desk-supply-stepper plus" type="button" data-desk-supply-adjust="' + escapeHtml(item.id) + '" data-desk-supply-delta="1">+</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-consumable-edit="' + escapeHtml(item.id) + '">수정</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-consumable-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+            '<button class="desk-supply-mini-btn" type="button" data-desk-consumable-edit="' + escapeHtml(item.id) + '" title="품목 수정">수정</button>' +
+            '<button class="desk-supply-mini-btn delete" type="button" data-desk-consumable-delete="' + escapeHtml(item.id) + '" title="품목 삭제">삭제</button>' +
           '</div></td>' +
         '</tr>';
       }).join("");
@@ -11222,7 +11369,12 @@
       var canvas = await window.html2canvas(node, {
         backgroundColor: "#ffffff",
         scale: 2,
-        useCORS: true
+        useCORS: true,
+        onclone: function(clonedDoc) {
+          Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
+            el.style.display = "none";
+          });
+        }
       });
       var blob = await new Promise(function(resolve) {
         canvas.toBlob(resolve, "image/png");
@@ -11233,6 +11385,37 @@
       }
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       showDeskCopyStatus_("보고용 이미지를 복사했습니다.");
+    }
+
+    async function copyDeskSupplyInventoryImage_() {
+      var node = document.getElementById("deskSupplyInventoryCapture");
+      if (!node) {
+        showDeskSupplyCopyStatus_("복사할 소모품 화면이 없습니다.", true);
+        return;
+      }
+      if (typeof window.html2canvas !== "function" || typeof ClipboardItem === "undefined") {
+        showDeskSupplyCopyStatus_("이 브라우저에서는 이미지 복사가 지원되지 않습니다.", true);
+        return;
+      }
+      var canvas = await window.html2canvas(node, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        onclone: function(clonedDoc) {
+          Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
+            el.style.display = "none";
+          });
+        }
+      });
+      var blob = await new Promise(function(resolve) {
+        canvas.toBlob(resolve, "image/png");
+      });
+      if (!blob) {
+        showDeskSupplyCopyStatus_("이미지 생성에 실패했습니다.", true);
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      showDeskSupplyCopyStatus_("소모품 현황 이미지를 복사했습니다.");
     }
 
     function showDeskCopyStatus_(text, isError) {
@@ -11626,6 +11809,14 @@
         deskSupplyTagSearchEl.addEventListener("input", function() {
           state.desk.supplies.tagSearch = String(deskSupplyTagSearchEl.value || "");
           renderDeskSupplyInventory_();
+        });
+      }
+
+      if (deskSupplyCopyImageBtnEl) {
+        deskSupplyCopyImageBtnEl.addEventListener("click", function() {
+          copyDeskSupplyInventoryImage_().catch(function(err) {
+            showDeskSupplyCopyStatus_("이미지 복사 오류: " + (err && err.message ? err.message : String(err)), true);
+          });
         });
       }
 
