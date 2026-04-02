@@ -423,28 +423,37 @@
     }
     .desk-subtabs {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding: 10px;
-      border-radius: 16px;
-      border: 1px solid #d6e4dc;
-      background: linear-gradient(180deg, #fbfefc 0%, #f2f8f4 100%);
+      padding: 10px 12px 0;
+      border-radius: 24px 24px 0 0;
+      border: 1px solid #d8e6de;
+      border-bottom: 0;
+      background:
+        linear-gradient(135deg, rgba(168, 230, 207, 0.45), rgba(226, 243, 236, 0.92) 42%, rgba(243, 248, 255, 0.94)),
+        #f7fbf9;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
     .desk-subtab {
-      border: 1px solid #c8d6cc;
-      background: #fff;
-      color: #385062;
-      border-radius: 12px;
-      padding: 10px 14px;
+      position: relative;
+      border: 1px solid rgba(183, 207, 196, 0.92);
+      border-bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(243,249,246,0.92) 100%);
+      color: #577184;
+      border-radius: 18px 18px 0 0;
+      padding: 13px 18px 12px;
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 900;
       cursor: pointer;
+      box-shadow: 0 -1px 0 rgba(255,255,255,0.78) inset;
     }
     .desk-subtab.active {
-      background: #0d684d;
+      background: linear-gradient(180deg, #0d684d 0%, #157b59 100%);
       color: #fff;
       border-color: #0d684d;
-      box-shadow: 0 10px 18px rgba(13, 104, 77, 0.18);
+      box-shadow: 0 14px 24px rgba(13, 104, 77, 0.18);
+      transform: translateY(1px);
+      z-index: 1;
     }
     .desk-panel {
       border: 1px solid #d6e3dc;
@@ -952,12 +961,14 @@
       flex-direction: column;
       gap: 14px;
       padding: 18px;
-      border-radius: 24px;
-      border: 1px solid rgba(190, 234, 212, 0.26);
-      background: linear-gradient(180deg, rgba(4, 46, 37, 0.92), rgba(7, 63, 50, 0.92));
-      box-shadow: 0 26px 60px rgba(3, 28, 22, 0.42);
+      border-radius: 30px;
+      border: 1px solid rgba(216, 230, 222, 0.96);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(247,251,249,0.95) 100%),
+        linear-gradient(135deg, rgba(206, 234, 223, 0.52), rgba(229, 236, 250, 0.4));
+      box-shadow: 0 28px 60px rgba(15, 60, 46, 0.14);
       backdrop-filter: blur(16px);
-      color: #ecfdf5;
+      color: #173042;
       z-index: 35;
     }
     .desk-live-feed.active {
@@ -971,16 +982,16 @@
     }
     .desk-live-feed-title {
       margin: 0;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 900;
-      color: #f0fdf4;
+      color: #173042;
     }
     .desk-live-feed-sub {
       margin: 4px 0 0;
-      color: rgba(220, 252, 231, 0.78);
+      color: #6b7d8f;
       font-size: 12px;
       line-height: 1.5;
-      font-weight: 700;
+      font-weight: 800;
     }
     .desk-live-feed-pill {
       display: inline-flex;
@@ -989,9 +1000,9 @@
       min-width: 54px;
       padding: 6px 10px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(220, 252, 231, 0.2);
-      color: #d1fae5;
+      background: linear-gradient(180deg, rgba(14,120,94,0.12) 0%, rgba(14,120,94,0.06) 100%);
+      border: 1px solid rgba(155, 208, 187, 0.85);
+      color: #0d684d;
       font-size: 11px;
       font-weight: 900;
     }
@@ -1004,24 +1015,24 @@
       padding-right: 4px;
     }
     .desk-live-feed-empty {
-      border-radius: 16px;
+      border-radius: 22px;
       padding: 16px;
-      border: 1px dashed rgba(209, 250, 229, 0.22);
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(220, 252, 231, 0.78);
+      border: 1px dashed #cadcd3;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+      color: #6a7f90;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.5;
     }
     .desk-live-feed-item {
-      border-radius: 18px;
-      padding: 14px;
+      border-radius: 26px;
+      padding: 16px;
       background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06)),
-        var(--desk-card-bg, rgba(255, 255, 255, 0.08));
-      border: 1px solid rgba(220, 252, 231, 0.12);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.58)),
+        var(--desk-card-bg, rgba(255, 255, 255, 0.86));
+      border: 1px solid rgba(212, 225, 218, 0.92);
       color: #173042;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 28px rgba(15, 60, 46, 0.08);
     }
     .desk-live-feed-item-top {
       display: flex;
@@ -1029,6 +1040,20 @@
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 10px;
+    }
+    .desk-live-feed-rank {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      background: rgba(20, 99, 255, 0.08);
+      color: #1463ff;
+      font-size: 14px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
     }
     .desk-live-feed-item-meta {
       display: flex;
@@ -1042,8 +1067,8 @@
       align-items: center;
       border-radius: 999px;
       padding: 4px 8px;
-      background: rgba(17, 104, 77, 0.08);
-      color: #0d684d;
+      background: rgba(20, 99, 255, 0.08);
+      color: #1463ff;
       font-size: 10px;
       font-weight: 900;
     }
@@ -1134,9 +1159,9 @@
       gap: 10px;
     }
     .desk-live-feed-nav button {
-      border: 1px solid rgba(209, 250, 229, 0.24);
-      background: rgba(255, 255, 255, 0.08);
-      color: #ecfdf5;
+      border: 1px solid #d5e3dc;
+      background: #fff;
+      color: #4c6477;
       border-radius: 999px;
       padding: 8px 12px;
       font-size: 12px;
@@ -1148,7 +1173,7 @@
       cursor: default;
     }
     .desk-live-feed-page {
-      color: rgba(220, 252, 231, 0.8);
+      color: #6a7f90;
       font-size: 12px;
       font-weight: 800;
     }
@@ -1504,12 +1529,31 @@
       color: #64748b;
     }
     .desk-view-tabs {
-      padding: 4px 0;
+      position: relative;
+      display: inline-flex;
+      gap: 6px;
+      align-self: flex-start;
+      padding: 10px 12px 0;
+      border-radius: 22px 22px 0 0;
+      border: 1px solid #d8e6de;
+      border-bottom: 0;
+      background: linear-gradient(180deg, rgba(237,247,242,0.98) 0%, rgba(247,251,249,0.98) 100%);
+    }
+    .desk-view-tab {
+      position: relative;
+      border-radius: 16px 16px 0 0;
+      border-bottom: 0;
+      padding: 12px 16px 11px;
+      color: #587081;
+      background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(245,250,247,0.9) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
     .desk-view-tab.active {
-      background: #0d684d;
+      background: linear-gradient(180deg, #0d684d 0%, #157d5b 100%);
       color: #fff;
       border-color: #0d684d;
+      box-shadow: 0 14px 24px rgba(13, 104, 77, 0.16);
+      transform: translateY(1px);
     }
     .desk-view-panel.hidden {
       display: none;
@@ -2347,12 +2391,13 @@
     }
     .desk-journal-worker-tabs {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding: 10px;
+      padding: 12px 14px 0;
       border: 1px solid #d9e7df;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #fbfefc 0%, #f2f8f4 100%);
+      border-bottom: 0;
+      border-radius: 24px 24px 0 0;
+      background: linear-gradient(135deg, rgba(202, 236, 223, 0.65), rgba(247, 251, 249, 0.96) 55%, rgba(232, 240, 255, 0.92));
     }
     .desk-worker-tab {
       --desk-tab-bg: #fff;
@@ -2362,17 +2407,20 @@
       border: 1px solid var(--desk-tab-border, #c8d6cc);
       background: var(--desk-tab-bg, #fff);
       color: var(--desk-tab-fg, #385062);
-      border-radius: 12px;
-      padding: 10px 14px;
+      border-radius: 16px 16px 0 0;
+      border-bottom: 0;
+      padding: 12px 15px 11px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
     .desk-worker-tab.active {
       background: var(--desk-tab-active-bg, #0d684d);
       color: #fff;
       border-color: var(--desk-tab-active-bg, #0d684d);
       box-shadow: 0 10px 18px rgba(13, 104, 77, 0.18);
+      transform: translateY(1px);
     }
     .desk-journal-layout {
       display: grid;
@@ -2430,19 +2478,23 @@
       align-items: center;
     }
     .desk-memo-compose-input {
-      min-height: 58px;
+      min-height: 64px;
       font-size: 15px;
-      font-weight: 800;
-      padding: 16px 18px;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+      font-weight: 900;
+      padding: 18px 20px;
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,251,249,0.92) 100%),
+        linear-gradient(135deg, rgba(96,165,250,0.1), rgba(244,114,182,0.06));
+      border-color: #d4e3dc;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.86), 0 12px 22px rgba(15,60,46,0.04);
     }
     .desk-memo-submit-btn {
-      min-width: 118px;
-      min-height: 58px;
-      border: 1px solid #0d684d;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #0d684d 0%, #0f7b59 100%);
+      min-width: 126px;
+      min-height: 64px;
+      border: 0;
+      border-radius: 22px;
+      background: linear-gradient(180deg, #1463ff 0%, #1d7dff 100%);
       color: #fff;
       font-size: 14px;
       font-weight: 900;
@@ -2451,16 +2503,15 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 14px 24px rgba(13, 104, 77, 0.18);
+      box-shadow: 0 18px 30px rgba(20, 99, 255, 0.24);
     }
     .desk-memo-submit-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 18px 26px rgba(13, 104, 77, 0.2);
+      box-shadow: 0 22px 34px rgba(20, 99, 255, 0.28);
     }
     .desk-memo-submit-btn.saving {
       pointer-events: none;
-      background: linear-gradient(180deg, #1a7e5f 0%, #0d684d 100%);
-      border-color: #0d684d;
+      background: linear-gradient(180deg, #4a8fff 0%, #2f78ff 100%);
       opacity: 0.96;
     }
     .desk-memo-submit-icon {
@@ -2540,12 +2591,30 @@
     .desk-task-card,
     .desk-note-card {
       border: 1px solid #d8e6de;
-      border-radius: 16px;
+      border-radius: 28px;
       background: linear-gradient(180deg, var(--desk-card-soft, #ffffff) 0%, var(--desk-card-bg, #ffffff) 100%);
-      padding: 14px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      box-shadow: 0 18px 34px rgba(15, 60, 46, 0.08);
+    }
+    .desk-note-card {
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(255,255,255,0.54) 100%),
+        linear-gradient(135deg, color-mix(in srgb, var(--desk-worker-bg, #edf5ff) 82%, white 18%) 0%, color-mix(in srgb, var(--desk-worker-bg, #edf5ff) 58%, white 42%) 100%);
+      border-color: color-mix(in srgb, var(--desk-worker-border, #d6dee8) 70%, white 30%);
+    }
+    .desk-note-card::before {
+      content: "";
+      position: absolute;
+      inset: auto -18% -38% 42%;
+      height: 160px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 72%);
+      pointer-events: none;
     }
     .desk-task-card.done {
       background: linear-gradient(180deg, #f2fff7 0%, #ebfff3 100%);
@@ -2580,6 +2649,15 @@
       font-size: 11px;
       font-weight: 800;
       color: #607082;
+    }
+    .desk-note-stamp {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.62);
+      border: 1px solid rgba(216, 228, 236, 0.92);
+      color: #587081;
     }
     .desk-task-worker-badge,
     .desk-note-worker-badge {
@@ -2718,11 +2796,17 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    .desk-note-body {
+      position: relative;
+      padding: 2px 0 4px;
+      z-index: 1;
+    }
     .desk-note-text {
       margin: 0;
-      font-size: 13px;
-      color: #334155;
-      line-height: 1.65;
+      font-size: 15px;
+      color: #173042;
+      line-height: 1.72;
+      font-weight: 800;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -2742,32 +2826,38 @@
       flex-wrap: wrap;
     }
     .desk-note-time-row {
-      display: flex;
+      display: inline-flex;
       gap: 8px;
       align-items: center;
       flex-wrap: wrap;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.74);
+      border: 1px solid rgba(214, 226, 235, 0.92);
+      width: fit-content;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
     }
     .desk-note-time-input {
-      width: 150px;
-      min-width: 150px;
-      border-radius: 10px;
-      border: 1px solid #cddbd2;
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 800;
+      width: 134px;
+      min-width: 134px;
+      border-radius: 999px;
+      border: 0;
+      padding: 10px 12px;
+      font-size: 22px;
+      font-weight: 900;
       color: #2f4558;
-      background: #fff;
+      background: transparent;
       font-family: inherit;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.02em;
       line-height: 1.1;
     }
     .desk-note-time-save {
-      border: 1px solid #c8d6cc;
-      background: #fff;
+      border: 1px solid rgba(188, 205, 214, 0.9);
+      background: rgba(255,255,255,0.86);
       color: #385062;
-      border-radius: 10px;
-      padding: 8px 10px;
+      border-radius: 999px;
+      padding: 10px 12px;
       font-size: 11px;
       font-weight: 900;
       cursor: pointer;
@@ -7154,7 +7244,7 @@
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">일일 업무일지</h2>
-                <p class="desk-panel-sub">날짜별 업무 배정, 근무자별 진행 체크, 미해결 사유, 근무 중 발생 기록을 한 화면에서 관리합니다.</p>
+                <p class="desk-panel-sub">날짜별 업무 배정, 근무자별 진행 체크, 미해결 사유, 근무 이슈를 한 화면에서 관리합니다.</p>
               </div>
               <section class="desk-daily-sync-status" id="deskDailySyncStatus" aria-live="polite">
                 <span class="desk-daily-sync-ring" aria-hidden="true"></span>
@@ -7192,9 +7282,9 @@
                   <div class="desk-kpi-sub">초록 체크 기준 자동 계산</div>
                 </article>
                 <article class="desk-kpi-card">
-                  <div class="desk-kpi-label">근무 중 기록</div>
+                  <div class="desk-kpi-label">근무 이슈</div>
                   <div class="desk-kpi-value" id="deskJournalMemoSummary">0건</div>
-                  <div class="desk-kpi-sub">현장 기록 / 전달 사항 포함</div>
+                  <div class="desk-kpi-sub">현장 이슈 / 전달 사항 포함</div>
                 </article>
                 <article class="desk-kpi-card">
                   <div class="desk-kpi-label">미해결 업무</div>
@@ -7278,16 +7368,16 @@
 
                 <div class="desk-journal-side">
                   <article class="desk-editor-card" id="deskJournalMemoEditorCard">
-                    <div class="desk-side-title">근무 중 발생 기록</div>
+                    <div class="desk-side-title">근무 이슈</div>
                     <div class="desk-side-sub">선택한 근무자 탭 기준으로 바로 기록하고, `Enter` 또는 저장 버튼으로 즉시 반영합니다.</div>
                     <form id="deskJournalMemoForm">
                       <div class="field">
-                        <label for="deskJournalMemoWorker">기록 근무자</label>
+                        <label for="deskJournalMemoWorker">이슈 근무자</label>
                         <input id="deskJournalMemoWorker" class="modal-input" type="text" list="deskJournalWorkerNameList" placeholder="선택한 탭 근무자 자동 반영">
                         <div class="desk-memo-worker-quick" id="deskJournalMemoWorkerQuick"></div>
                       </div>
                       <div class="field" style="margin-top:10px;">
-                        <label for="deskJournalMemoInput">기록 입력</label>
+                        <label for="deskJournalMemoInput">이슈 입력</label>
                         <div class="desk-memo-compose-row">
                           <input id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" type="text" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달">
                           <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><span class="desk-memo-submit-icon">↵</span> 저장</button>
@@ -7298,7 +7388,7 @@
                     </form>
                     <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
                     <div class="desk-journal-memo-foot">
-                      <div class="desk-journal-memo-meta" id="deskJournalMemoMeta">기록 0건</div>
+                      <div class="desk-journal-memo-meta" id="deskJournalMemoMeta">이슈 0건</div>
                       <div class="desk-journal-pagination" id="deskJournalMemoPagination"></div>
                     </div>
                   </article>
@@ -7313,7 +7403,7 @@
 
               <article class="desk-editor-card">
                 <div class="desk-side-title">근무자 보고용 화면</div>
-                <div class="desk-side-sub">선택 근무자의 오늘 업무와 근무 중 기록을 세로 보고 형식으로 정리합니다. 카카오톡 보고용으로 텍스트 또는 이미지를 바로 복사할 수 있습니다.</div>
+                <div class="desk-side-sub">선택 근무자의 오늘 업무와 근무 이슈를 세로 보고 형식으로 정리합니다. 카카오톡 보고용으로 텍스트 또는 이미지를 바로 복사할 수 있습니다.</div>
                 <div class="desk-report-shell">
                   <div class="desk-report-side">
                     <div class="field">
@@ -7341,7 +7431,7 @@
         <div class="desk-live-feed-head">
           <div>
             <h3 class="desk-live-feed-title">실시간 현황</h3>
-            <p class="desk-live-feed-sub">근무 중 발생 기록과 배정 업무를 한곳에 모아 보여줍니다.</p>
+            <p class="desk-live-feed-sub">근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.</p>
           </div>
           <div class="desk-live-feed-pill" id="deskLiveFeedCount">0건</div>
         </div>
@@ -11836,7 +11926,7 @@
     function renderDeskDailyJournalLoadingState_() {
       if (deskJournalWorkerTabsEl) deskJournalWorkerTabsEl.innerHTML = '<div class="desk-empty" style="width:100%;">일일 업무일지 탭을 불러오는 중입니다...</div>';
       if (deskJournalTaskBoardEl) deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">업무 배정 목록을 불러오는 중입니다.</div>';
-      if (deskJournalMemoListEl) deskJournalMemoListEl.innerHTML = '<div class="desk-empty">근무 중 기록을 불러오는 중입니다.</div>';
+      if (deskJournalMemoListEl) deskJournalMemoListEl.innerHTML = '<div class="desk-empty">근무 이슈를 불러오는 중입니다.</div>';
       if (deskJournalMemoMetaEl) deskJournalMemoMetaEl.textContent = "기록을 불러오는 중입니다.";
       if (deskJournalMemoPaginationEl) deskJournalMemoPaginationEl.innerHTML = "";
       if (deskJournalPendingListEl) deskJournalPendingListEl.innerHTML = '<div class="desk-empty">미해결 업무를 정리하는 중입니다.</div>';
@@ -11977,7 +12067,7 @@
       var memoItems = getDeskDailyJournalMemos_(dateKey).map(function(item) {
         return {
           id: "memo_" + item.id,
-          type: "기록",
+          type: "이슈",
           worker: item.worker || "-",
           content: item.text || "",
           stamp: item.updatedAt || item.createdAt || "",
@@ -12032,10 +12122,10 @@
       if (deskLiveFeedNextBtnEl) deskLiveFeedNextBtnEl.disabled = state.desk.daily.liveFeedPage >= totalPages;
       if (!deskLiveFeedBodyEl) return;
       if (!pageItems.length) {
-        deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">아직 기록된 근무 중 발생 내용이나 배정 업무가 없습니다.</div>';
+        deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">아직 기록된 근무 이슈나 배정 업무가 없습니다.</div>';
         return;
       }
-      deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item) {
+      deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         return '<article class="desk-live-feed-item" style="' + escapeHtml(item.style || "") + '">' +
           '<div class="desk-live-feed-item-top">' +
             '<div class="desk-live-feed-item-meta">' +
@@ -12044,6 +12134,7 @@
             '</div>' +
             '<span class="desk-live-feed-time">' + escapeHtml(formatDeskJournalDateTime_(item.stamp)) + '</span>' +
           '</div>' +
+          '<div class="desk-live-feed-rank">' + String(startIndex + index + 1).padStart(2, "0") + '</div>' +
           '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
         '</article>';
       }).join("");
@@ -12248,8 +12339,8 @@
       var pageItems = visible.slice(startIndex, startIndex + pageSize);
       if (deskJournalMemoMetaEl) {
         deskJournalMemoMetaEl.textContent = total
-          ? ("기록 " + total + "건 · " + state.desk.daily.memoPage + "/" + totalPages + " 페이지")
-          : "기록 0건";
+          ? ("이슈 " + total + "건 · " + state.desk.daily.memoPage + "/" + totalPages + " 페이지")
+          : "이슈 0건";
       }
       if (deskJournalMemoPaginationEl) {
         deskJournalMemoPaginationEl.innerHTML = total > pageSize
@@ -12264,7 +12355,10 @@
         var isEditing = state.desk.daily.editingMemoId === item.id;
         return '<article class="desk-note-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
           '<div class="desk-note-top">' +
-            '<div class="desk-note-meta">' + renderDeskNoteWorkerBadgeHtml_(item.worker || "-") + '<span>' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span></div>' +
+            '<div class="desk-note-meta">' +
+              renderDeskNoteWorkerBadgeHtml_(item.worker || "-") +
+              '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
+            '</div>' +
             '<div class="desk-note-actions">' +
               (isEditing
                 ? '<button class="modal-action ghost" type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '">취소</button>' +
@@ -12278,8 +12372,8 @@
             '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간 수정</button>' +
           '</div>' +
           (isEditing
-            ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 중 발생한 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
-            : '<p class="desk-note-text">' + escapeHtml(item.text || "") + '</p>') +
+            ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
+            : '<div class="desk-note-body"><p class="desk-note-text">' + escapeHtml(item.text || "") + '</p></div>') +
         '</article>';
       }).join("");
     }
@@ -12391,7 +12485,7 @@
                 '</div>' +
                 '<div class="desk-report-item-text">' + escapeHtml(item.text || "") + '</div>' +
               '</article>';
-            }).join("") : '<div class="desk-empty">근무 중 발생 기록이 아직 없습니다.</div>') +
+            }).join("") : '<div class="desk-empty">근무 이슈가 아직 없습니다.</div>') +
           '</div>' +
         '</section>' +
         (pending.length ? (
