@@ -946,8 +946,8 @@
     }
     .desk-live-feed {
       position: fixed;
-      top: 98px;
-      right: max(20px, calc((100vw - 1700px) / 2 + 20px));
+      top: 126px;
+      right: 24px;
       width: 320px;
       max-height: calc(100vh - 122px);
       display: none;
@@ -12239,6 +12239,7 @@
 
     function upsertDeskDailyTask_(task, done) {
       var item = normalizeDeskDailyTask_(task);
+      var preserveViewDateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var stamp = buildDeskCurrentDateTimeForKey_(item.dateKey || (state.desk.daily.dateKey || getDeskDateKey_(new Date())));
       if (!item.createdAt) item.createdAt = stamp;
       item.updatedAt = stamp;
@@ -12249,7 +12250,7 @@
       mergeDeskDailyJournalData_(item.dateKey, existingTasks, getDeskDailyJournalMemos_(item.dateKey));
       refreshDeskDailyJournalSnapshotForDate_(item.dateKey);
       state.desk.daily.loadedDates[item.dateKey] = true;
-      state.desk.daily.dateKey = item.dateKey;
+      state.desk.daily.dateKey = item.dateKey === DESK_ROUTINE_TEMPLATE_KEY ? preserveViewDateKey : item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
       var request = state.desk.daily.realtimeEnabled
