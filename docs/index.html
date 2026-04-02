@@ -2600,12 +2600,12 @@
       box-shadow: 0 18px 34px rgba(15, 60, 46, 0.08);
     }
     .desk-note-card {
-      padding: 0;
-      gap: 0;
-      background: #ffffff;
+      padding: 14px 16px;
+      gap: 10px;
+      background: var(--desk-note-card-bg, #2563eb);
+      color: var(--desk-note-card-fg, #ffffff);
       border-color: transparent;
-      box-shadow: 0 12px 30px rgba(22, 37, 66, 0.08);
-      overflow: hidden;
+      box-shadow: 0 14px 28px rgba(22, 37, 66, 0.11);
     }
     .desk-task-card.done {
       background: linear-gradient(180deg, #f2fff7 0%, #ebfff3 100%);
@@ -2625,32 +2625,6 @@
       gap: 10px;
       flex-wrap: nowrap;
     }
-    .desk-note-shell {
-      display: grid;
-      grid-template-columns: 96px minmax(0, 1fr);
-      min-height: 144px;
-    }
-    .desk-note-worker-panel {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px 10px;
-      background: var(--desk-worker-accent, #2563eb);
-      color: var(--desk-worker-accent-fg, #ffffff);
-      font-size: 16px;
-      font-weight: 900;
-      line-height: 1.25;
-      text-align: center;
-      letter-spacing: -0.01em;
-      word-break: keep-all;
-    }
-    .desk-note-main {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 14px 16px 14px 18px;
-      background: color-mix(in srgb, var(--desk-worker-accent, #2563eb) 10%, white 90%);
-    }
     .desk-task-title {
       font-size: 15px;
       font-weight: 900;
@@ -2665,17 +2639,19 @@
       align-items: center;
       font-size: 11px;
       font-weight: 800;
-      color: #607082;
+      color: var(--desk-note-meta-fg, rgba(255,255,255,0.82));
       min-width: 0;
+      flex: 1 1 auto;
     }
     .desk-note-stamp {
       display: inline-flex;
       align-items: center;
       padding: 4px 9px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.82);
-      color: #4b6374;
+      background: var(--desk-note-chip-bg, rgba(255,255,255,0.16));
+      color: inherit;
       font-size: 11px;
+      white-space: nowrap;
     }
     .desk-task-worker-badge,
     .desk-note-worker-badge {
@@ -2811,8 +2787,8 @@
     .desk-note-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 6px;
-      flex-wrap: wrap;
+      gap: 5px;
+      flex-wrap: nowrap;
     }
     .desk-note-control-stack {
       display: flex;
@@ -2820,36 +2796,36 @@
       align-items: flex-end;
       gap: 4px;
       flex: 0 0 auto;
+      min-width: fit-content;
     }
     .desk-note-control-top {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       justify-content: flex-end;
     }
     .desk-note-body {
       display: flex;
       align-items: center;
-      min-height: 54px;
-      padding: 4px 2px 2px;
+      padding: 2px 0 0;
       text-align: left;
     }
     .desk-note-text {
       margin: 0;
       width: 100%;
-      font-size: 15px;
-      color: #173042;
-      line-height: 1.55;
+      font-size: 13px;
+      color: var(--desk-note-card-fg, #ffffff);
+      line-height: 1.5;
       font-weight: 800;
       white-space: pre-wrap;
       word-break: break-word;
     }
     .desk-note-edit-input {
-      min-height: 90px;
+      min-height: 76px;
       resize: vertical;
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.9);
       font-size: 14px;
       font-weight: 700;
       line-height: 1.6;
@@ -2864,65 +2840,85 @@
       display: inline-flex;
       gap: 6px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       padding: 0;
       border-radius: 999px;
       width: fit-content;
+      white-space: nowrap;
     }
     .desk-note-time-input {
-      width: 76px;
-      min-width: 76px;
+      width: 84px;
+      min-width: 84px;
       border-radius: 999px;
       border: 0;
       padding: 0;
       font-size: 12px;
       font-weight: 900;
-      color: #2f4558;
+      color: var(--desk-note-card-fg, #ffffff);
       background: transparent;
       font-family: inherit;
       font-variant-numeric: tabular-nums;
       letter-spacing: 0.01em;
       line-height: 1.1;
       text-align: right;
+      white-space: nowrap;
+      appearance: none;
+      -webkit-appearance: none;
     }
     .desk-note-time-save {
       border: 0;
-      background: rgba(255,255,255,0.82);
-      color: #385062;
+      background: var(--desk-note-chip-bg, rgba(255,255,255,0.16));
+      color: var(--desk-note-card-fg, #ffffff);
       border-radius: 999px;
-      padding: 5px 9px;
+      padding: 4px 8px;
       font-size: 10px;
       font-weight: 900;
       cursor: pointer;
+      white-space: nowrap;
     }
     .desk-note-time-save:hover {
-      color: #0d684d;
-      background: #f2fbf5;
+      background: var(--desk-note-chip-hover-bg, rgba(255,255,255,0.28));
     }
     .desk-note-action-mini {
       border: 0;
-      background: rgba(255,255,255,0.82);
-      color: #2b4253;
+      background: var(--desk-note-chip-bg, rgba(255,255,255,0.16));
+      color: var(--desk-note-card-fg, #ffffff);
       border-radius: 999px;
-      padding: 5px 10px;
+      padding: 4px 8px;
       min-height: 28px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: inset 0 0 0 1px rgba(188, 205, 214, 0.75);
+      box-shadow: inset 0 0 0 1px var(--desk-note-chip-border, rgba(255,255,255,0.22));
+      white-space: nowrap;
     }
     .desk-note-action-mini.primary {
-      background: #2364ff;
-      color: #fff;
+      background: var(--desk-note-solid-chip-bg, rgba(255,255,255,0.92));
+      color: var(--desk-note-solid-chip-fg, #0f172a);
       box-shadow: none;
     }
     .desk-note-action-mini:hover {
-      background: rgba(255,255,255,0.96);
-      box-shadow: inset 0 0 0 1px rgba(43, 66, 83, 0.22);
+      background: var(--desk-note-chip-hover-bg, rgba(255,255,255,0.28));
+      box-shadow: inset 0 0 0 1px var(--desk-note-chip-border, rgba(255,255,255,0.34));
     }
     .desk-note-action-mini.primary:hover {
-      background: #1b55df;
+      background: #ffffff;
       box-shadow: none;
+    }
+    .desk-note-worker-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: var(--desk-note-solid-chip-bg, rgba(255,255,255,0.92));
+      color: var(--desk-note-solid-chip-fg, #0f172a);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-note-time-input::placeholder {
+      color: inherit;
+      opacity: 0.72;
     }
     .desk-report-shell {
       display: grid;
@@ -11750,19 +11746,24 @@
 
     function getDeskWorkerCardStyle_(name) {
       var palette = getDeskWorkerPalette_(String(name || "").trim());
+      var darkText = (palette.accentFg || "#ffffff") !== "#ffffff";
       return [
         '--desk-worker-bg:' + palette.bg,
         '--desk-worker-fg:' + palette.fg,
         '--desk-worker-border:' + palette.border,
         '--desk-worker-accent:' + (palette.accent || palette.fg),
         '--desk-worker-accent-fg:' + (palette.accentFg || '#ffffff'),
+        '--desk-note-card-bg:' + (palette.accent || palette.fg),
+        '--desk-note-card-fg:' + (palette.accentFg || '#ffffff'),
+        '--desk-note-meta-fg:' + (darkText ? 'rgba(15,23,42,0.72)' : 'rgba(255,255,255,0.82)'),
+        '--desk-note-chip-bg:' + (darkText ? 'rgba(255,255,255,0.68)' : 'rgba(255,255,255,0.16)'),
+        '--desk-note-chip-hover-bg:' + (darkText ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.28)'),
+        '--desk-note-chip-border:' + (darkText ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.24)'),
+        '--desk-note-solid-chip-bg:' + (darkText ? 'rgba(15,23,42,0.9)' : 'rgba(255,255,255,0.94)'),
+        '--desk-note-solid-chip-fg:' + (darkText ? '#ffffff' : '#0f172a'),
         '--desk-card-soft: rgba(255,255,255,0.95)',
         '--desk-card-bg:' + palette.bg
       ].join(";");
-    }
-
-    function renderDeskNoteWorkerPanelHtml_(name) {
-      return '<div class="desk-note-worker-panel">' + escapeHtml(name || "-") + '</div>';
     }
 
     function getDeskRoleBadgeHtml_(item) {
@@ -12417,34 +12418,31 @@
       deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
         var isEditing = state.desk.daily.editingMemoId === item.id;
         return '<article class="desk-note-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
-          '<div class="desk-note-shell">' +
-            renderDeskNoteWorkerPanelHtml_(item.worker || "-") +
-            '<div class="desk-note-main">' +
-              '<div class="desk-note-top">' +
-                '<div class="desk-note-meta">' +
-                  '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
-                '</div>' +
-                '<div class="desk-note-control-stack">' +
-                  '<div class="desk-note-control-top">' +
-                    '<div class="desk-note-time-row">' +
-                      '<input class="desk-note-time-input" type="time" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
-                      '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간 수정</button>' +
-                    '</div>' +
-                  '</div>' +
-                  '<div class="desk-note-actions">' +
-                    (isEditing
-                      ? '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '">취소</button>' +
-                        '<button class="desk-note-action-mini primary" type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '">저장</button>'
-                      : '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '">수정</button>') +
-                    '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '">삭제</button>' +
-                  '</div>' +
+          '<div class="desk-note-top">' +
+            '<div class="desk-note-meta">' +
+              '<span class="desk-note-worker-pill">' + escapeHtml(item.worker || "-") + '</span>' +
+              '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
+            '</div>' +
+            '<div class="desk-note-control-stack">' +
+              '<div class="desk-note-control-top">' +
+                '<div class="desk-note-time-row">' +
+                  '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
+                  '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDisplayTime_(item.createdAt)) + '</span>' +
+                  '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간</button>' +
                 '</div>' +
               '</div>' +
-              (isEditing
-                ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
-                : '<div class="desk-note-body"><p class="desk-note-text">' + escapeHtml(item.text || "") + '</p></div>') +
+              '<div class="desk-note-actions">' +
+                (isEditing
+                  ? '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '">취소</button>' +
+                    '<button class="desk-note-action-mini primary" type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '">저장</button>'
+                  : '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '">수정</button>') +
+                '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+              '</div>' +
             '</div>' +
           '</div>' +
+          (isEditing
+            ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
+            : '<div class="desk-note-body"><p class="desk-note-text">' + escapeHtml(item.text || "") + '</p></div>') +
         '</article>';
       }).join("");
     }
@@ -12583,6 +12581,13 @@
       var date = new Date(text);
       if (isNaN(date.getTime())) return String(text).slice(11, 16) || String(text);
       return pad2_(date.getHours()) + ":" + pad2_(date.getMinutes());
+    }
+
+    function formatDeskJournalDisplayTime_(text) {
+      if (!text) return "--:--";
+      var date = new Date(text);
+      if (isNaN(date.getTime())) return formatDeskJournalTimeOnly_(text);
+      return formatKoreanTime(date.getHours() * 60 + date.getMinutes());
     }
 
     function buildDeskDailyReportText_() {
