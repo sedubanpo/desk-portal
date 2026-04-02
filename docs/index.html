@@ -1020,53 +1020,49 @@
       font-weight: 800;
       line-height: 1.5;
     }
-    .desk-live-feed-item {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      padding-top: 0;
-      color: #243546;
-      z-index: var(--desk-feed-z, 1);
-    }
-    .desk-live-feed-item + .desk-live-feed-item {
-      margin-top: -20px;
-    }
-    .desk-live-feed-tab {
-      position: relative;
-      width: 88px;
-      min-height: 74px;
-      padding: 10px 10px 10px;
-      border-radius: 22px 22px 0 0;
-      background: var(--desk-feed-bg, #f4ecff);
-      box-shadow: 0 12px 16px rgba(102, 116, 150, 0.14);
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
-      gap: 8px;
-    }
-    .desk-live-feed-body {
+    .folder-card {
       position: relative;
       width: 100%;
-      min-height: 102px;
+      color: #243546;
+      z-index: var(--desk-feed-z, 1);
       margin-top: 0;
-      padding: 18px 16px 16px 18px;
-      border-radius: 0 28px 28px 28px;
-      background: var(--desk-feed-bg, #f4ecff);
-      box-shadow: 0 14px 24px rgba(102, 116, 150, 0.08);
     }
-    .desk-live-feed-body::before {
+    .folder-card + .folder-card {
+      margin-top: -30px;
+    }
+    .folder-tab {
+      position: relative;
+      width: 80px;
+      padding: 12px 10px 10px;
+      border-radius: 16px 16px 0 0;
+      background: var(--desk-feed-bg, #f4ecff);
+      box-shadow: 0 10px 22px rgba(102, 116, 150, 0.14);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      z-index: 2;
+    }
+    .folder-body {
+      position: relative;
+      width: 100%;
+      margin: 0;
+      padding: 18px 16px 16px 16px;
+      border-radius: 0 16px 16px 16px;
+      background: var(--desk-feed-bg, #f4ecff);
+      box-shadow: 0 12px 26px rgba(102, 116, 150, 0.12);
+      overflow: hidden;
+    }
+    .folder-body::before {
       content: "";
       position: absolute;
-      top: -18px;
-      left: 88px;
-      width: 18px;
-      height: 18px;
+      top: -20px;
+      left: 80px;
+      width: 20px;
+      height: 20px;
       background: transparent;
-      border-top-left-radius: 18px;
-      box-shadow: -8px -8px 0 0 var(--desk-feed-bg, #f4ecff);
+      border-bottom-left-radius: 20px;
+      box-shadow: -10px 10px 0 0 var(--desk-feed-bg, #f4ecff);
       pointer-events: none;
     }
     .desk-live-feed-icon {
@@ -12321,15 +12317,15 @@
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
-        return '<article class="desk-live-feed-item" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
-          '<div class="desk-live-feed-tab">' +
+        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
+          '<div class="folder-tab">' +
             '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
             '<div class="desk-live-feed-timeblock">' +
               '<span class="desk-live-feed-time-day">' + escapeHtml(stampMeta.date) + '</span>' +
               '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
             '</div>' +
           '</div>' +
-          '<div class="desk-live-feed-body">' +
+          '<div class="folder-body">' +
             '<div class="desk-live-feed-main">' +
               '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
               '<div class="desk-live-feed-footer">' +
