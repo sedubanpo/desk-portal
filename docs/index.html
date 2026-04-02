@@ -1128,6 +1128,21 @@
       gap: 8px;
       min-width: 0;
     }
+    .desk-live-feed-seq {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.58);
+      color: #466072;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      flex: 0 0 auto;
+    }
     .desk-live-feed-reporter {
       display: flex;
       align-items: center;
@@ -1154,6 +1169,13 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .desk-panel-head-actions,
+    .desk-inline-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .desk-live-feed-arrow {
       width: 22px;
@@ -6826,7 +6848,10 @@
                 <h2 class="desk-panel-title">월별 근무표</h2>
                 <p class="desk-panel-sub">월별 캘린더, 근무자별 집계, 일정 편집을 한 화면에서 관리합니다. 팀장급 상주 근무자는 시간 집계에서 제외하고 일정만 표시합니다.</p>
               </div>
-              <span class="desk-status-chip">Firebase 서버 저장</span>
+              <div class="desk-panel-head-actions">
+                <button class="desk-ghost-btn" id="deskSuppliesReloadBtn" type="button">다시시도</button>
+                <span class="desk-status-chip">Firebase 서버 저장</span>
+              </div>
             </header>
 
             <div class="desk-month-shell">
@@ -7158,7 +7183,10 @@
                         <h3>소모품 현황</h3>
                         <p>품목명, 제품명, 현재 수량과 안전 재고를 표 형태로 관리합니다. 사용 시 `-`, 보충 시 `+`를 누르고 필요하면 품목 자체도 수정/삭제할 수 있습니다.</p>
                       </div>
-                      <button class="desk-ghost-btn desk-supply-card-head-copy" id="deskSupplyCopyImageBtn" type="button" data-desk-copy-hide="true">소모품 현황 이미지 복사</button>
+                      <div class="desk-inline-actions">
+                        <button class="desk-ghost-btn" id="deskSupplyReloadBtn" type="button" data-desk-copy-hide="true">새로고침</button>
+                        <button class="desk-ghost-btn desk-supply-card-head-copy" id="deskSupplyCopyImageBtn" type="button" data-desk-copy-hide="true">소모품 현황 이미지 복사</button>
+                      </div>
                     </div>
                     <div class="desk-supply-filter-row">
                       <div class="field">
@@ -7398,6 +7426,7 @@
                   <div class="desk-muted">관리자는 날짜별 업무를 배정하고, 근무자는 본인 탭에서 완료 체크와 사유 입력, 현장 기록을 남길 수 있습니다.</div>
                 </div>
                 <div class="desk-toolbar-right">
+                  <button class="desk-ghost-btn" id="deskJournalReloadBtn" type="button">새로고침</button>
                   <div class="desk-notice" style="max-width:420px;">로그인 분리는 두지 않고, 데스크 포털 진입 권한 안에서 공동 사용하도록 구성합니다. 저장 즉시 같은 날짜 화면에 반영됩니다.</div>
                 </div>
               </section>
@@ -8327,6 +8356,8 @@
     var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
     var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
     var deskSupplyCopyImageBtnEl = document.getElementById("deskSupplyCopyImageBtn");
+    var deskSupplyReloadBtnEl = document.getElementById("deskSupplyReloadBtn");
+    var deskSuppliesReloadBtnEl = document.getElementById("deskSuppliesReloadBtn");
     var deskSupplyCopyStatusEl = document.getElementById("deskSupplyCopyStatus");
     var deskAssetFormEl = document.getElementById("deskAssetForm");
     var deskAssetTypeEl = document.getElementById("deskAssetType");
@@ -8429,6 +8460,7 @@
     var deskJournalDateInputEl = document.getElementById("deskJournalDateInput");
     var deskJournalNextDateBtnEl = document.getElementById("deskJournalNextDateBtn");
     var deskJournalTodayBtnEl = document.getElementById("deskJournalTodayBtn");
+    var deskJournalReloadBtnEl = document.getElementById("deskJournalReloadBtn");
     var deskJournalTaskSummaryEl = document.getElementById("deskJournalTaskSummary");
     var deskJournalCompletionSummaryEl = document.getElementById("deskJournalCompletionSummary");
     var deskJournalMemoSummaryEl = document.getElementById("deskJournalMemoSummary");
@@ -11873,6 +11905,13 @@
       ].join(";");
     }
 
+    function setDeskButtonBusy_(button, isBusy, busyText) {
+      if (!button) return;
+      if (!button.dataset.defaultText) button.dataset.defaultText = button.textContent || "";
+      button.disabled = !!isBusy;
+      button.textContent = isBusy ? (busyText || "불러오는 중...") : button.dataset.defaultText;
+    }
+
     function getDeskLiveFeedIcon_(item) {
       var content = String(item && item.content || "");
       var type = String(item && item.type || "");
@@ -12288,8 +12327,65 @@
           style: getDeskLiveFeedCardStyle_(item.worker || "-", meta.important ? "important" : "task")
         };
       });
-      return memoItems.concat(taskItems).sort(function(a, b) {
+      var combined = memoItems.concat(taskItems).sort(function(a, b) {
         return String(b.stamp || "").localeCompare(String(a.stamp || ""));
+      });
+      var runWorker = "";
+      var runCount = 0;
+      var runStart = 0;
+      for (var i = 0; i < combined.length; i += 1) {
+        var worker = String(combined[i].worker || "");
+        if (worker !== runWorker) {
+          if (runCount > 0) {
+            for (var j = runStart; j < runStart + runCount; j += 1) {
+              combined[j].workerRunTotal = runCount;
+              combined[j].workerRunIndex = (j - runStart) + 1;
+            }
+          }
+          runWorker = worker;
+          runCount = 1;
+          runStart = i;
+        } else {
+          runCount += 1;
+        }
+      }
+      if (runCount > 0) {
+        for (var k = runStart; k < runStart + runCount; k += 1) {
+          combined[k].workerRunTotal = runCount;
+          combined[k].workerRunIndex = (k - runStart) + 1;
+        }
+      }
+      return combined;
+    }
+
+    function reloadDeskSuppliesData_(button) {
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      setDeskButtonBusy_(button, true, "불러오는 중...");
+      state.desk.supplies.loaded = false;
+      state.desk.supplies.loadingPromise = null;
+      renderDeskSupplies_();
+      return ensureDeskSuppliesLoaded_()
+        .finally(function() {
+          setDeskButtonBusy_(button, false);
+          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") renderDeskSupplies_();
+        });
+    }
+
+    function reloadDeskDailyJournalData_(button) {
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      setDeskButtonBusy_(button, true, "불러오는 중...");
+      state.desk.daily.loadedDates[dateKey] = false;
+      state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY] = false;
+      delete state.desk.daily.loadingDates[dateKey];
+      delete state.desk.daily.loadingDates[DESK_ROUTINE_TEMPLATE_KEY];
+      renderDeskDailyJournal_();
+      return Promise.all([
+        ensureDeskDailyJournalLoaded_(dateKey, true),
+        ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY, true)
+      ]).finally(function() {
+        setDeskButtonBusy_(button, false);
+        if (state.activeModule === "expense" && state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
       });
     }
 
@@ -12329,6 +12425,9 @@
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
+        var seqHtml = item.workerRunTotal > 1
+          ? '<span class="desk-live-feed-seq">' + escapeHtml(String(item.workerRunIndex) + '/' + String(item.workerRunTotal)) + '</span>'
+          : '';
         return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
           '<div class="folder-tab">' +
             '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
@@ -12343,6 +12442,7 @@
                 '<div class="desk-live-feed-reporter">' +
                   '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
                   '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
+                  seqHtml +
                 '</div>' +
                 '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
               '</div>' +
@@ -13355,6 +13455,16 @@
           });
         });
       }
+      if (deskSupplyReloadBtnEl) {
+        deskSupplyReloadBtnEl.addEventListener("click", function() {
+          reloadDeskSuppliesData_(deskSupplyReloadBtnEl);
+        });
+      }
+      if (deskSuppliesReloadBtnEl) {
+        deskSuppliesReloadBtnEl.addEventListener("click", function() {
+          reloadDeskSuppliesData_(deskSuppliesReloadBtnEl);
+        });
+      }
 
       if (deskAssetFormEl) {
         deskAssetFormEl.addEventListener("submit", function(event) {
@@ -13751,6 +13861,11 @@
           state.desk.daily.liveFeedPage = 1;
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
+        });
+      }
+      if (deskJournalReloadBtnEl) {
+        deskJournalReloadBtnEl.addEventListener("click", function() {
+          reloadDeskDailyJournalData_(deskJournalReloadBtnEl);
         });
       }
       if (deskJournalDateInputEl) {
