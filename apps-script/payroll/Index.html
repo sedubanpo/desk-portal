@@ -1023,23 +1023,24 @@
     .desk-live-feed-item {
       position: relative;
       display: grid;
-      grid-template-columns: 72px minmax(0, 1fr);
-      gap: 12px;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 10px;
       border-radius: 28px;
-      padding: 16px 14px 14px;
+      padding: 14px 12px 12px;
       background: var(--desk-feed-bg, #f4ecff);
       color: #243546;
       box-shadow: 0 18px 28px rgba(102, 116, 150, 0.1);
       overflow: visible;
+      align-items: start;
     }
     .desk-live-feed-item::before {
       content: "";
       position: absolute;
-      top: -14px;
-      left: 14px;
-      width: 82px;
-      height: 40px;
-      border-radius: 22px 22px 12px 12px;
+      top: -10px;
+      left: 12px;
+      width: 62px;
+      height: 26px;
+      border-radius: 16px 16px 10px 10px;
       background: var(--desk-feed-tab-bg, rgba(255,255,255,0.85));
       box-shadow: 0 10px 18px rgba(102, 116, 150, 0.1);
       pointer-events: none;
@@ -1047,13 +1048,13 @@
     .desk-live-feed-item::after {
       content: "";
       position: absolute;
-      top: 10px;
-      left: 72px;
-      width: 16px;
-      height: 16px;
-      border-radius: 0 0 0 14px;
+      top: 7px;
+      left: 54px;
+      width: 12px;
+      height: 12px;
+      border-radius: 0 0 0 10px;
       background: transparent;
-      box-shadow: -8px 6px 0 0 var(--desk-feed-bg, #f4ecff);
+      box-shadow: -6px 5px 0 0 var(--desk-feed-bg, #f4ecff);
       pointer-events: none;
     }
     .desk-live-feed-point {
@@ -1063,50 +1064,50 @@
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
-      gap: 8px;
-      min-height: 82px;
-      padding: 2px 0 0;
+      gap: 6px;
+      min-height: 74px;
+      padding: 4px 0 0;
     }
     .desk-live-feed-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 34px;
-      height: 34px;
+      width: 28px;
+      height: 28px;
       border-radius: 999px;
       background: rgba(255,255,255,0.66);
       color: #334155;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 900;
       backdrop-filter: blur(8px);
     }
     .desk-live-feed-timeblock {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       color: #475d70;
-      margin-top: 2px;
+      margin-top: 0;
     }
     .desk-live-feed-time-day {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 900;
       line-height: 1.1;
     }
     .desk-live-feed-time-clock {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 900;
       line-height: 1.1;
     }
     .desk-live-feed-main {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       min-width: 0;
-      padding-top: 4px;
+      padding-top: 2px;
     }
     .desk-live-feed-content {
-      font-size: 12px;
-      line-height: 1.45;
+      font-size: 11px;
+      line-height: 1.4;
       font-weight: 900;
       color: #173042;
       word-break: break-word;
@@ -1115,30 +1116,30 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 8px;
       min-width: 0;
     }
     .desk-live-feed-reporter {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
     }
     .desk-live-feed-avatar {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 999px;
       background: rgba(255,255,255,0.66);
       color: #1f2937;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 900;
       flex: 0 0 auto;
     }
     .desk-live-feed-worker {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 900;
       color: #34495b;
       white-space: nowrap;
@@ -1146,15 +1147,15 @@
       text-overflow: ellipsis;
     }
     .desk-live-feed-arrow {
-      width: 28px;
-      height: 28px;
+      width: 22px;
+      height: 22px;
       border-radius: 999px;
       background: rgba(255,255,255,0.54);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       color: #2d4456;
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 900;
       flex: 0 0 auto;
     }
