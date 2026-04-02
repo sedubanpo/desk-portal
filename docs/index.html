@@ -319,7 +319,7 @@
     }
 
     .main.expense-live-mode {
-      padding-right: 360px;
+      padding-right: 288px;
     }
 
     .global-topbar {
@@ -946,7 +946,7 @@
       position: fixed;
       top: 126px;
       right: 24px;
-      width: 320px;
+      width: 248px;
       max-height: calc(100vh - 122px);
       display: none;
       flex-direction: column;
@@ -1085,6 +1085,47 @@
     }
     .desk-journal-editor-panel.hidden {
       display: none;
+    }
+    .desk-side-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .desk-side-card-head-copy {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-fixed-schedule-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .desk-fixed-schedule-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-fixed-schedule-hint {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+      line-height: 1.5;
+    }
+    .desk-fixed-table select {
+      min-width: 120px;
+      width: 100%;
+    }
+    .desk-fixed-apply-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .desk-live-feed-nav {
       display: flex;
@@ -6643,6 +6684,7 @@
                 <button class="desk-view-tab active" type="button" data-desk-view="calendar">월간 캘린더</button>
                 <button class="desk-view-tab" type="button" data-desk-view="analytics">근무자 집계</button>
                 <button class="desk-view-tab" type="button" data-desk-view="editor">일정 편집</button>
+                <button class="desk-view-tab" type="button" data-desk-view="fixedSchedule">고정 스케줄</button>
               </section>
 
               <section class="desk-view-panel" data-desk-view-panel="calendar">
@@ -6653,9 +6695,17 @@
                     <div class="desk-calendar-grid" id="deskCalendarGrid"></div>
                   </section>
                   <aside class="desk-calendar-side">
-                    <article class="desk-side-card">
-                      <div class="desk-side-title" id="deskSelectedDateTitle">날짜를 선택하세요</div>
-                      <div class="desk-side-sub" id="deskSelectedDateSub">캘린더에서 날짜를 선택하면 해당 일자의 근무 일정이 표시됩니다.</div>
+                    <article class="desk-side-card" id="deskSelectedDateCard">
+                      <div class="desk-side-card-head">
+                        <div>
+                          <div class="desk-side-title" id="deskSelectedDateTitle">날짜를 선택하세요</div>
+                          <div class="desk-side-sub" id="deskSelectedDateSub">캘린더에서 날짜를 선택하면 해당 일자의 근무 일정이 표시됩니다.</div>
+                        </div>
+                        <div class="desk-side-card-head-copy">
+                          <button class="desk-ghost-btn" id="deskApplyFixedScheduleBtn" type="button" data-desk-copy-hide="true">고정 스케줄 불러오기</button>
+                          <button class="desk-ghost-btn" id="deskCopySelectedDateImageBtn" type="button" data-desk-copy-hide="true">이미지 복사</button>
+                        </div>
+                      </div>
                       <div class="desk-day-shift-list" id="deskSelectedDateList"></div>
                     </article>
                     <article class="desk-side-card">
@@ -6791,6 +6841,41 @@
                           </tr>
                         </thead>
                         <tbody id="deskScheduleTableBody"></tbody>
+                      </table>
+                    </div>
+                  </article>
+                </div>
+              </section>
+
+              <section class="desk-view-panel hidden" data-desk-view-panel="fixedSchedule">
+                <div class="desk-fixed-schedule-grid">
+                  <article class="desk-editor-card">
+                    <div class="desk-fixed-schedule-toolbar">
+                      <div>
+                        <div class="desk-side-title">고정 스케줄</div>
+                        <div class="desk-side-sub">근무자별 요일 기본 스케줄을 저장해 두고, 선택한 날짜에 한 번에 불러올 수 있습니다.</div>
+                      </div>
+                      <div class="desk-fixed-apply-row">
+                        <button class="desk-ghost-btn" id="deskSaveFixedScheduleBtn" type="button">고정 스케줄 저장</button>
+                        <button class="desk-primary-btn" id="deskApplyFixedSchedulePanelBtn" type="button">선택 날짜에 불러오기</button>
+                      </div>
+                    </div>
+                    <div class="desk-fixed-schedule-hint">각 요일 칸에서 `오전/오후/마감/청소/상주/근무 불가` 같은 기본 패턴을 지정하면, 선택 날짜에 없는 일정만 자동으로 채웁니다.</div>
+                    <div class="desk-table-wrap">
+                      <table class="desk-schedule-table desk-fixed-table">
+                        <thead>
+                          <tr>
+                            <th>근무자</th>
+                            <th>월</th>
+                            <th>화</th>
+                            <th>수</th>
+                            <th>목</th>
+                            <th>금</th>
+                            <th>토</th>
+                            <th>일</th>
+                          </tr>
+                        </thead>
+                        <tbody id="deskFixedScheduleBody"></tbody>
                       </table>
                     </div>
                   </article>
@@ -7772,6 +7857,7 @@
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
+    var DESK_FIXED_SCHEDULE_STORAGE_KEY = "desk_portal_fixed_schedule_v1";
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
@@ -7826,6 +7912,7 @@
         expandedPastWeekKeys: {},
         openWeekSummaryKey: "",
         scheduleItems: [],
+        fixedScheduleEntries: [],
         loadedMonths: {},
         loadingMonths: {},
         supplies: {
@@ -7985,6 +8072,9 @@
     var deskSupplyPanelEls = document.querySelectorAll("[data-desk-supplies-panel]");
     var deskViewTabEls = document.querySelectorAll("[data-desk-view]");
     var deskViewPanelEls = document.querySelectorAll("[data-desk-view-panel]");
+    var deskSelectedDateCardEl = document.getElementById("deskSelectedDateCard");
+    var deskApplyFixedScheduleBtnEl = document.getElementById("deskApplyFixedScheduleBtn");
+    var deskCopySelectedDateImageBtnEl = document.getElementById("deskCopySelectedDateImageBtn");
     var deskSupplyLowCountEl = document.getElementById("deskSupplyLowCount");
     var deskSupplyLowSubEl = document.getElementById("deskSupplyLowSub");
     var deskSupplyTotalQtyEl = document.getElementById("deskSupplyTotalQty");
@@ -8068,6 +8158,9 @@
     var deskAnalyticsBodyEl = document.getElementById("deskAnalyticsBody");
     var deskAnalyticsStatGridEl = document.getElementById("deskAnalyticsStatGrid");
     var deskAnalyticsHighlightsEl = document.getElementById("deskAnalyticsHighlights");
+    var deskFixedScheduleBodyEl = document.getElementById("deskFixedScheduleBody");
+    var deskSaveFixedScheduleBtnEl = document.getElementById("deskSaveFixedScheduleBtn");
+    var deskApplyFixedSchedulePanelBtnEl = document.getElementById("deskApplyFixedSchedulePanelBtn");
     var deskShiftFormEl = document.getElementById("deskShiftForm");
     var deskShiftIdEl = document.getElementById("deskShiftId");
     var deskShiftDateEl = document.getElementById("deskShiftDate");
@@ -8334,6 +8427,7 @@
 
     function initDeskModule_() {
       state.desk.scheduleItems = [];
+      state.desk.fixedScheduleEntries = loadDeskFixedScheduleEntries_();
       state.desk.expandedUnavailableDates = {};
       state.desk.loadedMonths = {};
       state.desk.loadingMonths = {};
@@ -9331,6 +9425,119 @@
       } catch (err) {}
     }
 
+    function getDeskFixedPresetCatalog_() {
+      return [
+        { key: "", label: "없음" },
+        { key: "morning", label: "오전 데스크" },
+        { key: "afternoon", label: "오후 데스크" },
+        { key: "close", label: "마감 담당" },
+        { key: "support", label: "운영 지원" },
+        { key: "lead", label: "주임" },
+        { key: "clean", label: "청소 담당" },
+        { key: "night", label: "야간 지원" },
+        { key: "resident", label: "반포관 부원장" },
+        { key: "unavailable", label: "근무 불가" }
+      ];
+    }
+
+    function getDeskFixedPresetDefinition_(presetKey) {
+      var map = {
+        morning: { role: "오전 데스크", start: "09:30", end: "18:00", resident: false, unavailable: false },
+        afternoon: { role: "오후 데스크", start: "14:00", end: "22:30", resident: false, unavailable: false },
+        close: { role: "마감 담당", start: "16:00", end: "22:30", resident: false, unavailable: false },
+        support: { role: "운영 지원", start: "13:00", end: "19:00", resident: false, unavailable: false },
+        lead: { role: "주임", start: "11:00", end: "18:00", resident: false, unavailable: false },
+        clean: { role: "청소 담당", start: "13:00", end: "18:00", resident: false, unavailable: false },
+        night: { role: "야간 지원", start: "17:30", end: "22:30", resident: false, unavailable: false },
+        resident: { role: "반포관 부원장", start: "", end: "", resident: true, unavailable: false },
+        unavailable: { role: "근무 불가", start: "", end: "", resident: false, unavailable: true }
+      };
+      return map[presetKey] || null;
+    }
+
+    function normalizeDeskFixedScheduleEntry_(item) {
+      return {
+        worker: String((item && item.worker) || "").trim(),
+        weekday: Math.max(0, Math.min(6, Number(item && item.weekday))),
+        preset: String((item && item.preset) || "").trim()
+      };
+    }
+
+    function getDeskKnownWorkers_() {
+      var seen = {};
+      var names = [];
+      function push(name) {
+        var safe = String(name || "").trim();
+        if (!safe || seen[safe] || safe === "루틴업무") return;
+        seen[safe] = true;
+        names.push(safe);
+      }
+      ["홍성우", "안종성", "인유빈", "이미현", "유지연", "김유민", "이창연"].forEach(push);
+      (state.desk.scheduleItems || []).forEach(function(item) { push(item.worker); });
+      return names.sort(function(a, b) { return a.localeCompare(b, "ko"); });
+    }
+
+    function buildDefaultDeskFixedScheduleEntries_() {
+      return [
+        { worker: "홍성우", weekday: 0, preset: "resident" },
+        { worker: "홍성우", weekday: 1, preset: "resident" },
+        { worker: "홍성우", weekday: 2, preset: "resident" },
+        { worker: "홍성우", weekday: 3, preset: "resident" },
+        { worker: "홍성우", weekday: 4, preset: "resident" },
+        { worker: "홍성우", weekday: 5, preset: "resident" },
+        { worker: "홍성우", weekday: 6, preset: "resident" },
+        { worker: "안종성", weekday: 2, preset: "afternoon" },
+        { worker: "안종성", weekday: 4, preset: "afternoon" },
+        { worker: "안종성", weekday: 5, preset: "afternoon" },
+        { worker: "안종성", weekday: 6, preset: "afternoon" },
+        { worker: "인유빈", weekday: 0, preset: "morning" },
+        { worker: "인유빈", weekday: 1, preset: "morning" },
+        { worker: "인유빈", weekday: 3, preset: "morning" },
+        { worker: "인유빈", weekday: 5, preset: "morning" },
+        { worker: "이미현", weekday: 1, preset: "close" },
+        { worker: "이미현", weekday: 4, preset: "close" },
+        { worker: "이미현", weekday: 5, preset: "close" },
+        { worker: "이미현", weekday: 6, preset: "close" },
+        { worker: "유지연", weekday: 0, preset: "support" },
+        { worker: "유지연", weekday: 2, preset: "support" },
+        { worker: "유지연", weekday: 6, preset: "support" },
+        { worker: "김유민", weekday: 2, preset: "morning" },
+        { worker: "김유민", weekday: 4, preset: "morning" },
+        { worker: "김유민", weekday: 5, preset: "night" },
+        { worker: "이창연", weekday: 3, preset: "clean" }
+      ].map(normalizeDeskFixedScheduleEntry_);
+    }
+
+    function loadDeskFixedScheduleEntries_() {
+      var saved = null;
+      try {
+        saved = localStorage.getItem(DESK_FIXED_SCHEDULE_STORAGE_KEY);
+      } catch (err) {}
+      if (saved) {
+        try {
+          var parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed.map(normalizeDeskFixedScheduleEntry_);
+        } catch (err2) {}
+      }
+      var seed = buildDefaultDeskFixedScheduleEntries_();
+      persistDeskFixedScheduleEntries_(seed);
+      return seed;
+    }
+
+    function persistDeskFixedScheduleEntries_(entries) {
+      state.desk.fixedScheduleEntries = (entries || []).map(normalizeDeskFixedScheduleEntry_);
+      try {
+        localStorage.setItem(DESK_FIXED_SCHEDULE_STORAGE_KEY, JSON.stringify(state.desk.fixedScheduleEntries));
+      } catch (err) {}
+    }
+
+    function getDeskFixedPresetForCell_(worker, weekday) {
+      var found = (state.desk.fixedScheduleEntries || []).find(function(item) {
+        return item.worker === worker && Number(item.weekday) === Number(weekday);
+      });
+      return found ? found.preset : "";
+    }
+
     function createDefaultDeskScheduleSeed_() {
       var seed = [];
       var base = new Date();
@@ -9477,6 +9684,7 @@
       renderDeskSelectedDatePanel_(visibleMonthItems);
       renderDeskInsights_(visibleMonthItems);
       renderDeskAnalytics_(visibleMonthItems);
+      renderDeskFixedSchedule_();
       renderDeskEditorState_(visibleMonthItems);
       renderDeskTodayWorkers_();
     }
@@ -9640,8 +9848,8 @@
                 }).join("") : '')
               ) : '') +
               '<div class="desk-day-actions">' +
-                '<button type="button" class="desk-day-empty-slot" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
-                '<button type="button" class="desk-day-copy-btn" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '">지난주 같은 요일 복사</button>' +
+                '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
+                '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '">지난주 같은 요일 복사</button>' +
               '</div>' +
             '</div>' +
           '</article>');
@@ -9784,8 +9992,8 @@
           '<p>' + getDeskRoleBadgeHtml_(item) + ' <span style="margin-left:6px;" class="desk-time-badge-row"><span>' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span>' + (item.unavailable ? ' · 일정 접힘 처리' : '') + '</p>' +
           '<p>' + escapeHtml(item.note || "메모 없음") + '</p>' +
           '<div class="desk-item-action-row">' +
-            '<button type="button" class="mini-btn" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button>' +
-            '<button type="button" class="mini-btn" data-desk-copy-next-shift="' + escapeHtml(item.id) + '">다음 날짜 복사</button>' +
+            '<button type="button" class="mini-btn" data-desk-copy-hide="true" data-desk-edit-shift="' + escapeHtml(item.id) + '">이 일정 편집</button>' +
+            '<button type="button" class="mini-btn" data-desk-copy-hide="true" data-desk-copy-next-shift="' + escapeHtml(item.id) + '">다음 날짜 복사</button>' +
           '</div>' +
         '</article>';
       }).join("");
@@ -10020,7 +10228,7 @@
       deskAnalyticsBodyEl.innerHTML = workers.map(function(name) {
         var item = workerMap[name];
         return '<tr>' +
-          '<td>' + escapeHtml(name) + '</td>' +
+          '<td>' + getDeskWorkerBadgeHtml_(name) + '</td>' +
           '<td>' + escapeHtml(item.mainRole || "-") + '</td>' +
           '<td>' + formatDeskHours_(item.weekly[1] || 0) + '</td>' +
           '<td>' + formatDeskHours_(item.weekly[2] || 0) + '</td>' +
@@ -10089,6 +10297,193 @@
           '<p>' + escapeHtml(weeklyText.join(" · ") || "주차별 근무시간 없음") + '</p>' +
         '</article>';
       }).join("");
+    }
+
+    function getDeskFixedWeekdayOrder_() {
+      return [1, 2, 3, 4, 5, 6, 0];
+    }
+
+    function renderDeskFixedSchedule_() {
+      if (!deskFixedScheduleBodyEl) return;
+      var workers = getDeskKnownWorkers_();
+      var presets = getDeskFixedPresetCatalog_();
+      var weekdayOrder = getDeskFixedWeekdayOrder_();
+      if (!workers.length) {
+        deskFixedScheduleBodyEl.innerHTML = '<tr><td colspan="8">등록된 근무자가 없어 고정 스케줄을 표시할 수 없습니다.</td></tr>';
+        return;
+      }
+      deskFixedScheduleBodyEl.innerHTML = workers.map(function(worker) {
+        return '<tr>' +
+          '<td>' + getDeskWorkerBadgeHtml_(worker) + '</td>' +
+          weekdayOrder.map(function(weekday) {
+            var selected = getDeskFixedPresetForCell_(worker, weekday);
+            return '<td><select class="desk-inline-select" data-desk-fixed-worker="' + escapeHtml(worker) + '" data-desk-fixed-weekday="' + weekday + '">' +
+              presets.map(function(option) {
+                return '<option value="' + escapeHtml(option.key) + '"' + (option.key === selected ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
+              }).join("") +
+            '</select></td>';
+          }).join("") +
+        '</tr>';
+      }).join("");
+    }
+
+    function collectDeskFixedScheduleEntriesFromDom_() {
+      if (!deskFixedScheduleBodyEl) return [];
+      return Array.prototype.map.call(deskFixedScheduleBodyEl.querySelectorAll("[data-desk-fixed-worker][data-desk-fixed-weekday]"), function(selectEl) {
+        return normalizeDeskFixedScheduleEntry_({
+          worker: selectEl.getAttribute("data-desk-fixed-worker") || "",
+          weekday: Number(selectEl.getAttribute("data-desk-fixed-weekday") || 0),
+          preset: selectEl.value || ""
+        });
+      }).filter(function(item) {
+        return !!item.worker;
+      });
+    }
+
+    function flashDeskButtonFeedback_(buttonEl, text, isError) {
+      if (!buttonEl) return;
+      var original = buttonEl.getAttribute("data-desk-original-label") || buttonEl.textContent || "";
+      buttonEl.setAttribute("data-desk-original-label", original);
+      buttonEl.textContent = text;
+      buttonEl.style.borderColor = isError ? "#ef4444" : "";
+      buttonEl.style.color = isError ? "#b91c1c" : "";
+      buttonEl.disabled = false;
+      clearTimeout(buttonEl._deskFeedbackTimer);
+      buttonEl._deskFeedbackTimer = setTimeout(function() {
+        buttonEl.textContent = original;
+        buttonEl.style.borderColor = "";
+        buttonEl.style.color = "";
+      }, 1600);
+    }
+
+    function saveDeskFixedScheduleFromPanel_() {
+      var entries = collectDeskFixedScheduleEntriesFromDom_();
+      persistDeskFixedScheduleEntries_(entries);
+      flashDeskButtonFeedback_(deskSaveFixedScheduleBtnEl, "저장 완료");
+    }
+
+    function buildDeskShiftFromFixedPreset_(worker, dateKey, presetKey) {
+      var preset = getDeskFixedPresetDefinition_(presetKey);
+      if (!preset) return null;
+      return normalizeDeskShift_({
+        id: buildDeskShiftId_("desk", "fixed", Date.now(), Math.random().toString(36).slice(2), worker),
+        date: dateKey,
+        worker: worker,
+        role: preset.role,
+        start: preset.start,
+        end: preset.end,
+        resident: !!preset.resident,
+        unavailable: !!preset.unavailable,
+        note: "고정 스케줄 불러오기"
+      });
+    }
+
+    function applyDeskFixedScheduleToDate_(dateKey, buttonEl) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) {
+        flashDeskButtonFeedback_(buttonEl, "날짜 선택 필요", true);
+        return;
+      }
+      persistDeskFixedScheduleEntries_(collectDeskFixedScheduleEntriesFromDom_());
+      var dateParts = safeDateKey.split("-");
+      var targetDate = new Date(Number(dateParts[0] || 0), Number(dateParts[1] || 1) - 1, Number(dateParts[2] || 1));
+      if (isNaN(targetDate.getTime())) {
+        flashDeskButtonFeedback_(buttonEl, "날짜 오류", true);
+        return;
+      }
+      var weekday = targetDate.getDay();
+      var targetMonthKey = safeDateKey.slice(0, 7);
+      var ensureTargetMonth = state.desk.loadedMonths[targetMonthKey]
+        ? Promise.resolve()
+        : ensureDeskMonthLoaded_(targetMonthKey);
+      ensureTargetMonth.then(function() {
+        var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === safeDateKey;
+        });
+        var pendingEntries = (state.desk.fixedScheduleEntries || []).filter(function(item) {
+          return Number(item.weekday) === weekday && !!item.preset;
+        }).map(function(item) {
+          return buildDeskShiftFromFixedPreset_(item.worker, safeDateKey, item.preset);
+        }).filter(function(item) {
+          return !!item;
+        }).filter(function(item) {
+          return !existingTargetItems.some(function(existing) {
+            return String(existing.worker || "") === String(item.worker || "") &&
+              String(existing.role || "") === String(item.role || "") &&
+              String(existing.start || "") === String(item.start || "") &&
+              String(existing.end || "") === String(item.end || "") &&
+              !!existing.resident === !!item.resident &&
+              !!existing.unavailable === !!item.unavailable;
+          });
+        });
+        if (!pendingEntries.length) {
+          flashDeskButtonFeedback_(buttonEl, "추가 일정 없음", true);
+          return;
+        }
+        setLoading(true, "고정 스케줄을 선택 날짜에 불러오는 중입니다...");
+        var savedEntries = [];
+        var chain = Promise.resolve();
+        pendingEntries.forEach(function(entry) {
+          chain = chain.then(function() {
+            return runServer("saveDeskScheduleEntry", {
+              monthKey: targetMonthKey,
+              entry: entry
+            }).then(function(res) {
+              if (!res || !res.success) {
+                throw new Error(res && res.message ? res.message : "고정 스케줄 저장 실패");
+              }
+              savedEntries.push(normalizeDeskShift_(res.entry || entry));
+            });
+          });
+        });
+        return chain.then(function() {
+          var merged = getDeskMonthItems_(targetMonthKey).slice();
+          Array.prototype.push.apply(merged, savedEntries);
+          mergeDeskMonthItems_(targetMonthKey, merged);
+          state.desk.loadedMonths[targetMonthKey] = true;
+          state.desk.currentMonth = targetMonthKey;
+          state.desk.selectedDateKey = safeDateKey;
+          state.desk.view = "calendar";
+          renderDeskMonthlySchedule_();
+          flashDeskButtonFeedback_(buttonEl, "불러오기 완료");
+        }).catch(function(err) {
+          alert("고정 스케줄 불러오기 오류: " + (err.message || String(err)));
+          flashDeskButtonFeedback_(buttonEl, "불러오기 실패", true);
+        }).finally(function() {
+          setLoading(false);
+        });
+      });
+    }
+
+    async function copyDeskSelectedDateImage_() {
+      var node = deskSelectedDateCardEl;
+      if (!node) {
+        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "대상 없음", true);
+        return;
+      }
+      if (typeof window.html2canvas !== "function" || typeof ClipboardItem === "undefined") {
+        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "브라우저 미지원", true);
+        return;
+      }
+      var canvas = await window.html2canvas(node, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        onclone: function(clonedDoc) {
+          Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
+            el.style.display = "none";
+          });
+        }
+      });
+      var blob = await new Promise(function(resolve) {
+        canvas.toBlob(resolve, "image/png");
+      });
+      if (!blob) {
+        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "이미지 실패", true);
+        return;
+      }
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "이미지 복사 완료");
     }
 
     function renderDeskEditorState_(items) {
@@ -12874,6 +13269,33 @@
           var btn = event.target.closest("[data-desk-edit-shift]");
           if (!btn) return;
           openDeskShiftModal_(btn.getAttribute("data-desk-edit-shift") || "", state.desk.selectedDateKey);
+        });
+      }
+
+      if (deskCopySelectedDateImageBtnEl) {
+        deskCopySelectedDateImageBtnEl.addEventListener("click", function() {
+          copyDeskSelectedDateImage_().catch(function(err) {
+            flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "복사 실패", true);
+            console.warn("desk selected date image copy error", err);
+          });
+        });
+      }
+
+      if (deskApplyFixedScheduleBtnEl) {
+        deskApplyFixedScheduleBtnEl.addEventListener("click", function() {
+          applyDeskFixedScheduleToDate_(state.desk.selectedDateKey, deskApplyFixedScheduleBtnEl);
+        });
+      }
+
+      if (deskSaveFixedScheduleBtnEl) {
+        deskSaveFixedScheduleBtnEl.addEventListener("click", function() {
+          saveDeskFixedScheduleFromPanel_();
+        });
+      }
+
+      if (deskApplyFixedSchedulePanelBtnEl) {
+        deskApplyFixedSchedulePanelBtnEl.addEventListener("click", function() {
+          applyDeskFixedScheduleToDate_(state.desk.selectedDateKey, deskApplyFixedSchedulePanelBtnEl);
         });
       }
 
