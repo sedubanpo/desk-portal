@@ -1028,7 +1028,7 @@
       margin-top: 0;
     }
     .folder-card + .folder-card {
-      margin-top: -30px;
+      margin-top: -20px;
     }
     .folder-tab {
       position: relative;
@@ -12317,7 +12317,7 @@
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
-        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
+        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(pageItems.length - index)) + '">' +
           '<div class="folder-tab">' +
             '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
             '<div class="desk-live-feed-timeblock">' +
