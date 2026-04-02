@@ -1026,35 +1026,34 @@
       grid-template-columns: 56px minmax(0, 1fr);
       gap: 10px;
       border-radius: 28px;
-      padding: 14px 12px 12px;
+      padding: 16px 12px 12px;
       background: var(--desk-feed-bg, #f4ecff);
       color: #243546;
       box-shadow: 0 18px 28px rgba(102, 116, 150, 0.1);
-      overflow: visible;
+      overflow: hidden;
       align-items: start;
     }
     .desk-live-feed-item::before {
       content: "";
       position: absolute;
-      top: -10px;
-      left: 12px;
-      width: 62px;
-      height: 26px;
-      border-radius: 16px 16px 10px 10px;
+      top: 0;
+      left: 0;
+      width: 68px;
+      height: 28px;
+      border-radius: 0 0 14px 0;
       background: var(--desk-feed-tab-bg, rgba(255,255,255,0.85));
-      box-shadow: 0 10px 18px rgba(102, 116, 150, 0.1);
       pointer-events: none;
     }
     .desk-live-feed-item::after {
       content: "";
       position: absolute;
-      top: 7px;
-      left: 54px;
+      top: 18px;
+      left: 56px;
       width: 12px;
       height: 12px;
-      border-radius: 0 0 0 10px;
+      border-radius: 0 12px 0 0;
       background: transparent;
-      box-shadow: -6px 5px 0 0 var(--desk-feed-bg, #f4ecff);
+      box-shadow: -6px -6px 0 0 var(--desk-feed-bg, #f4ecff);
       pointer-events: none;
     }
     .desk-live-feed-point {
@@ -1066,7 +1065,7 @@
       justify-content: flex-start;
       gap: 6px;
       min-height: 74px;
-      padding: 4px 0 0;
+      padding: 8px 0 0;
     }
     .desk-live-feed-icon {
       display: inline-flex;
