@@ -991,10 +991,11 @@
     .desk-live-feed-list {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 18px;
       min-height: 120px;
       overflow: auto;
-      padding-right: 8px;
+      padding: 10px 10px 6px 2px;
+      padding-right: 10px;
       margin-right: -6px;
     }
     .desk-live-feed-list::-webkit-scrollbar {
@@ -1022,24 +1023,37 @@
     .desk-live-feed-item {
       position: relative;
       display: grid;
-      grid-template-columns: 74px minmax(0, 1fr);
-      gap: 12px;
-      border-radius: 30px;
-      padding: 14px;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 16px;
+      border-radius: 28px;
+      padding: 20px 18px 18px;
       background: var(--desk-feed-bg, #f4ecff);
       color: #243546;
-      box-shadow: 0 18px 28px rgba(102, 116, 150, 0.12);
+      box-shadow: 0 18px 28px rgba(102, 116, 150, 0.1);
+      overflow: visible;
     }
     .desk-live-feed-item::before {
       content: "";
       position: absolute;
+      top: -18px;
+      left: 18px;
+      width: 104px;
+      height: 52px;
+      border-radius: 26px 26px 14px 14px;
+      background: var(--desk-feed-tab-bg, rgba(255,255,255,0.85));
+      box-shadow: 0 10px 18px rgba(102, 116, 150, 0.1);
+      pointer-events: none;
+    }
+    .desk-live-feed-item::after {
+      content: "";
+      position: absolute;
       top: 12px;
-      left: 16px;
-      width: 54px;
-      height: 54px;
-      border-radius: 22px 22px 22px 10px;
-      background: var(--desk-feed-accent, rgba(255,255,255,0.55));
-      opacity: 0.72;
+      left: 98px;
+      width: 22px;
+      height: 22px;
+      border-radius: 0 0 0 18px;
+      background: transparent;
+      box-shadow: -10px 8px 0 0 var(--desk-feed-bg, #f4ecff);
       pointer-events: none;
     }
     .desk-live-feed-point {
@@ -1048,9 +1062,10 @@
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      justify-content: space-between;
-      min-height: 112px;
-      padding: 6px 0;
+      justify-content: flex-start;
+      gap: 10px;
+      min-height: 98px;
+      padding: 4px 0 0;
     }
     .desk-live-feed-icon {
       display: inline-flex;
@@ -1058,18 +1073,19 @@
       justify-content: center;
       width: 34px;
       height: 34px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.5);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.66);
       color: #334155;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 900;
       backdrop-filter: blur(8px);
     }
     .desk-live-feed-timeblock {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
       color: #475d70;
+      margin-top: 2px;
     }
     .desk-live-feed-time-day {
       font-size: 11px;
@@ -1084,19 +1100,13 @@
     .desk-live-feed-main {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       min-width: 0;
       padding-top: 2px;
     }
-    .desk-live-feed-type {
-      font-size: 11px;
-      font-weight: 900;
-      color: #6c7f8f;
-      letter-spacing: 0.02em;
-    }
     .desk-live-feed-content {
-      font-size: 16px;
-      line-height: 1.45;
+      font-size: 17px;
+      line-height: 1.42;
       font-weight: 900;
       color: #173042;
       word-break: break-word;
@@ -1105,7 +1115,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
       min-width: 0;
     }
     .desk-live-feed-reporter {
@@ -1135,12 +1145,17 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .desk-live-feed-rank {
-      font-size: 24px;
+    .desk-live-feed-arrow {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.54);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #2d4456;
+      font-size: 16px;
       font-weight: 900;
-      line-height: 1;
-      color: rgba(36, 53, 70, 0.2);
-      letter-spacing: -0.04em;
       flex: 0 0 auto;
     }
     .desk-journal-editor-tabs {
@@ -11829,30 +11844,33 @@
     function getDeskLiveFeedCardStyle_(name, kind) {
       var palette = getDeskWorkerPalette_(String(name || "").trim());
       var themeMap = {
-        memo: { bg: "#f2e9ff", accent: "#d9c3ff" },
-        task: { bg: "#fff7c7", accent: "#ffe26a" },
-        important: { bg: "#ffdce6", accent: "#ffb0c7" }
+        memo: { bg: "#efe3ff", tab: "#dcc0ff" },
+        task: { bg: "#fff7b8", tab: "#ffe873" },
+        important: { bg: "#ffd7df", tab: "#ffb3c3" }
       };
       var workerTone = {
-        "김유민": { bg: "#dfeaff", accent: "#bdd4ff" },
-        "이창연": { bg: "#dcfbf4", accent: "#9fe9da" },
-        "홍성우": { bg: "#ffe8db", accent: "#ffc39d" },
-        "이미현": { bg: "#efe2ff", accent: "#d8bcff" },
-        "안종성": { bg: "#e8e0ff", accent: "#c7b2ff" },
-        "인유빈": { bg: "#e4f0ff", accent: "#bfd8ff" },
-        "유지연": { bg: "#dcfbf4", accent: "#9fe9da" }
+        "김유민": { bg: "#dfeaff", tab: "#bcd4ff" },
+        "이창연": { bg: "#d9fbf2", tab: "#a4efdd" },
+        "홍성우": { bg: "#ffe5d6", tab: "#ffc39a" },
+        "이미현": { bg: "#efe0ff", tab: "#d9bbff" },
+        "안종성": { bg: "#e7ddff", tab: "#c8b0ff" },
+        "인유빈": { bg: "#e3eeff", tab: "#bfd6ff" },
+        "유지연": { bg: "#dafaf0", tab: "#a2ecd7" }
       };
-      var tone = workerTone[name] || themeMap[kind] || { bg: palette.bg, accent: palette.border };
+      var tone = workerTone[name] || themeMap[kind] || { bg: palette.bg, tab: palette.border };
       return [
         '--desk-feed-bg:' + tone.bg,
-        '--desk-feed-accent:' + tone.accent
+        '--desk-feed-tab-bg:' + tone.tab
       ].join(";");
     }
 
-    function getDeskLiveFeedIcon_(type) {
-      if (type === "중요 업무") return "★";
-      if (type === "배정 업무") return "+";
-      return "!";
+    function getDeskLiveFeedIcon_(item) {
+      var content = String(item && item.content || "");
+      var type = String(item && item.type || "");
+      if (type === "중요 업무") return "🗓";
+      if (/전화|통화|문의|상담/.test(content)) return "☎";
+      if (/카톡|문자|메시지|메일|전달|발송/.test(content)) return "✉";
+      return "🗂";
     }
 
     function getDeskLiveFeedStampMeta_(text) {
@@ -12304,21 +12322,20 @@
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
         return '<article class="desk-live-feed-item" style="' + escapeHtml(item.style || "") + '">' +
           '<div class="desk-live-feed-point">' +
-            '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item.type)) + '</span>' +
+            '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
             '<div class="desk-live-feed-timeblock">' +
               '<span class="desk-live-feed-time-day">' + escapeHtml(stampMeta.date) + '</span>' +
               '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
             '</div>' +
           '</div>' +
           '<div class="desk-live-feed-main">' +
-            '<div class="desk-live-feed-type">' + escapeHtml(item.type) + '</div>' +
             '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
             '<div class="desk-live-feed-footer">' +
               '<div class="desk-live-feed-reporter">' +
                 '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
                 '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
               '</div>' +
-              '<div class="desk-live-feed-rank">' + String(startIndex + index + 1).padStart(2, "0") + '</div>' +
+              '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
             '</div>' +
           '</div>' +
         '</article>';
