@@ -1022,50 +1022,45 @@
     }
     .desk-live-feed-item {
       position: relative;
-      display: grid;
-      grid-template-columns: 56px minmax(0, 1fr);
-      gap: 10px;
-      border-radius: 28px;
-      padding: 16px 12px 12px;
-      background: var(--desk-feed-bg, #f4ecff);
+      padding-top: 26px;
       color: #243546;
-      box-shadow: 0 18px 28px rgba(102, 116, 150, 0.1);
-      overflow: hidden;
-      align-items: start;
     }
-    .desk-live-feed-item::before {
-      content: "";
+    .desk-live-feed-tab {
       position: absolute;
       top: 0;
       left: 0;
-      width: 68px;
-      height: 28px;
-      border-radius: 0 0 14px 0;
-      background: var(--desk-feed-tab-bg, rgba(255,255,255,0.85));
-      pointer-events: none;
-    }
-    .desk-live-feed-item::after {
-      content: "";
-      position: absolute;
-      top: 18px;
-      left: 56px;
-      width: 12px;
-      height: 12px;
-      border-radius: 0 12px 0 0;
-      background: transparent;
-      box-shadow: -6px -6px 0 0 var(--desk-feed-bg, #f4ecff);
-      pointer-events: none;
-    }
-    .desk-live-feed-point {
-      position: relative;
-      z-index: 1;
+      width: 92px;
+      min-height: 66px;
+      padding: 10px 10px 8px;
+      border-radius: 22px 22px 16px 16px;
+      background: var(--desk-feed-bg, #f4ecff);
+      box-shadow: 0 14px 24px rgba(102, 116, 150, 0.08);
+      z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
-      gap: 6px;
-      min-height: 74px;
-      padding: 8px 0 0;
+      gap: 8px;
+    }
+    .desk-live-feed-tab::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      bottom: 0;
+      width: 18px;
+      height: 18px;
+      background: transparent;
+      border-bottom-left-radius: 18px;
+      box-shadow: -8px 8px 0 0 var(--desk-feed-bg, #f4ecff);
+      pointer-events: none;
+    }
+    .desk-live-feed-body {
+      position: relative;
+      min-height: 106px;
+      padding: 18px 16px 16px 112px;
+      border-radius: 28px;
+      background: var(--desk-feed-bg, #f4ecff);
+      box-shadow: 0 18px 28px rgba(102, 116, 150, 0.1);
     }
     .desk-live-feed-icon {
       display: inline-flex;
@@ -1085,7 +1080,6 @@
       flex-direction: column;
       gap: 3px;
       color: #475d70;
-      margin-top: 0;
     }
     .desk-live-feed-time-day {
       font-size: 9px;
@@ -1100,13 +1094,12 @@
     .desk-live-feed-main {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       min-width: 0;
-      padding-top: 2px;
     }
     .desk-live-feed-content {
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 13px;
+      line-height: 1.45;
       font-weight: 900;
       color: #173042;
       word-break: break-word;
@@ -12321,21 +12314,23 @@
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
         return '<article class="desk-live-feed-item" style="' + escapeHtml(item.style || "") + '">' +
-          '<div class="desk-live-feed-point">' +
+          '<div class="desk-live-feed-tab">' +
             '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
             '<div class="desk-live-feed-timeblock">' +
               '<span class="desk-live-feed-time-day">' + escapeHtml(stampMeta.date) + '</span>' +
               '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
             '</div>' +
           '</div>' +
-          '<div class="desk-live-feed-main">' +
-            '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
-            '<div class="desk-live-feed-footer">' +
-              '<div class="desk-live-feed-reporter">' +
-                '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
-                '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
+          '<div class="desk-live-feed-body">' +
+            '<div class="desk-live-feed-main">' +
+              '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
+              '<div class="desk-live-feed-footer">' +
+                '<div class="desk-live-feed-reporter">' +
+                  '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
+                  '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
+                '</div>' +
+                '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
               '</div>' +
-              '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
             '</div>' +
           '</div>' +
         '</article>';
