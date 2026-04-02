@@ -1039,7 +1039,7 @@
       min-height: 108px;
       padding: 12px 12px 14px;
       border-radius: 24px 24px 18px 18px;
-      background: var(--desk-feed-tab-bg, var(--desk-feed-bg, #f4ecff));
+      background: var(--desk-feed-bg, #f4ecff);
       box-shadow: 0 12px 20px rgba(102, 116, 150, 0.16);
       display: flex;
       flex-direction: column;
@@ -1103,22 +1103,29 @@
     .desk-live-feed-main {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       min-width: 0;
       min-height: 82px;
       justify-content: center;
     }
     .desk-live-feed-content {
-      font-size: 16px;
-      line-height: 1.35;
+      font-size: 13px;
+      line-height: 1.4;
       font-weight: 900;
       color: #173042;
       word-break: break-word;
     }
-    .desk-live-feed-footer {
+    .desk-live-feed-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+    .desk-live-feed-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
       gap: 8px;
       min-width: 0;
     }
@@ -11848,23 +11855,22 @@
     function getDeskLiveFeedCardStyle_(name, kind) {
       var palette = getDeskWorkerPalette_(String(name || "").trim());
       var themeMap = {
-        memo: { bg: "#efe3ff", tab: "#d7bcff" },
-        task: { bg: "#fff7b8", tab: "#ffe163" },
-        important: { bg: "#ffd7df", tab: "#ffacbf" }
+        memo: { bg: "#efe3ff" },
+        task: { bg: "#fff7b8" },
+        important: { bg: "#ffd7df" }
       };
       var workerTone = {
-        "김유민": { bg: "#dfeaff", tab: "#aecaFF" },
-        "이창연": { bg: "#d9fbf2", tab: "#87e5cf" },
-        "홍성우": { bg: "#ffe5d6", tab: "#ffb27b" },
-        "이미현": { bg: "#efe0ff", tab: "#cfabff" },
-        "안종성": { bg: "#e7ddff", tab: "#bc99ff" },
-        "인유빈": { bg: "#e3eeff", tab: "#aac9ff" },
-        "유지연": { bg: "#dafaf0", tab: "#8fe3ca" }
+        "김유민": { bg: "#dfeaff" },
+        "이창연": { bg: "#d9fbf2" },
+        "홍성우": { bg: "#ffe5d6" },
+        "이미현": { bg: "#efe0ff" },
+        "안종성": { bg: "#e7ddff" },
+        "인유빈": { bg: "#e3eeff" },
+        "유지연": { bg: "#dafaf0" }
       };
-      var tone = workerTone[name] || themeMap[kind] || { bg: palette.bg, tab: palette.border };
+      var tone = workerTone[name] || themeMap[kind] || { bg: palette.bg };
       return [
-        '--desk-feed-bg:' + tone.bg,
-        '--desk-feed-tab-bg:' + tone.tab
+        '--desk-feed-bg:' + tone.bg
       ].join(";");
     }
 
@@ -12324,7 +12330,7 @@
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
         var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
-        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(pageItems.length - index)) + '">' +
+        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
           '<div class="folder-tab">' +
             '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
             '<div class="desk-live-feed-timeblock">' +
@@ -12334,14 +12340,14 @@
           '</div>' +
           '<div class="folder-body">' +
             '<div class="desk-live-feed-main">' +
-              '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
-              '<div class="desk-live-feed-footer">' +
+              '<div class="desk-live-feed-head">' +
                 '<div class="desk-live-feed-reporter">' +
                   '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
                   '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
                 '</div>' +
                 '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
               '</div>' +
+              '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
             '</div>' +
           '</div>' +
         '</article>';
