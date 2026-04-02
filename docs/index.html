@@ -2600,11 +2600,12 @@
       box-shadow: 0 18px 34px rgba(15, 60, 46, 0.08);
     }
     .desk-note-card {
-      padding: 14px 16px 15px;
-      gap: 10px;
-      background: color-mix(in srgb, var(--desk-worker-bg, #edf5ff) 30%, white 70%);
+      padding: 0;
+      gap: 0;
+      background: #ffffff;
       border-color: transparent;
-      box-shadow: 0 10px 24px rgba(22, 37, 66, 0.06);
+      box-shadow: 0 12px 30px rgba(22, 37, 66, 0.08);
+      overflow: hidden;
     }
     .desk-task-card.done {
       background: linear-gradient(180deg, #f2fff7 0%, #ebfff3 100%);
@@ -2623,6 +2624,32 @@
       align-items: flex-start;
       gap: 10px;
       flex-wrap: nowrap;
+    }
+    .desk-note-shell {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      min-height: 144px;
+    }
+    .desk-note-worker-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 10px;
+      background: var(--desk-worker-accent, #2563eb);
+      color: var(--desk-worker-accent-fg, #ffffff);
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.25;
+      text-align: center;
+      letter-spacing: -0.01em;
+      word-break: keep-all;
+    }
+    .desk-note-main {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 14px 16px 14px 18px;
+      background: color-mix(in srgb, var(--desk-worker-accent, #2563eb) 10%, white 90%);
     }
     .desk-task-title {
       font-size: 15px;
@@ -2646,8 +2673,9 @@
       align-items: center;
       padding: 4px 9px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.78);
+      background: rgba(255,255,255,0.82);
       color: #4b6374;
+      font-size: 11px;
     }
     .desk-task-worker-badge,
     .desk-note-worker-badge {
@@ -2790,7 +2818,7 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 6px;
+      gap: 4px;
       flex: 0 0 auto;
     }
     .desk-note-control-top {
@@ -2803,16 +2831,16 @@
     .desk-note-body {
       display: flex;
       align-items: center;
-      min-height: 70px;
-      padding: 8px 4px 2px;
-      text-align: center;
+      min-height: 54px;
+      padding: 4px 2px 2px;
+      text-align: left;
     }
     .desk-note-text {
       margin: 0;
       width: 100%;
-      font-size: 22px;
+      font-size: 15px;
       color: #173042;
-      line-height: 1.45;
+      line-height: 1.55;
       font-weight: 800;
       white-space: pre-wrap;
       word-break: break-word;
@@ -2834,7 +2862,7 @@
     }
     .desk-note-time-row {
       display: inline-flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
       flex-wrap: wrap;
       padding: 0;
@@ -2842,12 +2870,12 @@
       width: fit-content;
     }
     .desk-note-time-input {
-      width: 88px;
-      min-width: 88px;
+      width: 76px;
+      min-width: 76px;
       border-radius: 999px;
       border: 0;
       padding: 0;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 900;
       color: #2f4558;
       background: transparent;
@@ -2862,8 +2890,8 @@
       background: rgba(255,255,255,0.82);
       color: #385062;
       border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 11px;
+      padding: 5px 9px;
+      font-size: 10px;
       font-weight: 900;
       cursor: pointer;
     }
@@ -2876,9 +2904,9 @@
       background: rgba(255,255,255,0.82);
       color: #2b4253;
       border-radius: 999px;
-      padding: 7px 12px;
-      min-height: 32px;
-      font-size: 12px;
+      padding: 5px 10px;
+      min-height: 28px;
+      font-size: 11px;
       font-weight: 900;
       cursor: pointer;
       box-shadow: inset 0 0 0 1px rgba(188, 205, 214, 0.75);
@@ -11692,15 +11720,15 @@
 
     function getDeskWorkerPalette_(name) {
       var map = {
-        "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8" },
-        "안종성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb" },
-        "인유빈": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd" },
-        "이미현": { bg: "#f4e8ff", fg: "#7c3aed", border: "#ddc4ff" },
-        "유지연": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9" },
-        "김유민": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff" },
-        "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd" }
+        "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ff8a3d", accentFg: "#ffffff" },
+        "안종성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#8b5cf6", accentFg: "#ffffff" },
+        "인유빈": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd", accent: "#3b82f6", accentFg: "#ffffff" },
+        "이미현": { bg: "#f4e8ff", fg: "#7c3aed", border: "#ddc4ff", accent: "#c084fc", accentFg: "#ffffff" },
+        "유지연": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#14b8a6", accentFg: "#ffffff" },
+        "김유민": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff", accent: "#2563eb", accentFg: "#ffffff" },
+        "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd", accent: "#2dd4bf", accentFg: "#0f172a" }
       };
-      return map[name] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8" };
+      return map[name] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8", accent: "#64748b", accentFg: "#ffffff" };
     }
 
     function getDeskWorkerBadgeStyle_(name) {
@@ -11726,9 +11754,15 @@
         '--desk-worker-bg:' + palette.bg,
         '--desk-worker-fg:' + palette.fg,
         '--desk-worker-border:' + palette.border,
+        '--desk-worker-accent:' + (palette.accent || palette.fg),
+        '--desk-worker-accent-fg:' + (palette.accentFg || '#ffffff'),
         '--desk-card-soft: rgba(255,255,255,0.95)',
         '--desk-card-bg:' + palette.bg
       ].join(";");
+    }
+
+    function renderDeskNoteWorkerPanelHtml_(name) {
+      return '<div class="desk-note-worker-panel">' + escapeHtml(name || "-") + '</div>';
     }
 
     function getDeskRoleBadgeHtml_(item) {
@@ -12383,30 +12417,34 @@
       deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
         var isEditing = state.desk.daily.editingMemoId === item.id;
         return '<article class="desk-note-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
-          '<div class="desk-note-top">' +
-            '<div class="desk-note-meta">' +
-              renderDeskNoteWorkerBadgeHtml_(item.worker || "-") +
-              '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
-            '</div>' +
-            '<div class="desk-note-control-stack">' +
-              '<div class="desk-note-control-top">' +
-                '<div class="desk-note-time-row">' +
-                  '<input class="desk-note-time-input" type="time" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
-                  '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간 수정</button>' +
+          '<div class="desk-note-shell">' +
+            renderDeskNoteWorkerPanelHtml_(item.worker || "-") +
+            '<div class="desk-note-main">' +
+              '<div class="desk-note-top">' +
+                '<div class="desk-note-meta">' +
+                  '<span class="desk-note-stamp">' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
+                '</div>' +
+                '<div class="desk-note-control-stack">' +
+                  '<div class="desk-note-control-top">' +
+                    '<div class="desk-note-time-row">' +
+                      '<input class="desk-note-time-input" type="time" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
+                      '<button class="desk-note-time-save" type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '">시간 수정</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="desk-note-actions">' +
+                    (isEditing
+                      ? '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '">취소</button>' +
+                        '<button class="desk-note-action-mini primary" type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '">저장</button>'
+                      : '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '">수정</button>') +
+                    '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
-              '<div class="desk-note-actions">' +
-                (isEditing
-                  ? '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '">취소</button>' +
-                    '<button class="desk-note-action-mini primary" type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '">저장</button>'
-                  : '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '">수정</button>') +
-                '<button class="desk-note-action-mini" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '">삭제</button>' +
-              '</div>' +
+              (isEditing
+                ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
+                : '<div class="desk-note-body"><p class="desk-note-text">' + escapeHtml(item.text || "") + '</p></div>') +
             '</div>' +
           '</div>' +
-          (isEditing
-            ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
-            : '<div class="desk-note-body"><p class="desk-note-text">' + escapeHtml(item.text || "") + '</p></div>') +
         '</article>';
       }).join("");
     }
