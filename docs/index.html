@@ -603,6 +603,17 @@
       gap: 16px;
       align-items: start;
     }
+    .desk-supply-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .desk-supply-editor-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+      gap: 16px;
+      align-items: start;
+    }
     .desk-supply-filter-row {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2190,6 +2201,132 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+    .desk-analytics-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-analytics-report-card {
+      border: 1px solid #dbe8e1;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .desk-analytics-report-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-analytics-report-head-main {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .desk-analytics-role-line {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+    }
+    .desk-analytics-role-line strong {
+      color: #173042;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .desk-analytics-report-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #eef8f3;
+      border: 1px solid #d2e8dc;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-analytics-metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .desk-analytics-metric {
+      border-radius: 14px;
+      border: 1px solid #e4ece7;
+      background: #fff;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .desk-analytics-metric .label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #6b7d8f;
+    }
+    .desk-analytics-metric .value {
+      font-size: 16px;
+      line-height: 1.15;
+      font-weight: 900;
+      color: #173042;
+      word-break: keep-all;
+    }
+    .desk-analytics-report-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-analytics-report-line {
+      font-size: 12px;
+      line-height: 1.55;
+      color: #54697a;
+      background: #fbfefd;
+      border: 1px solid #e7f0eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .desk-analytics-report-line strong {
+      color: #173042;
+      font-weight: 900;
+    }
+    .desk-analytics-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .desk-analytics-overview-card {
+      border: 1px solid #dbe8e1;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .desk-analytics-overview-card .label {
+      font-size: 12px;
+      font-weight: 800;
+      color: #607082;
+    }
+    .desk-analytics-overview-card .value {
+      font-size: 22px;
+      line-height: 1.1;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-analytics-overview-card .sub {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #607082;
+      font-weight: 700;
     }
     .desk-day-shift-item,
     .desk-insight-item,
@@ -6350,6 +6487,10 @@
       .desk-editor-layout,
       .desk-journal-layout,
       .desk-overview-grid { grid-template-columns: 1fr; }
+      .desk-supply-editor-grid,
+      .desk-analytics-report-grid,
+      .desk-analytics-overview-grid,
+      .desk-analytics-metric-grid { grid-template-columns: 1fr; }
       .desk-week-summary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .desk-calendar-side { grid-template-columns: 1fr; }
       .desk-form-grid { grid-template-columns: 1fr 1fr; }
@@ -6848,10 +6989,7 @@
                 <h2 class="desk-panel-title">월별 근무표</h2>
                 <p class="desk-panel-sub">월별 캘린더, 근무자별 집계, 일정 편집을 한 화면에서 관리합니다. 팀장급 상주 근무자는 시간 집계에서 제외하고 일정만 표시합니다.</p>
               </div>
-              <div class="desk-panel-head-actions">
-                <button class="desk-ghost-btn" id="deskSuppliesReloadBtn" type="button">다시시도</button>
-                <span class="desk-status-chip">Firebase 서버 저장</span>
-              </div>
+              <span class="desk-status-chip">Firebase 서버 저장</span>
             </header>
 
             <div class="desk-month-shell">
@@ -6989,8 +7127,13 @@
                         <tbody id="deskAnalyticsBody"></tbody>
                       </table>
                     </div>
+                    <div class="desk-side-title">근무 패턴 상세 리포트</div>
+                    <div class="desk-side-sub">주차별 증감, 쉬는 요일 패턴, 예외 출근 요일, 역할 분포를 근무자별 리포트로 확인합니다.</div>
+                    <div class="desk-analytics-report-grid" id="deskAnalyticsReportGrid"></div>
                   </article>
                   <article class="desk-editor-card">
+                    <div class="desk-side-title">운영 진단 요약</div>
+                    <div class="desk-analytics-overview-grid" id="deskAnalyticsOverviewGrid"></div>
                     <div class="desk-side-title">운영 하이라이트</div>
                     <div class="desk-highlight-list" id="deskAnalyticsHighlights"></div>
                   </article>
@@ -7139,7 +7282,10 @@
                 <h2 class="desk-panel-title">소모품 관리</h2>
                 <p class="desk-panel-sub">소모품 재고, 공용 물품 현황, 대표님께 올릴 구매 요청 문안을 한 화면에서 관리합니다.</p>
               </div>
-              <span class="desk-status-chip">Firebase 서버 저장</span>
+              <div class="desk-panel-head-actions">
+                <button class="desk-ghost-btn" id="deskSuppliesReloadBtn" type="button">다시시도</button>
+                <span class="desk-status-chip">Firebase 서버 저장</span>
+              </div>
             </header>
             <div class="desk-supply-shell">
               <section class="desk-supply-summary">
@@ -7163,6 +7309,7 @@
               <div class="desk-supply-toolbar">
                 <section class="desk-supply-tabs">
                   <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">소모품 현황</button>
+                  <button class="desk-supply-tab" type="button" data-desk-supplies-tab="editor">소모품 입력/수정</button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets">물품 관리</button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase">구매 요청</button>
                 </section>
@@ -7176,7 +7323,7 @@
               </div>
 
               <section class="desk-supply-panel" data-desk-supplies-panel="inventory">
-                <div class="desk-supply-grid">
+                <div class="desk-supply-stack">
                   <article class="desk-supply-card" id="deskSupplyInventoryCapture">
                     <div class="desk-supply-card-head">
                       <div>
@@ -7213,7 +7360,12 @@
                     </div>
                     <div class="desk-supply-copy-status" id="deskSupplyCopyStatus" data-desk-copy-hide="true"></div>
                   </article>
-                  <aside class="desk-supply-card">
+                </div>
+              </section>
+
+              <section class="desk-supply-panel hidden" data-desk-supplies-panel="editor">
+                <div class="desk-supply-editor-grid">
+                  <article class="desk-supply-card">
                     <h3>소모품 입력 / 수정</h3>
                     <p>새 소모품을 등록하거나 기존 품목을 수정할 수 있습니다.</p>
                     <form class="desk-asset-form" id="deskConsumableForm">
@@ -7250,6 +7402,10 @@
                         <button class="desk-primary-btn" id="deskConsumableSubmitBtn" type="submit">소모품 등록</button>
                       </div>
                     </form>
+                  </article>
+                  <aside class="desk-supply-card">
+                    <h3>빠른 재고 메모</h3>
+                    <p>재고 우선순위와 여유 재고를 바로 확인하면서 입력 작업을 이어갈 수 있습니다.</p>
                     <div class="desk-supply-quick" id="deskSupplyQuickWrap"></div>
                   </aside>
                 </div>
@@ -8417,6 +8573,8 @@
     var deskAnalyticsBodyEl = document.getElementById("deskAnalyticsBody");
     var deskAnalyticsStatGridEl = document.getElementById("deskAnalyticsStatGrid");
     var deskAnalyticsHighlightsEl = document.getElementById("deskAnalyticsHighlights");
+    var deskAnalyticsReportGridEl = document.getElementById("deskAnalyticsReportGrid");
+    var deskAnalyticsOverviewGridEl = document.getElementById("deskAnalyticsOverviewGrid");
     var deskFixedScheduleBodyEl = document.getElementById("deskFixedScheduleBody");
     var deskSaveFixedScheduleBtnEl = document.getElementById("deskSaveFixedScheduleBtn");
     var deskApplyFixedSchedulePanelBtnEl = document.getElementById("deskApplyFixedSchedulePanelBtn");
@@ -9961,6 +10119,8 @@
       if (deskAnalyticsStatGridEl) deskAnalyticsStatGridEl.innerHTML = "";
       if (deskAnalyticsBodyEl) deskAnalyticsBodyEl.innerHTML = '<tr><td colspan="11">근무자 집계를 불러오는 중입니다.</td></tr>';
       if (deskAnalyticsHighlightsEl) deskAnalyticsHighlightsEl.innerHTML = '<div class="desk-empty">집계 하이라이트를 불러오는 중입니다.</div>';
+      if (deskAnalyticsReportGridEl) deskAnalyticsReportGridEl.innerHTML = '<div class="desk-empty">근무 패턴 리포트를 불러오는 중입니다.</div>';
+      if (deskAnalyticsOverviewGridEl) deskAnalyticsOverviewGridEl.innerHTML = '<div class="desk-empty">운영 진단 요약을 불러오는 중입니다.</div>';
       if (deskScheduleTableBodyEl) deskScheduleTableBodyEl.innerHTML = '<tr><td colspan="7">월간 일정 목록을 불러오는 중입니다.</td></tr>';
     }
 
@@ -10483,11 +10643,15 @@
       if (!workers.length) {
         deskAnalyticsBodyEl.innerHTML = '<tr><td colspan="11">집계할 일정이 없습니다.</td></tr>';
         if (deskAnalyticsStatGridEl) deskAnalyticsStatGridEl.innerHTML = "";
+        if (deskAnalyticsReportGridEl) deskAnalyticsReportGridEl.innerHTML = '<div class="desk-empty">표시할 근무 패턴 리포트가 없습니다.</div>';
+        if (deskAnalyticsOverviewGridEl) deskAnalyticsOverviewGridEl.innerHTML = '<div class="desk-empty">운영 진단 요약이 없습니다.</div>';
         deskAnalyticsHighlightsEl.innerHTML = '<div class="desk-empty">표시할 하이라이트가 없습니다.</div>';
         return;
       }
       var summary = summarizeDeskMonth_(items);
       var weeklyTotals = getDeskWeeklyTotals_(items);
+      var weekdayOverview = summarizeDeskWeekdayCoverage_(workerMap);
+      var volatilityOverview = summarizeDeskVolatilityOverview_(workerMap);
       deskAnalyticsBodyEl.innerHTML = workers.map(function(name) {
         var item = workerMap[name];
         return '<tr>' +
@@ -10547,6 +10711,68 @@
           '</article>';
         }).join("");
       }
+      if (deskAnalyticsOverviewGridEl) {
+        deskAnalyticsOverviewGridEl.innerHTML = [
+          {
+            label: "최대 주간 변동",
+            value: volatilityOverview.mostVolatile ? volatilityOverview.mostVolatile.name : "-",
+            sub: volatilityOverview.mostVolatile ? ("주간 편차 " + formatDeskHours_(volatilityOverview.mostVolatile.weeklySpread)) : "주차 변동 데이터 없음"
+          },
+          {
+            label: "가장 안정적인 근무자",
+            value: volatilityOverview.mostStable ? volatilityOverview.mostStable.name : "-",
+            sub: volatilityOverview.mostStable ? ("주간 편차 " + formatDeskHours_(volatilityOverview.mostStable.weeklySpread)) : "비교 가능한 데이터 없음"
+          },
+          {
+            label: "휴무 요일 최다",
+            value: weekdayOverview.mostOff ? weekdayOverview.mostOff.name : "-",
+            sub: weekdayOverview.mostOff ? ("비근무 요일 " + weekdayOverview.mostOff.offWeekdays.join(", ")) : "휴무 패턴 데이터 없음"
+          },
+          {
+            label: "예외 출근 최다",
+            value: weekdayOverview.mostException ? weekdayOverview.mostException.name : "-",
+            sub: weekdayOverview.mostException ? ("이례 요일 " + weekdayOverview.mostException.unusualWeekdays.join(", ")) : "예외 출근 패턴 없음"
+          }
+        ].map(function(card) {
+          return '<article class="desk-analytics-overview-card">' +
+            '<div class="label">' + escapeHtml(card.label) + '</div>' +
+            '<div class="value">' + escapeHtml(card.value) + '</div>' +
+            '<div class="sub">' + escapeHtml(card.sub) + '</div>' +
+          '</article>';
+        }).join("");
+      }
+      if (deskAnalyticsReportGridEl) {
+        deskAnalyticsReportGridEl.innerHTML = workers.map(function(name) {
+          var item = workerMap[name];
+          var weeklyFlow = buildDeskWeeklyFlowText_(item);
+          var roleMix = Object.keys(item.roleCounts || {}).sort(function(a, b) {
+            return (item.roleCounts[b] || 0) - (item.roleCounts[a] || 0);
+          }).slice(0, 3).map(function(roleName) {
+            return roleName + " " + item.roleCounts[roleName] + "회";
+          }).join(" · ");
+          return '<article class="desk-analytics-report-card">' +
+            '<div class="desk-analytics-report-head">' +
+              '<div class="desk-analytics-report-head-main">' +
+                getDeskWorkerBadgeHtml_(item.name) +
+                '<div class="desk-analytics-role-line"><strong>' + escapeHtml(item.mainRole || "-") + '</strong> · 월 합계 ' + formatDeskHours_(item.totalHours) + '</div>' +
+              '</div>' +
+              '<span class="desk-analytics-report-badge">' + escapeHtml(item.reliabilityLabel) + '</span>' +
+            '</div>' +
+            '<div class="desk-analytics-metric-grid">' +
+              '<div class="desk-analytics-metric"><div class="label">최고 주차</div><div class="value">' + escapeHtml(item.bestWeek ? (item.bestWeek + "주차") : "-") + '</div></div>' +
+              '<div class="desk-analytics-metric"><div class="label">최저 주차</div><div class="value">' + escapeHtml(item.lowWeek ? (item.lowWeek + "주차") : "-") + '</div></div>' +
+              '<div class="desk-analytics-metric"><div class="label">주간 편차</div><div class="value">' + formatDeskHours_(item.weeklySpread) + '</div></div>' +
+              '<div class="desk-analytics-metric"><div class="label">예외 출근</div><div class="value">' + escapeHtml(item.unusualWeekdays.length ? item.unusualWeekdays.join(", ") : "없음") + '</div></div>' +
+            '</div>' +
+            '<div class="desk-analytics-report-lines">' +
+              '<div class="desk-analytics-report-line"><strong>주차 흐름</strong> · ' + escapeHtml(weeklyFlow) + '</div>' +
+              '<div class="desk-analytics-report-line"><strong>쉬는 요일</strong> · ' + escapeHtml(item.offWeekdays.length ? item.offWeekdays.join(", ") : "모든 요일 출근 이력 있음") + '</div>' +
+              '<div class="desk-analytics-report-line"><strong>평소와 다른 출근</strong> · ' + escapeHtml(item.unusualWeekdays.length ? item.unusualWeekdays.join(", ") : "반복 패턴 내 출근") + '</div>' +
+              '<div class="desk-analytics-report-line"><strong>역할 분포</strong> · ' + escapeHtml(roleMix || "역할 기록 없음") + '</div>' +
+            '</div>' +
+          '</article>';
+        }).join("");
+      }
       deskAnalyticsHighlightsEl.innerHTML = ordered.map(function(item, index) {
         var peak = getDeskWorkerPeakWeek_(item);
         var weeklyText = [];
@@ -10558,6 +10784,7 @@
           '<p>' + escapeHtml(item.mainRole || "-") + ' · 월 합계 ' + formatDeskHours_(item.totalHours) + '</p>' +
           '<p>' + (peak.bestWeek ? ('최고 ' + peak.bestWeek + '주차 ' + formatDeskHours_(peak.bestHours)) : '주차별 집계 없음') + ' · 야간 ' + item.nightCount + '건 · 상주 ' + item.residentDays + '일</p>' +
           '<p>' + escapeHtml(weeklyText.join(" · ") || "주차별 근무시간 없음") + '</p>' +
+          '<p>' + escapeHtml('휴무 요일 ' + (item.offWeekdays.length ? item.offWeekdays.join(", ") : '없음') + ' · 예외 출근 ' + (item.unusualWeekdays.length ? item.unusualWeekdays.join(", ") : '없음')) + '</p>' +
         '</article>';
       }).join("");
     }
@@ -11024,9 +11251,19 @@
             mainRole: getDeskDisplayRole_(item),
             roleCounts: {},
             weekly: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+            weekdayCounts: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+            weekdayHours: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
             totalHours: 0,
             residentDays: 0,
-            nightCount: 0
+            nightCount: 0,
+            shiftCount: 0,
+            workedDates: {},
+            unusualWeekdays: [],
+            offWeekdays: [],
+            weeklySpread: 0,
+            bestWeek: 0,
+            lowWeek: 0,
+            reliabilityLabel: "패턴 분석 중"
           };
         }
         var row = map[item.worker];
@@ -11039,10 +11276,119 @@
         if (getDeskShiftTone_(item) === "night") row.nightCount += 1;
         var weekIndex = getDeskWeekIndex_(item.date, state.desk.currentMonth);
         var hours = getDeskCountedHours_(item);
+        var dateParts = String(item.date || "").split("-");
+        var weekday = new Date(Number(dateParts[0] || 0), Number(dateParts[1] || 1) - 1, Number(dateParts[2] || 1)).getDay();
         row.weekly[weekIndex] = (row.weekly[weekIndex] || 0) + hours;
+        row.weekdayCounts[weekday] = (row.weekdayCounts[weekday] || 0) + 1;
+        row.weekdayHours[weekday] = (row.weekdayHours[weekday] || 0) + hours;
         row.totalHours += hours;
+        row.shiftCount += 1;
+        row.workedDates[item.date] = true;
+      });
+      Object.keys(map).forEach(function(name) {
+        finalizeDeskWorkerAnalytics_(map[name]);
       });
       return map;
+    }
+
+    function finalizeDeskWorkerAnalytics_(row) {
+      var weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+      var activeWeeks = [];
+      var bestWeek = 0;
+      var bestHours = -1;
+      var lowWeek = 0;
+      var lowHours = Number.POSITIVE_INFINITY;
+      for (var week = 1; week <= 6; week += 1) {
+        var hours = Number(row.weekly[week] || 0);
+        if (hours > 0) {
+          activeWeeks.push({ week: week, hours: hours });
+          if (hours > bestHours) {
+            bestHours = hours;
+            bestWeek = week;
+          }
+          if (hours < lowHours) {
+            lowHours = hours;
+            lowWeek = week;
+          }
+        }
+      }
+      row.bestWeek = bestWeek;
+      row.lowWeek = lowWeek;
+      row.weeklySpread = activeWeeks.length ? Math.max(0, bestHours - lowHours) : 0;
+
+      var weekdayValues = [];
+      for (var weekday = 0; weekday <= 6; weekday += 1) {
+        weekdayValues.push(Number(row.weekdayCounts[weekday] || 0));
+      }
+      var maxWeekdayCount = Math.max.apply(null, weekdayValues);
+      row.offWeekdays = [];
+      row.unusualWeekdays = [];
+      for (var day = 0; day <= 6; day += 1) {
+        var count = Number(row.weekdayCounts[day] || 0);
+        if (!count) {
+          row.offWeekdays.push(weekdayLabels[day]);
+        } else if (count === 1 && maxWeekdayCount >= 2) {
+          row.unusualWeekdays.push(weekdayLabels[day]);
+        }
+      }
+      if (row.weeklySpread >= 8) {
+        row.reliabilityLabel = "변동 큼";
+      } else if (row.weeklySpread >= 4) {
+        row.reliabilityLabel = "변동 주의";
+      } else if (activeWeeks.length >= 2) {
+        row.reliabilityLabel = "안정 패턴";
+      } else {
+        row.reliabilityLabel = "표본 적음";
+      }
+    }
+
+    function buildDeskWeeklyFlowText_(row) {
+      var parts = [];
+      var activeWeeks = [];
+      for (var week = 1; week <= 6; week += 1) {
+        var hours = Number(row.weekly[week] || 0);
+        if (hours > 0) {
+          activeWeeks.push({ week: week, hours: hours });
+          parts.push(week + "주차 " + formatDeskHours_(hours));
+        }
+      }
+      if (!parts.length) return "집계된 근무시간이 없습니다.";
+      var deltas = [];
+      for (var i = 1; i < activeWeeks.length; i += 1) {
+        var prevWeek = activeWeeks[i - 1];
+        var nextWeek = activeWeeks[i];
+        var diff = Math.round((nextWeek.hours - prevWeek.hours) * 10) / 10;
+        if (diff) deltas.push(prevWeek.week + "→" + nextWeek.week + "주차 " + (diff > 0 ? "+" : "-") + formatDeskHours_(Math.abs(diff)));
+      }
+      return parts.join(" · ") + (deltas.length ? (" / 변동 " + deltas.join(", ")) : "");
+    }
+
+    function summarizeDeskWeekdayCoverage_(workerMap) {
+      var workers = Object.keys(workerMap || {}).map(function(name) { return workerMap[name]; });
+      var mostOff = null;
+      var mostException = null;
+      workers.forEach(function(item) {
+        if (!mostOff || item.offWeekdays.length > mostOff.offWeekdays.length) mostOff = item;
+        if (!mostException || item.unusualWeekdays.length > mostException.unusualWeekdays.length) mostException = item;
+      });
+      return {
+        mostOff: mostOff,
+        mostException: mostException
+      };
+    }
+
+    function summarizeDeskVolatilityOverview_(workerMap) {
+      var workers = Object.keys(workerMap || {}).map(function(name) { return workerMap[name]; });
+      var mostVolatile = null;
+      var mostStable = null;
+      workers.forEach(function(item) {
+        if (!mostVolatile || item.weeklySpread > mostVolatile.weeklySpread) mostVolatile = item;
+        if (!mostStable || item.weeklySpread < mostStable.weeklySpread) mostStable = item;
+      });
+      return {
+        mostVolatile: mostVolatile,
+        mostStable: mostStable
+      };
     }
 
     function buildDeskCalendarCells_(monthKey) {
