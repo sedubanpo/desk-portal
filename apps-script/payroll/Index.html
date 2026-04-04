@@ -3614,9 +3614,16 @@
     }
     .tuition-student-cell {
       display: inline-flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       padding: 4px 0;
+      min-width: 0;
+    }
+    .tuition-student-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
     }
     .tuition-student-dot {
       width: 10px;
@@ -3630,6 +3637,23 @@
       font-size: 13px;
       font-weight: 800;
       color: #102133;
+    }
+    .tuition-student-carryover {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #be123c;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .tuition-row-carryover td:first-child {
+      box-shadow: inset 4px 0 0 #ef4444;
     }
     .tuition-school-badges {
       display: flex;
@@ -4384,10 +4408,20 @@
       width: min(1400px, 97vw);
       max-height: 94vh;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      margin: auto;
       border-radius: 18px;
       border-color: #dce9e0;
       box-shadow: 0 24px 56px rgba(15, 40, 31, 0.25);
       padding: 0;
+    }
+    #tuitionCalendarModal {
+      align-items: flex-start;
+      overflow: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px;
     }
     #tuitionCalendarModal .tuition-wide-top {
       gap: 10px;
@@ -4441,6 +4475,9 @@
       grid-template-columns: 1fr 340px;
       min-height: min(76vh, 920px);
       max-height: calc(94vh - 84px);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
     .tuition-calendar-main {
       display: flex;
@@ -4523,6 +4560,8 @@
       min-height: 0;
       overflow: auto;
       border-bottom: 1px solid #e2ece6;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
     .tuition-calendar-grid {
       display: grid;
@@ -4624,11 +4663,14 @@
       flex-direction: column;
       background: #fff;
       min-height: 0;
+      overflow: hidden;
     }
     .tuition-cal-detail {
       padding: 18px;
       overflow: auto;
       flex: 1;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
     .tuition-cal-detail-title {
       font-size: 18px;
@@ -14843,6 +14885,18 @@
       }
       state.tuition.calendarSelectedDateKey = state.tuition.dailyCursorDateKey || "";
       applyTuitionLocalFilters_();
+      var monthAtRender = state.tuition.selectedMonth || "";
+      ensureTuitionPreviousMonthUnpaidCache_(monthAtRender)
+        .then(function() {
+          if (state.tuition.selectedMonth !== monthAtRender) return;
+          renderTuitionStudentRows();
+          if (tuitionStatusListModalEl && tuitionStatusListModalEl.style.display !== "none") {
+            renderTuitionStatusListModal_();
+          } else {
+            syncTuitionStatusCardSelection_();
+          }
+        })
+        .catch(function() {});
     }
 
     function applyTuitionLocalFilters_() {
@@ -15202,12 +15256,14 @@
         if (row.__group) {
           return '<tr class="tuition-group-row"><td colspan="10">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
         }
+        var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth);
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
         else if (row.unpaidStatus === "안내완료") rowClass = "tuition-row-guided";
         else if (row.unpaidStatus === "납부완료" || row.unpaidStatus === "이월금") rowClass = "tuition-row-paid";
+        if (carryInfo) rowClass += " tuition-row-carryover";
         return '<tr class="' + rowClass + '">' +
-          '<td>' + buildTuitionStudentCell(row) + '</td>' +
+          '<td>' + buildTuitionStudentCell(row, carryInfo) + '</td>' +
           '<td><div class="tuition-school-badges">' +
             '<span class="tuition-school-chip">' + escapeHtml(row.school || "학교미입력") + '</span>' +
             '<span class="tuition-grade-chip">' + escapeHtml(formatTuitionGradeLabel(row.grade)) + '</span>' +
@@ -15469,10 +15525,17 @@
       '</div>';
     }
 
-    function buildTuitionStudentCell(row) {
+    function buildTuitionStudentCell(row, carryInfo) {
+      var carryHtml = "";
+      if (carryInfo) {
+        carryHtml = '<span class="tuition-student-carryover">전월 미납 ' + formatWon(carryInfo.outstandingAmount || 0) + '</span>';
+      }
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
-        '<button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' +
+        '<div class="tuition-student-text">' +
+          '<button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' +
+          carryHtml +
+        '</div>' +
       '</div>';
     }
 
@@ -15531,6 +15594,76 @@
       var m = String(monthName || "").trim().match(/^(\d{2})-(\d{2})s$/i);
       if (!m) return { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
       return { year: 2000 + parseInt(m[1], 10), month: parseInt(m[2], 10) };
+    }
+
+    function getTuitionPrevMonthName_(monthName) {
+      var parsed = parseTuitionMonthYear_(monthName);
+      var d = new Date(parsed.year, parsed.month - 2, 1);
+      return String(d.getFullYear()).slice(-2) + "-" + pad2(d.getMonth() + 1) + "s";
+    }
+
+    function buildTuitionUnpaidCarryMap_(rows, monthName) {
+      var map = {};
+      (Array.isArray(rows) ? rows : []).forEach(function(row) {
+        var status = String(row && row.unpaidStatus || "");
+        if (status === "납부완료" || status === "이월금") return;
+        var guide = Math.max(0, toNumber(row && row.guideAmount, 0));
+        var collected = Math.max(0, toNumber(row && row.collectedAmount, 0));
+        var outstanding = Math.max(0, toNumber(row && row.outstandingAmount, Math.max(0, guide - collected)));
+        if (!outstanding) return;
+        var name = formatStudentName(row && row.studentName);
+        if (!name) return;
+        map[name] = {
+          monthName: monthName || "",
+          unpaidStatus: status || "안내이전",
+          outstandingAmount: outstanding
+        };
+      });
+      return map;
+    }
+
+    function ensureTuitionPreviousMonthUnpaidCache_(monthName) {
+      var currentMonth = String(monthName || "").trim();
+      if (!currentMonth) return Promise.resolve({});
+      var prevMonth = getTuitionPrevMonthName_(currentMonth);
+      if (!prevMonth || prevMonth === currentMonth) return Promise.resolve({});
+      var cache = state.tuition.unpaidCacheByMonth[prevMonth];
+      if (cache && cache.loaded) return Promise.resolve(cache.map || {});
+      if (cache && cache.promise) return cache.promise;
+
+      var promise = runServer("getTuitionMonthSummary", {
+        monthName: prevMonth,
+        statusFilter: "",
+        keyword: ""
+      }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "전월 미납 조회 실패");
+        var map = buildTuitionUnpaidCarryMap_(res.rows || [], prevMonth);
+        state.tuition.unpaidCacheByMonth[prevMonth] = {
+          loaded: true,
+          map: map
+        };
+        return map;
+      }).catch(function() {
+        state.tuition.unpaidCacheByMonth[prevMonth] = {
+          loaded: true,
+          map: {}
+        };
+        return {};
+      });
+
+      state.tuition.unpaidCacheByMonth[prevMonth] = {
+        loaded: false,
+        map: {},
+        promise: promise
+      };
+      return promise;
+    }
+
+    function getTuitionPreviousMonthCarryInfo_(studentName, currentMonthName) {
+      var prevMonth = getTuitionPrevMonthName_(currentMonthName);
+      var cache = state.tuition.unpaidCacheByMonth[prevMonth];
+      if (!cache || !cache.loaded) return null;
+      return (cache.map || {})[formatStudentName(studentName)] || null;
     }
 
     function parseTuitionPaidDateKey_(paidAtText, monthName) {
