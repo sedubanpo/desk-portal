@@ -1359,7 +1359,7 @@
     .desk-fixed-slot-stack {
       display: grid;
       gap: 4px;
-      min-width: 112px;
+      min-width: 122px;
       border-radius: 14px;
       padding: 5px;
       border: 1px solid transparent;
@@ -1368,7 +1368,7 @@
     .desk-fixed-slot-stack .desk-inline-select {
       min-width: 0;
       width: 100%;
-      padding: 6px 28px 6px 9px;
+      padding: 6px 28px 6px 11px;
       min-height: 34px;
       font-size: 11px;
       line-height: 1.2;
@@ -7505,7 +7505,6 @@
                         <div class="desk-side-sub">근무자별 요일 기본 스케줄을 저장해 두고, 선택한 날짜에 한 번에 불러올 수 있습니다.</div>
                       </div>
                       <div class="desk-fixed-apply-row">
-                        <button class="desk-ghost-btn" id="deskResetFixedScheduleBtn" type="button">근무 스케줄 초기화</button>
                         <button class="desk-ghost-btn" id="deskSaveFixedScheduleBtn" type="button">고정 스케줄 저장</button>
                         <button class="desk-primary-btn" id="deskApplyFixedSchedulePanelBtn" type="button">선택 날짜에 불러오기</button>
                       </div>
@@ -8855,7 +8854,6 @@
     var deskFixedWorkerNavEl = document.getElementById("deskFixedWorkerNav");
     var deskFixedCurrentWorkerEl = document.getElementById("deskFixedCurrentWorker");
     var deskFixedScheduleBodyEl = document.getElementById("deskFixedScheduleBody");
-    var deskResetFixedScheduleBtnEl = document.getElementById("deskResetFixedScheduleBtn");
     var deskResetCurrentWorkerBtnEl = document.getElementById("deskResetCurrentWorkerBtn");
     var deskDeleteFixedWorkerBtnEl = document.getElementById("deskDeleteFixedWorkerBtn");
     var deskSaveFixedScheduleBtnEl = document.getElementById("deskSaveFixedScheduleBtn");
@@ -14632,15 +14630,11 @@
         });
       }
 
-      if (deskResetFixedScheduleBtnEl) {
-        deskResetFixedScheduleBtnEl.addEventListener("click", function() {
-          resetDeskFixedScheduleAll_();
-          flashDeskButtonFeedback_(deskResetFixedScheduleBtnEl, "전체 초기화");
-        });
-      }
-
       if (deskResetCurrentWorkerBtnEl) {
         deskResetCurrentWorkerBtnEl.addEventListener("click", function() {
+          var worker = state.desk.fixedSchedule.selectedWorker || "";
+          if (!worker) return;
+          if (!confirm('"' + worker + '" 근무자의 고정 스케줄을 초기화할까요?')) return;
           resetDeskFixedScheduleForWorker_(state.desk.fixedSchedule.selectedWorker);
           flashDeskButtonFeedback_(deskResetCurrentWorkerBtnEl, "근무자 초기화");
         });
