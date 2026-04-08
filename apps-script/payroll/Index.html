@@ -1246,6 +1246,85 @@
       flex-direction: column;
       gap: 12px;
     }
+    .desk-fixed-schedule-layout {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .desk-fixed-worker-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: sticky;
+      top: 12px;
+    }
+    .desk-fixed-worker-tab {
+      appearance: none;
+      border: 1px solid var(--desk-worker-border, #d6dee8);
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.78));
+      color: var(--desk-worker-fg, #334155);
+      border-radius: 18px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 900;
+      text-align: left;
+      box-shadow: inset 5px 0 0 var(--desk-worker-accent, #64748b);
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+    .desk-fixed-worker-tab:hover {
+      transform: translateX(2px);
+      box-shadow: inset 8px 0 0 var(--desk-worker-accent, #64748b), 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+    .desk-fixed-worker-tab.active {
+      background: var(--desk-worker-bg, #eef2f7);
+      border-color: var(--desk-worker-border, #d6dee8);
+      box-shadow: inset 12px 0 0 var(--desk-worker-accent, #64748b), 0 16px 28px rgba(15, 23, 42, 0.12);
+      transform: translateX(4px);
+    }
+    .desk-fixed-worker-tab small {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      opacity: 0.72;
+    }
+    .desk-fixed-schedule-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    .desk-fixed-schedule-panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-fixed-current-worker {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .desk-fixed-current-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .desk-fixed-current-copy strong {
+      font-size: 16px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-fixed-current-copy span {
+      font-size: 12px;
+      font-weight: 700;
+      color: #607082;
+    }
     .desk-fixed-schedule-toolbar {
       display: flex;
       justify-content: space-between;
@@ -1275,12 +1354,18 @@
       display: grid;
       gap: 6px;
       min-width: 126px;
+      border-radius: 16px;
+      padding: 8px;
+      border: 1px solid transparent;
+      transition: box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
     }
     .desk-fixed-slot-stack .desk-inline-select {
       min-width: 0;
       width: 100%;
       padding: 8px 10px;
       font-size: 12px;
+      background: rgba(255,255,255,0.82);
+      border-color: rgba(15,23,42,0.08);
     }
     .desk-fixed-reason {
       width: 100%;
@@ -1296,6 +1381,42 @@
     }
     .desk-fixed-reason.is-visible {
       display: block;
+    }
+    .desk-fixed-slot-stack.status-regular {
+      background: rgba(59,130,246,0.16);
+      border-color: rgba(59,130,246,0.3);
+      box-shadow: inset 0 0 0 1px rgba(59,130,246,0.05);
+    }
+    .desk-fixed-slot-stack.status-available {
+      background: rgba(34,197,94,0.16);
+      border-color: rgba(34,197,94,0.3);
+      box-shadow: inset 0 0 0 1px rgba(34,197,94,0.05);
+    }
+    .desk-fixed-slot-stack.status-partial {
+      background: rgba(250,204,21,0.22);
+      border-color: rgba(234,179,8,0.34);
+      box-shadow: inset 0 0 0 1px rgba(250,204,21,0.08);
+    }
+    .desk-fixed-slot-stack.status-consult {
+      background: rgba(239,68,68,0.15);
+      border-color: rgba(239,68,68,0.3);
+      box-shadow: inset 0 0 0 1px rgba(239,68,68,0.08);
+    }
+    .desk-fixed-slot-stack.status-unavailable {
+      background: rgba(148,163,184,0.18);
+      border-color: rgba(148,163,184,0.3);
+      box-shadow: inset 0 0 0 1px rgba(148,163,184,0.08);
+    }
+    .desk-fixed-slot-stack.status-regular .desk-inline-select,
+    .desk-fixed-slot-stack.status-available .desk-inline-select,
+    .desk-fixed-slot-stack.status-partial .desk-inline-select,
+    .desk-fixed-slot-stack.status-consult .desk-inline-select,
+    .desk-fixed-slot-stack.status-unavailable .desk-inline-select {
+      background: rgba(255,255,255,0.85);
+    }
+    .desk-fixed-slot-stack.status-unselected {
+      background: #f8fbfa;
+      border-color: #e1ece7;
     }
     .desk-fixed-status-badge {
       display: inline-flex;
@@ -7361,23 +7482,30 @@
                       </div>
                     </div>
                     <div class="desk-fixed-schedule-hint">근무자별 시간 슬롯마다 `정규 근무 / 근무 가능 / 부분 가능 / 협의 필요 / 근무 불가` 상태를 기록합니다. `근무 불가`나 `협의 필요`는 사유를 함께 적어두면 선택 날짜에 반영할 때 참고할 수 있습니다.</div>
-                    <div class="desk-table-wrap">
-                      <table class="desk-schedule-table desk-fixed-table">
-                        <thead>
-                          <tr>
-                            <th>이름</th>
-                            <th>시간대</th>
-                            <th>월</th>
-                            <th>화</th>
-                            <th>수</th>
-                            <th>목</th>
-                            <th>금</th>
-                            <th>토</th>
-                            <th>일</th>
-                          </tr>
-                        </thead>
-                        <tbody id="deskFixedScheduleBody"></tbody>
-                      </table>
+                    <div class="desk-fixed-schedule-layout">
+                      <div class="desk-fixed-worker-nav" id="deskFixedWorkerNav"></div>
+                      <div class="desk-fixed-schedule-panel">
+                        <div class="desk-fixed-schedule-panel-head">
+                          <div class="desk-fixed-current-worker" id="deskFixedCurrentWorker"></div>
+                        </div>
+                        <div class="desk-table-wrap">
+                          <table class="desk-schedule-table desk-fixed-table">
+                            <thead>
+                              <tr>
+                                <th>시간대</th>
+                                <th>월</th>
+                                <th>화</th>
+                                <th>수</th>
+                                <th>목</th>
+                                <th>금</th>
+                                <th>토</th>
+                                <th>일</th>
+                              </tr>
+                            </thead>
+                            <tbody id="deskFixedScheduleBody"></tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
                   </article>
                 </div>
@@ -8480,6 +8608,9 @@
           realtimeEnabled: true,
           realtimeSources: {},
           realtimeSnapshots: {}
+        },
+        fixedSchedule: {
+          selectedWorker: ""
         }
       },
       tuition: {
@@ -8686,6 +8817,8 @@
     var deskAnalyticsHighlightsEl = document.getElementById("deskAnalyticsHighlights");
     var deskAnalyticsReportGridEl = document.getElementById("deskAnalyticsReportGrid");
     var deskAnalyticsOverviewGridEl = document.getElementById("deskAnalyticsOverviewGrid");
+    var deskFixedWorkerNavEl = document.getElementById("deskFixedWorkerNav");
+    var deskFixedCurrentWorkerEl = document.getElementById("deskFixedCurrentWorker");
     var deskFixedScheduleBodyEl = document.getElementById("deskFixedScheduleBody");
     var deskSaveFixedScheduleBtnEl = document.getElementById("deskSaveFixedScheduleBtn");
     var deskApplyFixedSchedulePanelBtnEl = document.getElementById("deskApplyFixedSchedulePanelBtn");
@@ -9971,6 +10104,17 @@
       return found ? found.label : "선택 안 함";
     }
 
+    function getDeskFixedStatusClass_(key) {
+      var safeKey = String(key || "").trim();
+      if (!safeKey) return "status-unselected";
+      if (safeKey === "regular") return "status-regular";
+      if (safeKey === "available") return "status-available";
+      if (safeKey === "partial") return "status-partial";
+      if (safeKey === "consult") return "status-consult";
+      if (safeKey === "unavailable") return "status-unavailable";
+      return "status-unselected";
+    }
+
     function getDeskFixedTimeSlotCatalog_() {
       var slots = [
         { key: "open_0930", label: "09:30 오픈", start: "09:30", end: "10:00", special: "open" }
@@ -10976,37 +11120,81 @@
       var statuses = getDeskFixedPresetCatalog_();
       var weekdayOrder = getDeskFixedWeekdayOrder_();
       var slots = getDeskFixedTimeSlotCatalog_();
+      if (workers.indexOf(state.desk.fixedSchedule.selectedWorker) === -1) {
+        state.desk.fixedSchedule.selectedWorker = workers[0] || "";
+      }
       if (!workers.length) {
-        deskFixedScheduleBodyEl.innerHTML = '<tr><td colspan="9">등록된 근무자가 없어 고정 스케줄을 표시할 수 없습니다.</td></tr>';
+        if (deskFixedWorkerNavEl) deskFixedWorkerNavEl.innerHTML = "";
+        if (deskFixedCurrentWorkerEl) deskFixedCurrentWorkerEl.innerHTML = "";
+        deskFixedScheduleBodyEl.innerHTML = '<tr><td colspan="8">등록된 근무자가 없어 고정 스케줄을 표시할 수 없습니다.</td></tr>';
         return;
       }
-      deskFixedScheduleBodyEl.innerHTML = workers.map(function(worker) {
-        return slots.map(function(slot, slotIndex) {
-          return '<tr>' +
-            (slotIndex === 0 ? ('<td class="worker-cell" rowspan="' + slots.length + '">' + getDeskWorkerBadgeHtml_(worker) + '</td>') : '') +
-            '<td class="desk-fixed-time-cell">' + escapeHtml(slot.label) + '</td>' +
-            weekdayOrder.map(function(weekday) {
-              var entry = getDeskFixedEntryForCell_(worker, weekday, slot.key);
-              var selected = entry ? entry.status : "";
-              var reason = entry ? entry.reason : "";
-              return '<td><div class="desk-fixed-slot-stack">' +
-                '<select class="desk-inline-select" data-desk-fixed-worker="' + escapeHtml(worker) + '" data-desk-fixed-weekday="' + weekday + '" data-desk-fixed-slot="' + escapeHtml(slot.key) + '">' +
-                  statuses.map(function(option) {
-                    return '<option value="' + escapeHtml(option.key) + '"' + (option.key === selected ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
-                  }).join("") +
-                '</select>' +
-                '<input class="desk-fixed-reason' + ((selected === "unavailable" || selected === "consult") ? ' is-visible' : '') + '" type="text" placeholder="' + escapeHtml(selected === "consult" ? "협의 메모" : "불가 사유") + '" value="' + escapeHtml(reason) + '" data-desk-fixed-reason-worker="' + escapeHtml(worker) + '" data-desk-fixed-reason-weekday="' + weekday + '" data-desk-fixed-reason-slot="' + escapeHtml(slot.key) + '">' +
-              '</div></td>';
-            }).join("") +
-          '</tr>';
+      if (deskFixedWorkerNavEl) {
+        deskFixedWorkerNavEl.innerHTML = workers.map(function(worker) {
+          var palette = getDeskWorkerPalette_(worker);
+          var workerEntries = (state.desk.fixedScheduleEntries || []).filter(function(item) {
+            return item.worker === worker && item.status;
+          }).length;
+          return '<button type="button" class="desk-fixed-worker-tab' + (worker === state.desk.fixedSchedule.selectedWorker ? ' active' : '') + '"' +
+            ' data-desk-fixed-worker-tab="' + escapeHtml(worker) + '"' +
+            ' style="' + escapeHtml([
+              '--desk-worker-bg:' + palette.bg,
+              '--desk-worker-fg:' + palette.fg,
+              '--desk-worker-border:' + palette.border,
+              '--desk-worker-accent:' + (palette.accent || palette.fg)
+            ].join(";")) + '">' +
+            escapeHtml(worker) +
+            '<small>' + escapeHtml(workerEntries ? ('설정 ' + workerEntries + '칸') : '아직 설정 없음') + '</small>' +
+          '</button>';
         }).join("");
+      }
+      var selectedWorker = state.desk.fixedSchedule.selectedWorker || workers[0];
+      if (deskFixedCurrentWorkerEl) {
+        deskFixedCurrentWorkerEl.innerHTML =
+          getDeskWorkerBadgeHtml_(selectedWorker) +
+          '<div class="desk-fixed-current-copy">' +
+            '<strong>' + escapeHtml(selectedWorker) + ' 고정 스케줄</strong>' +
+            '<span>선택한 근무자의 시간 가용성을 바로 수정할 수 있습니다.</span>' +
+          '</div>';
+      }
+      deskFixedScheduleBodyEl.innerHTML = slots.map(function(slot) {
+        return '<tr>' +
+          '<td class="desk-fixed-time-cell">' + escapeHtml(slot.label) + '</td>' +
+          weekdayOrder.map(function(weekday) {
+            var entry = getDeskFixedEntryForCell_(selectedWorker, weekday, slot.key);
+            var selected = entry ? entry.status : "";
+            var reason = entry ? entry.reason : "";
+            return '<td><div class="desk-fixed-slot-stack ' + getDeskFixedStatusClass_(selected) + '">' +
+              '<select class="desk-inline-select" data-desk-fixed-worker="' + escapeHtml(selectedWorker) + '" data-desk-fixed-weekday="' + weekday + '" data-desk-fixed-slot="' + escapeHtml(slot.key) + '">' +
+                statuses.map(function(option) {
+                  return '<option value="' + escapeHtml(option.key) + '"' + (option.key === selected ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
+                }).join("") +
+              '</select>' +
+              '<input class="desk-fixed-reason' + ((selected === "unavailable" || selected === "consult") ? ' is-visible' : '') + '" type="text" placeholder="' + escapeHtml(selected === "consult" ? "협의 메모" : "불가 사유") + '" value="' + escapeHtml(reason) + '" data-desk-fixed-reason-worker="' + escapeHtml(selectedWorker) + '" data-desk-fixed-reason-weekday="' + weekday + '" data-desk-fixed-reason-slot="' + escapeHtml(slot.key) + '">' +
+            '</div></td>';
+          }).join("") +
+        '</tr>';
       }).join("");
+      if (deskFixedWorkerNavEl && !deskFixedWorkerNavEl.dataset.bound) {
+        deskFixedWorkerNavEl.addEventListener("click", function(event) {
+          var btn = event.target && event.target.closest("[data-desk-fixed-worker-tab]");
+          if (!btn) return;
+          syncDeskFixedScheduleEntriesFromDom_();
+          state.desk.fixedSchedule.selectedWorker = btn.getAttribute("data-desk-fixed-worker-tab") || workers[0] || "";
+          renderDeskFixedSchedule_();
+        });
+        deskFixedWorkerNavEl.dataset.bound = "1";
+      }
       Array.prototype.forEach.call(deskFixedScheduleBodyEl.querySelectorAll("[data-desk-fixed-slot]"), function(selectEl) {
         selectEl.addEventListener("change", function() {
           var worker = selectEl.getAttribute("data-desk-fixed-worker") || "";
           var weekday = selectEl.getAttribute("data-desk-fixed-weekday") || "";
           var slotKey = selectEl.getAttribute("data-desk-fixed-slot") || "";
+          var stackEl = selectEl.closest(".desk-fixed-slot-stack");
           var reasonEl = deskFixedScheduleBodyEl.querySelector('[data-desk-fixed-reason-worker="' + worker + '"][data-desk-fixed-reason-weekday="' + weekday + '"][data-desk-fixed-reason-slot="' + slotKey + '"]');
+          if (stackEl) {
+            stackEl.className = 'desk-fixed-slot-stack ' + getDeskFixedStatusClass_(selectEl.value);
+          }
           if (!reasonEl) return;
           var needsReason = selectEl.value === "unavailable" || selectEl.value === "consult";
           reasonEl.classList.toggle("is-visible", needsReason);
@@ -11035,6 +11223,24 @@
       });
     }
 
+    function mergeDeskFixedScheduleEntriesForWorker_(worker, nextEntries) {
+      var safeWorker = String(worker || "").trim();
+      var preserved = (state.desk.fixedScheduleEntries || []).filter(function(item) {
+        return item.worker !== safeWorker;
+      });
+      return preserved.concat((nextEntries || []).filter(function(item) {
+        return item.worker === safeWorker;
+      }));
+    }
+
+    function syncDeskFixedScheduleEntriesFromDom_() {
+      var worker = state.desk.fixedSchedule.selectedWorker || "";
+      if (!worker) return state.desk.fixedScheduleEntries || [];
+      var merged = mergeDeskFixedScheduleEntriesForWorker_(worker, collectDeskFixedScheduleEntriesFromDom_());
+      state.desk.fixedScheduleEntries = merged;
+      return merged;
+    }
+
     function flashDeskButtonFeedback_(buttonEl, text, isError) {
       if (!buttonEl) return;
       var original = buttonEl.getAttribute("data-desk-original-label") || buttonEl.textContent || "";
@@ -11052,7 +11258,7 @@
     }
 
     function saveDeskFixedScheduleFromPanel_() {
-      var entries = collectDeskFixedScheduleEntriesFromDom_();
+      var entries = syncDeskFixedScheduleEntriesFromDom_();
       persistDeskFixedScheduleEntries_(entries);
       flashDeskButtonFeedback_(deskSaveFixedScheduleBtnEl, "저장 완료");
     }
@@ -11127,7 +11333,7 @@
         flashDeskButtonFeedback_(buttonEl, "날짜 선택 필요", true);
         return;
       }
-      persistDeskFixedScheduleEntries_(collectDeskFixedScheduleEntriesFromDom_());
+      persistDeskFixedScheduleEntries_(syncDeskFixedScheduleEntriesFromDom_());
       var dateParts = safeDateKey.split("-");
       var targetDate = new Date(Number(dateParts[0] || 0), Number(dateParts[1] || 1) - 1, Number(dateParts[2] || 1));
       if (isNaN(targetDate.getTime())) {
