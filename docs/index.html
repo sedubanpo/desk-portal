@@ -16757,6 +16757,9 @@
       if (lowered === "qksvhtjch" || raw === "반포센터") {
         return "qksvhtjch";
       }
+      if (raw === "반포서초" || raw === "030606") {
+        return "반포서초";
+      }
       return raw;
     }
 
@@ -16790,7 +16793,7 @@
       entryErrorTextEl.textContent = "";
       entrySubmitBtnEl.disabled = true;
       entrySubmitBtnEl.textContent = "확인 중...";
-      var shouldUseFastDeskEntry = !canUseGoogleScript() && password === "qksvhtjch";
+      var shouldUseFastDeskEntry = !canUseGoogleScript() && (password === "qksvhtjch" || password === "반포서초");
       if (shouldUseFastDeskEntry) {
         enterDeskPortal_(password);
       }
