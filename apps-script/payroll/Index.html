@@ -1259,9 +1259,77 @@
       color: #607082;
       line-height: 1.5;
     }
-    .desk-fixed-table select {
+    .desk-fixed-table .worker-cell {
+      vertical-align: top;
+      min-width: 124px;
+      background: #fbfdfc;
+    }
+    .desk-fixed-time-cell {
       min-width: 120px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #365064;
+      background: #fbfdfc;
+    }
+    .desk-fixed-slot-stack {
+      display: grid;
+      gap: 6px;
+      min-width: 126px;
+    }
+    .desk-fixed-slot-stack .desk-inline-select {
+      min-width: 0;
       width: 100%;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .desk-fixed-reason {
+      width: 100%;
+      border: 1px solid #d3e1d9;
+      border-radius: 12px;
+      background: #fff;
+      color: #173042;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 10px;
+      font-family: inherit;
+      display: none;
+    }
+    .desk-fixed-reason.is-visible {
+      display: block;
+    }
+    .desk-fixed-status-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 900;
+      border: 1px solid transparent;
+    }
+    .desk-fixed-status-badge.regular {
+      background: #dff6e7;
+      color: #136c43;
+      border-color: #bfe8cf;
+    }
+    .desk-fixed-status-badge.available {
+      background: #e5f0ff;
+      color: #2157c8;
+      border-color: #cadeff;
+    }
+    .desk-fixed-status-badge.partial {
+      background: #fff4dc;
+      color: #b96b00;
+      border-color: #ffd89b;
+    }
+    .desk-fixed-status-badge.consult {
+      background: #f1ebff;
+      color: #6a38d8;
+      border-color: #d7c7ff;
+    }
+    .desk-fixed-status-badge.unavailable {
+      background: #ffe7e7;
+      color: #c24141;
+      border-color: #ffc7c7;
     }
     .desk-fixed-apply-row {
       display: flex;
@@ -7292,12 +7360,13 @@
                         <button class="desk-primary-btn" id="deskApplyFixedSchedulePanelBtn" type="button">선택 날짜에 불러오기</button>
                       </div>
                     </div>
-                    <div class="desk-fixed-schedule-hint">각 요일 칸에서 `오전/오후/마감/청소/상주/근무 불가` 같은 기본 패턴을 지정하면, 선택 날짜에 없는 일정만 자동으로 채웁니다.</div>
+                    <div class="desk-fixed-schedule-hint">근무자별 시간 슬롯마다 `정규 근무 / 근무 가능 / 부분 가능 / 협의 필요 / 근무 불가` 상태를 기록합니다. `근무 불가`나 `협의 필요`는 사유를 함께 적어두면 선택 날짜에 반영할 때 참고할 수 있습니다.</div>
                     <div class="desk-table-wrap">
                       <table class="desk-schedule-table desk-fixed-table">
                         <thead>
                           <tr>
-                            <th>근무자</th>
+                            <th>이름</th>
+                            <th>시간대</th>
                             <th>월</th>
                             <th>화</th>
                             <th>수</th>
@@ -9888,39 +9957,47 @@
 
     function getDeskFixedPresetCatalog_() {
       return [
-        { key: "", label: "없음" },
-        { key: "morning", label: "오전 데스크" },
-        { key: "afternoon", label: "오후 데스크" },
-        { key: "close", label: "마감 담당" },
-        { key: "support", label: "운영 지원" },
-        { key: "lead", label: "주임" },
-        { key: "clean", label: "청소 담당" },
-        { key: "night", label: "야간 지원" },
-        { key: "resident", label: "반포관 부원장" },
+        { key: "", label: "선택 안 함" },
+        { key: "regular", label: "정규 근무" },
+        { key: "available", label: "근무 가능" },
+        { key: "partial", label: "부분 가능" },
+        { key: "consult", label: "협의 필요" },
         { key: "unavailable", label: "근무 불가" }
       ];
     }
 
-    function getDeskFixedPresetDefinition_(presetKey) {
-      var map = {
-        morning: { role: "오전 데스크", start: "09:30", end: "18:00", resident: false, unavailable: false },
-        afternoon: { role: "오후 데스크", start: "14:00", end: "22:30", resident: false, unavailable: false },
-        close: { role: "마감 담당", start: "16:00", end: "22:30", resident: false, unavailable: false },
-        support: { role: "운영 지원", start: "13:00", end: "19:00", resident: false, unavailable: false },
-        lead: { role: "주임", start: "11:00", end: "18:00", resident: false, unavailable: false },
-        clean: { role: "청소 담당", start: "13:00", end: "18:00", resident: false, unavailable: false },
-        night: { role: "야간 지원", start: "17:30", end: "22:30", resident: false, unavailable: false },
-        resident: { role: "반포관 부원장", start: "", end: "", resident: true, unavailable: false },
-        unavailable: { role: "근무 불가", start: "", end: "", resident: false, unavailable: true }
-      };
-      return map[presetKey] || null;
+    function getDeskFixedStatusLabel_(key) {
+      var found = getDeskFixedPresetCatalog_().find(function(item) { return item.key === key; });
+      return found ? found.label : "선택 안 함";
+    }
+
+    function getDeskFixedTimeSlotCatalog_() {
+      var slots = [
+        { key: "open_0930", label: "09:30 오픈", start: "09:30", end: "10:00", special: "open" }
+      ];
+      for (var hour = 10; hour <= 21; hour += 1) {
+        slots.push({
+          key: "slot_" + pad2_(hour) + "00",
+          label: pad2_(hour) + ":00-" + pad2_(hour + 1) + ":00",
+          start: pad2_(hour) + ":00",
+          end: pad2_(hour + 1) + ":00"
+        });
+      }
+      slots.push({ key: "close_2230", label: "22:30 마감", start: "22:00", end: "22:30", special: "close" });
+      return slots;
+    }
+
+    function getDeskFixedSchedulableStatuses_() {
+      return ["regular", "available", "partial", "consult"];
     }
 
     function normalizeDeskFixedScheduleEntry_(item) {
       return {
         worker: String((item && item.worker) || "").trim(),
         weekday: Math.max(0, Math.min(6, Number(item && item.weekday))),
-        preset: String((item && item.preset) || "").trim()
+        slotKey: String((item && item.slotKey) || "").trim(),
+        status: String((item && item.status) || "").trim(),
+        reason: String((item && item.reason) || "").trim()
       };
     }
 
@@ -9938,35 +10015,79 @@
       return names.sort(function(a, b) { return a.localeCompare(b, "ko"); });
     }
 
+    function buildDeskFixedEntriesFromRange_(worker, weekday, startTime, endTime, status, reason) {
+      var slots = getDeskFixedTimeSlotCatalog_();
+      var startMinutes = parseDeskTimeToMinutes_(startTime);
+      var endMinutes = parseDeskTimeToMinutes_(endTime);
+      if (startMinutes < 0 || endMinutes < 0 || endMinutes <= startMinutes) return [];
+      return slots.filter(function(slot) {
+        var slotStart = parseDeskTimeToMinutes_(slot.start);
+        var slotEnd = parseDeskTimeToMinutes_(slot.end);
+        return slotStart >= startMinutes && slotEnd <= endMinutes;
+      }).map(function(slot) {
+        return normalizeDeskFixedScheduleEntry_({
+          worker: worker,
+          weekday: weekday,
+          slotKey: slot.key,
+          status: status || "regular",
+          reason: reason || ""
+        });
+      });
+    }
+
+    function buildDeskFixedEntriesFromPreset_(worker, weekday, presetKey) {
+      var map = {
+        morning: { start: "09:30", end: "18:00", status: "regular" },
+        afternoon: { start: "14:00", end: "22:30", status: "regular" },
+        close: { start: "16:00", end: "22:30", status: "regular" },
+        support: { start: "13:00", end: "19:00", status: "available" },
+        lead: { start: "11:00", end: "18:00", status: "regular" },
+        clean: { start: "13:00", end: "18:00", status: "regular" },
+        night: { start: "17:00", end: "22:30", status: "available" },
+        resident: { start: "09:30", end: "22:30", status: "regular", reason: "상주 근무" },
+        unavailable: { start: "", end: "", status: "unavailable", reason: "기존 preset 마이그레이션" }
+      };
+      var preset = map[presetKey];
+      if (!preset) return [];
+      if (preset.status === "unavailable") {
+        return getDeskFixedTimeSlotCatalog_().map(function(slot) {
+          return normalizeDeskFixedScheduleEntry_({
+            worker: worker,
+            weekday: weekday,
+            slotKey: slot.key,
+            status: "unavailable",
+            reason: preset.reason || ""
+          });
+        });
+      }
+      return buildDeskFixedEntriesFromRange_(worker, weekday, preset.start, preset.end, preset.status, preset.reason || "");
+    }
+
     function buildDefaultDeskFixedScheduleEntries_() {
-      return [
-        { worker: "홍성우", weekday: 0, preset: "resident" },
-        { worker: "홍성우", weekday: 1, preset: "resident" },
-        { worker: "홍성우", weekday: 2, preset: "resident" },
-        { worker: "홍성우", weekday: 3, preset: "resident" },
-        { worker: "홍성우", weekday: 4, preset: "resident" },
-        { worker: "홍성우", weekday: 5, preset: "resident" },
-        { worker: "홍성우", weekday: 6, preset: "resident" },
-        { worker: "안종성", weekday: 2, preset: "afternoon" },
-        { worker: "안종성", weekday: 4, preset: "afternoon" },
-        { worker: "안종성", weekday: 5, preset: "afternoon" },
-        { worker: "안종성", weekday: 6, preset: "afternoon" },
-        { worker: "인유빈", weekday: 0, preset: "morning" },
-        { worker: "인유빈", weekday: 1, preset: "morning" },
-        { worker: "인유빈", weekday: 3, preset: "morning" },
-        { worker: "인유빈", weekday: 5, preset: "morning" },
-        { worker: "이미현", weekday: 1, preset: "close" },
-        { worker: "이미현", weekday: 4, preset: "close" },
-        { worker: "이미현", weekday: 5, preset: "close" },
-        { worker: "이미현", weekday: 6, preset: "close" },
-        { worker: "유지연", weekday: 0, preset: "support" },
-        { worker: "유지연", weekday: 2, preset: "support" },
-        { worker: "유지연", weekday: 6, preset: "support" },
-        { worker: "김유민", weekday: 2, preset: "morning" },
-        { worker: "김유민", weekday: 4, preset: "morning" },
-        { worker: "김유민", weekday: 5, preset: "night" },
-        { worker: "이창연", weekday: 3, preset: "clean" }
-      ].map(normalizeDeskFixedScheduleEntry_);
+      return [].concat(
+        [0, 1, 2, 3, 4, 5, 6].reduce(function(acc, weekday) {
+          return acc.concat(buildDeskFixedEntriesFromPreset_("홍성우", weekday, "resident"));
+        }, []),
+        buildDeskFixedEntriesFromPreset_("안종성", 2, "afternoon"),
+        buildDeskFixedEntriesFromPreset_("안종성", 4, "afternoon"),
+        buildDeskFixedEntriesFromPreset_("안종성", 5, "afternoon"),
+        buildDeskFixedEntriesFromPreset_("안종성", 6, "afternoon"),
+        buildDeskFixedEntriesFromPreset_("인유빈", 0, "morning"),
+        buildDeskFixedEntriesFromPreset_("인유빈", 1, "morning"),
+        buildDeskFixedEntriesFromPreset_("인유빈", 3, "morning"),
+        buildDeskFixedEntriesFromPreset_("인유빈", 5, "morning"),
+        buildDeskFixedEntriesFromPreset_("이미현", 1, "close"),
+        buildDeskFixedEntriesFromPreset_("이미현", 4, "close"),
+        buildDeskFixedEntriesFromPreset_("이미현", 5, "close"),
+        buildDeskFixedEntriesFromPreset_("이미현", 6, "close"),
+        buildDeskFixedEntriesFromPreset_("유지연", 0, "support"),
+        buildDeskFixedEntriesFromPreset_("유지연", 2, "support"),
+        buildDeskFixedEntriesFromPreset_("유지연", 6, "support"),
+        buildDeskFixedEntriesFromPreset_("김유민", 2, "morning"),
+        buildDeskFixedEntriesFromPreset_("김유민", 4, "morning"),
+        buildDeskFixedEntriesFromPreset_("김유민", 5, "night"),
+        buildDeskFixedEntriesFromPreset_("이창연", 3, "clean")
+      ).map(normalizeDeskFixedScheduleEntry_);
     }
 
     function loadDeskFixedScheduleEntries_() {
@@ -9977,7 +10098,21 @@
       if (saved) {
         try {
           var parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed.map(normalizeDeskFixedScheduleEntry_);
+          if (Array.isArray(parsed)) {
+            if (parsed.some(function(item) { return item && item.preset && !item.slotKey; })) {
+              var migrated = [];
+              parsed.forEach(function(item) {
+                if (item && item.preset && !item.slotKey) {
+                  Array.prototype.push.apply(migrated, buildDeskFixedEntriesFromPreset_(item.worker, item.weekday, item.preset));
+                } else {
+                  migrated.push(normalizeDeskFixedScheduleEntry_(item));
+                }
+              });
+              persistDeskFixedScheduleEntries_(migrated);
+              return migrated;
+            }
+            return parsed.map(normalizeDeskFixedScheduleEntry_);
+          }
         } catch (err2) {}
       }
       var seed = buildDefaultDeskFixedScheduleEntries_();
@@ -9992,11 +10127,11 @@
       } catch (err) {}
     }
 
-    function getDeskFixedPresetForCell_(worker, weekday) {
+    function getDeskFixedEntryForCell_(worker, weekday, slotKey) {
       var found = (state.desk.fixedScheduleEntries || []).find(function(item) {
-        return item.worker === worker && Number(item.weekday) === Number(weekday);
+        return item.worker === worker && Number(item.weekday) === Number(weekday) && String(item.slotKey || "") === String(slotKey || "");
       });
-      return found ? found.preset : "";
+      return found || null;
     }
 
     function createDefaultDeskScheduleSeed_() {
@@ -10838,37 +10973,65 @@
     function renderDeskFixedSchedule_() {
       if (!deskFixedScheduleBodyEl) return;
       var workers = getDeskKnownWorkers_();
-      var presets = getDeskFixedPresetCatalog_();
+      var statuses = getDeskFixedPresetCatalog_();
       var weekdayOrder = getDeskFixedWeekdayOrder_();
+      var slots = getDeskFixedTimeSlotCatalog_();
       if (!workers.length) {
-        deskFixedScheduleBodyEl.innerHTML = '<tr><td colspan="8">등록된 근무자가 없어 고정 스케줄을 표시할 수 없습니다.</td></tr>';
+        deskFixedScheduleBodyEl.innerHTML = '<tr><td colspan="9">등록된 근무자가 없어 고정 스케줄을 표시할 수 없습니다.</td></tr>';
         return;
       }
       deskFixedScheduleBodyEl.innerHTML = workers.map(function(worker) {
-        return '<tr>' +
-          '<td>' + getDeskWorkerBadgeHtml_(worker) + '</td>' +
-          weekdayOrder.map(function(weekday) {
-            var selected = getDeskFixedPresetForCell_(worker, weekday);
-            return '<td><select class="desk-inline-select" data-desk-fixed-worker="' + escapeHtml(worker) + '" data-desk-fixed-weekday="' + weekday + '">' +
-              presets.map(function(option) {
-                return '<option value="' + escapeHtml(option.key) + '"' + (option.key === selected ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
-              }).join("") +
-            '</select></td>';
-          }).join("") +
-        '</tr>';
+        return slots.map(function(slot, slotIndex) {
+          return '<tr>' +
+            (slotIndex === 0 ? ('<td class="worker-cell" rowspan="' + slots.length + '">' + getDeskWorkerBadgeHtml_(worker) + '</td>') : '') +
+            '<td class="desk-fixed-time-cell">' + escapeHtml(slot.label) + '</td>' +
+            weekdayOrder.map(function(weekday) {
+              var entry = getDeskFixedEntryForCell_(worker, weekday, slot.key);
+              var selected = entry ? entry.status : "";
+              var reason = entry ? entry.reason : "";
+              return '<td><div class="desk-fixed-slot-stack">' +
+                '<select class="desk-inline-select" data-desk-fixed-worker="' + escapeHtml(worker) + '" data-desk-fixed-weekday="' + weekday + '" data-desk-fixed-slot="' + escapeHtml(slot.key) + '">' +
+                  statuses.map(function(option) {
+                    return '<option value="' + escapeHtml(option.key) + '"' + (option.key === selected ? ' selected' : '') + '>' + escapeHtml(option.label) + '</option>';
+                  }).join("") +
+                '</select>' +
+                '<input class="desk-fixed-reason' + ((selected === "unavailable" || selected === "consult") ? ' is-visible' : '') + '" type="text" placeholder="' + escapeHtml(selected === "consult" ? "협의 메모" : "불가 사유") + '" value="' + escapeHtml(reason) + '" data-desk-fixed-reason-worker="' + escapeHtml(worker) + '" data-desk-fixed-reason-weekday="' + weekday + '" data-desk-fixed-reason-slot="' + escapeHtml(slot.key) + '">' +
+              '</div></td>';
+            }).join("") +
+          '</tr>';
+        }).join("");
       }).join("");
+      Array.prototype.forEach.call(deskFixedScheduleBodyEl.querySelectorAll("[data-desk-fixed-slot]"), function(selectEl) {
+        selectEl.addEventListener("change", function() {
+          var worker = selectEl.getAttribute("data-desk-fixed-worker") || "";
+          var weekday = selectEl.getAttribute("data-desk-fixed-weekday") || "";
+          var slotKey = selectEl.getAttribute("data-desk-fixed-slot") || "";
+          var reasonEl = deskFixedScheduleBodyEl.querySelector('[data-desk-fixed-reason-worker="' + worker + '"][data-desk-fixed-reason-weekday="' + weekday + '"][data-desk-fixed-reason-slot="' + slotKey + '"]');
+          if (!reasonEl) return;
+          var needsReason = selectEl.value === "unavailable" || selectEl.value === "consult";
+          reasonEl.classList.toggle("is-visible", needsReason);
+          reasonEl.placeholder = selectEl.value === "consult" ? "협의 메모" : "불가 사유";
+          if (!needsReason) reasonEl.value = "";
+        });
+      });
     }
 
     function collectDeskFixedScheduleEntriesFromDom_() {
       if (!deskFixedScheduleBodyEl) return [];
-      return Array.prototype.map.call(deskFixedScheduleBodyEl.querySelectorAll("[data-desk-fixed-worker][data-desk-fixed-weekday]"), function(selectEl) {
+      return Array.prototype.map.call(deskFixedScheduleBodyEl.querySelectorAll("[data-desk-fixed-slot]"), function(selectEl) {
+        var worker = selectEl.getAttribute("data-desk-fixed-worker") || "";
+        var weekday = Number(selectEl.getAttribute("data-desk-fixed-weekday") || 0);
+        var slotKey = selectEl.getAttribute("data-desk-fixed-slot") || "";
+        var reasonEl = deskFixedScheduleBodyEl.querySelector('[data-desk-fixed-reason-worker="' + worker + '"][data-desk-fixed-reason-weekday="' + weekday + '"][data-desk-fixed-reason-slot="' + slotKey + '"]');
         return normalizeDeskFixedScheduleEntry_({
-          worker: selectEl.getAttribute("data-desk-fixed-worker") || "",
-          weekday: Number(selectEl.getAttribute("data-desk-fixed-weekday") || 0),
-          preset: selectEl.value || ""
+          worker: worker,
+          weekday: weekday,
+          slotKey: slotKey,
+          status: selectEl.value || "",
+          reason: reasonEl ? reasonEl.value || "" : ""
         });
       }).filter(function(item) {
-        return !!item.worker;
+        return !!item.worker && !!item.slotKey && !!item.status;
       });
     }
 
@@ -10894,19 +11057,67 @@
       flashDeskButtonFeedback_(deskSaveFixedScheduleBtnEl, "저장 완료");
     }
 
-    function buildDeskShiftFromFixedPreset_(worker, dateKey, presetKey) {
-      var preset = getDeskFixedPresetDefinition_(presetKey);
-      if (!preset) return null;
-      return normalizeDeskShift_({
-        id: buildDeskShiftId_("desk", "fixed", Date.now(), Math.random().toString(36).slice(2), worker),
-        date: dateKey,
-        worker: worker,
-        role: preset.role,
-        start: preset.start,
-        end: preset.end,
-        resident: !!preset.resident,
-        unavailable: !!preset.unavailable,
-        note: "고정 스케줄 불러오기"
+    function buildDeskFixedShiftRole_(worker, cluster, statuses) {
+      var startMinutes = parseDeskTimeToMinutes_(cluster.start);
+      var endMinutes = parseDeskTimeToMinutes_(cluster.end);
+      if (worker === "홍성우" && startMinutes <= 570 && endMinutes >= 1350) return "반포관 부원장";
+      if (endMinutes >= 1350 && startMinutes >= 960) return "마감 담당";
+      if (startMinutes <= 600 && endMinutes <= 1080) return "오전 데스크";
+      if (startMinutes >= 840 && endMinutes >= 1320) return "오후 데스크";
+      if (statuses.indexOf("regular") !== -1) return "정규 근무";
+      if (statuses.indexOf("partial") !== -1) return "부분 가능";
+      if (statuses.indexOf("consult") !== -1) return "협의 필요";
+      return "근무 가능";
+    }
+
+    function buildDeskShiftsFromFixedEntries_(worker, dateKey, entries) {
+      var slotMap = {};
+      getDeskFixedTimeSlotCatalog_().forEach(function(slot) {
+        slotMap[slot.key] = slot;
+      });
+      var allowed = getDeskFixedSchedulableStatuses_();
+      var selected = (entries || []).filter(function(item) {
+        return allowed.indexOf(String(item.status || "")) !== -1 && slotMap[item.slotKey];
+      }).sort(function(a, b) {
+        return parseDeskTimeToMinutes_(slotMap[a.slotKey].start) - parseDeskTimeToMinutes_(slotMap[b.slotKey].start);
+      });
+      if (!selected.length) return [];
+      var clusters = [];
+      selected.forEach(function(item) {
+        var slot = slotMap[item.slotKey];
+        var startMinutes = parseDeskTimeToMinutes_(slot.start);
+        var endMinutes = parseDeskTimeToMinutes_(slot.end);
+        var last = clusters[clusters.length - 1];
+        if (!last || last.endMinutes !== startMinutes) {
+          clusters.push({
+            worker: worker,
+            date: dateKey,
+            start: slot.start,
+            end: slot.end,
+            startMinutes: startMinutes,
+            endMinutes: endMinutes,
+            statuses: [item.status],
+            notes: item.reason ? [item.reason] : []
+          });
+          return;
+        }
+        last.end = slot.end;
+        last.endMinutes = endMinutes;
+        if (last.statuses.indexOf(item.status) === -1) last.statuses.push(item.status);
+        if (item.reason) last.notes.push(item.reason);
+      });
+      return clusters.map(function(cluster, index) {
+        return normalizeDeskShift_({
+          id: buildDeskShiftId_("desk", "fixed", Date.now(), Math.random().toString(36).slice(2), worker, index),
+          date: dateKey,
+          worker: worker,
+          role: buildDeskFixedShiftRole_(worker, cluster, cluster.statuses),
+          start: cluster.start,
+          end: cluster.end,
+          resident: worker === "홍성우" && cluster.start === "09:30" && cluster.end === "22:30",
+          unavailable: false,
+          note: ["고정 스케줄 불러오기"].concat(cluster.notes).join(" · ")
+        });
       });
     }
 
@@ -10932,13 +11143,17 @@
         var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
           return item.date === safeDateKey;
         });
-        var pendingEntries = (state.desk.fixedScheduleEntries || []).filter(function(item) {
-          return Number(item.weekday) === weekday && !!item.preset;
-        }).map(function(item) {
-          return buildDeskShiftFromFixedPreset_(item.worker, safeDateKey, item.preset);
-        }).filter(function(item) {
-          return !!item;
-        }).filter(function(item) {
+        var groupedByWorker = {};
+        (state.desk.fixedScheduleEntries || []).forEach(function(item) {
+          if (Number(item.weekday) !== weekday) return;
+          if (!item.worker) return;
+          if (!groupedByWorker[item.worker]) groupedByWorker[item.worker] = [];
+          groupedByWorker[item.worker].push(item);
+        });
+        var pendingEntries = Object.keys(groupedByWorker).reduce(function(acc, worker) {
+          Array.prototype.push.apply(acc, buildDeskShiftsFromFixedEntries_(worker, safeDateKey, groupedByWorker[worker]));
+          return acc;
+        }, []).filter(function(item) {
           return !existingTargetItems.some(function(existing) {
             return String(existing.worker || "") === String(item.worker || "") &&
               String(existing.role || "") === String(item.role || "") &&
