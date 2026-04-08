@@ -1349,38 +1349,41 @@
       background: #fbfdfc;
     }
     .desk-fixed-time-cell {
-      min-width: 120px;
-      font-size: 12px;
+      min-width: 104px;
+      font-size: 11px;
       font-weight: 800;
       color: #365064;
       background: #fbfdfc;
+      padding: 10px 12px;
     }
     .desk-fixed-slot-stack {
       display: grid;
-      gap: 6px;
-      min-width: 126px;
-      border-radius: 16px;
-      padding: 8px;
+      gap: 4px;
+      min-width: 112px;
+      border-radius: 14px;
+      padding: 5px;
       border: 1px solid transparent;
       transition: box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease;
     }
     .desk-fixed-slot-stack .desk-inline-select {
       min-width: 0;
       width: 100%;
-      padding: 8px 10px;
-      font-size: 12px;
+      padding: 6px 28px 6px 9px;
+      min-height: 34px;
+      font-size: 11px;
+      line-height: 1.2;
       background: transparent;
       border-color: rgba(15,23,42,0.08);
     }
     .desk-fixed-reason {
       width: 100%;
       border: 1px solid #d3e1d9;
-      border-radius: 12px;
+      border-radius: 10px;
       background: #fff;
       color: #173042;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
-      padding: 7px 10px;
+      padding: 6px 8px;
       font-family: inherit;
       display: none;
     }
@@ -14647,6 +14650,7 @@
         deskDeleteFixedWorkerBtnEl.addEventListener("click", function() {
           var worker = state.desk.fixedSchedule.selectedWorker || "";
           if (!worker) return;
+          if (!confirm('"' + worker + '" 근무자를 고정 스케줄 목록에서 삭제할까요?')) return;
           deleteDeskFixedWorker_(worker);
           flashDeskButtonFeedback_(deskDeleteFixedWorkerBtnEl, "근무자 삭제");
         });
