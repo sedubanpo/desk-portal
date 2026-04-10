@@ -8638,7 +8638,7 @@
           memos: [],
           loadedDates: {},
           loadingDates: {},
-          realtimeEnabled: true,
+          realtimeEnabled: false,
           realtimeSources: {},
           realtimeSnapshots: {}
         },
@@ -12533,7 +12533,7 @@
       if (deskDailySyncSubEl) {
         deskDailySyncSubEl.textContent =
           status === "error" ? "실시간 연결 또는 저장에 문제가 있어 자동 재시도 중입니다." :
-          status === "stopped" ? "실시간 동기화가 꺼져 있어 현재 화면 기준으로만 표시 중입니다." :
+          status === "stopped" ? "서버 저장과 새로고침 기준으로 공유 중입니다. 표시가 다르면 새로고침으로 다시 맞춰 주세요." :
           "Firebase 서버와 같은 날짜 업무일지를 공유 중입니다.";
       }
       renderGlobalSyncWidget_();
