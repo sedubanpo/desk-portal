@@ -12552,6 +12552,16 @@
       state.desk.daily.realtimeSnapshots[safeDateKey] = cloneDeskDailyJournalSnapshot_(snapshot);
     }
 
+    function stopDeskDailyJournalRealtime_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      var source = state.desk.daily.realtimeSources[safeDateKey];
+      if (!source) return;
+      try {
+        source.close();
+      } catch (err) {}
+      delete state.desk.daily.realtimeSources[safeDateKey];
+    }
+
     function getDeskPendingShiftAlerts_(tasks, dateKey) {
       var pending = (tasks || []).filter(function(item) {
         return item && !item.completed && item.worker;
@@ -13176,6 +13186,7 @@
             throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
           }
           mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
+          refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
           startDeskDailyJournalRealtime_(key);
           setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
@@ -13382,6 +13393,8 @@
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       setDeskButtonBusy_(button, true, "불러오는 중...");
+      stopDeskDailyJournalRealtime_(dateKey);
+      stopDeskDailyJournalRealtime_(DESK_ROUTINE_TEMPLATE_KEY);
       state.desk.daily.loadedDates[dateKey] = false;
       state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY] = false;
       delete state.desk.daily.loadingDates[dateKey];
