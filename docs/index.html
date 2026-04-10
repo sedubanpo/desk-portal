@@ -12362,10 +12362,14 @@
     }
 
     function normalizeDeskDailyTask_(item) {
+      var worker = String((item && item.worker) || "").trim();
+      try {
+        worker = worker.normalize("NFC");
+      } catch (err) {}
       return {
         id: String((item && item.id) || buildDeskShiftId_("journalTask", Date.now(), Math.random().toString(36).slice(2))),
         dateKey: String((item && item.dateKey) || "").trim(),
-        worker: String((item && item.worker) || "").trim(),
+        worker: worker,
         category: String((item && item.category) || "일반").trim(),
         title: String((item && item.title) || "").trim(),
         note: String((item && item.note) || "").trim(),
@@ -12380,17 +12384,36 @@
       var dateKey = String((item && item.dateKey) || "").trim();
       var createdAt = String((item && item.createdAt) || "");
       var updatedAt = String((item && item.updatedAt) || "");
+      var worker = String((item && item.worker) || "").trim();
+      try {
+        worker = worker.normalize("NFC");
+      } catch (err) {}
       if (!createdAt && dateKey) {
         createdAt = resolveDeskMemoCreatedAt_(dateKey, String((item && item.text) || ""), updatedAt || buildDeskCurrentDateTimeForKey_(dateKey));
       }
       return {
         id: String((item && item.id) || buildDeskShiftId_("journalMemo", Date.now(), Math.random().toString(36).slice(2))),
         dateKey: dateKey,
-        worker: String((item && item.worker) || "").trim(),
+        worker: worker,
         text: String((item && item.text) || "").trim(),
         createdAt: createdAt,
         updatedAt: updatedAt
       };
+    }
+
+    function normalizeDeskWorkerKey_(name) {
+      var text = String(name || "").trim();
+      try {
+        text = text.normalize("NFC");
+      } catch (err) {}
+      return text.replace(/\s+/g, "").toLowerCase();
+    }
+
+    function isSameDeskWorkerName_(a, b) {
+      var left = normalizeDeskWorkerKey_(a);
+      var right = normalizeDeskWorkerKey_(b);
+      if (!left || !right) return false;
+      return left === right;
     }
 
     function compareDeskDailyTask_(a, b) {
@@ -12544,7 +12567,7 @@
         var worker = String(item.worker || "").trim();
         if (!worker || seen[worker]) return;
         var workerShifts = state.desk.scheduleItems.filter(function(shift) {
-          return shift.date === dateKey && shift.worker === worker && !shift.unavailable;
+          return shift.date === dateKey && isSameDeskWorkerName_(shift.worker, worker) && !shift.unavailable;
         }).sort(compareDeskShift_);
         if (!workerShifts.length) return;
         var startedShift = workerShifts.find(function(shift) {
@@ -12555,7 +12578,7 @@
         seen[worker] = true;
         alerts.push({
           worker: worker,
-          count: pending.filter(function(row) { return row.worker === worker; }).length,
+          count: pending.filter(function(row) { return isSameDeskWorkerName_(row.worker, worker); }).length,
           shiftLabel: getDeskDisplayRole_(startedShift),
           shiftTime: formatDeskShiftTime_(startedShift)
         });
@@ -13157,9 +13180,15 @@
 
     function collectDeskDailyWorkers_(dateKey) {
       var names = [];
+      var seen = {};
       function pushName(name) {
         var text = String(name || "").trim();
-        if (!text || names.indexOf(text) !== -1) return;
+        var key = normalizeDeskWorkerKey_(text);
+        if (!text || !key || seen[key]) return;
+        try {
+          text = text.normalize("NFC");
+        } catch (err) {}
+        seen[key] = true;
         names.push(text);
       }
       state.desk.scheduleItems.forEach(function(item) {
@@ -13174,7 +13203,13 @@
 
     function ensureDeskDailyWorkerSelection_(workers) {
       var options = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
-      if (options.indexOf(state.desk.daily.selectedWorker) === -1) {
+      var selected = state.desk.daily.selectedWorker;
+      var matched = options.find(function(option) {
+        return option === selected || (option !== "전체" && option !== DESK_ROUTINE_TAB_KEY && isSameDeskWorkerName_(option, selected));
+      });
+      if (matched) {
+        state.desk.daily.selectedWorker = matched;
+      } else if (options.indexOf(selected) === -1) {
         state.desk.daily.selectedWorker = options[0] || "";
       }
     }
@@ -13185,13 +13220,23 @@
         state.desk.daily.reportWorker = "";
         return;
       }
-      if (state.desk.daily.selectedWorker && state.desk.daily.selectedWorker !== "전체" && names.indexOf(state.desk.daily.selectedWorker) !== -1) {
-        state.desk.daily.reportWorker = state.desk.daily.selectedWorker;
+      if (state.desk.daily.selectedWorker && state.desk.daily.selectedWorker !== "전체") {
+        var selectedMatch = names.find(function(name) {
+          return isSameDeskWorkerName_(name, state.desk.daily.selectedWorker);
+        });
+        if (selectedMatch) {
+          state.desk.daily.reportWorker = selectedMatch;
+          return;
+        }
+      }
+      var reportMatch = names.find(function(name) {
+        return isSameDeskWorkerName_(name, state.desk.daily.reportWorker);
+      });
+      if (reportMatch) {
+        state.desk.daily.reportWorker = reportMatch;
         return;
       }
-      if (names.indexOf(state.desk.daily.reportWorker) === -1) {
-        state.desk.daily.reportWorker = names[0] || "";
-      }
+      state.desk.daily.reportWorker = names[0] || "";
     }
 
     function renderDeskDailyJournalSummary_(tasks, memos, workers) {
@@ -13456,7 +13501,7 @@
         return;
       }
       var visible = (tasks || []).filter(function(item) {
-        return selectedWorker === "전체" || item.worker === selectedWorker || isDeskImportantTask_(item);
+        return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
       });
       if (!visible.length) {
         deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">이 탭에 표시할 업무가 없습니다. 상단에서 업무를 추가해 주세요.</div>';
@@ -13547,7 +13592,7 @@
       if (!deskJournalMemoListEl) return;
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
       var visible = (memos || []).filter(function(item) {
-        return selectedWorker === "전체" || item.worker === selectedWorker;
+        return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker, selectedWorker);
       });
       var pageSize = state.desk.daily.memoPageSize || 5;
       var total = visible.length;
@@ -13644,11 +13689,11 @@
         return;
       }
       var workerTasks = (tasks || []).filter(function(item) {
-        return item.worker === worker || isDeskImportantTask_(item);
+        return isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
       });
-      var workerMemos = (memos || []).filter(function(item) { return item.worker === worker; });
+      var workerMemos = (memos || []).filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); });
       var workerShifts = state.desk.scheduleItems
-        .filter(function(item) { return item.date === dateKey && item.worker === worker && !item.unavailable; })
+        .filter(function(item) { return item.date === dateKey && isSameDeskWorkerName_(item.worker, worker) && !item.unavailable; })
         .sort(compareDeskShift_);
       var completed = workerTasks.filter(function(item) { return item.completed; });
       var pending = workerTasks.filter(function(item) { return !item.completed; });
@@ -13749,14 +13794,14 @@
       var worker = state.desk.daily.reportWorker || "";
       if (!worker) return "";
       var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) {
-        return item.worker === worker || isDeskImportantTask_(item);
+        return isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
       });
       var memos = getDeskDailyJournalMemos_(dateKey)
-        .filter(function(item) { return item.worker === worker; })
+        .filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); })
         .slice()
         .sort(function(a, b) { return String(a.createdAt || "").localeCompare(String(b.createdAt || "")); });
       var shifts = state.desk.scheduleItems
-        .filter(function(item) { return item.date === dateKey && item.worker === worker && !item.unavailable; })
+        .filter(function(item) { return item.date === dateKey && isSameDeskWorkerName_(item.worker, worker) && !item.unavailable; })
         .sort(compareDeskShift_);
       var completed = tasks.filter(function(item) { return item.completed; }).length;
       var pending = tasks.length - completed;
@@ -13992,7 +14037,7 @@
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       if (!template || !worker || !dateKey) return;
       var existing = getDeskDailyJournalTasks_(dateKey).find(function(item) {
-        return item.worker === worker && item.title === template.title && item.category === template.category;
+        return isSameDeskWorkerName_(item.worker, worker) && item.title === template.title && item.category === template.category;
       });
       if (existing) {
         alert("이미 같은 업무가 " + worker + "에게 배정되어 있습니다.");
@@ -14024,7 +14069,7 @@
       }
       workers.forEach(function(worker) {
         var existing = getDeskDailyJournalTasks_(dateKey).find(function(item) {
-          return item.worker === worker.worker && item.title === template.title && item.category === template.category;
+          return isSameDeskWorkerName_(item.worker, worker.worker) && item.title === template.title && item.category === template.category;
         });
         if (existing) return;
         upsertDeskDailyTask_({
