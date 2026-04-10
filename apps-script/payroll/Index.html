@@ -12602,8 +12602,11 @@
     function deskRealtimeFetchJson_(method, url, payload) {
       var options = {
         method: method,
+        cache: "no-store",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, max-age=0",
+          "Pragma": "no-cache"
         }
       };
       if (payload !== undefined && payload !== null) {
@@ -12616,6 +12619,16 @@
         return res.text();
       }).then(function(text) {
         return text ? JSON.parse(text) : null;
+      });
+    }
+
+    function syncDeskDailyJournalAfterMutation_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return Promise.resolve();
+      state.desk.daily.loadedDates[safeDateKey] = false;
+      delete state.desk.daily.loadingDates[safeDateKey];
+      return ensureDeskDailyJournalLoaded_(safeDateKey, true).catch(function() {
+        return null;
       });
     }
 
@@ -14107,18 +14120,18 @@
       Promise.resolve(request)
         .then(function() {
           setDeskDailySyncStatus_("idle");
+          return syncDeskDailyJournalAfterMutation_(item.dateKey);
         })
         .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("업무 저장 오류: " + (err.message || String(err)));
           return runServer("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
           .then(function() {
             setDeskDailySyncStatus_("idle");
-            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+            return syncDeskDailyJournalAfterMutation_(item.dateKey);
           })
-          .catch(function() {
+          .catch(function(fallbackErr) {
             setDeskDailySyncStatus_("error");
-            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+            alert("업무 저장 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
+            return syncDeskDailyJournalAfterMutation_(item.dateKey);
           });
         });
     }
@@ -14135,18 +14148,18 @@
       Promise.resolve(request)
         .then(function() {
           setDeskDailySyncStatus_("idle");
+          return syncDeskDailyJournalAfterMutation_(dateKey);
         })
         .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("업무 삭제 오류: " + (err.message || String(err)));
           return runServer("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
           .then(function() {
             setDeskDailySyncStatus_("idle");
-            ensureDeskDailyJournalLoaded_(dateKey, true);
+            return syncDeskDailyJournalAfterMutation_(dateKey);
           })
-          .catch(function() {
+          .catch(function(fallbackErr) {
             setDeskDailySyncStatus_("error");
-            ensureDeskDailyJournalLoaded_(dateKey, true);
+            alert("업무 삭제 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
+            return syncDeskDailyJournalAfterMutation_(dateKey);
           });
         });
     }
@@ -14194,19 +14207,19 @@
       Promise.resolve(request)
         .then(function() {
           setDeskDailySyncStatus_("idle");
+          return syncDeskDailyJournalAfterMutation_(item.dateKey);
         })
         .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          showDeskMemoSaveStatus_("저장 실패", "error");
-          alert("기록 저장 오류: " + (err.message || String(err)));
           return runServer("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
           .then(function() {
             setDeskDailySyncStatus_("idle");
-            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+            return syncDeskDailyJournalAfterMutation_(item.dateKey);
           })
-          .catch(function() {
+          .catch(function(fallbackErr) {
             setDeskDailySyncStatus_("error");
-            ensureDeskDailyJournalLoaded_(item.dateKey, true);
+            showDeskMemoSaveStatus_("저장 실패", "error");
+            alert("기록 저장 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
+            return syncDeskDailyJournalAfterMutation_(item.dateKey);
           });
         });
     }
@@ -14273,18 +14286,18 @@
       Promise.resolve(request)
         .then(function() {
           setDeskDailySyncStatus_("idle");
+          return syncDeskDailyJournalAfterMutation_(dateKey);
         })
         .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("기록 삭제 오류: " + (err.message || String(err)));
           return runServer("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
           .then(function() {
             setDeskDailySyncStatus_("idle");
-            ensureDeskDailyJournalLoaded_(dateKey, true);
+            return syncDeskDailyJournalAfterMutation_(dateKey);
           })
-          .catch(function() {
+          .catch(function(fallbackErr) {
             setDeskDailySyncStatus_("error");
-            ensureDeskDailyJournalLoaded_(dateKey, true);
+            alert("기록 삭제 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
+            return syncDeskDailyJournalAfterMutation_(dateKey);
           });
         });
     }
