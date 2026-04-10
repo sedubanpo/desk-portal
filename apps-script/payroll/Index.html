@@ -13164,8 +13164,10 @@
       var key = String(dateKey || "").trim();
       if (!key) return Promise.resolve();
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
-      startDeskDailyJournalRealtime_(key);
-      if (!force && state.desk.daily.loadedDates[key]) return Promise.resolve();
+      if (!force && state.desk.daily.loadedDates[key]) {
+        startDeskDailyJournalRealtime_(key);
+        return Promise.resolve();
+      }
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
       var request;
       request = runServer("getDeskDailyJournalData", { dateKey: key })
@@ -13175,6 +13177,7 @@
           }
           mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
           state.desk.daily.loadedDates[key] = true;
+          startDeskDailyJournalRealtime_(key);
           setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
           if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
         })
@@ -13187,6 +13190,7 @@
           return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(key), null)
             .then(function(snapshot) {
               applyDeskDailyJournalSnapshot_(key, snapshot || {});
+              startDeskDailyJournalRealtime_(key);
               setDeskDailySyncStatus_("idle");
             })
             .catch(function(realtimeErr) {
