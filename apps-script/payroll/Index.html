@@ -12622,12 +12622,57 @@
       });
     }
 
+    function runDeskDailyJournalServerMutation_(fnName, payload) {
+      return Promise.resolve(runServer(fnName, payload)).then(function(res) {
+        if (!res || res.success === false) {
+          throw new Error(res && res.message ? res.message : "일일 업무일지 서버 저장에 실패했습니다.");
+        }
+        return res;
+      });
+    }
+
+    function saveDeskDailyTaskRemote_(item) {
+      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
+        .catch(function(err) {
+          if (!state.desk.daily.realtimeEnabled) throw err;
+          return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "tasks/" + item.id), item);
+        });
+    }
+
+    function deleteDeskDailyTaskRemote_(dateKey, taskId) {
+      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
+        .catch(function(err) {
+          if (!state.desk.daily.realtimeEnabled) throw err;
+          return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "tasks/" + taskId), null);
+        });
+    }
+
+    function saveDeskDailyMemoRemote_(item) {
+      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
+        .catch(function(err) {
+          if (!state.desk.daily.realtimeEnabled) throw err;
+          return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "memos/" + item.id), item);
+        });
+    }
+
+    function deleteDeskDailyMemoRemote_(dateKey, memoId) {
+      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
+        .catch(function(err) {
+          if (!state.desk.daily.realtimeEnabled) throw err;
+          return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "memos/" + memoId), null);
+        });
+    }
+
     function syncDeskDailyJournalAfterMutation_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey) return Promise.resolve();
       state.desk.daily.loadedDates[safeDateKey] = false;
       delete state.desk.daily.loadingDates[safeDateKey];
-      return ensureDeskDailyJournalLoaded_(safeDateKey, true).catch(function() {
+      return new Promise(function(resolve) {
+        setTimeout(resolve, 250);
+      }).then(function() {
+        return ensureDeskDailyJournalLoaded_(safeDateKey, true);
+      }).catch(function() {
         return null;
       });
     }
@@ -14114,25 +14159,15 @@
       state.desk.daily.dateKey = item.dateKey === DESK_ROUTINE_TEMPLATE_KEY ? preserveViewDateKey : item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
-      var request = state.desk.daily.realtimeEnabled
-        ? deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "tasks/" + item.id), item)
-        : runServer("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item });
-      Promise.resolve(request)
+      Promise.resolve(saveDeskDailyTaskRemote_(item))
         .then(function() {
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(item.dateKey);
         })
         .catch(function(err) {
-          return runServer("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
-          .then(function() {
-            setDeskDailySyncStatus_("idle");
-            return syncDeskDailyJournalAfterMutation_(item.dateKey);
-          })
-          .catch(function(fallbackErr) {
-            setDeskDailySyncStatus_("error");
-            alert("업무 저장 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
-            return syncDeskDailyJournalAfterMutation_(item.dateKey);
-          });
+          setDeskDailySyncStatus_("error");
+          alert("업무 저장 오류: " + ((err && err.message) || String(err)));
+          return syncDeskDailyJournalAfterMutation_(item.dateKey);
         });
     }
 
@@ -14142,25 +14177,15 @@
       mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
       refreshDeskDailyJournalSnapshotForDate_(dateKey);
       renderDeskDailyJournal_();
-      var request = state.desk.daily.realtimeEnabled
-        ? deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "tasks/" + taskId), null)
-        : runServer("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId });
-      Promise.resolve(request)
+      Promise.resolve(deleteDeskDailyTaskRemote_(dateKey, taskId))
         .then(function() {
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(dateKey);
         })
         .catch(function(err) {
-          return runServer("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
-          .then(function() {
-            setDeskDailySyncStatus_("idle");
-            return syncDeskDailyJournalAfterMutation_(dateKey);
-          })
-          .catch(function(fallbackErr) {
-            setDeskDailySyncStatus_("error");
-            alert("업무 삭제 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
-            return syncDeskDailyJournalAfterMutation_(dateKey);
-          });
+          setDeskDailySyncStatus_("error");
+          alert("업무 삭제 오류: " + ((err && err.message) || String(err)));
+          return syncDeskDailyJournalAfterMutation_(dateKey);
         });
     }
 
@@ -14201,26 +14226,16 @@
       state.desk.daily.dateKey = item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
-      var request = state.desk.daily.realtimeEnabled
-        ? deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "memos/" + item.id), item)
-        : runServer("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item });
-      Promise.resolve(request)
+      Promise.resolve(saveDeskDailyMemoRemote_(item))
         .then(function() {
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(item.dateKey);
         })
         .catch(function(err) {
-          return runServer("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
-          .then(function() {
-            setDeskDailySyncStatus_("idle");
-            return syncDeskDailyJournalAfterMutation_(item.dateKey);
-          })
-          .catch(function(fallbackErr) {
-            setDeskDailySyncStatus_("error");
-            showDeskMemoSaveStatus_("저장 실패", "error");
-            alert("기록 저장 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
-            return syncDeskDailyJournalAfterMutation_(item.dateKey);
-          });
+          setDeskDailySyncStatus_("error");
+          showDeskMemoSaveStatus_("저장 실패", "error");
+          alert("기록 저장 오류: " + ((err && err.message) || String(err)));
+          return syncDeskDailyJournalAfterMutation_(item.dateKey);
         });
     }
 
@@ -14280,25 +14295,15 @@
       }
       state.desk.daily.memoPage = 1;
       renderDeskDailyJournal_();
-      var request = state.desk.daily.realtimeEnabled
-        ? deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "memos/" + memoId), null)
-        : runServer("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId });
-      Promise.resolve(request)
+      Promise.resolve(deleteDeskDailyMemoRemote_(dateKey, memoId))
         .then(function() {
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(dateKey);
         })
         .catch(function(err) {
-          return runServer("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
-          .then(function() {
-            setDeskDailySyncStatus_("idle");
-            return syncDeskDailyJournalAfterMutation_(dateKey);
-          })
-          .catch(function(fallbackErr) {
-            setDeskDailySyncStatus_("error");
-            alert("기록 삭제 오류: " + ((fallbackErr && fallbackErr.message) || (err && err.message) || String(fallbackErr || err)));
-            return syncDeskDailyJournalAfterMutation_(dateKey);
-          });
+          setDeskDailySyncStatus_("error");
+          alert("기록 삭제 오류: " + ((err && err.message) || String(err)));
+          return syncDeskDailyJournalAfterMutation_(dateKey);
         });
     }
 
