@@ -13168,37 +13168,32 @@
       if (!force && state.desk.daily.loadedDates[key]) return Promise.resolve();
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
       var request;
-      if (state.desk.daily.realtimeEnabled) {
-        request = deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(key), null)
-          .then(function(snapshot) {
-            applyDeskDailyJournalSnapshot_(key, snapshot || {});
-            setDeskDailySyncStatus_("idle");
-          })
-          .catch(function(err) {
-            console.warn("desk daily realtime load fallback", err);
-            setDeskDailySyncStatus_("error");
-            return runServer("getDeskDailyJournalData", { dateKey: key })
-              .then(function(res) {
-                if (!res || !res.success) {
-                  throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
-                }
-                mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
-                state.desk.daily.loadedDates[key] = true;
-                if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
-              });
-          });
-      } else {
-        setDeskDailySyncStatus_("stopped");
-        request = runServer("getDeskDailyJournalData", { dateKey: key })
+      request = runServer("getDeskDailyJournalData", { dateKey: key })
         .then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
           }
           mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
           state.desk.daily.loadedDates[key] = true;
+          setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
           if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
+        })
+        .catch(function(err) {
+          if (!state.desk.daily.realtimeEnabled) {
+            setDeskDailySyncStatus_("stopped");
+            throw err;
+          }
+          console.warn("desk daily server load fallback", err);
+          return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(key), null)
+            .then(function(snapshot) {
+              applyDeskDailyJournalSnapshot_(key, snapshot || {});
+              setDeskDailySyncStatus_("idle");
+            })
+            .catch(function(realtimeErr) {
+              setDeskDailySyncStatus_("error");
+              throw realtimeErr;
+            });
         });
-      }
       request = request
         .catch(function(err) {
           alert("일일 업무일지 로드 오류: " + (err.message || String(err)));
