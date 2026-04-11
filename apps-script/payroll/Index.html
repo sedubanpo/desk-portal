@@ -567,6 +567,42 @@
       font-weight: 700;
       color: #4d6476;
     }
+    .desk-supply-kpi-sub.list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-weight: 800;
+    }
+    .desk-supply-low-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 74px auto;
+      gap: 8px;
+      align-items: center;
+      min-width: 0;
+    }
+    .desk-supply-low-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desk-supply-low-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #e6eeea;
+      overflow: hidden;
+      border: 1px solid #d3dfd8;
+    }
+    .desk-supply-low-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+    }
+    .desk-supply-low-meta {
+      font-size: 11px;
+      color: #8a5a24;
+      white-space: nowrap;
+    }
     .desk-supply-tabs {
       display: inline-flex;
       gap: 10px;
@@ -620,6 +656,27 @@
       gap: 12px;
       align-items: end;
       margin: 8px 0 14px;
+    }
+    .desk-supply-branch-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: -2px 0 10px;
+    }
+    .desk-supply-branch-tab {
+      border: 1px solid #c8d8cf;
+      border-radius: 999px;
+      background: #fff;
+      color: #365062;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    .desk-supply-branch-tab.active {
+      background: #17794f;
+      color: #fff;
+      border-color: #17794f;
     }
     .desk-supply-filter-row.single {
       grid-template-columns: minmax(0, 1fr);
@@ -7616,6 +7673,7 @@
                         <input id="deskSupplyTagSearch" class="desk-inline-input" type="search" placeholder="예: #청소, #데스크">
                       </div>
                     </div>
+                    <div class="desk-supply-branch-tabs" id="deskSupplyBranchTabs"></div>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table">
                         <thead>
@@ -8632,6 +8690,7 @@
           editingPurchaseCustomId: "",
           searchText: "",
           tagSearch: "",
+          branchFilter: "전체",
           assetSearchText: "",
           consumables: [],
           assets: [],
@@ -8804,6 +8863,7 @@
     var deskConsumableCancelBtnEl = document.getElementById("deskConsumableCancelBtn");
     var deskSupplySearchEl = document.getElementById("deskSupplySearch");
     var deskSupplyTagSearchEl = document.getElementById("deskSupplyTagSearch");
+    var deskSupplyBranchTabsEl = document.getElementById("deskSupplyBranchTabs");
     var deskSupplyInventoryBodyEl = document.getElementById("deskSupplyInventoryBody");
     var deskSupplyQuickWrapEl = document.getElementById("deskSupplyQuickWrap");
     var deskSupplyCopyImageBtnEl = document.getElementById("deskSupplyCopyImageBtn");
@@ -9164,6 +9224,7 @@
       state.desk.supplies.editingConsumableId = "";
       state.desk.supplies.editingAssetId = "";
       state.desk.supplies.editingPurchaseCustomId = "";
+      state.desk.supplies.branchFilter = "전체";
       state.desk.supplies.searchText = "";
       state.desk.supplies.tagSearch = "";
       state.desk.supplies.assetSearchText = "";
@@ -9702,6 +9763,45 @@
       state.desk.supplies.purchaseSelections = map;
     }
 
+    function getDeskSupplyBranchOptions_() {
+      var seen = { "전체": true };
+      var branches = ["전체"];
+      (state.desk.supplies.consumables || []).forEach(function(item) {
+        var branch = String(item && item.branch || "").trim() || "본관";
+        if (seen[branch]) return;
+        seen[branch] = true;
+        branches.push(branch);
+      });
+      return branches;
+    }
+
+    function getDeskVisibleSupplyItems_() {
+      var items = state.desk.supplies.consumables || [];
+      var branchFilter = String(state.desk.supplies.branchFilter || "전체").trim() || "전체";
+      var keyword = normalizeDeskSearchValue_(state.desk.supplies.searchText);
+      var tagKeyword = normalizeDeskSearchValue_(state.desk.supplies.tagSearch);
+      return items.filter(function(item) {
+        var branch = String(item && item.branch || "본관").trim() || "본관";
+        var haystack = normalizeDeskSearchValue_([item.itemName, item.productName, branch, item.unit].join(" "));
+        var tagHaystack = normalizeDeskSearchValue_(formatDeskTagList_(item.tags));
+        if (branchFilter !== "전체" && branch !== branchFilter) return false;
+        if (keyword && haystack.indexOf(keyword) === -1 && tagHaystack.indexOf(keyword) === -1) return false;
+        if (tagKeyword && tagHaystack.indexOf(tagKeyword) === -1) return false;
+        return true;
+      });
+    }
+
+    function renderDeskSupplyBranchTabs_() {
+      if (!deskSupplyBranchTabsEl) return;
+      var options = getDeskSupplyBranchOptions_();
+      if (options.indexOf(state.desk.supplies.branchFilter) === -1) {
+        state.desk.supplies.branchFilter = "전체";
+      }
+      deskSupplyBranchTabsEl.innerHTML = options.map(function(branch) {
+        return '<button class="desk-supply-branch-tab' + (branch === state.desk.supplies.branchFilter ? ' active' : '') + '" type="button" data-desk-supply-branch="' + escapeHtml(branch) + '">' + escapeHtml(branch) + '</button>';
+      }).join("");
+    }
+
     function renderDeskSupplies_() {
       Array.prototype.forEach.call(deskSupplyTabEls, function(btn) {
         btn.classList.toggle("active", (btn.getAttribute("data-desk-supplies-tab") || "") === state.desk.suppliesTab);
@@ -9721,6 +9821,7 @@
         return;
       }
       ensureDeskSupplySelections_();
+      renderDeskSupplyBranchTabs_();
       renderDeskSupplySummary_();
       renderDeskSupplyInventory_();
       renderDeskAssets_();
@@ -9728,14 +9829,37 @@
     }
 
     function renderDeskSupplySummary_() {
-      var items = state.desk.supplies.consumables || [];
+      var items = getDeskVisibleSupplyItems_();
       var lowItems = items.filter(function(item) { return item.qty <= item.safetyQty; });
       var totalQty = items.reduce(function(acc, item) { return acc + Number(item.qty || 0); }, 0);
       var selectedCount = items.filter(function(item) {
         return !!(state.desk.supplies.purchaseSelections[item.id] && state.desk.supplies.purchaseSelections[item.id].selected);
       }).length + (state.desk.supplies.purchaseCustomRequests || []).length;
       if (deskSupplyLowCountEl) deskSupplyLowCountEl.textContent = lowItems.length + "개";
-      if (deskSupplyLowSubEl) deskSupplyLowSubEl.textContent = lowItems.length ? lowItems.map(function(item) { return item.itemName; }).slice(0, 3).join(", ") : "안전 재고 이하 품목 없음";
+      if (deskSupplyLowSubEl) {
+        var topLowItems = lowItems.slice().sort(function(a, b) {
+          var leftGap = Math.max(0, Number(a.safetyQty || 0) - Number(a.qty || 0));
+          var rightGap = Math.max(0, Number(b.safetyQty || 0) - Number(b.qty || 0));
+          if (rightGap !== leftGap) return rightGap - leftGap;
+          return String(a.itemName || "").localeCompare(String(b.itemName || ""), "ko");
+        }).slice(0, 5);
+        if (!topLowItems.length) {
+          deskSupplyLowSubEl.className = "desk-supply-kpi-sub";
+          deskSupplyLowSubEl.textContent = "안전 재고 이하 품목 없음";
+        } else {
+          deskSupplyLowSubEl.className = "desk-supply-kpi-sub list";
+          deskSupplyLowSubEl.innerHTML = topLowItems.map(function(item) {
+            var shortage = Math.max(0, Number(item.safetyQty || 0) - Number(item.qty || 0));
+            var base = Math.max(1, Number(item.safetyQty || 0));
+            var fill = Math.min(100, Math.round((shortage / base) * 100));
+            return '<div class="desk-supply-low-item">' +
+              '<span class="desk-supply-low-name">' + escapeHtml(item.itemName || "-") + '</span>' +
+              '<span class="desk-supply-low-track"><span class="desk-supply-low-fill" style="width:' + fill + '%;"></span></span>' +
+              '<span class="desk-supply-low-meta">-' + shortage + escapeHtml(item.unit || "개") + '</span>' +
+            '</div>';
+          }).join("");
+        }
+      }
       if (deskSupplyTotalQtyEl) deskSupplyTotalQtyEl.textContent = totalQty + "개";
       if (deskSupplyTotalSubEl) deskSupplyTotalSubEl.textContent = items.length + "개 등록 품목 기준";
       if (deskSupplyPurchaseCountEl) deskSupplyPurchaseCountEl.textContent = selectedCount + "개";
@@ -9744,16 +9868,7 @@
 
     function renderDeskSupplyInventory_() {
       if (!deskSupplyInventoryBodyEl) return;
-      var items = state.desk.supplies.consumables || [];
-      var keyword = normalizeDeskSearchValue_(state.desk.supplies.searchText);
-      var tagKeyword = normalizeDeskSearchValue_(state.desk.supplies.tagSearch);
-      var visibleItems = items.filter(function(item) {
-        var haystack = normalizeDeskSearchValue_([item.itemName, item.productName, item.branch, item.unit].join(" "));
-        var tagHaystack = normalizeDeskSearchValue_(formatDeskTagList_(item.tags));
-        if (keyword && haystack.indexOf(keyword) === -1 && tagHaystack.indexOf(keyword) === -1) return false;
-        if (tagKeyword && tagHaystack.indexOf(tagKeyword) === -1) return false;
-        return true;
-      });
+      var visibleItems = getDeskVisibleSupplyItems_();
       if (!visibleItems.length) {
         deskSupplyInventoryBodyEl.innerHTML = '<tr><td colspan="5">검색 조건에 맞는 소모품이 없습니다.</td></tr>';
       } else {
@@ -14450,12 +14565,24 @@
         deskSupplySearchEl.addEventListener("input", function() {
           state.desk.supplies.searchText = String(deskSupplySearchEl.value || "");
           renderDeskSupplyInventory_();
+          renderDeskSupplySummary_();
         });
       }
 
       if (deskSupplyTagSearchEl) {
         deskSupplyTagSearchEl.addEventListener("input", function() {
           state.desk.supplies.tagSearch = String(deskSupplyTagSearchEl.value || "");
+          renderDeskSupplyInventory_();
+          renderDeskSupplySummary_();
+        });
+      }
+      if (deskSupplyBranchTabsEl) {
+        deskSupplyBranchTabsEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-supply-branch]");
+          if (!btn) return;
+          state.desk.supplies.branchFilter = btn.getAttribute("data-desk-supply-branch") || "전체";
+          renderDeskSupplyBranchTabs_();
+          renderDeskSupplySummary_();
           renderDeskSupplyInventory_();
         });
       }
