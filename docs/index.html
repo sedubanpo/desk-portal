@@ -651,6 +651,9 @@
       flex-direction: column;
       gap: 16px;
     }
+    .desk-supply-stack.compact {
+      gap: 14px;
+    }
     .desk-supply-editor-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
@@ -716,6 +719,31 @@
     .desk-supply-card-head-copy {
       flex: 0 0 auto;
       align-self: center;
+    }
+    .desk-inline-form-block {
+      border: 1px solid #dbe8e0;
+      border-radius: 16px;
+      background: #fcfefc;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-inline-form-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .desk-inline-form-head strong {
+      font-size: 16px;
+      font-weight: 900;
+      color: #173042;
+    }
+    .desk-inline-form-head p {
+      margin: 4px 0 0;
+      font-size: 13px;
     }
     .desk-supply-card p {
       margin: 0;
@@ -1605,6 +1633,10 @@
         flex-wrap: wrap;
         justify-content: flex-start;
       }
+      .desk-asset-form.compact,
+      .desk-supply-filter-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
       .desk-supply-table {
         min-width: 560px;
       }
@@ -1633,6 +1665,10 @@
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
+    }
+    .desk-asset-form.compact {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px 12px;
     }
     .desk-asset-form .field.full {
       grid-column: 1 / -1;
@@ -7643,8 +7679,7 @@
 
               <div class="desk-supply-toolbar">
                 <section class="desk-supply-tabs">
-                  <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">물품 현황</button>
-                  <button class="desk-supply-tab" type="button" data-desk-supplies-tab="editor">소모품 입력/수정</button>
+                  <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory">소모품 현황</button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets">물품 관리</button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase">구매 요청</button>
                 </section>
@@ -7658,7 +7693,7 @@
               </div>
 
               <section class="desk-supply-panel" data-desk-supplies-panel="inventory">
-                <div class="desk-supply-stack">
+                <div class="desk-supply-stack compact">
                   <article class="desk-supply-card" id="deskSupplyInventoryCapture">
                     <div class="desk-supply-card-head">
                       <div>
@@ -7681,6 +7716,57 @@
                       </div>
                     </div>
                     <div class="desk-supply-branch-tabs" id="deskSupplyBranchTabs"></div>
+                    <div class="desk-inline-form-block">
+                      <div class="desk-inline-form-head">
+                        <div>
+                          <strong>소모품 입력 / 수정</strong>
+                          <p>검색 아래에서 바로 등록하거나 기존 품목을 같은 자리에서 수정할 수 있습니다.</p>
+                        </div>
+                        <button class="desk-ghost-btn hidden" id="deskConsumableCancelBtn" type="button">수정 취소</button>
+                      </div>
+                      <form class="desk-asset-form compact" id="deskConsumableForm">
+                        <div class="field">
+                          <label for="deskConsumableItemName">품목명</label>
+                          <input id="deskConsumableItemName" class="desk-inline-input" type="text" placeholder="예: 물티슈">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableProduct">제품명</label>
+                          <input id="deskConsumableProduct" class="desk-inline-input" type="text" placeholder="예: 데스크용 물티슈 100매">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableBranch">관</label>
+                          <select id="deskConsumableBranch" class="desk-inline-select">
+                            <option value="본관">본관</option>
+                            <option value="2관">2관</option>
+                            <option value="3관">3관</option>
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableUnit">단위</label>
+                          <input id="deskConsumableUnit" class="desk-inline-input" type="text" placeholder="예: 개">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableQty">현재 수량</label>
+                          <input id="deskConsumableQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableMaxQty">최대 수량</label>
+                          <input id="deskConsumableMaxQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableSafetyQty">안전 재고</label>
+                          <input id="deskConsumableSafetyQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
+                        </div>
+                        <div class="field">
+                          <label for="deskConsumableTags">태그(#)</label>
+                          <input id="deskConsumableTags" class="desk-inline-input" type="text" placeholder="예: #데스크 #청소 #화장실">
+                        </div>
+                        <div class="field full desk-form-actions-row">
+                          <button class="desk-primary-btn" id="deskConsumableSubmitBtn" type="submit">소모품 등록</button>
+                        </div>
+                      </form>
+                    </div>
+                    <div class="desk-supply-quick" id="deskSupplyQuickWrap"></div>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table">
                         <thead>
@@ -7701,67 +7787,20 @@
               </section>
 
               <section class="desk-supply-panel hidden" data-desk-supplies-panel="editor">
-                <div class="desk-supply-editor-grid">
+                <div class="desk-supply-stack">
                   <article class="desk-supply-card">
                     <h3>소모품 입력 / 수정</h3>
-                    <p>새 소모품을 등록하거나 기존 품목을 수정할 수 있습니다.</p>
-                    <form class="desk-asset-form" id="deskConsumableForm">
-                      <div class="field">
-                        <label for="deskConsumableItemName">품목명</label>
-                        <input id="deskConsumableItemName" class="desk-inline-input" type="text" placeholder="예: 물티슈">
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableProduct">제품명</label>
-                        <input id="deskConsumableProduct" class="desk-inline-input" type="text" placeholder="예: 데스크용 물티슈 100매">
-                      </div>
-                      <div class="field full">
-                        <label for="deskConsumableTags">태그(#)</label>
-                        <input id="deskConsumableTags" class="desk-inline-input" type="text" placeholder="예: #데스크 #청소 #화장실">
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableBranch">관</label>
-                        <select id="deskConsumableBranch" class="desk-inline-select">
-                          <option value="본관">본관</option>
-                          <option value="2관">2관</option>
-                          <option value="3관">3관</option>
-                        </select>
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableUnit">단위</label>
-                        <input id="deskConsumableUnit" class="desk-inline-input" type="text" placeholder="예: 개">
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableQty">현재 수량</label>
-                        <input id="deskConsumableQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableMaxQty">최대 수량</label>
-                        <input id="deskConsumableMaxQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
-                      </div>
-                      <div class="field">
-                        <label for="deskConsumableSafetyQty">안전 재고</label>
-                        <input id="deskConsumableSafetyQty" class="desk-inline-input" type="number" min="0" step="1" value="0">
-                      </div>
-                      <div class="field full desk-form-actions-row">
-                        <button class="desk-ghost-btn hidden" id="deskConsumableCancelBtn" type="button">수정 취소</button>
-                        <button class="desk-primary-btn" id="deskConsumableSubmitBtn" type="submit">소모품 등록</button>
-                      </div>
-                    </form>
+                    <p>이제 소모품 현황 탭의 검색 아래에서 바로 입력하고 수정할 수 있도록 옮겨두었습니다.</p>
                   </article>
-                  <aside class="desk-supply-card">
-                    <h3>빠른 재고 메모</h3>
-                    <p>재고 우선순위와 여유 재고를 바로 확인하면서 입력 작업을 이어갈 수 있습니다.</p>
-                    <div class="desk-supply-quick" id="deskSupplyQuickWrap"></div>
-                  </aside>
                 </div>
               </section>
 
               <section class="desk-supply-panel hidden" data-desk-supplies-panel="assets">
-                <div class="desk-supply-grid">
+                <div class="desk-supply-stack compact">
                   <article class="desk-supply-card">
                     <h3>공용 물품 등록</h3>
                     <p>데스크탑, 태블릿, 프린터 같은 공용 장비를 등록하고 위치와 상태를 함께 남길 수 있습니다.</p>
-                    <form class="desk-asset-form" id="deskAssetForm">
+                    <form class="desk-asset-form compact" id="deskAssetForm">
                       <div class="field">
                         <label for="deskAssetType">물품 분류</label>
                         <input id="deskAssetType" class="desk-inline-input" type="text" placeholder="예: 데스크탑, 태블릿, 프린터">
