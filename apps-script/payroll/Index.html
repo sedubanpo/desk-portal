@@ -13511,6 +13511,12 @@
         state.desk.daily.carryoverDateKey = safeDateKey;
         state.desk.daily.carryoverWorkerKey = workerKey;
       }).catch(function() {
+        return fetchDeskDailyCarryoverTasksByDateScan_(safeDateKey, workerNames).then(function(items) {
+          state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
+          state.desk.daily.carryoverDateKey = safeDateKey;
+          state.desk.daily.carryoverWorkerKey = workerKey;
+        });
+      }).catch(function() {
         return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
         var items = [];
         var source = root && typeof root === "object" ? root : {};
@@ -13537,6 +13543,41 @@
         if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
           renderDeskDailyJournal_();
         }
+      });
+    }
+
+    function fetchDeskDailyCarryoverTasksByDateScan_(dateKey, workerNames) {
+      var safeDateKey = String(dateKey || "").trim();
+      var parts = safeDateKey.split("-");
+      var baseDate = new Date(Number(parts[0] || 0), Number(parts[1] || 1) - 1, Number(parts[2] || 1));
+      var dates = [];
+      for (var offset = 1; offset <= 60; offset += 1) {
+        var cursor = new Date(baseDate);
+        cursor.setDate(baseDate.getDate() - offset);
+        dates.push(getDeskDateKey_(cursor));
+      }
+      return Promise.all(dates.map(function(dayKey) {
+        return runServer("getDeskDailyJournalData", { dateKey: dayKey }).then(function(res) {
+          if (!res || res.success === false) return [];
+          return (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
+            return !task.completed && workerNames.some(function(name) {
+              return isSameDeskWorkerName_(task.worker, name);
+            });
+          });
+        }).catch(function() {
+          return [];
+        });
+      })).then(function(groups) {
+        var seen = {};
+        var items = [];
+        groups.forEach(function(group) {
+          group.forEach(function(task) {
+            if (!task.id || seen[task.id]) return;
+            seen[task.id] = true;
+            items.push(task);
+          });
+        });
+        return items;
       });
     }
 
