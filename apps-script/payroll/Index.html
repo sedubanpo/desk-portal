@@ -8764,6 +8764,7 @@
           memos: [],
           carryoverTasks: [],
           carryoverDateKey: "",
+          carryoverWorkerKey: "",
           carryoverLoadingDateKey: "",
           loadedDates: {},
           loadingDates: {},
@@ -13489,14 +13490,16 @@
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return;
       var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
+      var workerKey = workerNames.map(normalizeDeskWorkerKey_).sort().join("|");
       if (!workerNames.length) {
         state.desk.daily.carryoverTasks = [];
-        state.desk.daily.carryoverDateKey = safeDateKey;
+        state.desk.daily.carryoverDateKey = "";
+        state.desk.daily.carryoverWorkerKey = "";
         return;
       }
-      if (state.desk.daily.carryoverDateKey === safeDateKey) return;
-      if (state.desk.daily.carryoverLoadingDateKey === safeDateKey) return;
-      state.desk.daily.carryoverLoadingDateKey = safeDateKey;
+      if (state.desk.daily.carryoverDateKey === safeDateKey && state.desk.daily.carryoverWorkerKey === workerKey) return;
+      if (state.desk.daily.carryoverLoadingDateKey === safeDateKey + "::" + workerKey) return;
+      state.desk.daily.carryoverLoadingDateKey = safeDateKey + "::" + workerKey;
       runServer("getDeskDailyJournalPendingTasks", {
         beforeDateKey: safeDateKey,
         workers: workerNames
@@ -13506,6 +13509,7 @@
         }
         state.desk.daily.carryoverTasks = (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_);
         state.desk.daily.carryoverDateKey = safeDateKey;
+        state.desk.daily.carryoverWorkerKey = workerKey;
       }).catch(function() {
         return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
         var items = [];
@@ -13522,10 +13526,12 @@
         });
         state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
         state.desk.daily.carryoverDateKey = safeDateKey;
+        state.desk.daily.carryoverWorkerKey = workerKey;
         });
       }).catch(function() {
         state.desk.daily.carryoverTasks = [];
         state.desk.daily.carryoverDateKey = safeDateKey;
+        state.desk.daily.carryoverWorkerKey = workerKey;
       }).finally(function() {
         state.desk.daily.carryoverLoadingDateKey = "";
         if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
