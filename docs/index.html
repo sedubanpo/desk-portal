@@ -7875,53 +7875,56 @@
 
               <section class="desk-supply-panel hidden" data-desk-supplies-panel="purchase">
                 <div class="desk-purchase-grid">
-                  <article class="desk-supply-card">
-                    <h3>구매 요청 품목 선택</h3>
-                    <p>[소모품 현황] 기준 현재 재고와 안전 재고를 가져와서, 대표님께 요청할 품목을 선택할 수 있습니다.</p>
-                    <div class="desk-purchase-list" id="deskPurchaseItemList"></div>
-                    <div class="desk-purchase-divider"></div>
-                    <h3>신규 구매 요청 등록</h3>
-                    <p>기존 재고에 없는 품목도 바로 요청 목록에 추가할 수 있습니다. 판매처, 링크, 요청일을 함께 저장해 두면 진행상황을 추적하기 좋습니다.</p>
-                    <form class="desk-asset-form" id="deskPurchaseCustomForm">
-                      <div class="field">
-                        <label for="deskPurchaseCustomItemName">신규 품목명</label>
-                        <input id="deskPurchaseCustomItemName" class="desk-inline-input" type="text" placeholder="예: A4 라벨지">
-                      </div>
-                      <div class="field">
-                        <label for="deskPurchaseCustomProductName">제품명</label>
-                        <input id="deskPurchaseCustomProductName" class="desk-inline-input" type="text" placeholder="예: 프린터 전용 라벨지 100매">
-                      </div>
-                      <div class="field">
-                        <label for="deskPurchaseCustomVendor">판매처</label>
-                        <input id="deskPurchaseCustomVendor" class="desk-inline-input" type="text" placeholder="예: 쿠팡, 네이버 스마트스토어">
-                      </div>
-                      <div class="field">
-                        <label for="deskPurchaseCustomLink">링크</label>
-                        <input id="deskPurchaseCustomLink" class="desk-inline-input" type="url" placeholder="https://">
-                      </div>
-                      <div class="field">
-                        <label for="deskPurchaseCustomRequestDate">요청 날짜</label>
-                        <input id="deskPurchaseCustomRequestDate" class="desk-inline-input" type="date">
-                      </div>
-                      <div class="field">
-                        <label for="deskPurchaseCustomQty">요청 수량</label>
-                        <input id="deskPurchaseCustomQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
-                      </div>
-                      <div class="field full">
-                        <label for="deskPurchaseCustomTags">태그(#)</label>
-                        <input id="deskPurchaseCustomTags" class="desk-inline-input" type="text" placeholder="예: #신규 #구매검토 #라벨지">
-                      </div>
-                      <div class="field full">
-                        <label for="deskPurchaseCustomNote">요청 메모</label>
-                        <input id="deskPurchaseCustomNote" class="desk-inline-input" type="text" placeholder="예: 기존 제품 대체용, 급하지 않음">
-                      </div>
-                      <div class="field full desk-form-actions-row">
-                        <button class="desk-ghost-btn hidden" id="deskPurchaseCustomCancelBtn" type="button">수정 취소</button>
-                        <button class="desk-primary-btn" id="deskPurchaseCustomSubmitBtn" type="submit">신규 요청 추가</button>
-                      </div>
-                    </form>
-                    <div class="desk-purchase-custom-list" id="deskPurchaseCustomList"></div>
-                  </article>
+                  <div class="desk-supply-stack compact">
+                    <article class="desk-supply-card">
+                      <h3>기존 물품 요청</h3>
+                      <p>[소모품 현황] 기준 보충이 필요한 품목을 우선 표시합니다. 필요한 항목만 선택해 요청 문안에 넣을 수 있습니다.</p>
+                      <div class="desk-purchase-list" id="deskPurchaseItemList"></div>
+                    </article>
+                    <article class="desk-supply-card">
+                      <h3>신규 물품 요청</h3>
+                      <p>기존 재고에 없는 품목은 아래 양식으로 요청 목록에 추가합니다. 판매처, 링크, 요청일을 함께 저장해 진행상황을 추적할 수 있습니다.</p>
+                      <form class="desk-asset-form" id="deskPurchaseCustomForm">
+                        <div class="field">
+                          <label for="deskPurchaseCustomItemName">신규 품목명</label>
+                          <input id="deskPurchaseCustomItemName" class="desk-inline-input" type="text" placeholder="예: A4 라벨지">
+                        </div>
+                        <div class="field">
+                          <label for="deskPurchaseCustomProductName">제품명</label>
+                          <input id="deskPurchaseCustomProductName" class="desk-inline-input" type="text" placeholder="예: 프린터 전용 라벨지 100매">
+                        </div>
+                        <div class="field">
+                          <label for="deskPurchaseCustomVendor">판매처</label>
+                          <input id="deskPurchaseCustomVendor" class="desk-inline-input" type="text" placeholder="예: 쿠팡, 네이버 스마트스토어">
+                        </div>
+                        <div class="field">
+                          <label for="deskPurchaseCustomLink">링크</label>
+                          <input id="deskPurchaseCustomLink" class="desk-inline-input" type="url" placeholder="https://">
+                        </div>
+                        <div class="field">
+                          <label for="deskPurchaseCustomRequestDate">요청 날짜</label>
+                          <input id="deskPurchaseCustomRequestDate" class="desk-inline-input" type="date">
+                        </div>
+                        <div class="field">
+                          <label for="deskPurchaseCustomQty">요청 수량</label>
+                          <input id="deskPurchaseCustomQty" class="desk-inline-input" type="number" min="1" step="1" value="1">
+                        </div>
+                        <div class="field full">
+                          <label for="deskPurchaseCustomTags">태그(#)</label>
+                          <input id="deskPurchaseCustomTags" class="desk-inline-input" type="text" placeholder="예: #신규 #구매검토 #라벨지">
+                        </div>
+                        <div class="field full">
+                          <label for="deskPurchaseCustomNote">요청 메모</label>
+                          <input id="deskPurchaseCustomNote" class="desk-inline-input" type="text" placeholder="예: 기존 제품 대체용, 급하지 않음">
+                        </div>
+                        <div class="field full desk-form-actions-row">
+                          <button class="desk-ghost-btn hidden" id="deskPurchaseCustomCancelBtn" type="button">수정 취소</button>
+                          <button class="desk-primary-btn" id="deskPurchaseCustomSubmitBtn" type="submit">신규 요청 추가</button>
+                        </div>
+                      </form>
+                      <div class="desk-purchase-custom-list" id="deskPurchaseCustomList"></div>
+                    </article>
+                  </div>
                   <article class="desk-supply-card">
                     <h3>구매 요청 문안</h3>
                     <div class="field">
@@ -8759,6 +8762,9 @@
           memoPageSize: 5,
           tasks: [],
           memos: [],
+          carryoverTasks: [],
+          carryoverDateKey: "",
+          carryoverLoadingDateKey: "",
           loadedDates: {},
           loadingDates: {},
           realtimeEnabled: false,
@@ -10176,14 +10182,15 @@
       if (deskPurchaseTargetEl) deskPurchaseTargetEl.value = state.desk.supplies.purchaseRequestTarget || "대표님";
       if (deskPurchaseRequestNoteEl) deskPurchaseRequestNoteEl.value = state.desk.supplies.purchaseRequestNote || "";
       if (deskPurchaseItemListEl) {
-        deskPurchaseItemListEl.innerHTML = (state.desk.supplies.consumables || []).map(function(item) {
+        var purchaseItems = getDeskPurchaseCandidateItems_();
+        deskPurchaseItemListEl.innerHTML = purchaseItems.length ? purchaseItems.map(function(item) {
           var selection = state.desk.supplies.purchaseSelections[item.id] || { selected: false, requestQty: Math.max(1, item.maxQty - item.qty) };
           return '<label class="desk-purchase-item ' + (item.qty <= item.safetyQty ? 'low' : '') + '">' +
             '<input type="checkbox" data-desk-purchase-select="' + escapeHtml(item.id) + '"' + (selection.selected ? ' checked' : '') + '>' +
             '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + ' · 현재 ' + item.qty + item.unit + ' / 안전 ' + item.safetyQty + item.unit + '</span><div class="desk-tag-chip-row">' + renderDeskTagChips_(item.tags) + '</div></div>' +
             '<div class="desk-purchase-item-qty">요청 수량 <input type="number" min="1" step="1" data-desk-purchase-qty="' + escapeHtml(item.id) + '" value="' + Number(selection.requestQty || 1) + '"></div>' +
           '</label>';
-        }).join("");
+        }).join("") : '<div class="desk-notice">구매 요청 후보가 없습니다. 신규 물품 요청을 이용해 주세요.</div>';
       }
       if (deskPurchaseCustomListEl) {
         var customItems = state.desk.supplies.purchaseCustomRequests || [];
@@ -10204,6 +10211,28 @@
       refreshDeskPurchaseMessage_();
     }
 
+    function getDeskPurchaseCandidateItems_() {
+      var selections = state.desk.supplies.purchaseSelections || {};
+      var items = (state.desk.supplies.consumables || []).slice().sort(function(a, b) {
+        var selectedA = !!(selections[a.id] && selections[a.id].selected);
+        var selectedB = !!(selections[b.id] && selections[b.id].selected);
+        if (selectedA !== selectedB) return selectedA ? -1 : 1;
+        var shortageA = Math.max(0, Number(a.safetyQty || 0) - Number(a.qty || 0));
+        var shortageB = Math.max(0, Number(b.safetyQty || 0) - Number(b.qty || 0));
+        if (shortageA !== shortageB) return shortageB - shortageA;
+        if ((a.qty <= a.safetyQty) !== (b.qty <= b.safetyQty)) return a.qty <= a.safetyQty ? -1 : 1;
+        return String(a.itemName || "").localeCompare(String(b.itemName || ""), "ko");
+      });
+      var visible = [];
+      items.forEach(function(item) {
+        var selected = !!(selections[item.id] && selections[item.id].selected);
+        if (selected || ((item.qty <= item.safetyQty || visible.length < 6) && visible.length < 8)) {
+          visible.push(item);
+        }
+      });
+      return visible;
+    }
+
     function refreshDeskPurchaseMessage_() {
       if (deskPurchaseMessageEl) deskPurchaseMessageEl.value = buildDeskPurchaseRequestMessage_();
     }
@@ -10218,23 +10247,27 @@
       if (!selectedItems.length && !customItems.length) {
         return target + ",\n\n구매 요청할 소모품을 아직 선택하지 않았습니다.\n[구매 요청] 탭에서 필요한 품목을 선택해 주세요.";
       }
-      var lines = selectedItems.map(function(item) {
+      var existingLines = selectedItems.map(function(item) {
         var selection = state.desk.supplies.purchaseSelections[item.id] || {};
         return "- " + item.itemName + " (" + item.productName + ") : 현재 " + item.qty + item.unit + " / 요청 " + Math.max(1, Number(selection.requestQty || 1)) + item.unit;
-      }).concat(customItems.map(function(item) {
+      });
+      var customLines = customItems.map(function(item) {
         var extras = [];
         if (item.vendor) extras.push("판매처 " + item.vendor);
         if (item.requestDate) extras.push("요청일 " + item.requestDate + " (" + getDeskElapsedDays_(item.requestDate) + "일 경과)");
         if (item.link) extras.push("링크 " + item.link);
         return "- " + item.itemName + " (" + item.productName + ") : 요청 " + item.requestQty + "개" + (extras.length ? " / " + extras.join(" / ") : "");
-      }));
+      });
+      var sections = [];
+      if (existingLines.length) sections.push("[기존 물품]\n" + existingLines.join("\n"));
+      if (customLines.length) sections.push("[신규 물품]\n" + customLines.join("\n"));
       return [
         target + ",",
         "",
         "데스크 소모품 구매 요청드립니다.",
         "현재 재고를 확인해 보니 아래 품목 보충이 필요합니다.",
         "",
-        lines.join("\n"),
+        sections.join("\n\n"),
         "",
         note || "확인 부탁드립니다. 감사합니다."
       ].join("\n");
@@ -12804,6 +12837,10 @@
       return url;
     }
 
+    function buildDeskDailyJournalRootRealtimeUrl_() {
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + DESK_DAILY_JOURNAL_RT_PATH + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
     function deskRealtimeFetchJson_(method, url, payload) {
       var options = {
         method: method,
@@ -13343,15 +13380,20 @@
       var tasks = getDeskDailyJournalTasks_(dateKey);
       var memos = getDeskDailyJournalMemos_(dateKey);
       var workers = collectDeskDailyWorkers_(dateKey);
+      ensureDeskDailyCarryoverTasksLoaded_(dateKey, workers);
+      var visibleTasks = mergeDeskDailyCarryoverTasks_(dateKey, tasks, workers);
       ensureDeskDailyWorkerSelection_(workers);
       ensureDeskDailyReportWorkerSelection_(workers);
       renderDeskDailyJournalSummary_(tasks, memos, workers);
+      if (deskJournalPendingSummaryEl) {
+        deskJournalPendingSummaryEl.textContent = visibleTasks.filter(function(item) { return !item.completed; }).length + "건";
+      }
       renderDeskDailyWorkerTabs_(workers);
       renderDeskDailyWorkerInputs_(workers);
-      renderDeskDailyTaskBoard_(tasks);
+      renderDeskDailyTaskBoard_(visibleTasks);
       renderDeskDailyMemoPanel_(memos);
-      renderDeskDailyPendingList_(tasks);
-      renderDeskDailyReportPanel_(tasks, memos, workers);
+      renderDeskDailyPendingList_(visibleTasks);
+      renderDeskDailyReportPanel_(visibleTasks, memos, workers);
       renderDeskLiveFeed_();
     }
 
@@ -13427,6 +13469,65 @@
       });
       Array.prototype.push.apply(nextMemos, (memos || []).map(normalizeDeskDailyMemo_));
       state.desk.daily.memos = nextMemos.sort(compareDeskDailyMemo_);
+    }
+
+    function mergeDeskDailyCarryoverTasks_(dateKey, currentTasks, workers) {
+      var safeDateKey = String(dateKey || "").trim();
+      var base = (currentTasks || []).slice();
+      var currentIds = {};
+      base.forEach(function(item) { currentIds[item.id] = true; });
+      var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
+      var carryoverSource = state.desk.daily.carryoverDateKey === safeDateKey ? (state.desk.daily.carryoverTasks || []) : [];
+      var carryovers = carryoverSource.filter(function(item) {
+        return item.dateKey && item.dateKey < safeDateKey && !item.completed && !currentIds[item.id] &&
+          workerNames.some(function(name) { return isSameDeskWorkerName_(item.worker, name); });
+      });
+      return base.concat(carryovers).sort(compareDeskDailyTask_);
+    }
+
+    function ensureDeskDailyCarryoverTasksLoaded_(dateKey, workers) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return;
+      var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
+      if (!workerNames.length) {
+        state.desk.daily.carryoverTasks = [];
+        state.desk.daily.carryoverDateKey = safeDateKey;
+        return;
+      }
+      if (state.desk.daily.carryoverDateKey === safeDateKey) return;
+      if (state.desk.daily.carryoverLoadingDateKey === safeDateKey) return;
+      state.desk.daily.carryoverLoadingDateKey = safeDateKey;
+      deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
+        var items = [];
+        var source = root && typeof root === "object" ? root : {};
+        Object.keys(source).forEach(function(dayKey) {
+          if (!dayKey || dayKey >= safeDateKey || dayKey === DESK_ROUTINE_TEMPLATE_KEY) return;
+          var tasksMap = source[dayKey] && source[dayKey].tasks && typeof source[dayKey].tasks === "object" ? source[dayKey].tasks : {};
+          Object.keys(tasksMap).forEach(function(id) {
+            var task = normalizeDeskDailyTask_(Object.assign({}, tasksMap[id], { id: id, dateKey: dayKey }));
+            if (task.completed) return;
+            if (!workerNames.some(function(name) { return isSameDeskWorkerName_(task.worker, name); })) return;
+            items.push(task);
+          });
+        });
+        state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
+        state.desk.daily.carryoverDateKey = safeDateKey;
+      }).catch(function() {
+        state.desk.daily.carryoverTasks = [];
+        state.desk.daily.carryoverDateKey = safeDateKey;
+      }).finally(function() {
+        state.desk.daily.carryoverLoadingDateKey = "";
+        if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
+          renderDeskDailyJournal_();
+        }
+      });
+    }
+
+    function findDeskDailyTaskById_(taskId) {
+      var id = String(taskId || "");
+      return (state.desk.daily.tasks || []).concat(state.desk.daily.carryoverTasks || []).filter(function(item) {
+        return item.id === id;
+      })[0] || null;
     }
 
     function getDeskDailyJournalTasks_(dateKey) {
@@ -13774,6 +13875,7 @@
       }
       deskJournalTaskBoardEl.innerHTML = visible.map(function(item) {
         var meta = getDeskTaskMeta_(item);
+        var isCarryover = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
         return '<article class="desk-task-card' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + '"' +
           (item.worker ? ' style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker)) + '"' : '') + '>' +
           '<div class="desk-task-top">' +
@@ -13782,6 +13884,7 @@
               '<div class="desk-task-meta">' +
                 '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
+                (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
                 renderDeskTaskWorkerBadgeHtml_(item.worker || "-") +
                 '<span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span>' +
               '</div>' +
@@ -14361,9 +14464,18 @@
       });
       existingTasks.push(item);
       mergeDeskDailyJournalData_(item.dateKey, existingTasks, getDeskDailyJournalMemos_(item.dateKey));
+      state.desk.daily.carryoverTasks = (state.desk.daily.carryoverTasks || []).filter(function(row) {
+        return row.id !== item.id;
+      });
+      if (item.dateKey !== preserveViewDateKey && !item.completed) {
+        state.desk.daily.carryoverTasks.push(item);
+        state.desk.daily.carryoverTasks.sort(compareDeskDailyTask_);
+      }
       refreshDeskDailyJournalSnapshotForDate_(item.dateKey);
       state.desk.daily.loadedDates[item.dateKey] = true;
-      state.desk.daily.dateKey = item.dateKey === DESK_ROUTINE_TEMPLATE_KEY ? preserveViewDateKey : item.dateKey;
+      state.desk.daily.dateKey = item.dateKey === DESK_ROUTINE_TEMPLATE_KEY || item.dateKey !== preserveViewDateKey
+        ? preserveViewDateKey
+        : item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
       Promise.resolve(saveDeskDailyTaskRemote_(item))
@@ -14381,6 +14493,7 @@
     function deleteDeskDailyTask_(taskId, overrideDateKey) {
       var dateKey = overrideDateKey || state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) { return item.id !== taskId; });
+      state.desk.daily.carryoverTasks = (state.desk.daily.carryoverTasks || []).filter(function(item) { return item.id !== taskId; });
       mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
       refreshDeskDailyJournalSnapshotForDate_(dateKey);
       renderDeskDailyJournal_();
@@ -15129,7 +15242,7 @@
           var toggle = event.target.closest("[data-desk-journal-task-toggle]");
           if (!toggle) return;
           var taskId = toggle.getAttribute("data-desk-journal-task-toggle") || "";
-          var current = getDeskDailyJournalTasks_(state.desk.daily.dateKey).find(function(item) { return item.id === taskId; });
+          var current = findDeskDailyTaskById_(taskId);
           if (!current) return;
           var reasonInput = deskJournalTaskBoardEl.querySelector('[data-desk-journal-task-reason="' + taskId + '"]');
           upsertDeskDailyTask_(Object.assign({}, current, {
@@ -15166,7 +15279,7 @@
           var saveBtn = event.target.closest("[data-desk-journal-task-save]");
           if (saveBtn) {
             var saveId = saveBtn.getAttribute("data-desk-journal-task-save") || "";
-            var currentTask = getDeskDailyJournalTasks_(state.desk.daily.dateKey).find(function(item) { return item.id === saveId; });
+            var currentTask = findDeskDailyTaskById_(saveId);
             if (!currentTask) return;
             var input = deskJournalTaskBoardEl.querySelector('[data-desk-journal-task-reason="' + saveId + '"]');
             upsertDeskDailyTask_(Object.assign({}, currentTask, {
@@ -15178,8 +15291,9 @@
           var deleteBtn = event.target.closest("[data-desk-journal-task-delete]");
           if (deleteBtn) {
             var deleteId = deleteBtn.getAttribute("data-desk-journal-task-delete") || "";
+            var deleteTask = findDeskDailyTaskById_(deleteId);
             if (!confirm("이 업무를 삭제할까요?")) return;
-            deleteDeskDailyTask_(deleteId);
+            deleteDeskDailyTask_(deleteId, deleteTask && deleteTask.dateKey);
           }
         });
         deskJournalTaskBoardEl.addEventListener("keydown", function(event) {
@@ -15187,7 +15301,7 @@
           if (!reasonField || event.key !== "Enter") return;
           event.preventDefault();
           var reasonId = reasonField.getAttribute("data-desk-journal-task-reason") || "";
-          var currentTask = getDeskDailyJournalTasks_(state.desk.daily.dateKey).find(function(item) { return item.id === reasonId; });
+          var currentTask = findDeskDailyTaskById_(reasonId);
           if (!currentTask) return;
           upsertDeskDailyTask_(Object.assign({}, currentTask, {
             completed: false,
