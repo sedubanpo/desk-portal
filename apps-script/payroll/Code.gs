@@ -32,6 +32,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveDeskScheduleEntry: true,
   deleteDeskScheduleEntry: true,
   getDeskDailyJournalData: true,
+  getDeskDailyJournalPendingTasks: true,
   saveDeskDailyJournalTask: true,
   deleteDeskDailyJournalTask: true,
   saveDeskDailyJournalMemo: true,
@@ -108,6 +109,7 @@ function handlePayrollApiRequest_(params) {
       saveDeskScheduleEntry: saveDeskScheduleEntry,
       deleteDeskScheduleEntry: deleteDeskScheduleEntry,
       getDeskDailyJournalData: getDeskDailyJournalData,
+      getDeskDailyJournalPendingTasks: getDeskDailyJournalPendingTasks,
       saveDeskDailyJournalTask: saveDeskDailyJournalTask,
       deleteDeskDailyJournalTask: deleteDeskDailyJournalTask,
       saveDeskDailyJournalMemo: saveDeskDailyJournalMemo,
@@ -638,6 +640,39 @@ function getDeskDailyJournalData(payload) {
   }
 }
 
+function getDeskDailyJournalPendingTasks(payload) {
+  try {
+    var req = payload || {};
+    var beforeDateKey = normalizeDeskDateKey_(req.beforeDateKey || req.dateKey);
+    if (!beforeDateKey) return { success: false, message: "기준 날짜가 올바르지 않습니다." };
+    var workerKeys = {};
+    (req.workers || []).forEach(function(name) {
+      var key = normalizeDeskWorkerNameKey_(name);
+      if (key) workerKeys[key] = true;
+    });
+    if (!Object.keys(workerKeys).length) {
+      return { success: true, beforeDateKey: beforeDateKey, tasks: [] };
+    }
+    var root = firebaseRequestWithServiceAccount_("get", DESK_DAILY_JOURNAL_ROOT_PATH) || {};
+    var tasks = [];
+    Object.keys(root).forEach(function(dateKey) {
+      var normalizedDateKey = normalizeDeskDateKey_(dateKey);
+      if (!normalizedDateKey || normalizedDateKey >= beforeDateKey) return;
+      var tasksMap = root[dateKey] && root[dateKey].tasks ? root[dateKey].tasks : {};
+      Object.keys(tasksMap).forEach(function(id) {
+        var task = normalizeDeskDailyJournalTask_(tasksMap[id], id, normalizedDateKey);
+        if (task.completed) return;
+        if (!workerKeys[normalizeDeskWorkerNameKey_(task.worker)]) return;
+        tasks.push(task);
+      });
+    });
+    tasks.sort(compareDeskDailyJournalTasks_);
+    return { success: true, beforeDateKey: beforeDateKey, tasks: tasks };
+  } catch (e) {
+    return { success: false, message: "미해결 이월 업무 조회 오류: " + e.message };
+  }
+}
+
 function saveDeskDailyJournalTask(payload) {
   try {
     var req = payload || {};
@@ -726,6 +761,14 @@ function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
     createdAt: String((item && item.createdAt) || now).trim(),
     updatedAt: now
   };
+}
+
+function normalizeDeskWorkerNameKey_(name) {
+  var text = String(name || "").trim();
+  try {
+    text = text.normalize("NFC");
+  } catch (e) {}
+  return text.replace(/\s+/g, "").toLowerCase();
 }
 
 function compareDeskDailyJournalTasks_(a, b) {

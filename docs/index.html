@@ -13497,7 +13497,17 @@
       if (state.desk.daily.carryoverDateKey === safeDateKey) return;
       if (state.desk.daily.carryoverLoadingDateKey === safeDateKey) return;
       state.desk.daily.carryoverLoadingDateKey = safeDateKey;
-      deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
+      runServer("getDeskDailyJournalPendingTasks", {
+        beforeDateKey: safeDateKey,
+        workers: workerNames
+      }).then(function(res) {
+        if (!res || res.success === false) {
+          throw new Error(res && res.message ? res.message : "이월 업무 조회 실패");
+        }
+        state.desk.daily.carryoverTasks = (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_);
+        state.desk.daily.carryoverDateKey = safeDateKey;
+      }).catch(function() {
+        return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
         var items = [];
         var source = root && typeof root === "object" ? root : {};
         Object.keys(source).forEach(function(dayKey) {
@@ -13512,6 +13522,7 @@
         });
         state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
         state.desk.daily.carryoverDateKey = safeDateKey;
+        });
       }).catch(function() {
         state.desk.daily.carryoverTasks = [];
         state.desk.daily.carryoverDateKey = safeDateKey;
