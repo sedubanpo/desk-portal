@@ -13522,13 +13522,32 @@
         state.desk.daily.carryoverDateKey = safeDateKey;
         state.desk.daily.carryoverWorkerKey = workerKey;
       }).catch(function() {
+        return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
+          state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
+          state.desk.daily.carryoverDateKey = safeDateKey;
+          state.desk.daily.carryoverWorkerKey = workerKey;
+        });
+      }).catch(function() {
         return fetchDeskDailyCarryoverTasksByDateScan_(safeDateKey, workerNames).then(function(items) {
           state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
           state.desk.daily.carryoverDateKey = safeDateKey;
           state.desk.daily.carryoverWorkerKey = workerKey;
         });
       }).catch(function() {
-        return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
+        state.desk.daily.carryoverTasks = [];
+        state.desk.daily.carryoverDateKey = safeDateKey;
+        state.desk.daily.carryoverWorkerKey = workerKey;
+      }).finally(function() {
+        state.desk.daily.carryoverLoadingDateKey = "";
+        if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
+          renderDeskDailyJournal_();
+        }
+      });
+    }
+
+    function fetchDeskDailyCarryoverTasksFromRealtimeRoot_(dateKey, workerNames) {
+      var safeDateKey = String(dateKey || "").trim();
+      return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRootRealtimeUrl_(), null).then(function(root) {
         var items = [];
         var source = root && typeof root === "object" ? root : {};
         Object.keys(source).forEach(function(dayKey) {
@@ -13541,19 +13560,7 @@
             items.push(task);
           });
         });
-        state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
-        state.desk.daily.carryoverDateKey = safeDateKey;
-        state.desk.daily.carryoverWorkerKey = workerKey;
-        });
-      }).catch(function() {
-        state.desk.daily.carryoverTasks = [];
-        state.desk.daily.carryoverDateKey = safeDateKey;
-        state.desk.daily.carryoverWorkerKey = workerKey;
-      }).finally(function() {
-        state.desk.daily.carryoverLoadingDateKey = "";
-        if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
-          renderDeskDailyJournal_();
-        }
+        return items;
       });
     }
 
