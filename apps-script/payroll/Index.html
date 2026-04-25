@@ -13725,6 +13725,85 @@
       markDeskTaskAssignAlertsSeen_(dateKey, worker, tasks || getDeskDailyJournalTasks_(dateKey));
     }
 
+    function getDeskTaskAssignAlertPollDateKeys_(dateKey, worker) {
+      var seen = {};
+      var keys = [];
+      function pushDate(key) {
+        var safeKey = String(key || "").trim();
+        if (!safeKey || seen[safeKey]) return;
+        seen[safeKey] = true;
+        keys.push(safeKey);
+      }
+      pushDate(dateKey);
+      (state.desk.daily.carryoverTasks || []).forEach(function(task) {
+        if (!task || !task.dateKey || !isSameDeskWorkerName_(task.worker, worker)) return;
+        pushDate(task.dateKey);
+      });
+      return keys;
+    }
+
+    function buildDeskDailyJournalSignature_(dateKeys) {
+      var keyMap = {};
+      (dateKeys || []).forEach(function(dateKey) {
+        keyMap[String(dateKey || "")] = true;
+      });
+      return JSON.stringify({
+        tasks: (state.desk.daily.tasks || []).filter(function(task) {
+          return keyMap[String(task.dateKey || "")];
+        }).map(function(task) {
+          return {
+            id: task.id,
+            dateKey: task.dateKey,
+            worker: task.worker,
+            title: task.title,
+            completed: !!task.completed,
+            unresolvedReason: task.unresolvedReason || "",
+            updatedAt: task.updatedAt || ""
+          };
+        }).sort(function(a, b) {
+          return String(a.dateKey + a.id).localeCompare(String(b.dateKey + b.id));
+        }),
+        memos: (state.desk.daily.memos || []).filter(function(memo) {
+          return keyMap[String(memo.dateKey || "")];
+        }).map(function(memo) {
+          return {
+            id: memo.id,
+            dateKey: memo.dateKey,
+            worker: memo.worker,
+            text: memo.text,
+            updatedAt: memo.updatedAt || ""
+          };
+        }).sort(function(a, b) {
+          return String(a.dateKey + a.id).localeCompare(String(b.dateKey + b.id));
+        })
+      });
+    }
+
+    function refreshDeskDailyCarryoverTasksFromLoadedDates_(dateKeys) {
+      if (!state.desk.daily.carryoverDateKey) return;
+      var viewDateKey = state.desk.daily.carryoverDateKey;
+      var keyMap = {};
+      (dateKeys || []).forEach(function(dateKey) {
+        keyMap[String(dateKey || "")] = true;
+      });
+      var workers = collectDeskDailyWorkers_(viewDateKey);
+      var next = (state.desk.daily.carryoverTasks || []).filter(function(task) {
+        return !keyMap[String(task.dateKey || "")];
+      });
+      (state.desk.daily.tasks || []).forEach(function(task) {
+        if (!task || !keyMap[String(task.dateKey || "")]) return;
+        if (!task.dateKey || task.dateKey >= viewDateKey || task.completed) return;
+        if (!workers.some(function(worker) { return isSameDeskWorkerName_(task.worker, worker); })) return;
+        next.push(task);
+      });
+      var seen = {};
+      state.desk.daily.carryoverTasks = next.filter(function(task) {
+        if (!task || !task.id || seen[task.id]) return false;
+        seen[task.id] = true;
+        return true;
+      }).sort(compareDeskDailyTask_);
+    }
+
     function pollDeskTaskAssignmentAlerts_() {
       if (shouldDeferPortalDataLoad_()) return;
       if (state.activeModule !== "expense" || state.desk.activeTab !== "dailyJournal") return;
@@ -13737,27 +13816,41 @@
         return;
       }
       state.desk.daily.assignmentAlertLoading = true;
-      runServer("getDeskDailyJournalData", { dateKey: dateKey })
-        .then(function(res) {
+      var pollDateKeys = getDeskTaskAssignAlertPollDateKeys_(dateKey, worker);
+      var beforeSignature = buildDeskDailyJournalSignature_(pollDateKeys);
+      var newTasks = [];
+      pollDateKeys.reduce(function(chain, pollDateKey) {
+        return chain.then(function() {
+          return runServer("getDeskDailyJournalData", { dateKey: pollDateKey });
+        }).then(function(res) {
           if (!res || !res.success) return;
           var tasks = (res.tasks || []).map(normalizeDeskDailyTask_);
           var memos = (res.memos || []).map(normalizeDeskDailyMemo_);
           var seen = state.desk.daily.assignmentAlertSeen || {};
-          var newTasks = tasks.filter(function(task) {
-            return task && task.id && isSameDeskWorkerName_(task.worker, worker) &&
-              !seen[buildDeskTaskAssignAlertKey_(dateKey, worker, task.id)];
-          }).sort(compareDeskDailyTask_);
-          mergeDeskDailyJournalData_(dateKey, tasks, memos);
-          refreshDeskDailyJournalSnapshotForDate_(dateKey);
-          state.desk.daily.loadedDates[dateKey] = true;
-          if (newTasks.length) {
-            markDeskTaskAssignAlertsSeen_(dateKey, worker, newTasks);
-            newTasks.forEach(showDeskTaskAssignAlert_);
-            if (state.activeModule === "expense" && state.desk.activeTab === "dailyJournal") {
-              renderDeskDailyJournal_();
-            }
+          if (pollDateKey === dateKey) {
+            Array.prototype.push.apply(newTasks, tasks.filter(function(task) {
+              return task && task.id && !task.completed && isSameDeskWorkerName_(task.worker, worker) &&
+                !seen[buildDeskTaskAssignAlertKey_(pollDateKey, worker, task.id)];
+            }));
           }
-        })
+          mergeDeskDailyJournalData_(pollDateKey, tasks, memos);
+          refreshDeskDailyJournalSnapshotForDate_(pollDateKey);
+          state.desk.daily.loadedDates[pollDateKey] = true;
+        });
+      }, Promise.resolve()).then(function() {
+        refreshDeskDailyCarryoverTasksFromLoadedDates_(pollDateKeys);
+        var afterSignature = buildDeskDailyJournalSignature_(pollDateKeys);
+        var shouldRender = beforeSignature !== afterSignature;
+        if (newTasks.length) {
+          newTasks.sort(compareDeskDailyTask_);
+          markDeskTaskAssignAlertsSeen_(dateKey, worker, newTasks);
+          newTasks.forEach(showDeskTaskAssignAlert_);
+          shouldRender = true;
+        }
+        if (shouldRender && state.activeModule === "expense" && state.desk.activeTab === "dailyJournal") {
+          renderDeskDailyJournal_();
+        }
+      })
         .catch(function(err) {
           console.warn("desk task assignment alert polling failed", err);
         })
@@ -15489,6 +15582,7 @@
           }
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
+          setTimeout(pollDeskTaskAssignmentAlerts_, 500);
         });
       }
       if (deskJournalTaskFormEl) {
