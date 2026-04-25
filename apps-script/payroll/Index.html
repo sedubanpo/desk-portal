@@ -3232,6 +3232,10 @@
       border-color: #f2b6b6;
       box-shadow: 0 14px 24px rgba(185, 28, 28, 0.08);
     }
+    .desk-task-card.assignment-alert {
+      border-color: #0d684d;
+      box-shadow: 0 0 0 4px rgba(13, 104, 77, 0.14), 0 20px 38px rgba(15, 60, 46, 0.16);
+    }
     .desk-task-top,
     .desk-note-top {
       display: flex;
@@ -8724,7 +8728,9 @@
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
     var DESK_FIXED_SCHEDULE_STORAGE_KEY = "desk_portal_fixed_schedule_v1";
     var DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY = "desk_portal_fixed_schedule_hidden_workers_v1";
-    var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_seen_v1";
+    var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_seen_v2";
+    var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
+    var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
@@ -8830,7 +8836,8 @@
           realtimeSnapshots: {},
           assignmentAlertSeen: {},
           assignmentAlertLoading: false,
-          assignmentAlertContextKey: ""
+          assignmentAlertContextKey: "",
+          assignmentAlertHighlightedIds: {}
         },
         fixedSchedule: {
           selectedWorker: "",
@@ -9364,6 +9371,7 @@
       state.desk.daily.assignmentAlertSeen = loadDeskTaskAssignAlertSeen_();
       state.desk.daily.assignmentAlertLoading = false;
       state.desk.daily.assignmentAlertContextKey = "";
+      state.desk.daily.assignmentAlertHighlightedIds = {};
       var today = new Date();
       state.desk.currentMonth = getDeskMonthKey_(today);
       state.desk.selectedDateKey = getDeskDateKey_(today);
@@ -13460,11 +13468,11 @@
       }
       renderDeskDailyWorkerTabs_(workers);
       renderDeskDailyWorkerInputs_(workers);
+      syncDeskTaskAssignmentAlertContext_(dateKey, tasks);
       renderDeskDailyTaskBoard_(visibleTasks);
       renderDeskDailyMemoPanel_(memos);
       renderDeskDailyPendingList_(visibleTasks);
       renderDeskDailyReportPanel_(visibleTasks, memos, workers);
-      syncDeskTaskAssignmentAlertContext_(dateKey, tasks);
       renderDeskLiveFeed_();
     }
 
@@ -13702,6 +13710,35 @@
       return [String(dateKey || "").trim(), normalizeDeskWorkerKey_(worker), String(taskId || "").trim()].join("::");
     }
 
+    function isDeskRecentTaskAssignment_(task) {
+      var stamp = String(task && (task.updatedAt || task.createdAt) || "");
+      var date = stamp ? new Date(stamp) : null;
+      if (!date || isNaN(date.getTime())) return false;
+      var age = Date.now() - date.getTime();
+      return age >= -60000 && age <= DESK_TASK_ASSIGN_ALERT_RECENT_MS;
+    }
+
+    function markDeskTaskAssignmentHighlighted_(tasks) {
+      var map = state.desk.daily.assignmentAlertHighlightedIds || {};
+      var expiresAt = Date.now() + DESK_TASK_ASSIGN_HIGHLIGHT_MS;
+      (tasks || []).forEach(function(task) {
+        if (!task || !task.id) return;
+        map[task.id] = expiresAt;
+      });
+      state.desk.daily.assignmentAlertHighlightedIds = map;
+    }
+
+    function isDeskTaskAssignmentHighlighted_(taskId) {
+      var map = state.desk.daily.assignmentAlertHighlightedIds || {};
+      var expiresAt = Number(map[String(taskId || "")] || 0);
+      if (!expiresAt) return false;
+      if (expiresAt < Date.now()) {
+        delete map[String(taskId || "")];
+        return false;
+      }
+      return true;
+    }
+
     function markDeskTaskAssignAlertsSeen_(dateKey, worker, tasks) {
       if (!dateKey || !worker) return;
       var seen = state.desk.daily.assignmentAlertSeen || {};
@@ -13713,6 +13750,20 @@
       saveDeskTaskAssignAlertSeen_();
     }
 
+    function showDeskTaskAssignAlerts_(dateKey, worker, tasks, recentOnly) {
+      var seen = state.desk.daily.assignmentAlertSeen || {};
+      var alertTasks = (tasks || []).filter(function(task) {
+        if (!task || !task.id || task.completed || !isSameDeskWorkerName_(task.worker, worker)) return false;
+        if (seen[buildDeskTaskAssignAlertKey_(dateKey, worker, task.id)]) return false;
+        return !recentOnly || isDeskRecentTaskAssignment_(task);
+      }).sort(compareDeskDailyTask_);
+      if (!alertTasks.length) return [];
+      markDeskTaskAssignAlertsSeen_(dateKey, worker, alertTasks);
+      markDeskTaskAssignmentHighlighted_(alertTasks);
+      alertTasks.forEach(showDeskTaskAssignAlert_);
+      return alertTasks;
+    }
+
     function syncDeskTaskAssignmentAlertContext_(dateKey, tasks) {
       var worker = getDeskTaskAssignAlertWorker_();
       var contextKey = String(dateKey || "") + "::" + normalizeDeskWorkerKey_(worker);
@@ -13722,6 +13773,7 @@
       }
       if (state.desk.daily.assignmentAlertContextKey === contextKey) return;
       state.desk.daily.assignmentAlertContextKey = contextKey;
+      showDeskTaskAssignAlerts_(dateKey, worker, tasks || getDeskDailyJournalTasks_(dateKey), true);
       markDeskTaskAssignAlertsSeen_(dateKey, worker, tasks || getDeskDailyJournalTasks_(dateKey));
     }
 
@@ -13826,11 +13878,10 @@
           if (!res || !res.success) return;
           var tasks = (res.tasks || []).map(normalizeDeskDailyTask_);
           var memos = (res.memos || []).map(normalizeDeskDailyMemo_);
-          var seen = state.desk.daily.assignmentAlertSeen || {};
           if (pollDateKey === dateKey) {
             Array.prototype.push.apply(newTasks, tasks.filter(function(task) {
               return task && task.id && !task.completed && isSameDeskWorkerName_(task.worker, worker) &&
-                !seen[buildDeskTaskAssignAlertKey_(pollDateKey, worker, task.id)];
+                !(state.desk.daily.assignmentAlertSeen || {})[buildDeskTaskAssignAlertKey_(pollDateKey, worker, task.id)];
             }));
           }
           mergeDeskDailyJournalData_(pollDateKey, tasks, memos);
@@ -13842,9 +13893,7 @@
         var afterSignature = buildDeskDailyJournalSignature_(pollDateKeys);
         var shouldRender = beforeSignature !== afterSignature;
         if (newTasks.length) {
-          newTasks.sort(compareDeskDailyTask_);
-          markDeskTaskAssignAlertsSeen_(dateKey, worker, newTasks);
-          newTasks.forEach(showDeskTaskAssignAlert_);
+          showDeskTaskAssignAlerts_(dateKey, worker, newTasks, false);
           shouldRender = true;
         }
         if (shouldRender && state.activeModule === "expense" && state.desk.activeTab === "dailyJournal") {
@@ -14241,13 +14290,15 @@
       deskJournalTaskBoardEl.innerHTML = visible.map(function(item) {
         var meta = getDeskTaskMeta_(item);
         var isCarryover = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
-        return '<article class="desk-task-card' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + '"' +
+        var isHighlighted = isDeskTaskAssignmentHighlighted_(item.id);
+        return '<article class="desk-task-card' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + '"' +
           (item.worker ? ' style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker)) + '"' : '') + '>' +
           '<div class="desk-task-top">' +
             '<div>' +
               '<div class="desk-task-title">' + escapeHtml(item.title) + '</div>' +
               '<div class="desk-task-meta">' +
                 '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
+                (isHighlighted ? '<span class="desk-important-badge">새 배정</span>' : '') +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
                 (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
                 renderDeskTaskWorkerBadgeHtml_(item.worker || "-") +
