@@ -3239,6 +3239,11 @@
         linear-gradient(180deg, var(--desk-card-soft, #ffffff) 0%, var(--desk-card-bg, #ffffff) 100%);
       box-shadow: 0 0 0 6px rgba(13, 104, 77, 0.18), 0 24px 46px rgba(15, 60, 46, 0.22);
     }
+    .desk-task-card.shared {
+      border-color: #f0c04f;
+      background: linear-gradient(180deg, #fff9df 0%, #fff4c4 100%);
+      box-shadow: 0 18px 34px rgba(175, 124, 24, 0.14);
+    }
     .desk-task-top,
     .desk-note-top {
       display: flex;
@@ -8078,6 +8083,7 @@
                     <div class="desk-journal-editor-tabs" id="deskJournalEditorTabs">
                       <button class="desk-journal-editor-tab active" type="button" data-desk-editor-tab="manager">업무 관리자</button>
                       <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="routine">루틴 업무</button>
+                      <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="shared">공동 업무</button>
                     </div>
                     <form id="deskJournalTaskForm" class="desk-journal-editor-panel">
                       <div class="desk-mini-grid">
@@ -8130,6 +8136,30 @@
                       </div>
                       <div class="desk-form-actions" style="margin-top:12px;">
                         <button class="modal-action ghost" id="deskJournalSaveRoutineBtn" type="button">루틴 저장</button>
+                      </div>
+                    </div>
+                    <div class="desk-journal-editor-panel hidden" id="deskJournalSharedPanel">
+                      <div class="desk-mini-grid">
+                        <div class="field">
+                          <label for="deskJournalSharedDate">공동 업무 일자</label>
+                          <input id="deskJournalSharedDate" class="modal-input" type="date">
+                        </div>
+                        <div class="field">
+                          <label for="deskJournalSharedLabel">분류</label>
+                          <input id="deskJournalSharedLabel" class="modal-input" type="text" placeholder="예: 공지 / 전달 / 확인">
+                        </div>
+                      </div>
+                      <div class="field" style="margin-top:10px;">
+                        <label for="deskJournalSharedTitle">공동 업무 제목</label>
+                        <input id="deskJournalSharedTitle" class="modal-input" type="text" placeholder="예: 오늘 모든 근무자 확인 필요 공지">
+                      </div>
+                      <div class="field" style="margin-top:10px;">
+                        <label for="deskJournalSharedNote">공동 업무 내용</label>
+                        <input id="deskJournalSharedNote" class="modal-input" type="text" placeholder="확인해야 할 내용이나 전달 사항을 적어 주세요">
+                      </div>
+                      <div class="desk-routine-meta-hint" style="margin-top:8px;">공동 업무는 해당 일자 모든 근무자 작업판에 공지처럼 표시되며, 완료 체크나 미해결 처리 대상이 아닙니다.</div>
+                      <div class="desk-form-actions" style="margin-top:12px;">
+                        <button class="modal-action primary" id="deskJournalSaveSharedBtn" type="button">공동 업무 추가</button>
                       </div>
                     </div>
                   </article>
@@ -8737,6 +8767,8 @@
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
+    var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
+    var DESK_SHARED_WORKER_NAME = "공동업무";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
     var DESK_TIME_PRESETS = {
       morning: { role: "오전 데스크", start: "09:30", end: "18:00", resident: false },
@@ -9125,6 +9157,12 @@
     var deskJournalRoutinePanelEl = document.getElementById("deskJournalRoutinePanel");
     var deskJournalRoutineTitleEl = document.getElementById("deskJournalRoutineTitle");
     var deskJournalRoutineNoteEl = document.getElementById("deskJournalRoutineNote");
+    var deskJournalSharedPanelEl = document.getElementById("deskJournalSharedPanel");
+    var deskJournalSharedDateEl = document.getElementById("deskJournalSharedDate");
+    var deskJournalSharedLabelEl = document.getElementById("deskJournalSharedLabel");
+    var deskJournalSharedTitleEl = document.getElementById("deskJournalSharedTitle");
+    var deskJournalSharedNoteEl = document.getElementById("deskJournalSharedNote");
+    var deskJournalSaveSharedBtnEl = document.getElementById("deskJournalSaveSharedBtn");
     var deskRoutineMetaRowEl = document.getElementById("deskRoutineMetaRow");
     var deskJournalRoutineLabelEl = document.getElementById("deskJournalRoutineLabel");
     var deskJournalRoutineImportantEl = document.getElementById("deskJournalRoutineImportant");
@@ -12728,6 +12766,7 @@
     }
 
     function compareDeskDailyTask_(a, b) {
+      if (isDeskSharedTask_(a) !== isDeskSharedTask_(b)) return isDeskSharedTask_(a) ? -1 : 1;
       if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
       if (isDeskImportantTask_(a) !== isDeskImportantTask_(b)) return isDeskImportantTask_(a) ? -1 : 1;
       if (getDeskTaskLabel_(a) !== getDeskTaskLabel_(b)) return getDeskTaskLabel_(a).localeCompare(getDeskTaskLabel_(b), "ko");
@@ -12748,16 +12787,26 @@
       return important ? (DESK_IMPORTANT_CATEGORY_PREFIX + safeLabel) : safeLabel;
     }
 
+    function buildDeskSharedTaskCategory_(label) {
+      return DESK_SHARED_CATEGORY_PREFIX + (String(label || "").trim() || "공지");
+    }
+
     function getDeskTaskMeta_(item) {
       var raw = String(item && item.category || "").trim();
       var important = false;
+      var shared = false;
       if (raw.indexOf(DESK_IMPORTANT_CATEGORY_PREFIX) === 0) {
         important = true;
         raw = raw.slice(DESK_IMPORTANT_CATEGORY_PREFIX.length);
       }
+      if (raw.indexOf(DESK_SHARED_CATEGORY_PREFIX) === 0) {
+        shared = true;
+        raw = raw.slice(DESK_SHARED_CATEGORY_PREFIX.length);
+      }
       return {
         label: raw || "일반",
-        important: important
+        important: important,
+        shared: shared
       };
     }
 
@@ -12767,6 +12816,10 @@
 
     function isDeskImportantTask_(item) {
       return !!getDeskTaskMeta_(item).important;
+    }
+
+    function isDeskSharedTask_(item) {
+      return !!getDeskTaskMeta_(item).shared || isSameDeskWorkerName_(item && item.worker, DESK_SHARED_WORKER_NAME);
     }
 
     function buildDeskJournalDateTime_(dateKey, timeValue, fallback) {
@@ -13470,7 +13523,7 @@
       ensureDeskDailyReportWorkerSelection_(workers);
       renderDeskDailyJournalSummary_(tasks, memos, workers);
       if (deskJournalPendingSummaryEl) {
-        deskJournalPendingSummaryEl.textContent = visibleTasks.filter(function(item) { return !item.completed; }).length + "건";
+        deskJournalPendingSummaryEl.textContent = visibleTasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); }).length + "건";
       }
       renderDeskDailyWorkerTabs_(workers);
       renderDeskDailyWorkerInputs_(workers);
@@ -14025,7 +14078,9 @@
       state.desk.scheduleItems.forEach(function(item) {
         if (item.date === dateKey) pushName(item.worker);
       });
-      getDeskDailyJournalTasks_(dateKey).forEach(function(item) { pushName(item.worker); });
+      getDeskDailyJournalTasks_(dateKey).forEach(function(item) {
+        if (!isDeskSharedTask_(item)) pushName(item.worker);
+      });
       getDeskDailyJournalMemos_(dateKey).forEach(function(item) { pushName(item.worker); });
       if (deskJournalAssignedWorkerEl) pushName(deskJournalAssignedWorkerEl.value);
       if (deskJournalMemoWorkerEl) pushName(deskJournalMemoWorkerEl.value);
@@ -14071,8 +14126,9 @@
     }
 
     function renderDeskDailyJournalSummary_(tasks, memos, workers) {
-      var total = tasks.length;
-      var completed = tasks.filter(function(item) { return item.completed; }).length;
+      var countedTasks = (tasks || []).filter(function(item) { return !isDeskSharedTask_(item); });
+      var total = countedTasks.length;
+      var completed = countedTasks.filter(function(item) { return item.completed; }).length;
       var pending = total - completed;
       var rate = total ? Math.round((completed / total) * 100) : 0;
       if (deskJournalTaskSummaryEl) deskJournalTaskSummaryEl.textContent = total + "건";
@@ -14278,24 +14334,36 @@
         });
       }
       if (deskJournalTaskFormEl) {
-        deskJournalTaskFormEl.classList.toggle("hidden", !isRoutineManager || state.desk.daily.editorMode === "routine");
+        deskJournalTaskFormEl.classList.toggle("hidden", !isRoutineManager || state.desk.daily.editorMode !== "manager");
       }
       if (deskJournalRoutinePanelEl) {
         deskJournalRoutinePanelEl.classList.toggle("hidden", !isRoutineManager || state.desk.daily.editorMode !== "routine");
       }
+      if (deskJournalSharedPanelEl) {
+        deskJournalSharedPanelEl.classList.toggle("hidden", !isRoutineManager || state.desk.daily.editorMode !== "shared");
+      }
       if (deskJournalTaskEditorTitleEl) {
-        deskJournalTaskEditorTitleEl.textContent = state.desk.daily.editorMode === "routine" ? "루틴 업무" : "업무 관리자";
+        deskJournalTaskEditorTitleEl.textContent =
+          state.desk.daily.editorMode === "routine" ? "루틴 업무" :
+          state.desk.daily.editorMode === "shared" ? "공동 업무" :
+          "업무 관리자";
       }
       if (deskJournalTaskEditorSubEl) {
-        deskJournalTaskEditorSubEl.textContent = state.desk.daily.editorMode === "routine"
-          ? "반복해서 쓰는 기본 업무를 따로 저장해 두고, 필요할 때 오늘 근무자에게 빠르게 배정합니다."
-          : "업무 관리자 탭에서는 오늘 근무자에게 바로 배정할 업무를 추가합니다.";
+        deskJournalTaskEditorSubEl.textContent =
+          state.desk.daily.editorMode === "routine"
+            ? "반복해서 쓰는 기본 업무를 따로 저장해 두고, 필요할 때 오늘 근무자에게 빠르게 배정합니다."
+            : state.desk.daily.editorMode === "shared"
+              ? "일자를 지정해 모든 근무자가 확인할 공동 공지형 업무를 추가합니다."
+              : "업무 관리자 탭에서는 오늘 근무자에게 바로 배정할 업무를 추가합니다.";
       }
       if (deskRoutineMetaRowEl) {
         deskRoutineMetaRowEl.classList.toggle("active", isRoutineManager && state.desk.daily.editorMode === "routine");
       }
       if (deskJournalSaveRoutineBtnEl) {
         deskJournalSaveRoutineBtnEl.style.display = isRoutineManager && state.desk.daily.editorMode === "routine" ? "" : "none";
+      }
+      if (deskJournalSharedDateEl && !deskJournalSharedDateEl.value) {
+        deskJournalSharedDateEl.value = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       }
       if (deskJournalAssignedWorkerEl) {
         deskJournalAssignedWorkerEl.placeholder = "예: 안종성";
@@ -14334,6 +14402,8 @@
         return;
       }
       var visible = (tasks || []).filter(function(item) {
+        if (isDeskSharedTask_(item)) return true;
+        if (item.completed) return false;
         return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
       });
       if (!visible.length) {
@@ -14342,15 +14412,17 @@
       }
       deskJournalTaskBoardEl.innerHTML = visible.map(function(item) {
         var meta = getDeskTaskMeta_(item);
+        var isShared = isDeskSharedTask_(item);
         var isCarryover = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
         var isHighlighted = isDeskTaskAssignmentHighlighted_(item.id);
-        return '<article class="desk-task-card' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + '"' +
+        return '<article class="desk-task-card' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + (isShared ? ' shared' : '') + '"' +
           (item.worker ? ' style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker)) + '"' : '') + '>' +
           '<div class="desk-task-top">' +
             '<div>' +
               '<div class="desk-task-title">' + escapeHtml(item.title) + '</div>' +
               '<div class="desk-task-meta">' +
                 '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
+                (isShared ? '<span class="desk-important-badge">공동 업무</span>' : '') +
                 (isHighlighted ? '<span class="desk-important-badge">새 배정</span>' : '') +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
                 (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
@@ -14358,16 +14430,16 @@
                 '<span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span>' +
               '</div>' +
             '</div>' +
-            '<span class="desk-task-status ' + (item.completed ? 'done' : 'pending') + '">' + (item.completed ? '완료' : '진행 중') + '</span>' +
+            '<span class="desk-task-status ' + (isShared ? 'pending' : (item.completed ? 'done' : 'pending')) + '">' + (isShared ? '공지' : (item.completed ? '완료' : '진행 중')) + '</span>' +
           '</div>' +
-          '<label class="desk-task-check"><input type="checkbox" data-desk-journal-task-toggle="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + '>초록 체크로 해결 처리</label>' +
+          (!isShared ? '<label class="desk-task-check"><input type="checkbox" data-desk-journal-task-toggle="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + '>초록 체크로 해결 처리</label>' : '') +
           (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
-          (!item.completed
+          (!item.completed && !isShared
             ? '<div class="field"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 막힌 이유나 전달할 내용을 적어 주세요"></div>'
             : '') +
           '<div class="desk-task-actions">' +
-            (!item.completed ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '">사유 저장</button>' : '') +
-            '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">업무 삭제</button>' +
+            (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '">사유 저장</button>' : '') +
+            '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
           '</div>' +
         '</article>';
       }).join("");
@@ -14495,7 +14567,7 @@
 
     function renderDeskDailyPendingList_(tasks) {
       if (!deskJournalPendingListEl) return;
-      var pending = (tasks || []).filter(function(item) { return !item.completed; });
+      var pending = (tasks || []).filter(function(item) { return !item.completed && !isDeskSharedTask_(item); });
       if (!pending.length) {
         deskJournalPendingListEl.innerHTML = '<div class="desk-empty">미해결 업무가 없습니다. 모든 업무가 완료되었습니다.</div>';
         return;
@@ -14526,14 +14598,15 @@
         return;
       }
       var workerTasks = (tasks || []).filter(function(item) {
-        return isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
+        return isDeskSharedTask_(item) || isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
       });
       var workerMemos = (memos || []).filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); });
       var workerShifts = state.desk.scheduleItems
         .filter(function(item) { return item.date === dateKey && isSameDeskWorkerName_(item.worker, worker) && !item.unavailable; })
         .sort(compareDeskShift_);
-      var completed = workerTasks.filter(function(item) { return item.completed; });
-      var pending = workerTasks.filter(function(item) { return !item.completed; });
+      var reportTasks = workerTasks.filter(function(item) { return !isDeskSharedTask_(item); });
+      var completed = reportTasks.filter(function(item) { return item.completed; });
+      var pending = reportTasks.filter(function(item) { return !item.completed; });
       var timeline = workerMemos.slice().sort(function(a, b) {
         return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
       });
@@ -14541,6 +14614,7 @@
     }
 
     function buildDeskDailyReportHtml_(dateKey, worker, shifts, tasks, completed, pending, timeline) {
+      var countedTasks = (tasks || []).filter(function(item) { return !isDeskSharedTask_(item); });
       return '<section class="desk-report-card" id="deskJournalReportCard">' +
         '<header class="desk-report-head">' +
           '<div class="desk-report-eyebrow">SEDU DESK REPORT</div>' +
@@ -14558,7 +14632,7 @@
         '<section class="desk-report-section">' +
           '<div class="desk-report-section-title">업무 요약</div>' +
           '<div class="desk-report-pill-row">' +
-            '<span class="desk-report-pill">배정 ' + tasks.length + '건</span>' +
+            '<span class="desk-report-pill">배정 ' + countedTasks.length + '건</span>' +
             '<span class="desk-report-pill">완료 ' + completed.length + '건</span>' +
             '<span class="desk-report-pill">미해결 ' + pending.length + '건</span>' +
             '<span class="desk-report-pill">현장 기록 ' + timeline.length + '건</span>' +
@@ -14569,10 +14643,11 @@
           '<div class="desk-report-list">' +
             (tasks.length ? tasks.map(function(item) {
               var meta = getDeskTaskMeta_(item);
+              var statusText = isDeskSharedTask_(item) ? "공지" : (item.completed ? "완료" : "진행 중");
               return '<article class="desk-report-item">' +
                 '<div class="desk-report-item-top">' +
                   '<div class="desk-report-item-title">' + escapeHtml(item.title || "-") + '</div>' +
-                  '<div class="desk-report-item-meta">' + escapeHtml(meta.label) + (meta.important ? ' · 중요' : '') + ' · ' + escapeHtml(item.worker || "-") + ' · ' + escapeHtml(item.completed ? "완료" : "진행 중") + '</div>' +
+                  '<div class="desk-report-item-meta">' + escapeHtml(meta.label) + (meta.important ? ' · 중요' : '') + ' · ' + escapeHtml(isDeskSharedTask_(item) ? "공동 업무" : (item.worker || "-")) + ' · ' + escapeHtml(statusText) + '</div>' +
                 '</div>' +
                 '<div class="desk-report-item-text">' + escapeHtml(item.note || (item.completed ? "업무 완료 처리됨" : (item.unresolvedReason || "세부 메모 없음"))) + '</div>' +
               '</article>';
@@ -14632,7 +14707,7 @@
       if (!worker) return "";
       var workers = collectDeskDailyWorkers_(dateKey);
       var tasks = mergeDeskDailyCarryoverTasks_(dateKey, getDeskDailyJournalTasks_(dateKey), workers).filter(function(item) {
-        return isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
+        return isDeskSharedTask_(item) || isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
       });
       var memos = getDeskDailyJournalMemos_(dateKey)
         .filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); })
@@ -14641,8 +14716,9 @@
       var shifts = state.desk.scheduleItems
         .filter(function(item) { return item.date === dateKey && isSameDeskWorkerName_(item.worker, worker) && !item.unavailable; })
         .sort(compareDeskShift_);
-      var completed = tasks.filter(function(item) { return item.completed; }).length;
-      var pending = tasks.length - completed;
+      var countedTasks = tasks.filter(function(item) { return !isDeskSharedTask_(item); });
+      var completed = countedTasks.filter(function(item) { return item.completed; }).length;
+      var pending = countedTasks.length - completed;
       var lines = [];
       lines.push("[데스크 근무 보고]");
       lines.push(formatDeskDateLabel_(dateKey) + " / " + worker);
@@ -14657,11 +14733,12 @@
       }
       lines.push("");
       lines.push("2. 업무 요약");
-      lines.push("- 배정 " + tasks.length + "건 / 완료 " + completed + "건 / 미해결 " + pending + "건");
+      lines.push("- 배정 " + countedTasks.length + "건 / 완료 " + completed + "건 / 미해결 " + pending + "건");
       if (tasks.length) {
         tasks.forEach(function(item) {
           var meta = getDeskTaskMeta_(item);
-          lines.push("- [" + (item.completed ? "완료" : "진행") + "] " + (meta.important ? "[중요] " : "") + meta.label + " / " + (item.title || "-") + (item.note ? " / " + item.note : "") + (!item.completed && item.unresolvedReason ? " / 미해결 사유: " + item.unresolvedReason : ""));
+          var statusText = isDeskSharedTask_(item) ? "공지" : (item.completed ? "완료" : "진행");
+          lines.push("- [" + statusText + "] " + (isDeskSharedTask_(item) ? "[공동] " : "") + (meta.important ? "[중요] " : "") + meta.label + " / " + (item.title || "-") + (item.note ? " / " + item.note : "") + (!item.completed && !isDeskSharedTask_(item) && item.unresolvedReason ? " / 미해결 사유: " + item.unresolvedReason : ""));
         });
       }
       lines.push("");
@@ -14805,6 +14882,15 @@
       };
     }
 
+    function collectDeskSharedTaskDraft_() {
+      return {
+        dateKey: String(deskJournalSharedDateEl && deskJournalSharedDateEl.value || "").trim(),
+        title: String(deskJournalSharedTitleEl && deskJournalSharedTitleEl.value || "").trim(),
+        note: String(deskJournalSharedNoteEl && deskJournalSharedNoteEl.value || "").trim(),
+        label: String(deskJournalSharedLabelEl && deskJournalSharedLabelEl.value || "공지").trim() || "공지"
+      };
+    }
+
     function clearDeskDailyTaskDraft_() {
       if (deskJournalAssignedWorkerEl) deskJournalAssignedWorkerEl.value = "";
       if (deskJournalTaskTitleEl) deskJournalTaskTitleEl.value = "";
@@ -14816,6 +14902,13 @@
       if (deskJournalRoutineNoteEl) deskJournalRoutineNoteEl.value = "";
       if (deskJournalRoutineLabelEl) deskJournalRoutineLabelEl.value = "";
       if (deskJournalRoutineImportantEl) deskJournalRoutineImportantEl.checked = false;
+    }
+
+    function clearDeskSharedTaskDraft_() {
+      if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      if (deskJournalSharedTitleEl) deskJournalSharedTitleEl.value = "";
+      if (deskJournalSharedNoteEl) deskJournalSharedNoteEl.value = "";
+      if (deskJournalSharedLabelEl) deskJournalSharedLabelEl.value = "";
     }
 
     function saveDeskDailyTaskFromForm_() {
@@ -14866,6 +14959,32 @@
       }, function() {
         clearDeskRoutineTaskDraft_();
         state.desk.daily.editorMode = "routine";
+        state.desk.daily.selectedWorker = DESK_ROUTINE_TAB_KEY;
+      });
+    }
+
+    function saveDeskSharedTaskFromForm_() {
+      var draft = collectDeskSharedTaskDraft_();
+      if (!draft.dateKey) {
+        alert("공동 업무 일자를 입력해 주세요.");
+        return;
+      }
+      if (!draft.title) {
+        alert("공동 업무 제목을 입력해 주세요.");
+        return;
+      }
+      upsertDeskDailyTask_({
+        id: buildDeskShiftId_("shared", Date.now(), Math.random().toString(36).slice(2)),
+        dateKey: draft.dateKey,
+        worker: DESK_SHARED_WORKER_NAME,
+        category: buildDeskSharedTaskCategory_(draft.label),
+        title: draft.title,
+        note: draft.note,
+        completed: false,
+        unresolvedReason: ""
+      }, function() {
+        clearDeskSharedTaskDraft_();
+        state.desk.daily.editorMode = "shared";
         state.desk.daily.selectedWorker = DESK_ROUTINE_TAB_KEY;
       });
     }
@@ -15647,6 +15766,7 @@
       if (deskJournalTodayBtnEl) {
         deskJournalTodayBtnEl.addEventListener("click", function() {
           state.desk.daily.dateKey = getDeskDateKey_(new Date());
+          if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey;
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
           showDeskCopyStatus_("");
@@ -15661,6 +15781,7 @@
       if (deskJournalDateInputEl) {
         deskJournalDateInputEl.addEventListener("change", function() {
           state.desk.daily.dateKey = deskJournalDateInputEl.value || getDeskDateKey_(new Date());
+          if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey;
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
           showDeskCopyStatus_("");
@@ -15706,6 +15827,11 @@
       if (deskJournalSaveRoutineBtnEl) {
         deskJournalSaveRoutineBtnEl.addEventListener("click", function() {
           saveDeskRoutineTaskFromForm_();
+        });
+      }
+      if (deskJournalSaveSharedBtnEl) {
+        deskJournalSaveSharedBtnEl.addEventListener("click", function() {
+          saveDeskSharedTaskFromForm_();
         });
       }
       if (deskJournalTaskBoardEl) {
