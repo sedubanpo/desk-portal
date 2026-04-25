@@ -1041,12 +1041,12 @@
     }
     .desk-task-alert {
       pointer-events: auto;
-      border: 1px solid rgba(13, 104, 77, 0.2);
-      border-left: 5px solid #0d684d;
+      border: 2px solid rgba(13, 104, 77, 0.5);
+      border-left: 8px solid #0d684d;
       border-radius: 14px;
       background: #ffffff;
-      box-shadow: 0 18px 42px rgba(19, 48, 66, 0.18);
-      padding: 14px 14px 12px;
+      box-shadow: 0 0 0 5px rgba(13, 104, 77, 0.14), 0 24px 52px rgba(19, 48, 66, 0.28);
+      padding: 16px 16px 14px;
       color: #173042;
     }
     .desk-task-alert-top {
@@ -1057,7 +1057,7 @@
       margin-bottom: 6px;
     }
     .desk-task-alert-title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 900;
       color: #0d684d;
     }
@@ -1071,7 +1071,7 @@
       padding: 0 2px;
     }
     .desk-task-alert-body {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 900;
       line-height: 1.45;
       word-break: keep-all;
@@ -1079,7 +1079,7 @@
     }
     .desk-task-alert-meta {
       margin-top: 6px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       color: #607082;
     }
@@ -3233,8 +3233,11 @@
       box-shadow: 0 14px 24px rgba(185, 28, 28, 0.08);
     }
     .desk-task-card.assignment-alert {
-      border-color: #0d684d;
-      box-shadow: 0 0 0 4px rgba(13, 104, 77, 0.14), 0 20px 38px rgba(15, 60, 46, 0.16);
+      border: 2px solid #0d684d;
+      background:
+        linear-gradient(180deg, rgba(236, 253, 245, 0.92) 0%, rgba(220, 252, 231, 0.82) 100%),
+        linear-gradient(180deg, var(--desk-card-soft, #ffffff) 0%, var(--desk-card-bg, #ffffff) 100%);
+      box-shadow: 0 0 0 6px rgba(13, 104, 77, 0.18), 0 24px 46px rgba(15, 60, 46, 0.22);
     }
     .desk-task-top,
     .desk-note-top {
@@ -8728,7 +8731,8 @@
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
     var DESK_FIXED_SCHEDULE_STORAGE_KEY = "desk_portal_fixed_schedule_v1";
     var DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY = "desk_portal_fixed_schedule_hidden_workers_v1";
-    var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_seen_v2";
+    var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_dismissed_v1";
+    var DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY = "desk_portal_task_assign_alert_active_v1";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
@@ -8835,6 +8839,7 @@
           realtimeSources: {},
           realtimeSnapshots: {},
           assignmentAlertSeen: {},
+          assignmentAlertActive: {},
           assignmentAlertLoading: false,
           assignmentAlertContextKey: "",
           assignmentAlertHighlightedIds: {}
@@ -9369,6 +9374,7 @@
       state.desk.daily.loadedDates = {};
       state.desk.daily.loadingDates = {};
       state.desk.daily.assignmentAlertSeen = loadDeskTaskAssignAlertSeen_();
+      state.desk.daily.assignmentAlertActive = loadDeskTaskAssignAlertActive_();
       state.desk.daily.assignmentAlertLoading = false;
       state.desk.daily.assignmentAlertContextKey = "";
       state.desk.daily.assignmentAlertHighlightedIds = {};
@@ -13700,6 +13706,22 @@
       } catch (err) {}
     }
 
+    function loadDeskTaskAssignAlertActive_() {
+      try {
+        var raw = localStorage.getItem(DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY);
+        var parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function saveDeskTaskAssignAlertActive_() {
+      try {
+        localStorage.setItem(DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY, JSON.stringify(state.desk.daily.assignmentAlertActive || {}));
+      } catch (err) {}
+    }
+
     function getDeskTaskAssignAlertWorker_() {
       var worker = String(state.desk.daily.selectedWorker || "").trim();
       if (!worker || worker === "전체" || worker === DESK_ROUTINE_TAB_KEY) return "";
@@ -13708,6 +13730,10 @@
 
     function buildDeskTaskAssignAlertKey_(dateKey, worker, taskId) {
       return [String(dateKey || "").trim(), normalizeDeskWorkerKey_(worker), String(taskId || "").trim()].join("::");
+    }
+
+    function isDeskTaskAssignAlertActive_(dateKey, worker, taskId) {
+      return !!(state.desk.daily.assignmentAlertActive || {})[buildDeskTaskAssignAlertKey_(dateKey, worker, taskId)];
     }
 
     function isDeskRecentTaskAssignment_(task) {
@@ -13750,17 +13776,42 @@
       saveDeskTaskAssignAlertSeen_();
     }
 
+    function activateDeskTaskAssignAlerts_(dateKey, worker, tasks) {
+      if (!dateKey || !worker) return;
+      var active = state.desk.daily.assignmentAlertActive || {};
+      (tasks || []).forEach(function(task) {
+        if (!task || !task.id || !isSameDeskWorkerName_(task.worker, worker)) return;
+        active[buildDeskTaskAssignAlertKey_(dateKey, worker, task.id)] = true;
+      });
+      state.desk.daily.assignmentAlertActive = active;
+      saveDeskTaskAssignAlertActive_();
+    }
+
+    function dismissDeskTaskAssignAlert_(dateKey, worker, taskId) {
+      var key = buildDeskTaskAssignAlertKey_(dateKey, worker, taskId);
+      var active = state.desk.daily.assignmentAlertActive || {};
+      var seen = state.desk.daily.assignmentAlertSeen || {};
+      delete active[key];
+      seen[key] = true;
+      state.desk.daily.assignmentAlertActive = active;
+      state.desk.daily.assignmentAlertSeen = seen;
+      saveDeskTaskAssignAlertActive_();
+      saveDeskTaskAssignAlertSeen_();
+    }
+
     function showDeskTaskAssignAlerts_(dateKey, worker, tasks, recentOnly) {
       var seen = state.desk.daily.assignmentAlertSeen || {};
       var alertTasks = (tasks || []).filter(function(task) {
         if (!task || !task.id || task.completed || !isSameDeskWorkerName_(task.worker, worker)) return false;
         if (seen[buildDeskTaskAssignAlertKey_(dateKey, worker, task.id)]) return false;
-        return !recentOnly || isDeskRecentTaskAssignment_(task);
+        return isDeskTaskAssignAlertActive_(dateKey, worker, task.id) || !recentOnly || isDeskRecentTaskAssignment_(task);
       }).sort(compareDeskDailyTask_);
       if (!alertTasks.length) return [];
-      markDeskTaskAssignAlertsSeen_(dateKey, worker, alertTasks);
+      activateDeskTaskAssignAlerts_(dateKey, worker, alertTasks);
       markDeskTaskAssignmentHighlighted_(alertTasks);
-      alertTasks.forEach(showDeskTaskAssignAlert_);
+      alertTasks.forEach(function(task) {
+        showDeskTaskAssignAlert_(dateKey, worker, task);
+      });
       return alertTasks;
     }
 
@@ -13774,7 +13825,6 @@
       if (state.desk.daily.assignmentAlertContextKey === contextKey) return;
       state.desk.daily.assignmentAlertContextKey = contextKey;
       showDeskTaskAssignAlerts_(dateKey, worker, tasks || getDeskDailyJournalTasks_(dateKey), true);
-      markDeskTaskAssignAlertsSeen_(dateKey, worker, tasks || getDeskDailyJournalTasks_(dateKey));
     }
 
     function getDeskTaskAssignAlertPollDateKeys_(dateKey, worker) {
@@ -13908,10 +13958,16 @@
         });
     }
 
-    function showDeskTaskAssignAlert_(task) {
+    function showDeskTaskAssignAlert_(dateKey, worker, task) {
       if (!deskTaskAssignAlertStackEl || !task) return;
+      var alertKey = buildDeskTaskAssignAlertKey_(dateKey || task.dateKey, worker || task.worker, task.id);
+      var existingAlert = Array.prototype.some.call(deskTaskAssignAlertStackEl.children, function(el) {
+        return el.getAttribute("data-desk-task-alert-key") === alertKey;
+      });
+      if (existingAlert) return;
       var alertEl = document.createElement("article");
       alertEl.className = "desk-task-alert";
+      alertEl.setAttribute("data-desk-task-alert-key", alertKey);
       var topEl = document.createElement("div");
       topEl.className = "desk-task-alert-top";
       var titleEl = document.createElement("div");
@@ -13934,14 +13990,11 @@
       alertEl.appendChild(bodyEl);
       alertEl.appendChild(metaEl);
       function removeAlert() {
+        dismissDeskTaskAssignAlert_(dateKey || task.dateKey, worker || task.worker, task.id);
         if (alertEl.parentNode) alertEl.parentNode.removeChild(alertEl);
       }
       closeBtn.addEventListener("click", removeAlert);
       deskTaskAssignAlertStackEl.insertBefore(alertEl, deskTaskAssignAlertStackEl.firstChild);
-      while (deskTaskAssignAlertStackEl.children.length > 4) {
-        deskTaskAssignAlertStackEl.removeChild(deskTaskAssignAlertStackEl.lastChild);
-      }
-      setTimeout(removeAlert, 9000);
     }
 
     function getDeskDailyJournalTasks_(dateKey) {
