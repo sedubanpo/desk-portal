@@ -13369,6 +13369,7 @@
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       state.desk.daily.dateKey = dateKey;
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
+      ensureDeskDailyScheduleMonthLoaded_(dateKey);
       if (!state.desk.daily.loadedDates[dateKey] || !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
         renderDeskDailyJournalLoadingState_();
         renderDeskLiveFeed_();
@@ -13396,6 +13397,16 @@
       renderDeskDailyPendingList_(visibleTasks);
       renderDeskDailyReportPanel_(visibleTasks, memos, workers);
       renderDeskLiveFeed_();
+    }
+
+    function ensureDeskDailyScheduleMonthLoaded_(dateKey) {
+      var monthKey = String(dateKey || "").slice(0, 7);
+      if (!monthKey || state.desk.loadedMonths[monthKey] || state.desk.loadingMonths[monthKey]) return;
+      ensureDeskMonthLoaded_(monthKey).then(function() {
+        if (state.activeModule === "expense" && state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === dateKey) {
+          renderDeskDailyJournal_();
+        }
+      });
     }
 
     function renderDeskDailyJournalLoadingState_() {
@@ -13556,27 +13567,28 @@
         cursor.setDate(baseDate.getDate() - offset);
         dates.push(getDeskDateKey_(cursor));
       }
-      return Promise.all(dates.map(function(dayKey) {
-        return runServer("getDeskDailyJournalData", { dateKey: dayKey }).then(function(res) {
-          if (!res || res.success === false) return [];
-          return (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
-            return !task.completed && workerNames.some(function(name) {
-              return isSameDeskWorkerName_(task.worker, name);
+      var seen = {};
+      var items = [];
+      return dates.reduce(function(chain, dayKey) {
+        return chain.then(function() {
+          return runServer("getDeskDailyJournalData", { dateKey: dayKey }).then(function(res) {
+            if (!res || res.success === false) return [];
+            return (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
+              return !task.completed && workerNames.some(function(name) {
+                return isSameDeskWorkerName_(task.worker, name);
+              });
+            });
+          }).catch(function() {
+            return [];
+          }).then(function(group) {
+            group.forEach(function(task) {
+              if (!task.id || seen[task.id]) return;
+              seen[task.id] = true;
+              items.push(task);
             });
           });
-        }).catch(function() {
-          return [];
         });
-      })).then(function(groups) {
-        var seen = {};
-        var items = [];
-        groups.forEach(function(group) {
-          group.forEach(function(task) {
-            if (!task.id || seen[task.id]) return;
-            seen[task.id] = true;
-            items.push(task);
-          });
-        });
+      }, Promise.resolve()).then(function() {
         return items;
       });
     }
@@ -14219,7 +14231,8 @@
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var worker = state.desk.daily.reportWorker || "";
       if (!worker) return "";
-      var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) {
+      var workers = collectDeskDailyWorkers_(dateKey);
+      var tasks = mergeDeskDailyCarryoverTasks_(dateKey, getDeskDailyJournalTasks_(dateKey), workers).filter(function(item) {
         return isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
       });
       var memos = getDeskDailyJournalMemos_(dateKey)

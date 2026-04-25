@@ -743,7 +743,7 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
     completed: !!(item && item.completed),
     unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
     createdAt: String((item && item.createdAt) || now).trim(),
-    updatedAt: now
+    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim()
   };
   if (task.completed) {
     task.unresolvedReason = "";
