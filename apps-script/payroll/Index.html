@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <style>
     :root {
       --bg-dark: #082b24;
@@ -6989,9 +6990,254 @@
       color: #065f46;
     }
 
+    /* Final desk console overrides: keep the monthly desk screen compact and non-folder-like. */
+    body { background: #e8f0eb; padding: 0; }
+    .app-shell {
+      width: 100%;
+      max-width: none;
+      min-height: 100vh;
+      margin: 0;
+      grid-template-columns: 260px minmax(0, 1fr);
+      border: 0;
+      border-radius: 0;
+      background: #e8f0eb;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 18px 16px;
+      gap: 16px;
+      background: #062d25;
+    }
+    .sidebar::after { display: none; }
+    .brand-logo { width: 32px; height: 32px; border-radius: 8px; margin-bottom: 14px; box-shadow: none; filter: none; background: #fff; }
+    .brand-title { font-family: "Pretendard", sans-serif; font-size: 24px; letter-spacing: 0; }
+    .brand-sub { color: rgba(236, 253, 245, 0.84); font-size: 13px; line-height: 1.55; }
+    .sidebar-card { border-radius: 8px; background: rgba(255,255,255,0.06); border-color: rgba(199,230,218,0.24); }
+    #deskTodayWorkerMeta {
+      margin-top: 10px;
+      border: 1px solid rgba(199,230,218,0.18);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+      color: #d8f6e7;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .worker-date,
+    .sidebar-action,
+    .sidebar-gear,
+    .module-tab,
+    .desk-subtab,
+    .desk-panel,
+    .desk-toolbar,
+    .desk-kpi-card,
+    .desk-calendar-week,
+    .desk-calendar-week-head,
+    .desk-week-summary-trigger,
+    .desk-week-collapse-btn,
+    .desk-shift-chip,
+    .desk-day-count,
+    .desk-day-empty-slot,
+    .desk-day-copy-btn,
+    .desk-side-card,
+    .desk-day-shift-item,
+    .desk-insight-item,
+    .desk-highlight-item,
+    .desk-live-feed,
+    .desk-live-feed-bubble,
+    .desk-live-feed-edit,
+    .desk-live-feed-pill,
+    .desk-live-feed-empty,
+    .desk-notice,
+    .desk-empty,
+    .desk-worker-badge,
+    .desk-role-badge,
+    .desk-duration-badge,
+    .desk-badge,
+    .desk-shift-order,
+    .desk-tag-chip,
+    .desk-month-input,
+    .desk-filter-field select,
+    .desk-filter-field input,
+    .desk-nav-btn,
+    .desk-view-tab,
+    .desk-primary-btn,
+    .desk-ghost-btn,
+    .tuition-action-btn,
+    .mini-btn {
+      border-radius: 8px;
+      box-shadow: none;
+    }
+    .worker-item {
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fbf9;
+      border: 1px solid var(--desk-card-border, #d7e3dc);
+      box-shadow: none;
+      color: #173042;
+    }
+    .worker-item::before,
+    .worker-item::after { display: none; }
+    .worker-item-inner { min-height: 0; gap: 7px; }
+    .worker-shift-top,
+    .worker-shift-name-row,
+    .worker-shift-time-row,
+    .worker-item-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+    .worker-shift-name-row { justify-content: flex-start; }
+    .worker-initial {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--desk-worker-bg, #edf2f7);
+      color: var(--desk-worker-fg, #334155);
+      border: 1px solid var(--desk-worker-border, #d6dee8);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+    .worker-name { font-size: 15px; font-weight: 900; color: #10283a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .worker-shift-time { color: #42576a; font-size: 12px; font-weight: 800; white-space: nowrap; }
+    .worker-shift-note { color: #657789; font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .worker-item-progress { gap: 5px; margin-top: 2px; }
+    .worker-item-progress-track { height: 6px; padding: 0; border: 0; background: #e5ece8; box-shadow: none; }
+    .worker-item-progress-fill { background: #0d684d; box-shadow: none; }
+    .worker-item-meta-row { margin-top: 0; }
+    .worker-item-progress-label { color: #315268; font-size: 11px; text-shadow: none; }
+    .worker-item-progress-label strong { color: #607082; font-weight: 800; }
+    .percent-badge { padding: 4px 7px; background: #fff; border: 1px solid #d9e4df; color: #0d684d; font-size: 11px; box-shadow: none; }
+    .main { min-height: 100vh; padding: 12px 340px 18px 18px; background: #e8f0eb; gap: 10px; }
+    .main.expense-live-mode { padding-right: 340px; }
+    .module-tabs {
+      min-height: 44px;
+      margin: -12px -340px 2px -18px;
+      padding: 8px 18px;
+      gap: 8px;
+      align-items: center;
+      background: #062d25;
+      border-bottom: 1px solid rgba(216,230,222,0.18);
+    }
+    .module-tab { padding: 10px 16px; border-color: transparent; background: transparent; color: #d9eee4; }
+    .module-tab.active { background: #fff; color: #0b3f35; border-color: #d8e6de; }
+    .desk-shell { gap: 0; }
+    .desk-subtabs { width: fit-content; gap: 6px; padding: 0; margin: 0 0 6px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+    .desk-subtab { border: 1px solid #d3e0da; background: #fff; color: #43576a; padding: 10px 18px; font-size: 13px; }
+    .desk-subtab.active { background: #0d684d; border-color: #0d684d; color: #fff; transform: none; box-shadow: none; }
+    .desk-panel { border-color: #d4e0da; background: #fff; padding: 16px; gap: 12px; min-height: 0; }
+    .desk-panel-head { align-items: center; padding: 2px 4px 4px; }
+    .desk-panel-title { font-size: 22px; letter-spacing: 0; }
+    .desk-panel-sub { margin-top: 4px; font-size: 12px; }
+    .desk-toolbar { background: #fff; padding: 12px; align-items: center; flex-wrap: nowrap; }
+    .desk-toolbar-left,
+    .desk-toolbar-right { flex-direction: row; align-items: center; gap: 8px; }
+    .desk-toolbar-right { flex: 1 1 auto; justify-content: flex-end; margin-left: auto; }
+    .desk-month-nav,
+    .desk-action-row,
+    .desk-filter-bar,
+    .desk-quick-actions,
+    .desk-view-tabs { gap: 8px; }
+    .desk-quick-actions { display: flex; flex-wrap: wrap; align-items: center; }
+    .desk-nav-btn,
+    .desk-view-tab { padding: 9px 12px; font-size: 12px; background: #fff; border-color: #d4e0da; }
+    .desk-nav-btn.accent,
+    .desk-primary-btn,
+    .tuition-action-btn.primary { background: #0d684d; border-color: #0d684d; color: #fff; }
+    .desk-ghost-btn,
+    .desk-primary-btn,
+    .tuition-action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+    .desk-toolbar .tuition-action-btn.primary { min-width: 148px; flex: 0 0 auto; }
+    .desk-ghost-btn i,
+    .desk-primary-btn i,
+    .desk-nav-btn i,
+    .tuition-action-btn i { width: 14px; height: 14px; flex: 0 0 auto; }
+    .desk-month-input { min-width: 164px; }
+    .desk-filter-field { min-width: 160px; gap: 3px; }
+    .desk-filter-field label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .desk-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .desk-kpi-card { min-height: 74px; padding: 11px 12px; background: #fbfdfc; }
+    .desk-kpi-label { font-size: 11px; }
+    .desk-kpi-value { font-size: 22px; }
+    .desk-kpi-sub { font-size: 11px; }
+    .desk-view-tabs { padding: 0; border: 0; border-radius: 0; background: transparent; }
+    .desk-view-tab { border: 1px solid #d4e0da; background: #fff; }
+    .desk-view-tab.active { background: #0d684d; border-color: #0d684d; color: #fff; transform: none; box-shadow: none; }
+    .desk-calendar-board { padding: 0; border: 0; background: transparent; box-shadow: none; }
+    .desk-calendar-weekdays { display: none; }
+    .desk-calendar-grid { gap: 8px; }
+    .desk-calendar-week { gap: 0; border: 1px solid #d8e4de; background: #fff; overflow: visible; }
+    .desk-calendar-week-head,
+    .desk-calendar-week-head.collapsible { border: 0; border-bottom: 1px solid #edf2ef; border-radius: 8px 8px 0 0; background: #f8fbf9; padding: 10px 12px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head { border-bottom: 0; border-radius: 8px; }
+    .desk-calendar-week-head-title { font-size: 15px; }
+    .desk-calendar-week-head-sub { font-size: 12px; }
+    .desk-calendar-week-row { gap: 0; padding: 0; border-radius: 0 0 8px 8px; overflow: hidden; }
+    .desk-calendar-day { min-height: 236px; border-width: 0 1px 0 0; border-color: #edf2ef; border-radius: 0; background: #fff; padding: 10px; gap: 7px; box-shadow: none; }
+    .desk-calendar-day:nth-child(7n) { border-right: 0; }
+    .desk-calendar-day:hover { transform: none; box-shadow: inset 0 0 0 1px #bdd8ca; }
+    .desk-calendar-day.outside { background: #f8faf9; opacity: 0.68; }
+    .desk-calendar-day.today { background: #f1f8f4; box-shadow: inset 0 0 0 2px #0d684d; border-color: #0d684d; }
+    .desk-calendar-day.selected { box-shadow: inset 0 0 0 2px #0d684d; }
+    .desk-day-num { font-size: 17px; }
+    .desk-calendar-day.today .desk-day-num { min-width: auto; height: auto; padding: 2px 8px; border-radius: 8px; box-shadow: none; }
+    .desk-day-shifts { gap: 6px; min-height: 120px; }
+    .desk-shift-chip,
+    .desk-shift-chip.tone-morning,
+    .desk-shift-chip.tone-afternoon,
+    .desk-shift-chip.tone-night,
+    .desk-shift-chip.tone-resident,
+    .desk-shift-chip.tone-unavailable { padding: 7px 8px; gap: 4px; background: var(--desk-card-tint, #f5f8f6) !important; }
+    .desk-shift-chip.active { box-shadow: inset 0 0 0 2px rgba(13,104,77,0.28); }
+    .desk-shift-name { font-size: 12px; }
+    .desk-shift-time,
+    .desk-shift-meta,
+    .desk-shift-note { font-size: 11px; }
+    .desk-shift-note { color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-day-empty-slot { min-height: 30px; background: #f8fbf9; border-color: #d8e4de; }
+    .desk-day-copy-btn { min-height: 30px; background: #fff; }
+    .desk-calendar-side { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr); gap: 10px; }
+    .desk-side-card { padding: 12px; gap: 10px; background: #fff; }
+    .desk-day-shift-item,
+    .desk-insight-item,
+    .desk-highlight-item { padding: 10px; background: #fbfdfc; }
+    .desk-insight-tab.active { background: #0d684d; box-shadow: none; }
+    .desk-live-feed { top: 76px; right: 18px; width: 304px; max-height: calc(100vh - 94px); padding: 16px 14px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
+    .desk-live-feed-title { font-size: 20px; letter-spacing: 0; }
+    .global-sync-ring { width: 9px; height: 9px; border-width: 0; background: #10b981; }
+    .global-sync-widget.error .global-sync-ring { background: #dc2626; }
+    .global-sync-widget.stopped .global-sync-ring { background: #94a3b8; }
+    .desk-live-feed-list { position: relative; gap: 10px; padding: 4px 4px 8px 18px; margin: 0; }
+    .desk-live-feed-list::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 12px; width: 2px; background: #d8e4de; }
+    .desk-live-feed-item { position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; }
+    .desk-live-feed-dot { position: absolute; left: -15px; top: 18px; width: 8px; height: 8px; border-radius: 999px; background: var(--desk-worker-accent, #0d684d); box-shadow: 0 0 0 4px #fff; }
+    .desk-live-feed-timeblock { color: #607082; padding-top: 10px; }
+    .desk-live-feed-bubble { border: 1px solid var(--desk-card-border, #d8e4de); background: var(--desk-feed-bg, #eef8f3); padding: 11px; min-width: 0; }
+    .desk-live-feed-content { margin-top: 7px; font-size: 13px; line-height: 1.5; }
+    .desk-live-feed-edit { width: 24px; height: 24px; border: 1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.72); color: #4b5f70; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .desk-live-feed-edit svg { width: 14px; height: 14px; }
+    .folder-card,
+    .folder-tab,
+    .folder-body { border-radius: 8px; }
+
     @media (max-width: 1360px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { display: none; }
+      .main,
+      .main.expense-live-mode { padding: 12px; }
+      .module-tabs { margin: -12px -12px 2px; }
+      .desk-live-feed { display: none !important; }
       .desk-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .desk-journal-summary-grid,
       .desk-shared-summary-list { grid-template-columns: 1fr; }
@@ -7059,7 +7305,7 @@
       <section class="brand">
         <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
         <h1 class="brand-title" id="brandTitle">데스크 관리</h1>
-        <p class="brand-sub" id="brandSub">근무 현황, 소모품, 업무일지를 한 화면에서 관리합니다.</p>
+        <p class="brand-sub" id="brandSub">근무표와 데스크 운영 기록을 한 화면에서 관리</p>
       </section>
 
       <div class="sidebar-section" id="sidebarDeskSection">
@@ -7501,7 +7747,7 @@
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">월별 근무표</h2>
-                <p class="desk-panel-sub">월별 캘린더, 근무자별 집계, 일정 편집을 한 화면에서 관리합니다. 팀장급 상주 근무자는 시간 집계에서 제외하고 일정만 표시합니다.</p>
+                <p class="desk-panel-sub">근무자 배치, 일정 추가, 복사 작업을 한 화면에서 관리</p>
               </div>
               <span class="desk-status-chip">Firebase 서버 저장</span>
             </header>
@@ -7515,12 +7761,10 @@
                     <button class="desk-nav-btn" id="deskNextMonthBtn" type="button">다음 월 ▶</button>
                     <button class="desk-nav-btn accent" id="deskFocusTodayBtn" type="button">오늘로 이동</button>
                   </div>
-                  <div class="desk-legend">
-                    <span class="desk-legend-item tone-morning">오전</span>
-                    <span class="desk-legend-item tone-afternoon">오후</span>
-                    <span class="desk-legend-item tone-night">야간/마감</span>
-                    <span class="desk-legend-item tone-resident">상주</span>
-                    <span class="desk-legend-item tone-unavailable">근무 불가</span>
+                  <div class="desk-quick-actions">
+                    <button class="desk-ghost-btn" id="deskCopyPrevDayBtn" type="button"><i data-lucide="copy"></i>전날 복사</button>
+                    <button class="desk-ghost-btn" id="deskCopyPrevWeekBtn" type="button"><i data-lucide="calendar-days"></i>지난주 같은 요일 복사</button>
+                    <button class="desk-ghost-btn" id="deskApplyFixedScheduleQuickBtn" type="button"><i data-lucide="calendar-plus"></i>고정 스케줄 불러오기</button>
                   </div>
                 </div>
                 <div class="desk-toolbar-right">
@@ -7546,7 +7790,7 @@
                     </div>
                   </div>
                   <div class="desk-action-row">
-                    <button class="tuition-action-btn primary" id="deskNewShiftBtn" type="button">근무 일정 추가</button>
+                    <button class="tuition-action-btn primary" id="deskNewShiftBtn" type="button"><i data-lucide="plus"></i>근무 일정 추가</button>
                   </div>
                 </div>
               </section>
@@ -9142,6 +9386,9 @@
     var deskPrevMonthBtnEl = document.getElementById("deskPrevMonthBtn");
     var deskNextMonthBtnEl = document.getElementById("deskNextMonthBtn");
     var deskFocusTodayBtnEl = document.getElementById("deskFocusTodayBtn");
+    var deskCopyPrevDayBtnEl = document.getElementById("deskCopyPrevDayBtn");
+    var deskCopyPrevWeekBtnEl = document.getElementById("deskCopyPrevWeekBtn");
+    var deskApplyFixedScheduleQuickBtnEl = document.getElementById("deskApplyFixedScheduleQuickBtn");
     var deskNewShiftBtnEl = document.getElementById("deskNewShiftBtn");
     var deskWorkerFilterEl = document.getElementById("deskWorkerFilter");
     var deskWorkerSearchEl = document.getElementById("deskWorkerSearch");
@@ -9435,7 +9682,7 @@
       var configMap = {
         expense: {
           title: "데스크 관리",
-          sub: "근무 현황, 소모품, 업무일지를 한 화면에서 관리합니다."
+          sub: "근무표와 데스크 운영 기록을 한 화면에서 관리"
         },
         tuition: {
           title: "재원생 수강료 정산",
@@ -10626,7 +10873,7 @@
         seen[safe] = true;
         names.push(safe);
       }
-      ["홍성우", "안종성", "인유빈", "이민현", "유지연", "김유민", "이창연"].forEach(push);
+      ["홍성우", "이상언", "안정성", "유기현", "이동혁", "안종성", "인유빈", "이민현", "유지연", "김유민", "이창연"].forEach(push);
       (state.desk.scheduleItems || []).forEach(function(item) { push(item.worker); });
       (state.desk.fixedScheduleEntries || []).forEach(function(item) { push(item.worker); });
       return names.sort(function(a, b) { return a.localeCompare(b, "ko"); });
@@ -10875,6 +11122,12 @@
       return Array.prototype.slice.call(arguments).join("_").replace(/\s+/g, "");
     }
 
+    function refreshLucideIcons_() {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+    }
+
     function renderDeskLayout_() {
       Array.prototype.forEach.call(deskTabEls, function(btn) {
         btn.classList.toggle("active", (btn.getAttribute("data-desk-tab") || "") === state.desk.activeTab);
@@ -10888,6 +11141,7 @@
       if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
       renderDeskLiveFeed_();
+      refreshLucideIcons_();
     }
 
     function renderDeskViewState_() {
@@ -11069,6 +11323,7 @@
                   '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
                   '<span class="desk-shift-time-row"><span class="desk-time-badge-row"><span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span><span class="desk-shift-order">' + escapeHtml(formatDeskShiftOrder_(itemIndex)) + '</span></span>' +
                   '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
+                  (item.note ? '<span class="desk-shift-note">' + escapeHtml(item.note) + '</span>' : '') +
                 '</button>';
               }).join("") : '') +
               (unavailableItems.length ? (
@@ -11093,16 +11348,14 @@
         });
         rowsHtml.push(
           '<section class="desk-calendar-week' + (isCollapsed ? ' collapsed' : '') + '">' +
-            '<div class="desk-calendar-week-head' + (week + 1 < getDeskCurrentWeekIndex_(monthKey) && getDeskMonthKey_(new Date()) === monthKey ? ' collapsible' : '') + '">' +
+            '<div class="desk-calendar-week-head collapsible">' +
               '<div class="desk-calendar-week-head-main">' +
                 '<div class="desk-calendar-week-head-title">' + (week + 1) + '주차 · ' + escapeHtml(weekRangeText) + '</div>' +
                 '<div class="desk-calendar-week-head-sub">일정 ' + weekShiftCount + '건 · 집계 대상 ' + escapeHtml(formatDeskHours_(weekHours)) + '</div>' +
               '</div>' +
               '<div class="desk-calendar-week-head-actions">' +
                 renderDeskWeekSummaryTrigger_(week + 1, weekSummary, weekSummaryKey) +
-                (week + 1 < getDeskCurrentWeekIndex_(monthKey) && getDeskMonthKey_(new Date()) === monthKey
-                  ? '<button type="button" class="desk-week-collapse-btn" data-desk-week-toggle="' + escapeHtml(weekSummaryKey) + '">' + (isCollapsed ? '펼치기' : '접기') + '</button>'
-                  : '') +
+                '<button type="button" class="desk-week-collapse-btn" data-desk-week-toggle="' + escapeHtml(weekSummaryKey) + '">' + (isCollapsed ? '펼치기' : '접기') + '</button>' +
               '</div>' +
             '</div>' +
             '<div class="desk-calendar-week-row">' + weekCellHtml.join("") + '</div>' +
@@ -11119,10 +11372,16 @@
     }
 
     function isDeskPastWeekCollapsed_(monthKey, weekIndex) {
-      var currentWeekIndex = getDeskCurrentWeekIndex_(monthKey);
-      if (!currentWeekIndex || weekIndex >= currentWeekIndex) return false;
       var key = buildDeskWeekSummaryKey_(monthKey, weekIndex);
-      return !state.desk.expandedPastWeekKeys[key];
+      if (Object.prototype.hasOwnProperty.call(state.desk.expandedPastWeekKeys || {}, key)) {
+        return !state.desk.expandedPastWeekKeys[key];
+      }
+      var selectedMonthKey = String(state.desk.selectedDateKey || "").slice(0, 7);
+      var activeWeekIndex = selectedMonthKey === monthKey
+        ? getDeskWeekIndex_(state.desk.selectedDateKey, monthKey)
+        : getDeskCurrentWeekIndex_(monthKey);
+      if (!activeWeekIndex) activeWeekIndex = 1;
+      return Number(weekIndex) !== Number(activeWeekIndex);
     }
 
     function formatDeskWeekRange_(weekCells) {
@@ -12019,15 +12278,25 @@
       }
       deskTodayWorkerListEl.innerHTML = items.map(function(item) {
         var tone = getDeskShiftTone_(item);
+        var paletteStyle = getDeskWorkerBadgeStyle_(item.worker);
         return '<article class="worker-item tone-' + tone + (item.resident ? ' resident' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '"' +
           ' data-desk-worker-card="1" data-desk-worker-date="' + escapeHtml(item.date || "") + '"' +
           ' data-desk-worker-start="' + escapeHtml(item.start || "") + '"' +
           ' data-desk-worker-end="' + escapeHtml(item.end || "") + '"' +
           ' data-desk-worker-resident="' + (item.resident ? '1' : '0') + '">' +
           '<div class="worker-item-inner">' +
-            '<div class="k">' + getDeskRoleBadgeHtml_(item) + '</div>' +
-            '<div class="v">' + getDeskWorkerBadgeHtml_(item.worker) + '</div>' +
-            '<div class="sub"><span class="desk-time-badge-row"><span>' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span>' + (item.note ? " · " + escapeHtml(item.note) : "") + '</div>' +
+            '<div class="worker-shift-top">' +
+              getDeskRoleBadgeHtml_(item) +
+              renderDeskDurationBadge_(item) +
+            '</div>' +
+            '<div class="worker-shift-name-row">' +
+              '<span class="worker-initial" style="' + escapeHtml(paletteStyle) + '">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
+              '<span class="worker-name">' + escapeHtml(item.worker || "-") + '</span>' +
+            '</div>' +
+            '<div class="worker-shift-time-row">' +
+              '<span class="worker-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
+            '</div>' +
+            '<div class="worker-shift-note">' + escapeHtml(item.note || getDeskToneLabel_(tone)) + '</div>' +
             '<div class="worker-item-progress">' +
               '<div class="worker-item-progress-track"><div class="worker-item-progress-fill" data-desk-worker-fill></div></div>' +
               '<div class="worker-item-meta-row">' +
@@ -12470,7 +12739,7 @@
     }
 
     function formatDeskTodayLabel_() {
-      return formatDeskDateLabel_(getDeskDateKey_(new Date()), true) + " 기준";
+      return formatDeskDateLabel_(getDeskDateKey_(new Date()), true);
     }
 
     function formatDeskShiftTime_(item) {
@@ -13280,6 +13549,10 @@
     function getDeskWorkerPalette_(name) {
       var map = {
         "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ff8a3d", accentFg: "#ffffff" },
+        "이상언": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#14b8a6", accentFg: "#ffffff" },
+        "안정성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#7c3aed", accentFg: "#ffffff" },
+        "유기현": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd", accent: "#3b82f6", accentFg: "#ffffff" },
+        "이동혁": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff", accent: "#2563eb", accentFg: "#ffffff" },
         "안종성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#8b5cf6", accentFg: "#ffffff" },
         "인유빈": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd", accent: "#3b82f6", accentFg: "#ffffff" },
         "이미현": { bg: "#f4e8ff", fg: "#7c3aed", border: "#ddc4ff", accent: "#c084fc", accentFg: "#ffffff" },
@@ -13338,6 +13611,10 @@
       };
       var workerTone = {
         "김유민": { bg: "#dfeaff" },
+        "이상언": { bg: "#ddf8ee" },
+        "안정성": { bg: "#eadfff" },
+        "유기현": { bg: "#dfeaff" },
+        "이동혁": { bg: "#dfeaff" },
         "이창연": { bg: "#d9fbf2" },
         "홍성우": { bg: "#ffe5d6" },
         "이미현": { bg: "#efe0ff" },
@@ -13390,7 +13667,7 @@
     }
 
     function getDeskRoleBadgeHtml_(item) {
-      return '<span class="desk-role-badge">' + escapeHtml(getDeskRoleEmoji_(item) + " " + getDeskDisplayRole_(item)) + '</span>';
+      return '<span class="desk-role-badge">' + escapeHtml(getDeskDisplayRole_(item)) + '</span>';
     }
 
     function getDeskWorkerBadgeHtml_(name) {
@@ -13453,18 +13730,18 @@
         String(a.note || "") === String(b.note || "");
     }
 
-    function copyDeskPreviousWeekSchedule_(targetDateKey) {
+    function copyDeskDateSchedule_(sourceDateKey, targetDateKey, emptyMessage, loadingMessage, errorPrefix) {
+      var safeSourceDateKey = String(sourceDateKey || "").trim();
       var safeTargetDateKey = String(targetDateKey || "").trim();
-      if (!safeTargetDateKey) return;
-      var sourceDateKey = shiftDeskDateKey_(safeTargetDateKey, -7);
-      var sourceMonthKey = sourceDateKey.slice(0, 7);
+      if (!safeSourceDateKey || !safeTargetDateKey) return;
+      var sourceMonthKey = safeSourceDateKey.slice(0, 7);
       var targetMonthKey = safeTargetDateKey.slice(0, 7);
       ensureDeskMonthLoaded_(sourceMonthKey).then(function() {
         var sourceItems = state.desk.scheduleItems.filter(function(item) {
-          return item.date === sourceDateKey;
+          return item.date === safeSourceDateKey;
         }).sort(compareDeskShift_);
         if (!sourceItems.length) {
-          alert("지난주 같은 요일에 복사할 근무표가 없습니다.");
+          alert(emptyMessage || "복사할 근무표가 없습니다.");
           return;
         }
         var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
@@ -13484,7 +13761,7 @@
           alert("이미 같은 구성의 근무표가 있어 새로 복사할 일정이 없습니다.");
           return;
         }
-        setLoading(true, "지난주 같은 요일 근무표를 복사하는 중입니다...");
+        setLoading(true, loadingMessage || "근무표를 복사하는 중입니다...");
         var savedEntries = [];
         var chain = Promise.resolve();
         pendingEntries.forEach(function(entry) {
@@ -13508,11 +13785,35 @@
           state.desk.selectedDateKey = safeTargetDateKey;
           renderDeskMonthlySchedule_();
         }).catch(function(err) {
-          alert("지난주 근무표 복사 오류: " + (err.message || String(err)));
+          alert((errorPrefix || "근무표 복사 오류") + ": " + (err.message || String(err)));
         }).finally(function() {
           setLoading(false);
         });
       });
+    }
+
+    function copyDeskPreviousDaySchedule_(targetDateKey) {
+      var safeTargetDateKey = String(targetDateKey || "").trim();
+      if (!safeTargetDateKey) return;
+      copyDeskDateSchedule_(
+        shiftDeskDateKey_(safeTargetDateKey, -1),
+        safeTargetDateKey,
+        "전날에 복사할 근무표가 없습니다.",
+        "전날 근무표를 복사하는 중입니다...",
+        "전날 근무표 복사 오류"
+      );
+    }
+
+    function copyDeskPreviousWeekSchedule_(targetDateKey) {
+      var safeTargetDateKey = String(targetDateKey || "").trim();
+      if (!safeTargetDateKey) return;
+      copyDeskDateSchedule_(
+        shiftDeskDateKey_(safeTargetDateKey, -7),
+        safeTargetDateKey,
+        "지난주 같은 요일에 복사할 근무표가 없습니다.",
+        "지난주 같은 요일 근무표를 복사하는 중입니다...",
+        "지난주 근무표 복사 오류"
+      );
     }
 
     function copyDeskShiftToNextDate_(shiftId) {
@@ -14372,29 +14673,28 @@
         var seqHtml = item.workerRunTotal > 1
           ? '<span class="desk-live-feed-seq">' + escapeHtml(String(item.workerRunIndex) + '/' + String(item.workerRunTotal)) + '</span>'
           : '';
-        return '<article class="folder-card" style="' + escapeHtml((item.style || "") + ';--desk-feed-z:' + String(index + 1)) + '">' +
-          '<div class="folder-tab">' +
-            '<span class="desk-live-feed-icon">' + escapeHtml(getDeskLiveFeedIcon_(item)) + '</span>' +
-            '<div class="desk-live-feed-timeblock">' +
-              '<span class="desk-live-feed-time-day">' + escapeHtml(stampMeta.date) + '</span>' +
-              '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
-            '</div>' +
+        var palette = getDeskWorkerPalette_(item.worker || "");
+        var style = (item.style || "") + ';--desk-worker-accent:' + (palette.accent || palette.fg || '#0d684d') + ';--desk-card-border:' + (palette.border || '#d8e4de') + ';';
+        return '<article class="desk-live-feed-item" style="' + escapeHtml(style) + '">' +
+          '<span class="desk-live-feed-dot" aria-hidden="true"></span>' +
+          '<div class="desk-live-feed-timeblock">' +
+            '<span class="desk-live-feed-time-day">' + escapeHtml(stampMeta.date) + '</span>' +
+            '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
           '</div>' +
-          '<div class="folder-body">' +
-            '<div class="desk-live-feed-main">' +
-              '<div class="desk-live-feed-head">' +
-                '<div class="desk-live-feed-reporter">' +
-                  '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
-                  '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
-                  seqHtml +
-                '</div>' +
-                '<span class="desk-live-feed-arrow" aria-hidden="true">↗</span>' +
+          '<div class="desk-live-feed-bubble">' +
+            '<div class="desk-live-feed-head">' +
+              '<div class="desk-live-feed-reporter">' +
+                '<span class="desk-live-feed-avatar">' + escapeHtml(getDeskWorkerInitial_(item.worker)) + '</span>' +
+                '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
+                seqHtml +
               '</div>' +
-              '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
+              '<span class="desk-live-feed-edit" aria-hidden="true"><i data-lucide="pencil"></i></span>' +
             '</div>' +
+            '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
           '</div>' +
         '</article>';
       }).join("");
+      refreshLucideIcons_();
     }
 
     function renderDeskTaskWorkerBadgeHtml_(worker) {
@@ -15604,6 +15904,24 @@
         });
       }
 
+      if (deskCopyPrevDayBtnEl) {
+        deskCopyPrevDayBtnEl.addEventListener("click", function() {
+          copyDeskPreviousDaySchedule_(state.desk.selectedDateKey || getDeskDateKey_(new Date()));
+        });
+      }
+
+      if (deskCopyPrevWeekBtnEl) {
+        deskCopyPrevWeekBtnEl.addEventListener("click", function() {
+          copyDeskPreviousWeekSchedule_(state.desk.selectedDateKey || getDeskDateKey_(new Date()));
+        });
+      }
+
+      if (deskApplyFixedScheduleQuickBtnEl) {
+        deskApplyFixedScheduleQuickBtnEl.addEventListener("click", function() {
+          applyDeskFixedScheduleToDate_(state.desk.selectedDateKey || getDeskDateKey_(new Date()), deskApplyFixedScheduleQuickBtnEl);
+        });
+      }
+
       if (deskWorkerFilterEl) {
         deskWorkerFilterEl.addEventListener("change", function() {
           state.desk.workerFilter = deskWorkerFilterEl.value || "";
@@ -15645,7 +15963,9 @@
           if (weekToggleBtn) {
             event.stopPropagation();
             var weekToggleKey = weekToggleBtn.getAttribute("data-desk-week-toggle") || "";
-            state.desk.expandedPastWeekKeys[weekToggleKey] = !state.desk.expandedPastWeekKeys[weekToggleKey];
+            var weekMatch = weekToggleKey.match(/_week_(\d+)$/);
+            var weekIndex = weekMatch ? Number(weekMatch[1] || 0) : 0;
+            state.desk.expandedPastWeekKeys[weekToggleKey] = isDeskPastWeekCollapsed_(state.desk.currentMonth, weekIndex);
             renderDeskMonthlySchedule_();
             return;
           }
