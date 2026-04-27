@@ -582,6 +582,15 @@ function normalizeDeskDateKey_(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
 }
 
+function shiftDeskDateKey_(dateKey, days) {
+  var safeDateKey = normalizeDeskDateKey_(dateKey);
+  if (!safeDateKey) return "";
+  var parts = safeDateKey.split("-");
+  var date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  date.setDate(date.getDate() + Number(days || 0));
+  return Utilities.formatDate(date, "Asia/Seoul", "yyyy-MM-dd");
+}
+
 function normalizeDeskScheduleEntry_(item, fallbackId) {
   var entry = {
     id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
@@ -653,19 +662,19 @@ function getDeskDailyJournalPendingTasks(payload) {
     if (!Object.keys(workerKeys).length) {
       return { success: true, beforeDateKey: beforeDateKey, tasks: [] };
     }
-    var root = firebaseRequestWithServiceAccount_("get", DESK_DAILY_JOURNAL_ROOT_PATH) || {};
     var tasks = [];
-    Object.keys(root).forEach(function(dateKey) {
-      var normalizedDateKey = normalizeDeskDateKey_(dateKey);
-      if (!normalizedDateKey || normalizedDateKey >= beforeDateKey) return;
-      var tasksMap = root[dateKey] && root[dateKey].tasks ? root[dateKey].tasks : {};
+    for (var offset = 1; offset <= 60; offset += 1) {
+      var normalizedDateKey = shiftDeskDateKey_(beforeDateKey, -offset);
+      if (!normalizedDateKey) continue;
+      var dayData = firebaseRequestWithServiceAccount_("get", buildDeskDailyJournalPath_(normalizedDateKey) + "/tasks") || {};
+      var tasksMap = dayData && typeof dayData === "object" ? dayData : {};
       Object.keys(tasksMap).forEach(function(id) {
         var task = normalizeDeskDailyJournalTask_(tasksMap[id], id, normalizedDateKey);
         if (task.completed) return;
         if (!workerKeys[normalizeDeskWorkerNameKey_(task.worker)]) return;
         tasks.push(task);
       });
-    });
+    }
     tasks.sort(compareDeskDailyJournalTasks_);
     return { success: true, beforeDateKey: beforeDateKey, tasks: tasks };
   } catch (e) {

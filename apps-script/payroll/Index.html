@@ -7150,12 +7150,13 @@
       margin: 0 -352px 2px -18px;
       padding: 0 28px 0 0;
       gap: 0;
-      align-items: stretch;
+      align-items: flex-end;
       background: #062d25;
       border-bottom: 1px solid rgba(216,230,222,0.18);
     }
     .module-tab {
       min-width: 116px;
+      height: 44px;
       padding: 0 22px;
       border: 0;
       border-radius: 0;
@@ -7165,11 +7166,21 @@
       font-weight: 900;
     }
     .module-tab.active {
-      background: #fff;
+      position: relative;
+      background: linear-gradient(180deg, #ffffff 0%, #f3f8f5 100%);
       color: #0b3f35;
       border-color: transparent;
-      border-radius: 0 0 8px 8px;
-      box-shadow: 0 10px 20px rgba(2, 24, 18, 0.16);
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -1px 0 rgba(255,255,255,0.9) inset, 0 10px 18px rgba(2, 24, 18, 0.12);
+    }
+    .module-tab.active::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: -1px;
+      height: 2px;
+      background: #f3f8f5;
     }
     .desk-shell { gap: 0; }
     .desk-subtabs { width: fit-content; gap: 6px; padding: 0; margin: 0 0 6px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
@@ -7217,7 +7228,57 @@
     .desk-filter-field select,
     .desk-filter-field input { min-height: 38px; }
     .desk-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-    .desk-kpi-card { min-height: 74px; padding: 11px 12px; background: #fbfdfc; }
+    .desk-kpi-card {
+      position: relative;
+      min-height: 80px;
+      padding: 11px 12px 11px 54px;
+      overflow: hidden;
+      background: #fbfdfc;
+    }
+    .desk-kpi-card::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 12%, transparent);
+      opacity: 0.9;
+    }
+    .desk-kpi-card::before {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 74px;
+      height: 44px;
+      background:
+        linear-gradient(90deg, transparent 0 18px, color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 26%, transparent) 18px 28px, transparent 28px 34px, color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 18%, transparent) 34px 46px, transparent 46px 54px, color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 30%, transparent) 54px 66px, transparent 66px);
+      opacity: 0.45;
+    }
+    .desk-kpi-icon {
+      position: absolute;
+      left: 14px;
+      top: 25px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 14%, #ffffff);
+      color: var(--desk-kpi-accent, #0d684d);
+      border: 1px solid color-mix(in srgb, var(--desk-kpi-accent, #0d684d) 22%, #d4e0da);
+      z-index: 1;
+    }
+    .desk-kpi-icon svg { width: 18px; height: 18px; }
+    .desk-kpi-card > :not(.desk-kpi-icon) { position: relative; z-index: 1; }
+    .desk-kpi-card.tone-blue { --desk-kpi-accent: #2563eb; }
+    .desk-kpi-card.tone-green { --desk-kpi-accent: #0d9488; }
+    .desk-kpi-card.tone-mint { --desk-kpi-accent: #14b8a6; }
+    .desk-kpi-card.tone-teal { --desk-kpi-accent: #10b981; }
+    .desk-kpi-card.tone-indigo { --desk-kpi-accent: #7c83db; }
     .desk-kpi-label { font-size: 11px; }
     .desk-kpi-value { font-size: 22px; }
     .desk-kpi-sub { font-size: 11px; }
@@ -7242,10 +7303,9 @@
     .desk-calendar-day:nth-child(7n) { border-right: 0; }
     .desk-calendar-day:hover { transform: none; box-shadow: inset 0 0 0 1px #bdd8ca; }
     .desk-calendar-day.outside { background: #f8faf9; opacity: 0.68; }
-    .desk-calendar-day.today,
+    .desk-calendar-day.today { background: #f7fbf9; box-shadow: inset 0 0 0 1px #8bc7ad; border-color: #8bc7ad; }
     .desk-calendar-day.selected { padding-top: 0; background: #fff; box-shadow: inset 0 0 0 2px #0d684d; border-color: #0d684d; }
     .desk-day-head { min-height: 28px; }
-    .desk-calendar-day.today .desk-day-head,
     .desk-calendar-day.selected .desk-day-head {
       margin: 0 -10px 2px;
       padding: 8px 10px;
@@ -7253,12 +7313,32 @@
       background: #0d684d;
       color: #fff;
     }
+    .desk-calendar-day.today:not(.selected) .desk-day-head {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: #0d684d;
+    }
     .desk-day-num { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 900; }
     .desk-day-today-label { font-size: 12px; color: rgba(255,255,255,0.88); }
-    .desk-calendar-day.today .desk-day-num,
     .desk-calendar-day.selected .desk-day-num { min-width: auto; height: auto; padding: 0; border-radius: 0; color: #fff; background: transparent; box-shadow: none; }
-    .desk-calendar-day.today .desk-day-count,
     .desk-calendar-day.selected .desk-day-count { background: rgba(255,255,255,0.17); border-color: rgba(255,255,255,0.2); color: #fff; }
+    .desk-calendar-day.today:not(.selected) .desk-day-num {
+      min-width: auto;
+      height: auto;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #0d684d;
+      box-shadow: none;
+    }
+    .desk-calendar-day.today:not(.selected) .desk-day-today-label {
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: #e2f4eb;
+      color: #0d684d;
+      font-size: 10px;
+    }
     .desk-day-shifts { gap: 5px; min-height: 0; }
     .desk-shift-chip,
     .desk-shift-chip.tone-morning,
@@ -7290,7 +7370,8 @@
     .desk-shift-meta { justify-self: end; }
     .desk-calendar-day .desk-shift-order { display: none; }
     .desk-shift-note { display: none; color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .desk-day-empty-slot { min-height: 26px; background: #f8fbf9; border-color: #d8e4de; font-size: 10px; }
+    .desk-day-empty-slot { min-height: 26px; background: #f8fbf9; border-color: #d8e4de; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .desk-day-empty-slot svg { width: 13px; height: 13px; }
     .desk-day-copy-btn { min-height: 26px; background: #fff; font-size: 10px; }
     .desk-calendar-side { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr); gap: 10px; }
     .desk-side-card { padding: 12px; gap: 10px; background: #fff; }
@@ -7884,27 +7965,32 @@
               </section>
 
               <section class="desk-kpi-grid">
-                <article class="desk-kpi-card">
+                <article class="desk-kpi-card tone-blue">
+                  <div class="desk-kpi-icon" aria-hidden="true"><i data-lucide="calendar-days"></i></div>
                   <div class="desk-kpi-label">월간 일정 수</div>
                   <div class="desk-kpi-value" id="deskKpiShiftCount">0건</div>
                   <div class="desk-kpi-sub" id="deskKpiShiftCountSub">전체 일정 기준</div>
                 </article>
-                <article class="desk-kpi-card">
+                <article class="desk-kpi-card tone-green">
+                  <div class="desk-kpi-icon" aria-hidden="true"><i data-lucide="clock-3"></i></div>
                   <div class="desk-kpi-label">집계 대상 월 근무시간</div>
                   <div class="desk-kpi-value" id="deskKpiMonthlyHours">0시간</div>
                   <div class="desk-kpi-sub" id="deskKpiMonthlyHoursSub">상주 근무 제외</div>
                 </article>
-                <article class="desk-kpi-card">
+                <article class="desk-kpi-card tone-mint">
+                  <div class="desk-kpi-icon" aria-hidden="true"><i data-lucide="bar-chart-3"></i></div>
                   <div class="desk-kpi-label">주간 최대 근무시간</div>
                   <div class="desk-kpi-value" id="deskKpiWeeklyPeak">0시간</div>
                   <div class="desk-kpi-sub" id="deskKpiWeeklyPeakSub">근무자 기준</div>
                 </article>
-                <article class="desk-kpi-card">
+                <article class="desk-kpi-card tone-teal">
+                  <div class="desk-kpi-icon" aria-hidden="true"><i data-lucide="users-round"></i></div>
                   <div class="desk-kpi-label">상주 근무 배치일</div>
                   <div class="desk-kpi-value" id="deskKpiResidentDays">0일</div>
                   <div class="desk-kpi-sub" id="deskKpiResidentDaysSub">팀장급 상주 포함</div>
                 </article>
-                <article class="desk-kpi-card">
+                <article class="desk-kpi-card tone-indigo">
+                  <div class="desk-kpi-icon" aria-hidden="true"><i data-lucide="moon-star"></i></div>
                   <div class="desk-kpi-label">야간/마감 커버</div>
                   <div class="desk-kpi-value" id="deskKpiNightCount">0건</div>
                   <div class="desk-kpi-sub" id="deskKpiNightCountSub">오후 7시 이후 기준</div>
@@ -9169,6 +9255,7 @@
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
+    var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
     var DESK_FIXED_SCHEDULE_STORAGE_KEY = "desk_portal_fixed_schedule_v1";
@@ -11265,6 +11352,7 @@
       renderDeskFixedSchedule_();
       renderDeskEditorState_(visibleMonthItems);
       renderDeskTodayWorkers_();
+      refreshLucideIcons_();
     }
 
     function renderDeskLoadingState_() {
@@ -11431,7 +11519,7 @@
                 }).join("") : '')
               ) : '') +
               '<div class="desk-day-actions">' +
-                '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '">+ 이 날짜에 일정 추가</button>' +
+                '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
                 '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '">지난주 같은 요일 복사</button>' +
               '</div>' +
             '</div>' +
@@ -13430,6 +13518,9 @@
     }
 
     function deskRealtimeFetchJson_(method, url, payload) {
+      if (!DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED && String(url || "").indexOf(DESK_DAILY_JOURNAL_RT_PATH) !== -1) {
+        return Promise.reject(new Error("일일 업무일지는 서버 API 경로로만 동기화합니다."));
+      }
       var options = {
         method: method,
         cache: "no-store",
@@ -13464,7 +13555,7 @@
     function saveDeskDailyTaskRemote_(item) {
       return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
         .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled) throw err;
+          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
           return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "tasks/" + item.id), item);
         });
     }
@@ -13472,7 +13563,7 @@
     function deleteDeskDailyTaskRemote_(dateKey, taskId) {
       return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
         .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled) throw err;
+          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
           return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "tasks/" + taskId), null);
         });
     }
@@ -13480,7 +13571,7 @@
     function saveDeskDailyMemoRemote_(item) {
       return runDeskDailyJournalServerMutation_("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
         .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled) throw err;
+          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
           return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "memos/" + item.id), item);
         });
     }
@@ -13488,7 +13579,7 @@
     function deleteDeskDailyMemoRemote_(dateKey, memoId) {
       return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
         .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled) throw err;
+          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
           return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "memos/" + memoId), null);
         });
     }
@@ -13567,7 +13658,7 @@
 
     function startDeskDailyJournalRealtime_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
-      if (!safeDateKey || !state.desk.daily.realtimeEnabled || typeof EventSource === "undefined") {
+      if (!safeDateKey || !state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || typeof EventSource === "undefined") {
         setDeskDailySyncStatus_("stopped");
         return;
       }
@@ -14062,7 +14153,7 @@
           if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
         })
         .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled) {
+          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
             setDeskDailySyncStatus_("stopped");
             throw err;
           }
@@ -14142,12 +14233,13 @@
         state.desk.daily.carryoverDateKey = safeDateKey;
         state.desk.daily.carryoverWorkerKey = workerKey;
       }).catch(function() {
-        return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
-          state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
-          state.desk.daily.carryoverDateKey = safeDateKey;
-          state.desk.daily.carryoverWorkerKey = workerKey;
-        });
-      }).catch(function() {
+        if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
+          return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
+            state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
+            state.desk.daily.carryoverDateKey = safeDateKey;
+            state.desk.daily.carryoverWorkerKey = workerKey;
+          });
+        }
         return fetchDeskDailyCarryoverTasksByDateScan_(safeDateKey, workerNames).then(function(items) {
           state.desk.daily.carryoverTasks = items.sort(compareDeskDailyTask_);
           state.desk.daily.carryoverDateKey = safeDateKey;
