@@ -6997,7 +6997,7 @@
       max-width: none;
       min-height: 100vh;
       margin: 0;
-      grid-template-columns: 260px minmax(0, 1fr);
+      grid-template-columns: 254px minmax(0, 1fr);
       border: 0;
       border-radius: 0;
       background: #e8f0eb;
@@ -7009,15 +7009,30 @@
       top: 0;
       height: 100vh;
       overflow: auto;
-      padding: 18px 16px;
+      padding: 14px 18px;
       gap: 16px;
       background: #062d25;
     }
     .sidebar::after { display: none; }
-    .brand-logo { width: 32px; height: 32px; border-radius: 8px; margin-bottom: 14px; box-shadow: none; filter: none; background: #fff; }
-    .brand-title { font-family: "Pretendard", sans-serif; font-size: 24px; letter-spacing: 0; }
-    .brand-sub { color: rgba(236, 253, 245, 0.84); font-size: 13px; line-height: 1.55; }
-    .sidebar-card { border-radius: 8px; background: rgba(255,255,255,0.06); border-color: rgba(199,230,218,0.24); }
+    .brand { gap: 12px; padding-bottom: 18px; border-bottom: 1px solid rgba(216,230,222,0.16); }
+    .brand-kicker { display: flex; align-items: center; gap: 8px; min-height: 28px; color: #fff; font-size: 14px; font-weight: 900; letter-spacing: -0.01em; }
+    .brand-logo { width: 28px; height: 28px; border-radius: 6px; margin-bottom: 0; box-shadow: none; filter: none; background: #fff; }
+    .brand-title { margin-top: 16px; font-family: "Pretendard", sans-serif; font-size: 25px; line-height: 1.15; letter-spacing: -0.01em; }
+    .brand-sub { max-width: 210px; color: rgba(236, 253, 245, 0.86); font-size: 13px; line-height: 1.55; }
+    .sidebar-card { border-radius: 8px; background: rgba(255,255,255,0.06); border-color: rgba(199,230,218,0.24); padding: 14px 12px; }
+    .sidebar-card h3 { font-size: 15px; letter-spacing: -0.01em; }
+    #sidebarDeskSection .sidebar-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px 8px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    #sidebarDeskSection .sidebar-card h3,
+    #sidebarDeskSection .worker-date { align-self: center; margin: 0; }
+    #deskTodayWorkerList,
+    #deskTodayWorkerMeta { grid-column: 1 / -1; }
     #deskTodayWorkerMeta {
       margin-top: 10px;
       border: 1px solid rgba(199,230,218,0.18);
@@ -7073,17 +7088,19 @@
       border-radius: 8px;
       box-shadow: none;
     }
+    .worker-list { gap: 8px; }
     .worker-item {
       border-radius: 8px;
-      padding: 10px;
-      background: #f8fbf9;
+      padding: 10px 11px;
+      min-height: 0;
+      background: #fbfdfc;
       border: 1px solid var(--desk-card-border, #d7e3dc);
-      box-shadow: none;
+      box-shadow: 0 10px 22px rgba(2, 24, 18, 0.16);
       color: #173042;
     }
     .worker-item::before,
     .worker-item::after { display: none; }
-    .worker-item-inner { min-height: 0; gap: 7px; }
+    .worker-item-inner { min-height: 0; gap: 6px; }
     .worker-shift-top,
     .worker-shift-name-row,
     .worker-shift-time-row,
@@ -7095,43 +7112,65 @@
       min-width: 0;
     }
     .worker-shift-name-row { justify-content: flex-start; }
+    .worker-item .desk-role-badge {
+      padding: 4px 8px;
+      border-color: var(--desk-card-border, #d6dee8);
+      background: rgba(255,255,255,0.82);
+      color: var(--desk-card-text, #305064);
+      font-size: 10px;
+    }
     .worker-initial {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
       background: var(--desk-worker-bg, #edf2f7);
       color: var(--desk-worker-fg, #334155);
       border: 1px solid var(--desk-worker-border, #d6dee8);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
       flex: 0 0 auto;
     }
     .worker-name { font-size: 15px; font-weight: 900; color: #10283a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .worker-shift-time { color: #42576a; font-size: 12px; font-weight: 800; white-space: nowrap; }
-    .worker-shift-note { color: #657789; font-size: 11px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .worker-item-progress { gap: 5px; margin-top: 2px; }
-    .worker-item-progress-track { height: 6px; padding: 0; border: 0; background: #e5ece8; box-shadow: none; }
-    .worker-item-progress-fill { background: #0d684d; box-shadow: none; }
+    .worker-shift-time { color: #30485d; font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .worker-shift-note { color: #42576a; font-size: 11px; font-weight: 800; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .worker-item-progress { gap: 4px; margin-top: 1px; }
+    .worker-item-progress-track { height: 5px; padding: 0; border: 0; background: #e5ece8; box-shadow: none; }
+    .worker-item-progress-fill { background: var(--desk-card-text, #0d684d); box-shadow: none; }
     .worker-item-meta-row { margin-top: 0; }
-    .worker-item-progress-label { color: #315268; font-size: 11px; text-shadow: none; }
+    .worker-item-progress-label { flex-direction: row; align-items: center; gap: 4px; color: #315268; font-size: 11px; line-height: 1.2; text-shadow: none; }
     .worker-item-progress-label strong { color: #607082; font-weight: 800; }
     .percent-badge { padding: 4px 7px; background: #fff; border: 1px solid #d9e4df; color: #0d684d; font-size: 11px; box-shadow: none; }
-    .main { min-height: 100vh; padding: 12px 340px 18px 18px; background: #e8f0eb; gap: 10px; }
-    .main.expense-live-mode { padding-right: 340px; }
+    .main { min-height: 100vh; padding: 0 352px 18px 18px; background: #e8f0eb; gap: 10px; }
+    .main.expense-live-mode { padding-right: 352px; }
     .module-tabs {
-      min-height: 44px;
-      margin: -12px -340px 2px -18px;
-      padding: 8px 18px;
-      gap: 8px;
-      align-items: center;
+      min-height: 52px;
+      margin: 0 -352px 2px -18px;
+      padding: 0 28px 0 0;
+      gap: 0;
+      align-items: stretch;
       background: #062d25;
       border-bottom: 1px solid rgba(216,230,222,0.18);
     }
-    .module-tab { padding: 10px 16px; border-color: transparent; background: transparent; color: #d9eee4; }
-    .module-tab.active { background: #fff; color: #0b3f35; border-color: #d8e6de; }
+    .module-tab {
+      min-width: 116px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #d9eee4;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .module-tab.active {
+      background: #fff;
+      color: #0b3f35;
+      border-color: transparent;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 10px 20px rgba(2, 24, 18, 0.16);
+    }
     .desk-shell { gap: 0; }
     .desk-subtabs { width: fit-content; gap: 6px; padding: 0; margin: 0 0 6px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
     .desk-subtab { border: 1px solid #d3e0da; background: #fff; color: #43576a; padding: 10px 18px; font-size: 13px; }
@@ -7140,8 +7179,16 @@
     .desk-panel-head { align-items: center; padding: 2px 4px 4px; }
     .desk-panel-title { font-size: 22px; letter-spacing: 0; }
     .desk-panel-sub { margin-top: 4px; font-size: 12px; }
-    .desk-toolbar { background: #fff; padding: 12px; align-items: center; flex-wrap: nowrap; }
-    .desk-toolbar-left,
+    .desk-toolbar {
+      display: grid;
+      grid-template-columns: minmax(430px, auto) minmax(520px, 1fr);
+      gap: 8px 16px;
+      background: #fff;
+      padding: 12px;
+      align-items: start;
+      flex-wrap: nowrap;
+    }
+    .desk-toolbar-left { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
     .desk-toolbar-right { flex-direction: row; align-items: center; gap: 8px; }
     .desk-toolbar-right { flex: 1 1 auto; justify-content: flex-end; margin-left: auto; }
     .desk-month-nav,
@@ -7151,21 +7198,24 @@
     .desk-view-tabs { gap: 8px; }
     .desk-quick-actions { display: flex; flex-wrap: wrap; align-items: center; }
     .desk-nav-btn,
-    .desk-view-tab { padding: 9px 12px; font-size: 12px; background: #fff; border-color: #d4e0da; }
+    .desk-view-tab { min-height: 38px; padding: 8px 11px; font-size: 12px; background: #fff; border-color: #d4e0da; }
     .desk-nav-btn.accent,
     .desk-primary-btn,
     .tuition-action-btn.primary { background: #0d684d; border-color: #0d684d; color: #fff; }
     .desk-ghost-btn,
     .desk-primary-btn,
     .tuition-action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
-    .desk-toolbar .tuition-action-btn.primary { min-width: 148px; flex: 0 0 auto; }
+    .desk-ghost-btn { min-height: 38px; padding: 8px 12px; }
+    .desk-toolbar .tuition-action-btn.primary { min-width: 148px; min-height: 40px; flex: 0 0 auto; }
     .desk-ghost-btn i,
     .desk-primary-btn i,
     .desk-nav-btn i,
     .tuition-action-btn i { width: 14px; height: 14px; flex: 0 0 auto; }
-    .desk-month-input { min-width: 164px; }
+    .desk-month-input { min-width: 164px; min-height: 38px; }
     .desk-filter-field { min-width: 160px; gap: 3px; }
     .desk-filter-field label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .desk-filter-field select,
+    .desk-filter-field input { min-height: 38px; }
     .desk-kpi-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
     .desk-kpi-card { min-height: 74px; padding: 11px 12px; background: #fbfdfc; }
     .desk-kpi-label { font-size: 11px; }
@@ -7176,44 +7226,79 @@
     .desk-view-tab.active { background: #0d684d; border-color: #0d684d; color: #fff; transform: none; box-shadow: none; }
     .desk-calendar-board { padding: 0; border: 0; background: transparent; box-shadow: none; }
     .desk-calendar-weekdays { display: none; }
-    .desk-calendar-grid { gap: 8px; }
+    .desk-calendar-grid { gap: 6px; }
+    .desk-calendar-week:not(.collapsed) { order: 0; }
+    .desk-calendar-week.collapsed { order: 1; }
     .desk-calendar-week { gap: 0; border: 1px solid #d8e4de; background: #fff; overflow: visible; }
     .desk-calendar-week-head,
     .desk-calendar-week-head.collapsible { border: 0; border-bottom: 1px solid #edf2ef; border-radius: 8px 8px 0 0; background: #f8fbf9; padding: 10px 12px; }
-    .desk-calendar-week.collapsed .desk-calendar-week-head { border-bottom: 0; border-radius: 8px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head { min-height: 40px; border-bottom: 0; border-radius: 8px; padding: 6px 10px; }
     .desk-calendar-week-head-title { font-size: 15px; }
     .desk-calendar-week-head-sub { font-size: 12px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head-title { font-size: 13px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head-sub { font-size: 11px; }
     .desk-calendar-week-row { gap: 0; padding: 0; border-radius: 0 0 8px 8px; overflow: hidden; }
     .desk-calendar-day { min-height: 236px; border-width: 0 1px 0 0; border-color: #edf2ef; border-radius: 0; background: #fff; padding: 10px; gap: 7px; box-shadow: none; }
     .desk-calendar-day:nth-child(7n) { border-right: 0; }
     .desk-calendar-day:hover { transform: none; box-shadow: inset 0 0 0 1px #bdd8ca; }
     .desk-calendar-day.outside { background: #f8faf9; opacity: 0.68; }
-    .desk-calendar-day.today { background: #f1f8f4; box-shadow: inset 0 0 0 2px #0d684d; border-color: #0d684d; }
-    .desk-calendar-day.selected { box-shadow: inset 0 0 0 2px #0d684d; }
-    .desk-day-num { font-size: 17px; }
-    .desk-calendar-day.today .desk-day-num { min-width: auto; height: auto; padding: 2px 8px; border-radius: 8px; box-shadow: none; }
-    .desk-day-shifts { gap: 6px; min-height: 120px; }
+    .desk-calendar-day.today,
+    .desk-calendar-day.selected { padding-top: 0; background: #fff; box-shadow: inset 0 0 0 2px #0d684d; border-color: #0d684d; }
+    .desk-day-head { min-height: 28px; }
+    .desk-calendar-day.today .desk-day-head,
+    .desk-calendar-day.selected .desk-day-head {
+      margin: 0 -10px 2px;
+      padding: 8px 10px;
+      border-radius: 0;
+      background: #0d684d;
+      color: #fff;
+    }
+    .desk-day-num { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 900; }
+    .desk-day-today-label { font-size: 12px; color: rgba(255,255,255,0.88); }
+    .desk-calendar-day.today .desk-day-num,
+    .desk-calendar-day.selected .desk-day-num { min-width: auto; height: auto; padding: 0; border-radius: 0; color: #fff; background: transparent; box-shadow: none; }
+    .desk-calendar-day.today .desk-day-count,
+    .desk-calendar-day.selected .desk-day-count { background: rgba(255,255,255,0.17); border-color: rgba(255,255,255,0.2); color: #fff; }
+    .desk-day-shifts { gap: 5px; min-height: 0; }
     .desk-shift-chip,
     .desk-shift-chip.tone-morning,
     .desk-shift-chip.tone-afternoon,
     .desk-shift-chip.tone-night,
     .desk-shift-chip.tone-resident,
-    .desk-shift-chip.tone-unavailable { padding: 7px 8px; gap: 4px; background: var(--desk-card-tint, #f5f8f6) !important; }
+    .desk-shift-chip.tone-unavailable {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 6px;
+      row-gap: 1px;
+      min-height: 0;
+      padding: 5px 7px;
+      line-height: 1.18;
+      background: var(--desk-card-tint, #f5f8f6) !important;
+    }
     .desk-shift-chip.active { box-shadow: inset 0 0 0 2px rgba(13,104,77,0.28); }
-    .desk-shift-name { font-size: 12px; }
+    .desk-shift-name { min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .desk-shift-time,
     .desk-shift-meta,
-    .desk-shift-note { font-size: 11px; }
-    .desk-shift-note { color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .desk-day-empty-slot { min-height: 30px; background: #f8fbf9; border-color: #d8e4de; }
-    .desk-day-copy-btn { min-height: 30px; background: #fff; }
+    .desk-shift-note { font-size: 9px; }
+    .desk-shift-chip .desk-worker-badge { padding: 2px 6px; font-size: 10px; }
+    .desk-shift-chip .desk-role-badge,
+    .desk-shift-order,
+    .desk-shift-chip .desk-duration-badge { padding: 1px 5px; font-size: 8px; }
+    .desk-time-badge-row { gap: 4px; }
+    .desk-shift-time-row { grid-column: 1 / -1; gap: 4px; }
+    .desk-shift-meta { justify-self: end; }
+    .desk-calendar-day .desk-shift-order { display: none; }
+    .desk-shift-note { display: none; color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-day-empty-slot { min-height: 26px; background: #f8fbf9; border-color: #d8e4de; font-size: 10px; }
+    .desk-day-copy-btn { min-height: 26px; background: #fff; font-size: 10px; }
     .desk-calendar-side { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr); gap: 10px; }
     .desk-side-card { padding: 12px; gap: 10px; background: #fff; }
     .desk-day-shift-item,
     .desk-insight-item,
     .desk-highlight-item { padding: 10px; background: #fbfdfc; }
     .desk-insight-tab.active { background: #0d684d; box-shadow: none; }
-    .desk-live-feed { top: 76px; right: 18px; width: 304px; max-height: calc(100vh - 94px); padding: 16px 14px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
+    .desk-live-feed { top: 76px; right: 18px; width: 318px; max-height: calc(100vh - 94px); padding: 18px 16px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
     .desk-live-feed-title { font-size: 20px; letter-spacing: 0; }
     .global-sync-ring { width: 9px; height: 9px; border-width: 0; background: #10b981; }
     .global-sync-widget.error .global-sync-ring { background: #dc2626; }
@@ -7303,7 +7388,10 @@
   <div class="app-shell">
     <aside class="sidebar">
       <section class="brand">
-        <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
+        <div class="brand-kicker">
+          <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
+          <span>S-LMS 데스크 포털</span>
+        </div>
         <h1 class="brand-title" id="brandTitle">데스크 관리</h1>
         <p class="brand-sub" id="brandSub">근무표와 데스크 운영 기록을 한 화면에서 관리</p>
       </section>
@@ -11307,13 +11395,16 @@
           var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
           var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
           var showUnavailable = !!state.desk.expandedUnavailableDates[cell.date];
+          var isTodayCell = cell.date === getDeskDateKey_(new Date());
+          var isSelectedCell = cell.date === state.desk.selectedDateKey;
+          var dayTitle = formatDeskCalendarDayTitle_(cell.date, cell.day);
           weekCellHtml.push('<article class="desk-calendar-day' +
             (cell.outside ? ' outside' : '') +
-            (cell.date === getDeskDateKey_(new Date()) ? ' today' : '') +
-            (cell.date === state.desk.selectedDateKey ? ' selected' : '') +
+            (isTodayCell ? ' today' : '') +
+            (isSelectedCell ? ' selected' : '') +
             '" data-desk-date="' + escapeHtml(cell.date) + '">' +
             '<div class="desk-day-head">' +
-              '<div class="desk-day-num">' + cell.day + '</div>' +
+              '<div class="desk-day-num">' + escapeHtml(dayTitle) + (isTodayCell ? '<span class="desk-day-today-label">오늘</span>' : '') + '</div>' +
               '<div class="desk-day-count">' + dayItems.length + '건</div>' +
             '</div>' +
             '<div class="desk-day-shifts">' +
@@ -12736,6 +12827,16 @@
       return compact
         ? ((month + 1) + "/" + day + " (" + weekdays[date.getDay()] + ")")
         : (year + "년 " + (month + 1) + "월 " + day + "일 (" + weekdays[date.getDay()] + ")");
+    }
+
+    function formatDeskCalendarDayTitle_(dateKey, fallbackDay) {
+      var parts = String(dateKey || "").split("-");
+      var year = Number(parts[0] || 0);
+      var month = Number(parts[1] || 1) - 1;
+      var day = Number(parts[2] || fallbackDay || 1);
+      var date = new Date(year, month, day);
+      var weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+      return day + " (" + weekdays[date.getDay()] + ")";
     }
 
     function formatDeskTodayLabel_() {
