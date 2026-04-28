@@ -3452,6 +3452,27 @@
       flex-wrap: wrap;
       align-items: center;
     }
+    .desk-assignee-quick-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .desk-assignee-quick-btn {
+      border: 1px solid var(--desk-worker-border, #c8d6cc);
+      background: var(--desk-worker-bg, #fff);
+      color: var(--desk-worker-fg, #385062);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-assignee-quick-btn.active {
+      background: #064e3b;
+      border-color: #064e3b;
+      color: #fff;
+    }
     .desk-routine-assign-btn {
       border: 1px solid #c8d6cc;
       background: #fff;
@@ -9253,6 +9274,7 @@
                           <label for="deskJournalAssignedWorker">배정 근무자</label>
                           <input id="deskJournalAssignedWorker" class="modal-input" type="text" list="deskJournalWorkerNameList" placeholder="예: 안정성">
                           <datalist id="deskJournalWorkerNameList"></datalist>
+                          <div class="desk-assignee-quick-row" id="deskJournalAssignedWorkerQuick"></div>
                         </div>
                         <div class="field">
                           <label for="deskJournalTaskTitle">업무 제목</label>
@@ -10300,6 +10322,7 @@
     var deskJournalTaskEditorSubEl = document.getElementById("deskJournalTaskEditorSub");
     var deskJournalEditorTabsEl = document.getElementById("deskJournalEditorTabs");
     var deskJournalAssignedWorkerEl = document.getElementById("deskJournalAssignedWorker");
+    var deskJournalAssignedWorkerQuickEl = document.getElementById("deskJournalAssignedWorkerQuick");
     var deskJournalTaskTitleEl = document.getElementById("deskJournalTaskTitle");
     var deskJournalTaskNoteEl = document.getElementById("deskJournalTaskNote");
     var deskJournalRoutinePanelEl = document.getElementById("deskJournalRoutinePanel");
@@ -15780,6 +15803,7 @@
         deskJournalLayoutEl.classList.toggle("worker-focus", !isRoutineManager);
       }
       if (deskJournalTaskEditorCardEl) {
+        deskJournalTaskEditorCardEl.classList.toggle("hidden", !isRoutineManager);
         deskJournalTaskEditorCardEl.style.display = isRoutineManager ? "" : "none";
       }
       if (deskJournalEditorTabsEl) {
@@ -15822,6 +15846,16 @@
       if (deskJournalAssignedWorkerEl) {
         deskJournalAssignedWorkerEl.placeholder = "예: 안종성";
       }
+      if (deskJournalAssignedWorkerQuickEl) {
+        var assignedValue = String(deskJournalAssignedWorkerEl && deskJournalAssignedWorkerEl.value || "").trim();
+        deskJournalAssignedWorkerQuickEl.innerHTML = names.length
+          ? names.map(function(name) {
+              return '<button type="button" class="desk-assignee-quick-btn' + (isSameDeskWorkerName_(assignedValue, name) ? ' active' : '') + '"' +
+                ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
+                ' data-desk-assign-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+            }).join("")
+          : '<span class="desk-muted">오늘 근무자가 아직 없습니다.</span>';
+      }
       if (deskJournalMemoWorkerEl) {
         var preferredMemoWorker = state.desk.daily.selectedWorker;
         if (!preferredMemoWorker || preferredMemoWorker === "전체" || preferredMemoWorker === DESK_ROUTINE_TAB_KEY) {
@@ -15861,18 +15895,19 @@
     function renderDeskDailyTaskBoard_(tasks) {
       if (!deskJournalTaskBoardEl) return;
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
-      if (selectedWorker === DESK_ROUTINE_TAB_KEY) {
+      var isManagerTab = selectedWorker === DESK_ROUTINE_TAB_KEY;
+      if (isManagerTab && state.desk.daily.editorMode === "routine") {
         renderDeskRoutineTaskBoard_();
         return;
       }
       var visible = (tasks || []).filter(function(item) {
         if (isDeskSharedTask_(item)) return true;
         if (item.completed) return false;
-        return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
+        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
       });
       var completedItems = (tasks || []).filter(function(item) {
         if (isDeskSharedTask_(item) || !item.completed) return false;
-        return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
+        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
       });
       if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = visible.length + "건";
       if (!visible.length) {
@@ -17301,7 +17336,7 @@
           var btn = event.target.closest("[data-desk-journal-worker]");
           if (!btn) return;
           state.desk.daily.selectedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
-          if (state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY && !state.desk.daily.editorMode) {
+          if (state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.editorMode = "manager";
           }
           state.desk.daily.memoPage = 1;
@@ -17322,6 +17357,16 @@
         deskJournalTaskFormEl.addEventListener("submit", function(event) {
           event.preventDefault();
           saveDeskDailyTaskFromForm_();
+        });
+        deskJournalTaskFormEl.addEventListener("click", function(event) {
+          var workerBtn = event.target.closest("[data-desk-assign-worker]");
+          if (!workerBtn) return;
+          if (deskJournalAssignedWorkerEl) {
+            deskJournalAssignedWorkerEl.value = workerBtn.getAttribute("data-desk-assign-worker") || "";
+          }
+          Array.prototype.forEach.call(deskJournalTaskFormEl.querySelectorAll("[data-desk-assign-worker]"), function(btn) {
+            btn.classList.toggle("active", btn === workerBtn);
+          });
         });
       }
       if (deskJournalEditorTabsEl) {
