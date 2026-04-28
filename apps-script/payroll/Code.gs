@@ -11,6 +11,9 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
+const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
+const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
+const DESK_SHARED_WORKER_NAME = "공동업무";
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -659,9 +662,7 @@ function getDeskDailyJournalPendingTasks(payload) {
       var key = normalizeDeskWorkerNameKey_(name);
       if (key) workerKeys[key] = true;
     });
-    if (!Object.keys(workerKeys).length) {
-      return { success: true, beforeDateKey: beforeDateKey, tasks: [] };
-    }
+    var hasWorkerFilter = !!Object.keys(workerKeys).length;
     var tasks = [];
     for (var offset = 1; offset <= 60; offset += 1) {
       var normalizedDateKey = shiftDeskDateKey_(beforeDateKey, -offset);
@@ -671,12 +672,12 @@ function getDeskDailyJournalPendingTasks(payload) {
       Object.keys(tasksMap).forEach(function(id) {
         var task = normalizeDeskDailyJournalTask_(tasksMap[id], id, normalizedDateKey);
         if (task.completed) return;
-        if (!workerKeys[normalizeDeskWorkerNameKey_(task.worker)]) return;
+        if (!isDeskDailyJournalSharedTask_(task) && (!hasWorkerFilter || !workerKeys[normalizeDeskWorkerNameKey_(task.worker)])) return;
         tasks.push(task);
       });
     }
     tasks.sort(compareDeskDailyJournalTasks_);
-    return { success: true, beforeDateKey: beforeDateKey, tasks: tasks };
+    return { success: true, beforeDateKey: beforeDateKey, includeSharedCarryover: true, tasks: tasks };
   } catch (e) {
     return { success: false, message: "미해결 이월 업무 조회 오류: " + e.message };
   }
@@ -781,6 +782,12 @@ function normalizeDeskWorkerNameKey_(name) {
     text = text.normalize("NFC");
   } catch (e) {}
   return text.replace(/\s+/g, "").toLowerCase();
+}
+
+function isDeskDailyJournalSharedTask_(task) {
+  var category = String((task && task.category) || "").trim();
+  return category.indexOf(DESK_SHARED_CATEGORY_PREFIX) === 0 ||
+    normalizeDeskWorkerNameKey_(task && task.worker) === normalizeDeskWorkerNameKey_(DESK_SHARED_WORKER_NAME);
 }
 
 function compareDeskDailyJournalTasks_(a, b) {

@@ -14860,7 +14860,7 @@
       var visibleTasks = mergeDeskDailyCarryoverTasks_(dateKey, tasks, workers);
       ensureDeskDailyWorkerSelection_(workers);
       ensureDeskDailyReportWorkerSelection_(workers);
-      renderDeskDailyJournalSummary_(tasks, memos, workers);
+      renderDeskDailyJournalSummary_(visibleTasks, memos, workers);
       if (deskJournalPendingSummaryEl) {
         deskJournalPendingSummaryEl.textContent = visibleTasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); }).length + "건";
       }
@@ -14972,10 +14972,27 @@
       var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
       var carryoverSource = state.desk.daily.carryoverDateKey === safeDateKey ? (state.desk.daily.carryoverTasks || []) : [];
       var carryovers = carryoverSource.filter(function(item) {
-        return item.dateKey && item.dateKey < safeDateKey && !item.completed && !currentIds[item.id] &&
-          workerNames.some(function(name) { return isSameDeskWorkerName_(item.worker, name); });
+        return shouldShowDeskCarryoverTask_(item, safeDateKey, workerNames) && !currentIds[item.id];
       });
       return base.concat(carryovers).sort(compareDeskDailyTask_);
+    }
+
+    function shouldShowDeskCarryoverTask_(task, beforeDateKey, workerNames) {
+      var safeDateKey = String(beforeDateKey || "").trim();
+      if (!task || !task.dateKey || task.dateKey >= safeDateKey || task.completed) return false;
+      if (isDeskSharedTask_(task)) return true;
+      return (workerNames || []).some(function(name) { return isSameDeskWorkerName_(task.worker, name); });
+    }
+
+    function mergeDeskCarryoverTaskLists_(primary, secondary) {
+      var seen = {};
+      var merged = [];
+      (primary || []).concat(secondary || []).forEach(function(item) {
+        if (!item || !item.id || seen[item.id]) return;
+        seen[item.id] = true;
+        merged.push(item);
+      });
+      return merged.sort(compareDeskDailyTask_);
     }
 
     function ensureDeskDailyCarryoverTasksLoaded_(dateKey, workers) {
@@ -14983,12 +15000,6 @@
       if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return;
       var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
       var workerKey = workerNames.map(normalizeDeskWorkerKey_).sort().join("|");
-      if (!workerNames.length) {
-        state.desk.daily.carryoverTasks = [];
-        state.desk.daily.carryoverDateKey = "";
-        state.desk.daily.carryoverWorkerKey = "";
-        return;
-      }
       if (state.desk.daily.carryoverDateKey === safeDateKey && state.desk.daily.carryoverWorkerKey === workerKey) return;
       if (state.desk.daily.carryoverLoadingDateKey === safeDateKey + "::" + workerKey) return;
       state.desk.daily.carryoverLoadingDateKey = safeDateKey + "::" + workerKey;
@@ -14999,7 +15010,15 @@
         if (!res || res.success === false) {
           throw new Error(res && res.message ? res.message : "이월 업무 조회 실패");
         }
-        state.desk.daily.carryoverTasks = (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_);
+        var serverTasks = (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
+          return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames);
+        });
+        if (res.includeSharedCarryover) return serverTasks;
+        return fetchDeskDailyCarryoverTasksByDateScan_(safeDateKey, workerNames).then(function(scanTasks) {
+          return mergeDeskCarryoverTaskLists_(serverTasks, scanTasks);
+        });
+      }).then(function(items) {
+        state.desk.daily.carryoverTasks = (items || []).sort(compareDeskDailyTask_);
         state.desk.daily.carryoverDateKey = safeDateKey;
         state.desk.daily.carryoverWorkerKey = workerKey;
       }).catch(function() {
@@ -15037,8 +15056,7 @@
           var tasksMap = source[dayKey] && source[dayKey].tasks && typeof source[dayKey].tasks === "object" ? source[dayKey].tasks : {};
           Object.keys(tasksMap).forEach(function(id) {
             var task = normalizeDeskDailyTask_(Object.assign({}, tasksMap[id], { id: id, dateKey: dayKey }));
-            if (task.completed) return;
-            if (!workerNames.some(function(name) { return isSameDeskWorkerName_(task.worker, name); })) return;
+            if (!shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames)) return;
             items.push(task);
           });
         });
@@ -15063,9 +15081,7 @@
           return runServer("getDeskDailyJournalData", { dateKey: dayKey }).then(function(res) {
             if (!res || res.success === false) return [];
             return (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
-              return !task.completed && workerNames.some(function(name) {
-                return isSameDeskWorkerName_(task.worker, name);
-              });
+              return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames);
             });
           }).catch(function() {
             return [];
