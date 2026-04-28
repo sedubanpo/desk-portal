@@ -7495,10 +7495,15 @@
     .desk-daily-journal-mode .module-tab {
       min-height: 44px;
       border-radius: 8px;
-      border: 1px solid #d8e4de;
-      background: #fff;
-      color: #334155;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: #dceee8;
       box-shadow: none;
+    }
+    .desk-daily-journal-mode .module-tab:not(.active):hover {
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.28);
+      color: #ffffff;
     }
     .desk-daily-journal-mode .module-tab.active {
       background: #064e3b;
@@ -10427,8 +10432,8 @@
       if (brandSubEl) brandSubEl.textContent = config.sub;
       var isDailyJournal = state.activeModule === "expense" && state.desk.activeTab === "dailyJournal";
       document.body.classList.toggle("desk-daily-journal-mode", isDailyJournal);
-      if (sidebarDeskSectionEl) sidebarDeskSectionEl.classList.toggle("hidden", state.activeModule !== "expense" || isDailyJournal);
-      if (sidebarDailyAuxSectionEl) sidebarDailyAuxSectionEl.classList.toggle("hidden", !isDailyJournal);
+      if (sidebarDeskSectionEl) sidebarDeskSectionEl.classList.toggle("hidden", state.activeModule !== "expense");
+      if (sidebarDailyAuxSectionEl) sidebarDailyAuxSectionEl.classList.add("hidden");
       if (sidebarPayrollSectionEl) sidebarPayrollSectionEl.classList.toggle("hidden", state.activeModule === "expense");
       if (deskWorkerDateLabelEl) deskWorkerDateLabelEl.textContent = formatDeskTodayLabel_();
     }
