@@ -7091,7 +7091,7 @@
     .worker-list { gap: 8px; }
     .worker-item {
       border-radius: 8px;
-      padding: 10px 11px;
+      padding: 12px;
       min-height: 0;
       background: #fbfdfc;
       border: 1px solid var(--desk-card-border, #d7e3dc);
@@ -7113,15 +7113,15 @@
     }
     .worker-shift-name-row { justify-content: flex-start; }
     .worker-item .desk-role-badge {
-      padding: 4px 8px;
+      padding: 4px 9px;
       border-color: var(--desk-card-border, #d6dee8);
       background: rgba(255,255,255,0.82);
       color: var(--desk-card-text, #305064);
-      font-size: 10px;
+      font-size: 11px;
     }
     .worker-initial {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-radius: 999px;
       background: var(--desk-worker-bg, #edf2f7);
       color: var(--desk-worker-fg, #334155);
@@ -7129,20 +7129,22 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 900;
       flex: 0 0 auto;
     }
-    .worker-name { font-size: 15px; font-weight: 900; color: #10283a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .worker-shift-time { color: #30485d; font-size: 12px; font-weight: 900; white-space: nowrap; }
-    .worker-shift-note { color: #42576a; font-size: 11px; font-weight: 800; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .worker-name { font-size: 16px; font-weight: 900; color: #10283a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .worker-shift-time { color: #30485d; font-size: 13px; font-weight: 900; white-space: nowrap; }
+    .worker-shift-note { color: #42576a; font-size: 12px; font-weight: 850; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .worker-item-progress { gap: 4px; margin-top: 1px; }
     .worker-item-progress-track { height: 5px; padding: 0; border: 0; background: #e5ece8; box-shadow: none; }
     .worker-item-progress-fill { background: var(--desk-card-text, #0d684d); box-shadow: none; }
     .worker-item-meta-row { margin-top: 0; }
-    .worker-item-progress-label { flex-direction: row; align-items: center; gap: 4px; color: #315268; font-size: 11px; line-height: 1.2; text-shadow: none; }
+    .worker-item-progress-label { flex-direction: row; align-items: center; gap: 4px; color: #315268; font-size: 12px; line-height: 1.25; text-shadow: none; }
+    .worker-item-progress-label span,
+    .worker-item-progress-label strong { white-space: nowrap; }
     .worker-item-progress-label strong { color: #607082; font-weight: 800; }
-    .percent-badge { padding: 4px 7px; background: #fff; border: 1px solid #d9e4df; color: #0d684d; font-size: 11px; box-shadow: none; }
+    .percent-badge { padding: 4px 8px; background: #fff; border: 1px solid #d9e4df; color: #0d684d; font-size: 12px; box-shadow: none; }
     .main { min-height: 100vh; padding: 0 382px 18px 18px; background: #e8f0eb; gap: 10px; }
     .main.expense-live-mode { padding-right: 382px; }
     .module-tabs {
@@ -7295,18 +7297,16 @@
     .desk-calendar-board { padding: 0; border: 0; background: transparent; box-shadow: none; }
     .desk-calendar-weekdays { display: none; }
     .desk-calendar-grid { gap: 6px; }
-    .desk-calendar-week:not(.collapsed) { order: 0; }
-    .desk-calendar-week.collapsed { order: 1; }
     .desk-calendar-week { gap: 0; border: 1px solid #d8e4de; background: #fff; overflow: visible; }
     .desk-calendar-week-head,
     .desk-calendar-week-head.collapsible { border: 0; border-bottom: 1px solid #edf2ef; border-radius: 8px 8px 0 0; background: #f8fbf9; padding: 10px 12px; }
     .desk-calendar-week.collapsed .desk-calendar-week-head { min-height: 40px; border-bottom: 0; border-radius: 8px; padding: 6px 10px; }
-    .desk-calendar-week-head-title { font-size: 15px; }
-    .desk-calendar-week-head-sub { font-size: 12px; }
-    .desk-calendar-week.collapsed .desk-calendar-week-head-title { font-size: 13px; }
-    .desk-calendar-week.collapsed .desk-calendar-week-head-sub { font-size: 11px; }
+    .desk-calendar-week-head-title { font-size: 16px; }
+    .desk-calendar-week-head-sub { font-size: 13px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head-title { font-size: 14px; }
+    .desk-calendar-week.collapsed .desk-calendar-week-head-sub { font-size: 12px; }
     .desk-calendar-week-row { gap: 0; padding: 0; border-radius: 0 0 8px 8px; overflow: hidden; }
-    .desk-calendar-day { min-height: 236px; border-width: 0 1px 0 0; border-color: #edf2ef; border-radius: 0; background: #fff; padding: 10px; gap: 7px; box-shadow: none; }
+    .desk-calendar-day { min-height: 264px; border-width: 0 1px 0 0; border-color: #edf2ef; border-radius: 0; background: #fff; padding: 11px; gap: 8px; box-shadow: none; }
     .desk-calendar-day:nth-child(7n) { border-right: 0; }
     .desk-calendar-day:hover { transform: none; box-shadow: inset 0 0 0 1px #bdd8ca; }
     .desk-calendar-day.outside { background: #f8faf9; opacity: 0.68; }
@@ -7326,7 +7326,7 @@
       background: transparent;
       color: #0d684d;
     }
-    .desk-day-num { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 900; }
+    .desk-day-num { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 900; }
     .desk-day-today-label { font-size: 12px; color: rgba(255,255,255,0.88); }
     .desk-calendar-day.selected .desk-day-num { min-width: auto; height: auto; padding: 0; border-radius: 0; color: #fff; background: transparent; box-shadow: none; }
     .desk-calendar-day.selected .desk-day-count { background: rgba(255,255,255,0.17); border-color: rgba(255,255,255,0.2); color: #fff; }
@@ -7346,7 +7346,7 @@
       color: #0d684d;
       font-size: 10px;
     }
-    .desk-day-shifts { gap: 5px; min-height: 0; }
+    .desk-day-shifts { gap: 6px; min-height: 0; }
     .desk-shift-chip,
     .desk-shift-chip.tone-morning,
     .desk-shift-chip.tone-afternoon,
@@ -7359,26 +7359,26 @@
       column-gap: 6px;
       row-gap: 1px;
       min-height: 0;
-      padding: 5px 7px;
-      line-height: 1.18;
+      padding: 7px 8px;
+      line-height: 1.28;
       background: var(--desk-card-tint, #f5f8f6) !important;
     }
     .desk-shift-chip.active { box-shadow: inset 0 0 0 2px rgba(13,104,77,0.28); }
-    .desk-shift-name { min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-shift-name { min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .desk-shift-time,
     .desk-shift-meta,
-    .desk-shift-note { font-size: 9px; }
-    .desk-shift-chip .desk-worker-badge { padding: 2px 6px; font-size: 10px; }
+    .desk-shift-note { font-size: 11px; }
+    .desk-shift-chip .desk-worker-badge { padding: 3px 7px; font-size: 11px; }
     .desk-shift-chip .desk-role-badge,
     .desk-shift-order,
-    .desk-shift-chip .desk-duration-badge { padding: 1px 5px; font-size: 8px; }
+    .desk-shift-chip .desk-duration-badge { padding: 2px 6px; font-size: 10px; }
     .desk-time-badge-row { gap: 4px; }
     .desk-shift-time-row { grid-column: 1 / -1; gap: 4px; }
     .desk-shift-meta { justify-self: end; }
     .desk-calendar-day .desk-shift-order { display: none; }
     .desk-shift-note { display: none; color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .desk-day-empty-state {
-      min-height: 124px;
+      min-height: 132px;
       margin: 8px 0 2px;
       border: 1px dashed #c8d9d1;
       border-radius: 8px;
@@ -7390,22 +7390,22 @@
       justify-content: center;
       gap: 4px;
       text-align: center;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 900;
     }
     .desk-day-empty-state svg {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       color: #486273;
       margin-bottom: 3px;
     }
-    .desk-day-empty-state strong { font-size: 12px; color: #233f50; }
+    .desk-day-empty-state strong { font-size: 13px; color: #233f50; }
     .desk-day-empty-state span { color: #233f50; }
     .desk-day-empty-state small { margin-top: 18px; color: #607082; line-height: 1.35; font-weight: 800; }
-    .desk-day-empty-slot { min-height: 26px; background: #f8fbf9; border-color: #d8e4de; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
-    .desk-day-empty-slot svg { width: 13px; height: 13px; }
-    .desk-day-copy-btn { min-height: 26px; background: #fff; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
-    .desk-day-copy-btn svg { width: 12px; height: 12px; }
+    .desk-day-empty-slot { min-height: 30px; background: #f8fbf9; border-color: #d8e4de; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .desk-day-empty-slot svg { width: 14px; height: 14px; }
+    .desk-day-copy-btn { min-height: 30px; background: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .desk-day-copy-btn svg { width: 13px; height: 13px; }
     .desk-calendar-side { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr); gap: 10px; }
     .desk-side-card { padding: 12px; gap: 10px; background: #fff; }
     .desk-day-shift-item,
