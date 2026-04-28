@@ -7841,11 +7841,14 @@
     }
     .desk-task-queue-card .desk-task-card.done { opacity: 0.65; }
     .desk-queue-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+    .desk-task-card.shared .desk-queue-top { grid-template-columns: minmax(0, 1fr) auto; }
+    .desk-task-card.shared .desk-task-title,
+    .desk-task-card.shared .desk-task-meta { min-width: 0; }
     .desk-queue-check { width: 16px; height: 16px; margin-top: 3px; accent-color: #064e3b; }
     .desk-queue-reason { margin-top: 10px; }
     .desk-task-card-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
     .desk-task-card-row input[type="checkbox"] { width: 16px; height: 16px; margin-top: 3px; }
-    .desk-task-title { font-size: 14px; line-height: 1.45; }
+    .desk-task-title { font-size: 14px; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
     .desk-task-meta { margin-top: 4px; gap: 7px; }
     .desk-task-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .desk-task-reason-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; margin-top: 10px; align-items: center; }
