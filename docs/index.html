@@ -7797,16 +7797,33 @@
     .desk-report-preview-card .desk-report-shell { grid-template-columns: 190px minmax(0, 1fr); gap: 12px; }
     .desk-report-preview-card .desk-report-card,
     .desk-report-preview-card .desk-report-compact { border-radius: 8px; padding: 0; border: 0; box-shadow: none; }
-    .desk-report-compact { display: grid; grid-template-columns: 170px 170px minmax(0, 1fr) minmax(220px, 0.8fr); gap: 12px; }
-    .desk-report-info-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 12px; min-width: 0; }
+    .desk-report-compact {
+      width: min(100%, 480px);
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-self: start;
+    }
+    .desk-report-info-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 13px 14px; min-width: 0; }
     .desk-report-info-card h4 { margin: 0 0 8px; color: #0f172a; font-size: 13px; font-weight: 900; }
-    .desk-report-info-card ul { margin: 0; padding-left: 16px; color: #334155; font-size: 12px; line-height: 1.7; font-weight: 800; }
+    .desk-report-info-card ul { margin: 0; padding-left: 16px; color: #334155; font-size: 12px; line-height: 1.75; font-weight: 800; }
     .desk-report-info-card li span { color: #64748b; font-weight: 900; margin-right: 8px; }
     .desk-report-info-card dl { margin: 0; display: grid; gap: 5px; }
     .desk-report-info-card dt { color: #64748b; font-size: 11px; font-weight: 900; }
     .desk-report-info-card dd { margin: 0; color: #0f172a; font-size: 13px; font-weight: 900; }
     .desk-report-info-icon { width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #0d684d; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px; }
     .desk-report-info-icon svg { width: 16px; height: 16px; }
+    .desk-report-copy-card {
+      width: 420px;
+      max-width: 420px;
+      background: #ffffff;
+      border: 1px solid #dbe8e2;
+      border-radius: 8px;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
     .desk-daily-journal-mode .desk-live-feed { width: 340px; top: 76px; }
     .desk-daily-journal-mode .desk-live-feed-title { font-size: 18px; }
     .desk-daily-journal-mode .desk-live-feed-list { gap: 0; padding: 0; }
@@ -16078,6 +16095,12 @@
         scale: 2,
         useCORS: true,
         onclone: function(clonedDoc) {
+          var clonedNode = clonedDoc.getElementById("deskJournalReportCard");
+          if (clonedNode) {
+            clonedNode.classList.add("desk-report-copy-card");
+            clonedNode.style.width = "420px";
+            clonedNode.style.maxWidth = "420px";
+          }
           Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
             el.style.display = "none";
           });
@@ -16132,14 +16155,54 @@
     }
 
     var deskMemoSaveStatusTimer_ = null;
+    var deskDailyMemoSaveQueue_ = Promise.resolve();
+
+    function saveDeskDailyMemoRemoteWithRetry_(item, attempt) {
+      var safeItem = normalizeDeskDailyMemo_(item);
+      var count = Number(attempt || 0);
+      return saveDeskDailyMemoRemote_(safeItem).catch(function(err) {
+        var message = err && err.message ? err.message : String(err);
+        console.warn("desk daily memo save deferred", message);
+        if (count >= 3) throw err;
+        showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장 재시도 중", "saving");
+        return new Promise(function(resolve) {
+          setTimeout(resolve, Math.min(6000, 900 * (count + 1)));
+        }).then(function() {
+          return saveDeskDailyMemoRemoteWithRetry_(safeItem, count + 1);
+        });
+      });
+    }
+
+    function enqueueDeskDailyMemoRemoteSave_(item) {
+      var safeItem = normalizeDeskDailyMemo_(item);
+      deskDailyMemoSaveQueue_ = deskDailyMemoSaveQueue_.catch(function() {
+        return null;
+      }).then(function() {
+        return new Promise(function(resolve) {
+          setTimeout(resolve, 260);
+        });
+      }).then(function() {
+        return saveDeskDailyMemoRemoteWithRetry_(safeItem, 0);
+      }).then(function() {
+        setDeskDailySyncStatus_("idle");
+        showDeskMemoSaveStatus_("서버 저장을 완료했습니다.", "saved");
+      }).catch(function(err) {
+        var message = err && err.message ? err.message : String(err);
+        console.warn("desk daily memo save failed", message);
+        setDeskDailySyncStatus_("error");
+        showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장은 잠시 후 새로고침으로 확인해 주세요.", "error");
+        return null;
+      });
+      return deskDailyMemoSaveQueue_;
+    }
 
     function setDeskMemoSavingState_(isSaving) {
       if (!deskJournalMemoSubmitBtnEl) return;
-      deskJournalMemoSubmitBtnEl.disabled = !!isSaving;
       deskJournalMemoSubmitBtnEl.classList.toggle("saving", !!isSaving);
       deskJournalMemoSubmitBtnEl.innerHTML = isSaving
         ? '<span class="desk-memo-submit-icon">↻</span> 저장 중'
         : '<span class="desk-memo-submit-icon">↵</span> 저장';
+      syncDeskMemoComposerState_();
     }
 
     function showDeskMemoSaveStatus_(text, tone) {
@@ -16437,17 +16500,7 @@
       state.desk.daily.dateKey = item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
-      Promise.resolve(saveDeskDailyMemoRemote_(item))
-        .then(function() {
-          setDeskDailySyncStatus_("idle");
-          return syncDeskDailyJournalAfterMutation_(item.dateKey);
-        })
-        .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          showDeskMemoSaveStatus_("저장 실패", "error");
-          alert("기록 저장 오류: " + ((err && err.message) || String(err)));
-          return syncDeskDailyJournalAfterMutation_(item.dateKey);
-        });
+      enqueueDeskDailyMemoRemoteSave_(item);
     }
 
     function startDeskDailyMemoEdit_(memoId) {
