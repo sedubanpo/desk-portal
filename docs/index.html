@@ -7523,6 +7523,7 @@
       font-size: 12px;
       color: #64748b;
       font-weight: 900;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.035);
     }
     .desk-journal-status-card strong { color: #0f172a; font-size: 18px; white-space: nowrap; }
     .desk-journal-status-card.danger strong { color: #ea580c; }
@@ -7533,13 +7534,19 @@
       border: 1px solid #d8e4de;
       border-radius: 8px;
       background: #f8fbf9;
-      padding: 10px 12px;
+      padding: 9px 12px;
     }
     .desk-journal-shared-strip .desk-shared-summary-head { margin-bottom: 8px; align-items: center; }
     .desk-journal-shared-strip .desk-shared-summary-title { font-size: 14px; }
     .desk-journal-shared-strip .desk-shared-summary-sub { font-size: 11px; }
     .desk-journal-shared-strip .desk-shared-summary-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .desk-journal-shared-strip .desk-shared-summary-item { border-radius: 8px; padding: 9px 10px; }
+    .desk-journal-shared-strip .desk-shared-summary-empty {
+      max-width: 640px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
     .desk-journal-worker-tabs {
       padding: 0;
       border: 0;
@@ -7618,7 +7625,7 @@
       white-space: nowrap;
     }
     .desk-count-pill.danger { color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
-    .desk-composer-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 12px; }
+    .desk-composer-row { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr); gap: 12px; align-items: end; }
     .desk-composer-label { margin-bottom: 7px; color: #334155; font-size: 12px; font-weight: 900; }
     .desk-chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
     .desk-memo-type-chip,
@@ -7641,10 +7648,10 @@
       grid-template-columns: minmax(320px, 560px) auto;
       align-items: stretch;
       gap: 10px;
-      max-width: 700px;
+      max-width: 690px;
     }
     .desk-memo-compose-input {
-      min-height: 76px;
+      min-height: 66px;
       border-radius: 8px;
       padding: 12px 14px;
       font-size: 14px;
@@ -7692,6 +7699,24 @@
     .desk-journal-timeline-card,
     .desk-task-queue-card,
     .desk-report-preview-card { border-radius: 8px; }
+    .desk-report-preview-card {
+      width: fit-content;
+      max-width: 100%;
+    }
+    .desk-journal-note-list {
+      position: relative;
+      margin-top: 8px;
+    }
+    .desk-journal-note-list::before {
+      content: "";
+      position: absolute;
+      left: 68px;
+      top: 18px;
+      bottom: 18px;
+      width: 1px;
+      background: #dbe5ef;
+      pointer-events: none;
+    }
     .desk-note-card {
       border: 0;
       border-radius: 0;
@@ -7702,20 +7727,24 @@
       box-shadow: none;
     }
     .desk-note-row-card {
-      background: var(--desk-card-bg, #fff) !important;
-      border-left: 4px solid var(--desk-worker-accent, #0d684d);
-      border-radius: 8px;
-      border-bottom: 0;
-      margin-bottom: 7px;
-      padding: 0 10px;
+      position: relative;
+      background: #fff !important;
+      border-left: 0;
+      border-radius: 0;
+      border-bottom: 1px solid #edf2ef;
+      margin-bottom: 0;
+      padding: 0;
     }
+    .desk-note-row-card:hover { background: #f8fafc !important; }
     .desk-note-row {
       display: grid;
       grid-template-columns: 52px 14px auto minmax(0, 1fr) auto;
       gap: 10px;
       align-items: center;
-      min-height: 48px;
-      padding: 8px 2px;
+      min-height: 52px;
+      padding: 8px 0;
+      position: relative;
+      z-index: 1;
     }
     .desk-daily-journal-mode .desk-note-time-input {
       width: 52px;
@@ -7726,7 +7755,15 @@
       border-radius: 6px;
     }
     .desk-note-time { color: #64748b; font-size: 12px; font-weight: 900; }
-    .desk-note-dot { width: 7px; height: 7px; border-radius: 999px; background: #cbd5e1; }
+    .desk-note-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #cbd5e1;
+      box-shadow: 0 0 0 4px #fff;
+      position: relative;
+      z-index: 2;
+    }
     .desk-memo-type-badge {
       display: inline-flex;
       align-items: center;
@@ -7779,7 +7816,7 @@
       border-radius: 8px;
       background: #fff;
       padding: 12px;
-      box-shadow: none;
+      box-shadow: 0 10px 22px rgba(15,23,42,0.035);
     }
     .desk-task-queue-card .desk-task-card.done { opacity: 0.65; }
     .desk-queue-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
@@ -7789,19 +7826,92 @@
     .desk-task-card-row input[type="checkbox"] { width: 16px; height: 16px; margin-top: 3px; }
     .desk-task-title { font-size: 14px; line-height: 1.45; }
     .desk-task-meta { margin-top: 4px; gap: 7px; }
+    .desk-task-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .desk-task-reason-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; margin-top: 10px; align-items: center; }
     .desk-task-reason-row input { min-height: 38px; border-radius: 8px; }
     .desk-task-reason-row .modal-action { min-height: 38px; border-radius: 8px; }
-    .desk-completed-toggle { margin-top: 8px; color: #0d684d; font-size: 12px; font-weight: 900; }
-    .desk-report-preview-card .desk-report-shell { grid-template-columns: 190px minmax(0, 1fr); gap: 12px; }
+    .desk-completed-toggle {
+      margin-top: 8px;
+      border: 0;
+      background: transparent;
+      color: #0d684d;
+      font-size: 12px;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .desk-completed-toggle svg { width: 14px; height: 14px; }
+    .desk-report-preview-card .desk-report-shell { grid-template-columns: 190px 420px; gap: 16px; align-items: start; }
+    .desk-report-preview-card .desk-report-preview {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+      min-width: 0;
+    }
     .desk-report-preview-card .desk-report-card,
     .desk-report-preview-card .desk-report-compact { border-radius: 8px; padding: 0; border: 0; box-shadow: none; }
     .desk-report-compact {
-      width: min(100%, 480px);
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
+      width: min(100%, 420px);
       align-self: start;
+    }
+    .desk-mobile-report-card {
+      width: min(100%, 420px);
+      min-height: 520px;
+      border: 1px solid #dbe8e2;
+      border-radius: 8px;
+      background: #fff;
+      padding: 22px;
+      box-shadow: 0 14px 28px rgba(15,23,42,0.06);
+      color: #0f172a;
+    }
+    .desk-mobile-report-eyebrow {
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .desk-mobile-report-title {
+      margin: 8px 0 4px;
+      font-size: 24px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+    .desk-mobile-report-meta {
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.65;
+      font-weight: 800;
+    }
+    .desk-mobile-report-section {
+      border-top: 1px solid #e2e8f0;
+      margin-top: 16px;
+      padding-top: 14px;
+    }
+    .desk-mobile-report-section h4 {
+      margin: 0 0 10px;
+      color: #064e3b;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .desk-mobile-report-section ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.8;
+      font-weight: 800;
+    }
+    .desk-mobile-report-section li span {
+      color: #64748b;
+      font-weight: 900;
+      margin-right: 8px;
     }
     .desk-report-info-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 13px 14px; min-width: 0; }
     .desk-report-info-card h4 { margin: 0 0 8px; color: #0f172a; font-size: 13px; font-weight: 900; }
@@ -7819,28 +7929,28 @@
       border: 1px solid #dbe8e2;
       border-radius: 8px;
       padding: 14px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
     }
     .desk-daily-journal-mode .desk-live-feed { width: 340px; top: 76px; }
     .desk-daily-journal-mode .desk-live-feed-title { font-size: 18px; }
     .desk-daily-journal-mode .desk-live-feed-list { gap: 0; padding: 0; }
     .desk-daily-journal-mode .desk-live-feed-list::before { display: none; }
-    .desk-daily-journal-mode .desk-live-feed-item { grid-template-columns: 30px 46px minmax(0, 1fr) 24px; gap: 8px; border-bottom: 1px solid #edf2ef; padding: 9px 0; }
+    .desk-daily-journal-mode .desk-live-feed-item { grid-template-columns: 30px 46px minmax(0, 1fr) 24px; gap: 8px; border-bottom: 1px solid #edf2ef; padding: 10px 0; }
     .desk-daily-journal-mode .desk-live-feed-row {
-      background: var(--desk-card-bg, #fff);
-      border-left: 3px solid var(--desk-worker-accent, #064e3b);
-      border-radius: 8px;
-      border-bottom: 0;
-      padding: 9px 8px;
-      margin-bottom: 7px;
+      background: #fff;
+      border-left: 0;
+      border-radius: 0;
+      padding: 10px 0;
+      margin-bottom: 0;
     }
     .desk-live-feed-index { width: 24px; height: 24px; border-radius: 999px; background: #064e3b; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
     .desk-live-feed-row-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
     .desk-live-feed-row-meta { display: flex; gap: 7px; align-items: center; min-width: 0; }
     .desk-live-feed-row-worker { color: #475569; font-size: 12px; font-weight: 900; }
     .desk-live-feed-row-content { color: #0f172a; font-size: 12px; line-height: 1.45; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-daily-journal-mode .desk-live-feed-edit {
+      background: transparent;
+      border: 0;
+    }
     .folder-card,
     .folder-tab,
     .folder-body { border-radius: 8px; }
@@ -9233,7 +9343,7 @@
                 <div class="desk-card-title-row">
                   <div>
                     <div class="desk-side-title">보고용 미리보기 <span id="deskReportWorkerInline"></span></div>
-                    <div class="desk-side-sub">오늘 입력된 보고용 내용을 기준으로 자동 생성됩니다.</div>
+                    <div class="desk-side-sub">오늘 입력된 기록을 기준으로 모바일 보고 형식으로 자동 생성됩니다.</div>
                   </div>
                   <div class="desk-report-actions">
                     <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
@@ -15300,13 +15410,17 @@
     function ensureDeskDailyWorkerSelection_(workers) {
       var options = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       var selected = state.desk.daily.selectedWorker;
+      if (!selected) {
+        state.desk.daily.selectedWorker = (workers || [])[0] || "전체";
+        return;
+      }
       var matched = options.find(function(option) {
         return option === selected || (option !== "전체" && option !== DESK_ROUTINE_TAB_KEY && isSameDeskWorkerName_(option, selected));
       });
       if (matched) {
         state.desk.daily.selectedWorker = matched;
       } else if (options.indexOf(selected) === -1) {
-        state.desk.daily.selectedWorker = options[0] || "";
+        state.desk.daily.selectedWorker = (workers || [])[0] || options[0] || "";
       }
     }
 
@@ -15347,7 +15461,7 @@
       if (deskJournalPendingSummaryEl) deskJournalPendingSummaryEl.textContent = pending + "건";
       if (deskJournalWorkerSummaryEl) {
         var reportReady = (workers || []).filter(function(worker) {
-          return (memos || []).some(function(item) { return isSameDeskWorkerName_(item.worker, worker) && getDeskMemoMode_(item) === "report"; });
+          return (memos || []).some(function(item) { return isSameDeskWorkerName_(item.worker, worker); });
         }).length;
         deskJournalWorkerSummaryEl.textContent = reportReady + "명";
       }
@@ -15570,7 +15684,6 @@
       if (state.desk.activeTab === "dailyJournal") {
         deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
           var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
-          var palette = getDeskWorkerPalette_(item.worker || "");
           var type = item.category || item.type || "일반";
           return '<article class="desk-live-feed-item desk-live-feed-row" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '">' +
             '<span class="desk-live-feed-index">' + escapeHtml(String(startIndex + index + 1)) + '</span>' +
@@ -15764,7 +15877,8 @@
       if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = visible.length + "건";
       if (!visible.length) {
         deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">미해결 업무가 없습니다. 작업 큐가 비어 있습니다.</div>' +
-          (completedItems.length ? '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ')</button>' : '');
+          '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
+        refreshLucideIcons_();
         return;
       }
       deskJournalTaskBoardEl.innerHTML = visible.map(function(item) {
@@ -15794,12 +15908,13 @@
             ? '<div class="field desk-queue-reason"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 어려운 사유를 입력해주세요"></div>'
             : '') +
           '<div class="desk-task-actions">' +
-            (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '">사유 저장</button>' : '') +
-            (!item.completed && !isShared ? '<button class="modal-action primary" type="button" data-desk-journal-task-complete="' + escapeHtml(item.id) + '">업무 완료</button>' : '') +
-            '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
+            (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '"><i data-lucide="check-square"></i>사유 저장</button>' : '') +
+            (!item.completed && !isShared ? '<button class="modal-action primary" type="button" data-desk-journal-task-complete="' + escapeHtml(item.id) + '"><i data-lucide="check"></i>업무 완료</button>' : '') +
+            '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i>' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
           '</div>' +
         '</article>';
-      }).join("") + (completedItems.length ? '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ')</button>' : '');
+      }).join("") + '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
+      refreshLucideIcons_();
     }
 
     function renderDeskRoutineTaskBoard_() {
@@ -15979,25 +16094,32 @@
             return '<li>' + escapeHtml(type) + ': ' + escapeHtml(String(typeCounts[type])) + '건</li>';
           }).join("")
         : '<li>기록 없음</li>';
+      var dateLabel = formatDeskDateLabel_(dateKey);
       return '<section class="desk-report-compact" id="deskJournalReportCard">' +
-        '<article class="desk-report-info-card">' +
-          '<span class="desk-report-info-icon"><i data-lucide="user-round"></i></span>' +
-          '<dl><dt>근무자</dt><dd>' + escapeHtml(worker) + '</dd><dt>근무 시간</dt><dd>' + escapeHtml(shiftText) + '</dd><dt>기록 항목</dt><dd>' + escapeHtml(String(timeline.length)) + '건</dd></dl>' +
-        '</article>' +
-        '<article class="desk-report-info-card">' +
-          '<h4>업무 요약</h4><ul>' + summaryHtml + '</ul>' +
-        '</article>' +
-        '<article class="desk-report-info-card desk-report-timeline-summary">' +
-          '<h4>시간대별 기록</h4>' +
+        '<article class="desk-mobile-report-card">' +
+          '<div class="desk-mobile-report-eyebrow">SEDU DESK REPORT</div>' +
+          '<h3 class="desk-mobile-report-title">' + escapeHtml(worker) + '</h3>' +
+          '<div class="desk-mobile-report-meta">' +
+            '<div>' + escapeHtml(dateLabel) + '</div>' +
+            '<div>근무 시간 ' + escapeHtml(shiftText) + '</div>' +
+            '<div>기록 항목 ' + escapeHtml(String(timeline.length)) + '건</div>' +
+          '</div>' +
+          '<section class="desk-mobile-report-section">' +
+            '<h4>[업무 요약]</h4>' +
+            '<ul>' + summaryHtml + '</ul>' +
+          '</section>' +
+          '<section class="desk-mobile-report-section">' +
+            '<h4>[시간대별 기록]</h4>' +
           '<ul>' + (timeline.length ? timeline.map(function(item) {
             return '<li><span>' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '</span>[' + escapeHtml(getDeskMemoType_(item)) + '] ' + escapeHtml(item.text || "") + '</li>';
           }).join("") : '<li>기록 없음</li>') + '</ul>' +
-        '</article>' +
-        '<article class="desk-report-info-card desk-report-pending-summary">' +
-          '<h4>미해결 항목</h4>' +
+          '</section>' +
+          '<section class="desk-mobile-report-section">' +
+            '<h4>[미해결 항목]</h4>' +
           '<ul>' + (pending.length ? pending.map(function(item) {
             return '<li>' + escapeHtml(item.title || "-") + '</li>';
           }).join("") : '<li>미해결 항목 없음</li>') + '</ul>' +
+          '</section>' +
         '</article>' +
       '</section>';
     }
@@ -16198,8 +16320,9 @@
       if (!deskJournalMemoSubmitBtnEl) return;
       deskJournalMemoSubmitBtnEl.classList.toggle("saving", !!isSaving);
       deskJournalMemoSubmitBtnEl.innerHTML = isSaving
-        ? '<span class="desk-memo-submit-icon">↻</span> 저장 중'
-        : '<span class="desk-memo-submit-icon">↵</span> 저장';
+        ? '<i data-lucide="refresh-cw"></i>저장 중'
+        : '<i data-lucide="save"></i>저장';
+      refreshLucideIcons_();
       syncDeskMemoComposerState_();
     }
 
