@@ -762,13 +762,16 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
 
 function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
   var now = new Date().toISOString();
+  var mode = String((item && item.mode) || "report").trim();
   return {
     id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
     dateKey: normalizeDeskDateKey_((item && item.dateKey) || dateKey),
     worker: String((item && item.worker) || "").trim(),
     text: String((item && item.text) || "").trim(),
+    category: String((item && (item.category || item.type || item.memoType)) || "일반").trim() || "일반",
+    mode: mode === "record" ? "record" : "report",
     createdAt: String((item && item.createdAt) || now).trim(),
-    updatedAt: now
+    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim()
   };
 }
 
