@@ -15,7 +15,16 @@ const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
-const DESK_HR_STATUSES = ["미연락", "1차 연락", "재연락 필요", "면접 조율중", "면접 확정", "종료"];
+const DESK_HR_STATUSES = ["이력서 검토", "추천", "면접 조율", "면접 진행", "합격 안내", "불합격 안내"];
+const DESK_HR_STATUS_ALIASES = {
+  "미연락": "이력서 검토",
+  "1차 연락": "추천",
+  "재연락 필요": "면접 조율",
+  "면접 조율중": "면접 조율",
+  "면접 확정": "면접 진행",
+  "종료": "불합격 안내"
+};
+const DESK_HR_REVIEW_DECISIONS = ["검토중", "추천", "보류", "제외"];
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -595,7 +604,12 @@ function getDeskRecruitingApplicantsData(payload) {
     var applicants = Object.keys(stored && typeof stored === "object" ? stored : {}).map(function(id) {
       return normalizeDeskRecruitingApplicant_(stored[id], id);
     }).filter(function(item) {
-      return !monthKey || String(item.interviewDate || "").slice(0, 7) === monthKey || String(item.nextContactAt || "").slice(0, 7) === monthKey;
+      return !monthKey ||
+        String(item.interviewDate || "").slice(0, 7) === monthKey ||
+        String(item.nextContactAt || "").slice(0, 7) === monthKey ||
+        String(item.resumeReportedAt || "").slice(0, 7) === monthKey ||
+        String(item.directorRequestedAt || "").slice(0, 7) === monthKey ||
+        String(item.createdAt || "").slice(0, 7) === monthKey;
     }).sort(compareDeskRecruitingApplicants_);
     return { success: true, monthKey: monthKey, applicants: applicants };
   } catch (e) {
@@ -632,8 +646,11 @@ function normalizeDeskRecruitingApplicant_(item, fallbackId) {
   var subject = String(source.subject || "").trim();
   var subjectDetail = String(source.subjectDetail || "").trim();
   if (subject !== "과학") subjectDetail = "";
-  var status = String(source.status || "미연락").trim();
-  if (DESK_HR_STATUSES.indexOf(status) === -1) status = "미연락";
+  var status = String(source.pipelineStatus || source.status || "이력서 검토").trim();
+  status = DESK_HR_STATUS_ALIASES[status] || status;
+  if (DESK_HR_STATUSES.indexOf(status) === -1) status = "이력서 검토";
+  var reviewDecision = String(source.reviewDecision || "검토중").trim();
+  if (DESK_HR_REVIEW_DECISIONS.indexOf(reviewDecision) === -1) reviewDecision = "검토중";
   return {
     id: String(source.id || fallbackId || buildDeskScheduleEntryId_()).trim(),
     applicantName: String(source.applicantName || source.name || "").trim(),
@@ -646,12 +663,17 @@ function normalizeDeskRecruitingApplicant_(item, fallbackId) {
     gender: String(source.gender || "").trim(),
     platform: String(source.platform || "").trim(),
     status: status,
+    pipelineStatus: status,
+    reviewDecision: reviewDecision,
+    resumeReportedAt: normalizeDeskDateKey_(source.resumeReportedAt) || "",
+    directorRequestedAt: normalizeDeskDateKey_(source.directorRequestedAt) || "",
     interviewDate: normalizeDeskDateKey_(source.interviewDate) || "",
     interviewTime: String(source.interviewTime || "").trim(),
     lastContactAt: normalizeDeskDateKey_(source.lastContactAt) || "",
     nextContactAt: normalizeDeskDateKey_(source.nextContactAt) || "",
     contactChannel: String(source.contactChannel || "전화").trim() || "전화",
     contactLogs: normalizeDeskRecruitingContactLogs_(source.contactLogs),
+    guidanceTemplates: normalizeDeskRecruitingGuidanceTemplates_(source.guidanceTemplates),
     jobPostTitle: String(source.jobPostTitle || "").trim(),
     note: String(source.note || "").trim(),
     createdAt: String(source.createdAt || now).trim(),
@@ -669,6 +691,24 @@ function normalizeDeskRecruitingContactLogs_(logs) {
     };
   }).filter(function(log) {
     return log.at || log.channel || log.summary;
+  });
+}
+
+function normalizeDeskRecruitingGuidanceTemplates_(templates) {
+  if (!Array.isArray(templates)) return [];
+  return templates.map(function(template, index) {
+    var stage = String(template && template.stage || template && template.title || "면접 조율").trim();
+    stage = DESK_HR_STATUS_ALIASES[stage] || stage;
+    if (DESK_HR_STATUSES.indexOf(stage) === -1) stage = "면접 조율";
+    return {
+      id: String(template && template.id || ("template_" + index)).trim(),
+      title: String(template && template.title || "안내 멘트").trim() || "안내 멘트",
+      stage: stage,
+      channel: String(template && template.channel || "문자").trim() || "문자",
+      message: String(template && template.message || "").trim()
+    };
+  }).filter(function(template) {
+    return template.message;
   });
 }
 
