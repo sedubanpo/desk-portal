@@ -11,9 +11,11 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
+const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
+const DESK_HR_STATUSES = ["미연락", "1차 연락", "재연락 필요", "면접 조율중", "면접 확정", "종료"];
 
 // [2] Firebase 설정
 const FB_URL = "https://sedu-portal-default-rtdb.firebaseio.com/";
@@ -47,6 +49,9 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveDeskSupplyAsset: true,
   deleteDeskSupplyAsset: true,
   saveDeskSupplyPurchaseState: true,
+  getDeskRecruitingApplicantsData: true,
+  saveDeskRecruitingApplicant: true,
+  deleteDeskRecruitingApplicant: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
   savePayrollSettings: true
@@ -124,6 +129,9 @@ function handlePayrollApiRequest_(params) {
       saveDeskSupplyAsset: saveDeskSupplyAsset,
       deleteDeskSupplyAsset: deleteDeskSupplyAsset,
       saveDeskSupplyPurchaseState: saveDeskSupplyPurchaseState,
+      getDeskRecruitingApplicantsData: getDeskRecruitingApplicantsData,
+      saveDeskRecruitingApplicant: saveDeskRecruitingApplicant,
+      deleteDeskRecruitingApplicant: deleteDeskRecruitingApplicant,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
       savePayrollSettings: savePayrollSettings
@@ -573,6 +581,103 @@ function saveDeskSupplyPurchaseState(payload) {
   } catch (e) {
     return { success: false, message: "구매 요청 상태 저장 오류: " + e.message };
   }
+}
+
+function buildDeskRecruitingPath_() {
+  return DESK_RECRUITING_ROOT_PATH;
+}
+
+function getDeskRecruitingApplicantsData(payload) {
+  try {
+    var req = payload || {};
+    var monthKey = normalizeDeskScheduleMonthKey_(req.monthKey);
+    var stored = firebaseRequestWithServiceAccount_("get", buildDeskRecruitingPath_()) || {};
+    var applicants = Object.keys(stored && typeof stored === "object" ? stored : {}).map(function(id) {
+      return normalizeDeskRecruitingApplicant_(stored[id], id);
+    }).filter(function(item) {
+      return !monthKey || String(item.interviewDate || "").slice(0, 7) === monthKey || String(item.nextContactAt || "").slice(0, 7) === monthKey;
+    }).sort(compareDeskRecruitingApplicants_);
+    return { success: true, monthKey: monthKey, applicants: applicants };
+  } catch (e) {
+    return { success: false, message: "인사 관리 조회 오류: " + e.message };
+  }
+}
+
+function saveDeskRecruitingApplicant(payload) {
+  try {
+    var applicant = normalizeDeskRecruitingApplicant_(payload && payload.applicant, payload && payload.applicant && payload.applicant.id);
+    if (!applicant.applicantName) return { success: false, message: "지원자명을 입력해 주세요." };
+    firebaseRequestWithServiceAccount_("put", buildDeskRecruitingPath_() + "/" + applicant.id, applicant);
+    return { success: true, applicant: applicant };
+  } catch (e) {
+    return { success: false, message: "지원자 저장 오류: " + e.message };
+  }
+}
+
+function deleteDeskRecruitingApplicant(payload) {
+  try {
+    var id = String(payload && payload.id || "").trim();
+    if (!id) return { success: false, message: "삭제할 지원자 ID가 없습니다." };
+    firebaseRequestWithServiceAccount_("delete", buildDeskRecruitingPath_() + "/" + id);
+    return { success: true, id: id };
+  } catch (e) {
+    return { success: false, message: "지원자 삭제 오류: " + e.message };
+  }
+}
+
+function normalizeDeskRecruitingApplicant_(item, fallbackId) {
+  var source = item || {};
+  var now = new Date().toISOString();
+  var roleType = String(source.roleType || "강사").trim() || "강사";
+  var subject = String(source.subject || "").trim();
+  var subjectDetail = String(source.subjectDetail || "").trim();
+  if (subject !== "과학") subjectDetail = "";
+  var status = String(source.status || "미연락").trim();
+  if (DESK_HR_STATUSES.indexOf(status) === -1) status = "미연락";
+  return {
+    id: String(source.id || fallbackId || buildDeskScheduleEntryId_()).trim(),
+    applicantName: String(source.applicantName || source.name || "").trim(),
+    roleType: roleType,
+    subject: subject || (roleType === "데스크 직원" ? "데스크" : ""),
+    subjectDetail: subjectDetail,
+    school: String(source.school || "").trim(),
+    major: String(source.major || "").trim(),
+    birthYear: String(source.birthYear || "").trim(),
+    gender: String(source.gender || "").trim(),
+    platform: String(source.platform || "").trim(),
+    status: status,
+    interviewDate: normalizeDeskDateKey_(source.interviewDate) || "",
+    interviewTime: String(source.interviewTime || "").trim(),
+    lastContactAt: normalizeDeskDateKey_(source.lastContactAt) || "",
+    nextContactAt: normalizeDeskDateKey_(source.nextContactAt) || "",
+    contactChannel: String(source.contactChannel || "전화").trim() || "전화",
+    contactLogs: normalizeDeskRecruitingContactLogs_(source.contactLogs),
+    jobPostTitle: String(source.jobPostTitle || "").trim(),
+    note: String(source.note || "").trim(),
+    createdAt: String(source.createdAt || now).trim(),
+    updatedAt: String(source.updatedAt || source.createdAt || now).trim()
+  };
+}
+
+function normalizeDeskRecruitingContactLogs_(logs) {
+  if (!Array.isArray(logs)) return [];
+  return logs.map(function(log) {
+    return {
+      at: String(log && log.at || "").trim(),
+      channel: String(log && log.channel || "").trim(),
+      summary: String(log && log.summary || "").trim()
+    };
+  }).filter(function(log) {
+    return log.at || log.channel || log.summary;
+  });
+}
+
+function compareDeskRecruitingApplicants_(a, b) {
+  var aDate = String(a.interviewDate || a.nextContactAt || a.updatedAt || "");
+  var bDate = String(b.interviewDate || b.nextContactAt || b.updatedAt || "");
+  if (aDate !== bDate) return bDate.localeCompare(aDate);
+  if (a.interviewTime !== b.interviewTime) return String(a.interviewTime || "").localeCompare(String(b.interviewTime || ""));
+  return String(a.applicantName || "").localeCompare(String(b.applicantName || ""), "ko");
 }
 
 function normalizeDeskScheduleMonthKey_(value) {

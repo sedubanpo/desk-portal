@@ -1669,6 +1669,9 @@
       .desk-supply-grid {
         grid-template-columns: minmax(0, 1fr);
       }
+      .desk-hr-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
     @media (max-width: 960px) {
       .global-topbar {
@@ -1695,6 +1698,20 @@
       }
       .desk-supply-table {
         min-width: 560px;
+      }
+      .desk-hr-summary,
+      .desk-hr-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-hr-form-grid .field.wide {
+        grid-column: 1 / -1;
+      }
+      .desk-hr-calendar-grid,
+      .desk-hr-calendar-head {
+        min-width: 760px;
+      }
+      .desk-hr-card:first-child {
+        overflow-x: auto;
       }
     }
     .desk-supply-quick-card {
@@ -1834,6 +1851,260 @@
       min-height: 280px;
       resize: vertical;
       white-space: pre-wrap;
+    }
+    .desk-hr-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-hr-toolbar,
+    .desk-hr-report-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .desk-hr-month-nav,
+    .desk-hr-filters {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-hr-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .desk-hr-kpi,
+    .desk-hr-card {
+      border: 1px solid #d8e6de;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 10px 22px rgba(15, 60, 46, 0.05);
+    }
+    .desk-hr-kpi {
+      padding: 14px 16px;
+    }
+    .desk-hr-kpi span {
+      display: block;
+      color: #637487;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-hr-kpi strong {
+      display: block;
+      margin-top: 6px;
+      color: #173042;
+      font-size: 28px;
+      font-weight: 950;
+      line-height: 1;
+    }
+    .desk-hr-kpi small {
+      display: block;
+      margin-top: 7px;
+      color: #7b8d9b;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .desk-hr-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 14px;
+      align-items: start;
+    }
+    .desk-hr-card {
+      padding: 14px;
+    }
+    .desk-hr-calendar-head,
+    .desk-hr-calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .desk-hr-calendar-head {
+      margin-bottom: 8px;
+    }
+    .desk-hr-calendar-head span {
+      border: 1px solid #dce9e2;
+      border-radius: 8px;
+      background: #f8fcfa;
+      padding: 9px 6px;
+      color: #53697c;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-hr-day {
+      min-height: 126px;
+      border: 1px solid #dce9e2;
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .desk-hr-day.outside {
+      background: #f7faf8;
+      color: #94a3b8;
+    }
+    .desk-hr-day.today {
+      border-color: #0d684d;
+      box-shadow: inset 0 0 0 2px rgba(13, 104, 77, 0.08);
+    }
+    .desk-hr-day.selected {
+      border-color: #0d684d;
+      background: #eef8f3;
+    }
+    .desk-hr-day-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #173042;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .desk-hr-day-count {
+      border-radius: 999px;
+      background: #e8f4ef;
+      color: #0d684d;
+      padding: 3px 7px;
+      font-size: 10px;
+      font-weight: 950;
+    }
+    .desk-hr-event-list,
+    .desk-hr-selected-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .desk-hr-event {
+      border: 1px solid #cfe0d7;
+      border-radius: 8px;
+      background: #f8fcfa;
+      padding: 7px 8px;
+      color: #173042;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .desk-hr-event span,
+    .desk-hr-muted {
+      display: block;
+      color: #607082;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .desk-hr-side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-hr-selected-item {
+      border: 1px solid #d8e6de;
+      border-radius: 8px;
+      background: #fbfefc;
+      padding: 10px;
+    }
+    .desk-hr-selected-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .desk-hr-selected-top strong {
+      color: #173042;
+      font-size: 14px;
+      font-weight: 950;
+    }
+    .desk-hr-chip-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .desk-hr-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cfe0d7;
+      border-radius: 999px;
+      background: #eef8f3;
+      color: #0d684d;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 950;
+    }
+    .desk-hr-chip.warn {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #c2410c;
+    }
+    .desk-hr-form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px 12px;
+    }
+    .desk-hr-form-grid .field.wide {
+      grid-column: span 2;
+    }
+    .desk-hr-form-grid .field.all {
+      grid-column: 1 / -1;
+    }
+    .desk-hr-report-box {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid #c9d8d0;
+      border-radius: 8px;
+      background: #f8fcfa;
+      padding: 12px;
+      color: #173042;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.6;
+      resize: vertical;
+    }
+    .desk-hr-table-wrap {
+      overflow: auto;
+      border: 1px solid #d8e6de;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .desk-hr-table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .desk-hr-table th,
+    .desk-hr-table td {
+      padding: 10px 11px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      vertical-align: middle;
+    }
+    .desk-hr-table th {
+      background: #f4faf7;
+      color: #52687b;
+      font-size: 11px;
+      font-weight: 950;
+    }
+    .desk-hr-table tr:last-child td {
+      border-bottom: 0;
+    }
+    .desk-hr-table-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .desk-form-actions-row {
       display: flex;
@@ -8520,6 +8791,7 @@
             <button class="desk-subtab active" type="button" data-desk-tab="monthlySchedule">월별 근무표</button>
             <button class="desk-subtab" type="button" data-desk-tab="supplies">물품 관리</button>
             <button class="desk-subtab" type="button" data-desk-tab="dailyJournal">일일 업무일지</button>
+            <button class="desk-subtab" type="button" data-desk-tab="recruiting">인사 관리</button>
           </section>
 
           <section class="desk-panel" data-desk-panel="monthlySchedule">
@@ -9137,6 +9409,271 @@
               </section>
 
               <div class="desk-notice">물품 관리 데이터는 Firebase 서버에 저장됩니다. 따라서 다른 PC에서도 같은 재고 수량, 물품 현황, 구매 요청 상태를 그대로 이어서 볼 수 있습니다.</div>
+            </div>
+          </section>
+
+          <section class="desk-panel hidden" data-desk-panel="recruiting">
+            <header class="desk-panel-head">
+              <div>
+                <h2 class="desk-panel-title">인사 관리</h2>
+                <p class="desk-panel-sub">지원자 연락 이력, 면접 일정, 보고용 문안을 한 화면에서 관리합니다.</p>
+              </div>
+              <div class="desk-panel-head-actions">
+                <button class="desk-ghost-btn" id="deskHrReloadBtn" type="button"><i data-lucide="refresh-cw"></i>새로고침</button>
+                <span class="desk-status-chip" id="deskHrSyncStatus">Firebase 서버 저장</span>
+              </div>
+            </header>
+            <div class="desk-hr-shell">
+              <section class="desk-hr-toolbar">
+                <div class="desk-hr-month-nav">
+                  <button class="desk-nav-btn" id="deskHrPrevMonthBtn" type="button"><i data-lucide="chevron-left"></i><span>이전 월</span></button>
+                  <input id="deskHrMonthInput" class="desk-month-input" type="month">
+                  <button class="desk-nav-btn" id="deskHrNextMonthBtn" type="button"><span>다음 월</span><i data-lucide="chevron-right"></i></button>
+                  <button class="desk-nav-btn accent" id="deskHrTodayBtn" type="button"><i data-lucide="calendar-check"></i><span>오늘</span></button>
+                </div>
+                <div class="desk-hr-filters">
+                  <select id="deskHrStatusFilter" class="desk-inline-select" aria-label="연락 상태 필터">
+                    <option value="">전체 상태</option>
+                    <option value="미연락">미연락</option>
+                    <option value="1차 연락">1차 연락</option>
+                    <option value="재연락 필요">재연락 필요</option>
+                    <option value="면접 조율중">면접 조율중</option>
+                    <option value="면접 확정">면접 확정</option>
+                    <option value="종료">종료</option>
+                  </select>
+                  <select id="deskHrRoleFilter" class="desk-inline-select" aria-label="지원직무 필터">
+                    <option value="">전체 직무</option>
+                    <option value="강사">강사</option>
+                    <option value="데스크 직원">데스크 직원</option>
+                  </select>
+                  <input id="deskHrPlatformFilter" class="desk-inline-input" type="search" placeholder="플랫폼 검색">
+                  <input id="deskHrKeywordFilter" class="desk-inline-input" type="search" placeholder="이름, 학교, 전공 검색">
+                </div>
+              </section>
+
+              <section class="desk-hr-summary">
+                <article class="desk-hr-kpi">
+                  <span>이번 달 면접 예정</span>
+                  <strong id="deskHrKpiInterview">0건</strong>
+                  <small id="deskHrKpiInterviewSub">선택 월 기준</small>
+                </article>
+                <article class="desk-hr-kpi">
+                  <span>재연락 필요</span>
+                  <strong id="deskHrKpiRecall">0건</strong>
+                  <small>상태 또는 다음 연락일 기준</small>
+                </article>
+                <article class="desk-hr-kpi">
+                  <span>면접 확정</span>
+                  <strong id="deskHrKpiConfirmed">0건</strong>
+                  <small>확정 상태 지원자</small>
+                </article>
+                <article class="desk-hr-kpi">
+                  <span>종료</span>
+                  <strong id="deskHrKpiClosed">0건</strong>
+                  <small>채용/탈락/보류 종료</small>
+                </article>
+              </section>
+
+              <section class="desk-hr-layout">
+                <article class="desk-hr-card">
+                  <div class="desk-supply-card-head">
+                    <div>
+                      <h3>면접 일정 캘린더</h3>
+                      <p>면접일이 있는 지원자를 월간 캘린더에서 확인하고, 날짜를 선택해 브리핑을 복사합니다.</p>
+                    </div>
+                    <button class="desk-primary-btn" id="deskHrNewApplicantBtn" type="button"><i data-lucide="user-plus"></i>지원자 등록</button>
+                  </div>
+                  <div class="desk-hr-calendar-head">
+                    <span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span>
+                  </div>
+                  <div class="desk-hr-calendar-grid" id="deskHrCalendarGrid"></div>
+                </article>
+
+                <aside class="desk-hr-side-stack">
+                  <article class="desk-hr-card">
+                    <div class="desk-side-title" id="deskHrSelectedDateTitle">날짜를 선택하세요</div>
+                    <div class="desk-side-sub" id="deskHrSelectedDateSub">선택 날짜의 면접 예정자를 확인합니다.</div>
+                    <div class="desk-hr-selected-list" id="deskHrSelectedDateList"></div>
+                  </article>
+                  <article class="desk-hr-card">
+                    <div class="desk-hr-report-actions">
+                      <div>
+                        <div class="desk-side-title">보고용 브리핑</div>
+                        <div class="desk-side-sub">선택 날짜 또는 선택 지원자 기준으로 복사합니다.</div>
+                      </div>
+                      <div class="desk-inline-actions">
+                        <button class="desk-ghost-btn" id="deskHrCopyDayReportBtn" type="button"><i data-lucide="copy"></i>일일 복사</button>
+                        <button class="desk-primary-btn" id="deskHrCopyApplicantReportBtn" type="button"><i data-lucide="clipboard"></i>지원자 복사</button>
+                      </div>
+                    </div>
+                    <textarea id="deskHrReportPreview" class="desk-hr-report-box" readonly></textarea>
+                    <div class="desk-supply-copy-status" id="deskHrCopyStatus"></div>
+                  </article>
+                </aside>
+              </section>
+
+              <section class="desk-hr-card">
+                <div class="desk-supply-card-head">
+                  <div>
+                    <h3 id="deskHrFormTitle">지원자 입력</h3>
+                    <p>연락한 시기, 학교/전공, 출생년도/성별, 플랫폼, 과학 세부과목을 함께 기록합니다.</p>
+                  </div>
+                  <button class="desk-ghost-btn hidden" id="deskHrCancelEditBtn" type="button">수정 취소</button>
+                </div>
+                <form id="deskHrApplicantForm">
+                  <input id="deskHrApplicantId" type="hidden">
+                  <div class="desk-hr-form-grid">
+                    <div class="field">
+                      <label for="deskHrApplicantName">지원자명</label>
+                      <input id="deskHrApplicantName" class="desk-inline-input" type="text" placeholder="예: 김지원">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrRoleType">지원직무</label>
+                      <select id="deskHrRoleType" class="desk-inline-select">
+                        <option value="강사">강사</option>
+                        <option value="데스크 직원">데스크 직원</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrSubject">과목</label>
+                      <input id="deskHrSubject" class="desk-inline-input" type="text" list="deskHrSubjectList" placeholder="예: 과학">
+                      <datalist id="deskHrSubjectList">
+                        <option value="과학"></option>
+                        <option value="수학"></option>
+                        <option value="영어"></option>
+                        <option value="국어"></option>
+                        <option value="사회"></option>
+                        <option value="데스크"></option>
+                      </datalist>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrSubjectDetail">과학 세부과목</label>
+                      <select id="deskHrSubjectDetail" class="desk-inline-select">
+                        <option value="">해당 없음</option>
+                        <option value="물리">물리</option>
+                        <option value="화학">화학</option>
+                        <option value="생명">생명</option>
+                        <option value="지구과학">지구과학</option>
+                        <option value="통합과학">통합과학</option>
+                        <option value="기타">기타</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrSchool">학교</label>
+                      <input id="deskHrSchool" class="desk-inline-input" type="text" placeholder="예: 서울대학교">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrMajor">전공</label>
+                      <input id="deskHrMajor" class="desk-inline-input" type="text" placeholder="예: 물리교육과">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrBirthYear">출생년도</label>
+                      <input id="deskHrBirthYear" class="desk-inline-input" type="number" min="1950" max="2100" step="1" placeholder="예: 1998">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrGender">성별</label>
+                      <select id="deskHrGender" class="desk-inline-select">
+                        <option value="">미입력</option>
+                        <option value="남">남</option>
+                        <option value="여">여</option>
+                        <option value="기타">기타</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrPlatform">지원 플랫폼</label>
+                      <input id="deskHrPlatform" class="desk-inline-input" type="text" list="deskHrPlatformList" placeholder="예: 알바몬">
+                      <datalist id="deskHrPlatformList">
+                        <option value="알바몬"></option>
+                        <option value="잡코리아"></option>
+                        <option value="사람인"></option>
+                        <option value="인디드"></option>
+                        <option value="직접지원"></option>
+                        <option value="추천"></option>
+                      </datalist>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrStatus">연락상태</label>
+                      <select id="deskHrStatus" class="desk-inline-select">
+                        <option value="미연락">미연락</option>
+                        <option value="1차 연락">1차 연락</option>
+                        <option value="재연락 필요">재연락 필요</option>
+                        <option value="면접 조율중">면접 조율중</option>
+                        <option value="면접 확정">면접 확정</option>
+                        <option value="종료">종료</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrInterviewDate">면접일</label>
+                      <input id="deskHrInterviewDate" class="desk-inline-input" type="date">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrInterviewTime">면접시간</label>
+                      <input id="deskHrInterviewTime" class="desk-inline-input" type="time">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrLastContactAt">최근 연락일</label>
+                      <input id="deskHrLastContactAt" class="desk-inline-input" type="date">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrNextContactAt">다음 연락 예정일</label>
+                      <input id="deskHrNextContactAt" class="desk-inline-input" type="date">
+                    </div>
+                    <div class="field">
+                      <label for="deskHrContactChannel">연락 채널</label>
+                      <select id="deskHrContactChannel" class="desk-inline-select">
+                        <option value="전화">전화</option>
+                        <option value="문자">문자</option>
+                        <option value="카카오톡">카카오톡</option>
+                        <option value="이메일">이메일</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="deskHrJobPostTitle">공고명 / 포지션</label>
+                      <input id="deskHrJobPostTitle" class="desk-inline-input" type="text" placeholder="예: 과학 파트 강사 구인">
+                    </div>
+                    <div class="field all">
+                      <label for="deskHrContactLogs">연락 로그</label>
+                      <textarea id="deskHrContactLogs" class="desk-inline-textarea" placeholder="예: 2026-04-29 / 문자 / 면접 가능 시간 문의"></textarea>
+                    </div>
+                    <div class="field all">
+                      <label for="deskHrNote">내부 메모</label>
+                      <textarea id="deskHrNote" class="desk-inline-textarea" placeholder="시강 가능 여부, 시간표 조건, 특이사항"></textarea>
+                    </div>
+                  </div>
+                  <div class="desk-form-actions-row" style="margin-top:12px;">
+                    <button class="desk-ghost-btn" id="deskHrResetFormBtn" type="button">새 입력</button>
+                    <button class="desk-primary-btn" id="deskHrSaveApplicantBtn" type="submit">지원자 저장</button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="desk-hr-card">
+                <div class="desk-supply-card-head">
+                  <div>
+                    <h3>지원자 목록</h3>
+                    <p>필터가 적용된 지원자 목록입니다. 행의 복사 버튼은 선택 지원자 상세 보고를 바로 만듭니다.</p>
+                  </div>
+                  <span class="desk-count-pill" id="deskHrApplicantCount">0명</span>
+                </div>
+                <div class="desk-hr-table-wrap">
+                  <table class="desk-hr-table">
+                    <thead>
+                      <tr>
+                        <th>지원자</th>
+                        <th>직무/과목</th>
+                        <th>학교/전공</th>
+                        <th>출생/성별</th>
+                        <th>플랫폼</th>
+                        <th>연락상태</th>
+                        <th>최근/다음 연락</th>
+                        <th>면접</th>
+                        <th>관리</th>
+                      </tr>
+                    </thead>
+                    <tbody id="deskHrApplicantTableBody"></tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           </section>
 
@@ -9923,6 +10460,7 @@
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
+    var DESK_RECRUITING_RT_PATH = "desk_portal/hr_recruiting/applicants";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
     var DESK_FIXED_SCHEDULE_STORAGE_KEY = "desk_portal_fixed_schedule_v1";
     var DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY = "desk_portal_fixed_schedule_hidden_workers_v1";
@@ -9939,6 +10477,8 @@
     var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
     var DESK_SHARED_WORKER_NAME = "공동업무";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
+    var DESK_HR_STATUSES = ["미연락", "1차 연락", "재연락 필요", "면접 조율중", "면접 확정", "종료"];
+    var DESK_HR_SCIENCE_DETAILS = ["물리", "화학", "생명", "지구과학", "통합과학", "기타"];
     var DESK_TIME_PRESETS = {
       morning: { role: "오전 데스크", start: "09:30", end: "18:00", resident: false },
       afternoon: { role: "오후 데스크", start: "14:00", end: "22:30", resident: false },
@@ -10015,6 +10555,20 @@
           purchaseCustomRequests: [],
           purchaseRequestTarget: "대표님",
           purchaseRequestNote: ""
+        },
+        recruiting: {
+          loaded: false,
+          loadingPromise: null,
+          syncStatus: "idle",
+          applicants: [],
+          currentMonth: "",
+          selectedDateKey: "",
+          selectedApplicantId: "",
+          editingApplicantId: "",
+          statusFilter: "",
+          roleFilter: "",
+          platformFilter: "",
+          keywordFilter: ""
         },
         daily: {
           dateKey: "",
@@ -10230,6 +10784,55 @@
     var deskPurchaseRefreshBtnEl = document.getElementById("deskPurchaseRefreshBtn");
     var deskPurchaseCopyBtnEl = document.getElementById("deskPurchaseCopyBtn");
     var deskPurchaseCopyStatusEl = document.getElementById("deskPurchaseCopyStatus");
+    var deskHrReloadBtnEl = document.getElementById("deskHrReloadBtn");
+    var deskHrSyncStatusEl = document.getElementById("deskHrSyncStatus");
+    var deskHrMonthInputEl = document.getElementById("deskHrMonthInput");
+    var deskHrPrevMonthBtnEl = document.getElementById("deskHrPrevMonthBtn");
+    var deskHrNextMonthBtnEl = document.getElementById("deskHrNextMonthBtn");
+    var deskHrTodayBtnEl = document.getElementById("deskHrTodayBtn");
+    var deskHrStatusFilterEl = document.getElementById("deskHrStatusFilter");
+    var deskHrRoleFilterEl = document.getElementById("deskHrRoleFilter");
+    var deskHrPlatformFilterEl = document.getElementById("deskHrPlatformFilter");
+    var deskHrKeywordFilterEl = document.getElementById("deskHrKeywordFilter");
+    var deskHrKpiInterviewEl = document.getElementById("deskHrKpiInterview");
+    var deskHrKpiInterviewSubEl = document.getElementById("deskHrKpiInterviewSub");
+    var deskHrKpiRecallEl = document.getElementById("deskHrKpiRecall");
+    var deskHrKpiConfirmedEl = document.getElementById("deskHrKpiConfirmed");
+    var deskHrKpiClosedEl = document.getElementById("deskHrKpiClosed");
+    var deskHrCalendarGridEl = document.getElementById("deskHrCalendarGrid");
+    var deskHrSelectedDateTitleEl = document.getElementById("deskHrSelectedDateTitle");
+    var deskHrSelectedDateSubEl = document.getElementById("deskHrSelectedDateSub");
+    var deskHrSelectedDateListEl = document.getElementById("deskHrSelectedDateList");
+    var deskHrReportPreviewEl = document.getElementById("deskHrReportPreview");
+    var deskHrCopyDayReportBtnEl = document.getElementById("deskHrCopyDayReportBtn");
+    var deskHrCopyApplicantReportBtnEl = document.getElementById("deskHrCopyApplicantReportBtn");
+    var deskHrCopyStatusEl = document.getElementById("deskHrCopyStatus");
+    var deskHrNewApplicantBtnEl = document.getElementById("deskHrNewApplicantBtn");
+    var deskHrApplicantFormEl = document.getElementById("deskHrApplicantForm");
+    var deskHrApplicantIdEl = document.getElementById("deskHrApplicantId");
+    var deskHrApplicantNameEl = document.getElementById("deskHrApplicantName");
+    var deskHrRoleTypeEl = document.getElementById("deskHrRoleType");
+    var deskHrSubjectEl = document.getElementById("deskHrSubject");
+    var deskHrSubjectDetailEl = document.getElementById("deskHrSubjectDetail");
+    var deskHrSchoolEl = document.getElementById("deskHrSchool");
+    var deskHrMajorEl = document.getElementById("deskHrMajor");
+    var deskHrBirthYearEl = document.getElementById("deskHrBirthYear");
+    var deskHrGenderEl = document.getElementById("deskHrGender");
+    var deskHrPlatformEl = document.getElementById("deskHrPlatform");
+    var deskHrStatusEl = document.getElementById("deskHrStatus");
+    var deskHrInterviewDateEl = document.getElementById("deskHrInterviewDate");
+    var deskHrInterviewTimeEl = document.getElementById("deskHrInterviewTime");
+    var deskHrLastContactAtEl = document.getElementById("deskHrLastContactAt");
+    var deskHrNextContactAtEl = document.getElementById("deskHrNextContactAt");
+    var deskHrContactChannelEl = document.getElementById("deskHrContactChannel");
+    var deskHrJobPostTitleEl = document.getElementById("deskHrJobPostTitle");
+    var deskHrContactLogsEl = document.getElementById("deskHrContactLogs");
+    var deskHrNoteEl = document.getElementById("deskHrNote");
+    var deskHrFormTitleEl = document.getElementById("deskHrFormTitle");
+    var deskHrCancelEditBtnEl = document.getElementById("deskHrCancelEditBtn");
+    var deskHrResetFormBtnEl = document.getElementById("deskHrResetFormBtn");
+    var deskHrApplicantCountEl = document.getElementById("deskHrApplicantCount");
+    var deskHrApplicantTableBodyEl = document.getElementById("deskHrApplicantTableBody");
     var deskMonthInputEl = document.getElementById("deskMonthInput");
     var deskPrevMonthBtnEl = document.getElementById("deskPrevMonthBtn");
     var deskNextMonthBtnEl = document.getElementById("deskNextMonthBtn");
@@ -10589,6 +11192,16 @@
       state.desk.supplies.purchaseRequestTarget = "대표님";
       state.desk.supplies.purchaseRequestNote = "";
       ensureDeskSupplySelections_();
+      state.desk.recruiting.loaded = false;
+      state.desk.recruiting.loadingPromise = null;
+      state.desk.recruiting.syncStatus = "idle";
+      state.desk.recruiting.applicants = [];
+      state.desk.recruiting.editingApplicantId = "";
+      state.desk.recruiting.selectedApplicantId = "";
+      state.desk.recruiting.statusFilter = "";
+      state.desk.recruiting.roleFilter = "";
+      state.desk.recruiting.platformFilter = "";
+      state.desk.recruiting.keywordFilter = "";
       state.desk.daily.tasks = [];
       state.desk.daily.memos = [];
       state.desk.daily.editorMode = "manager";
@@ -10605,6 +11218,8 @@
       var today = new Date();
       state.desk.currentMonth = getDeskMonthKey_(today);
       state.desk.selectedDateKey = getDeskDateKey_(today);
+      state.desk.recruiting.currentMonth = getDeskMonthKey_(today);
+      state.desk.recruiting.selectedDateKey = getDeskDateKey_(today);
       state.desk.daily.dateKey = getDeskDateKey_(today);
       ensureDeskSelectedDate_();
       resetDeskConsumableForm_();
@@ -10861,6 +11476,13 @@
         return {
           status: suppliesStatus,
           label: suppliesStatus === "error" ? "동기화 비정상" : suppliesStatus === "stopped" ? "동기화 중지" : "동기화 정상"
+        };
+      }
+      if (state.desk.activeTab === "recruiting") {
+        var hrStatus = state.desk.recruiting.syncStatus || "idle";
+        return {
+          status: hrStatus,
+          label: hrStatus === "error" ? "동기화 비정상" : hrStatus === "pending" ? "동기화 중" : "동기화 정상"
         };
       }
       return {
@@ -11637,6 +12259,554 @@
       }
     }
 
+    function buildDeskRecruitingRealtimeUrl_(childPath) {
+      var path = DESK_RECRUITING_RT_PATH;
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
+    function setDeskRecruitingSyncStatus_(status) {
+      state.desk.recruiting.syncStatus = status || "idle";
+      if (deskHrSyncStatusEl) {
+        deskHrSyncStatusEl.textContent =
+          status === "pending" ? "저장 중" :
+          status === "error" ? "동기화 오류" :
+          "Firebase 서버 저장";
+      }
+      renderGlobalSyncWidget_();
+    }
+
+    function normalizeDeskHrStatus_(value) {
+      var status = String(value || "").trim();
+      return DESK_HR_STATUSES.indexOf(status) === -1 ? "미연락" : status;
+    }
+
+    function normalizeDeskRecruitingApplicant_(item, index) {
+      var source = item || {};
+      var now = new Date().toISOString();
+      var subject = String(source.subject || "").trim();
+      var detail = String(source.subjectDetail || "").trim();
+      if (subject !== "과학" && DESK_HR_SCIENCE_DETAILS.indexOf(detail) !== -1) {
+        subject = subject || "과학";
+      }
+      if (subject !== "과학") detail = "";
+      return {
+        id: String(source.id || ("desk_hr_" + index + "_" + Date.now())).trim(),
+        applicantName: String(source.applicantName || source.name || "").trim(),
+        roleType: String(source.roleType || "강사").trim() || "강사",
+        subject: subject || (String(source.roleType || "") === "데스크 직원" ? "데스크" : ""),
+        subjectDetail: detail,
+        school: String(source.school || "").trim(),
+        major: String(source.major || "").trim(),
+        birthYear: String(source.birthYear || "").trim(),
+        gender: String(source.gender || "").trim(),
+        platform: String(source.platform || "").trim(),
+        status: normalizeDeskHrStatus_(source.status),
+        interviewDate: String(source.interviewDate || "").trim(),
+        interviewTime: String(source.interviewTime || "").trim(),
+        lastContactAt: String(source.lastContactAt || "").trim(),
+        nextContactAt: String(source.nextContactAt || "").trim(),
+        contactChannel: String(source.contactChannel || "전화").trim() || "전화",
+        contactLogs: normalizeDeskHrContactLogs_(source.contactLogs),
+        jobPostTitle: String(source.jobPostTitle || "").trim(),
+        note: String(source.note || "").trim(),
+        createdAt: String(source.createdAt || now).trim(),
+        updatedAt: String(source.updatedAt || source.createdAt || now).trim()
+      };
+    }
+
+    function normalizeDeskHrContactLogs_(logs) {
+      if (Array.isArray(logs)) {
+        return logs.map(function(log) {
+          return {
+            at: String(log && log.at || "").trim(),
+            channel: String(log && log.channel || "").trim(),
+            summary: String(log && log.summary || "").trim()
+          };
+        }).filter(function(log) {
+          return log.at || log.channel || log.summary;
+        });
+      }
+      return String(logs || "").split(/\n+/).map(function(line) {
+        var parts = String(line || "").split("/").map(function(part) { return part.trim(); });
+        return {
+          at: parts[0] || "",
+          channel: parts[1] || "",
+          summary: parts.slice(2).join(" / ") || ""
+        };
+      }).filter(function(log) {
+        return log.at || log.channel || log.summary;
+      });
+    }
+
+    function formatDeskHrContactLogs_(logs) {
+      return normalizeDeskHrContactLogs_(logs).map(function(log) {
+        return [log.at, log.channel, log.summary].filter(Boolean).join(" / ");
+      }).join("\n");
+    }
+
+    function applyDeskRecruitingApplicants_(snapshot) {
+      var source = snapshot && typeof snapshot === "object" ? snapshot : {};
+      var list = Array.isArray(source) ? source : Object.keys(source).map(function(id) {
+        return Object.assign({ id: id }, source[id]);
+      });
+      state.desk.recruiting.applicants = list
+        .map(normalizeDeskRecruitingApplicant_)
+        .sort(compareDeskRecruitingApplicants_);
+    }
+
+    function compareDeskRecruitingApplicants_(a, b) {
+      var aDate = String(a.interviewDate || a.nextContactAt || a.updatedAt || "");
+      var bDate = String(b.interviewDate || b.nextContactAt || b.updatedAt || "");
+      if (aDate !== bDate) return bDate.localeCompare(aDate);
+      if (a.interviewTime !== b.interviewTime) return String(a.interviewTime || "").localeCompare(String(b.interviewTime || ""));
+      return String(a.applicantName || "").localeCompare(String(b.applicantName || ""), "ko");
+    }
+
+    function ensureDeskRecruitingLoaded_(force) {
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      if (!force && state.desk.recruiting.loaded) return Promise.resolve();
+      if (state.desk.recruiting.loadingPromise) return state.desk.recruiting.loadingPromise;
+      setDeskRecruitingSyncStatus_("pending");
+      state.desk.recruiting.loadingPromise = deskRealtimeFetchJson_("GET", buildDeskRecruitingRealtimeUrl_(""), null)
+        .then(function(snapshot) {
+          applyDeskRecruitingApplicants_(snapshot || {});
+          state.desk.recruiting.loaded = true;
+          setDeskRecruitingSyncStatus_("idle");
+          renderDeskRecruiting_();
+        })
+        .catch(function(err) {
+          console.warn("desk recruiting realtime failed, falling back", err);
+          return runServer("getDeskRecruitingApplicantsData", {
+            monthKey: state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date())
+          }).then(function(res) {
+            if (!res || !res.success) throw new Error(res && res.message ? res.message : "인사 관리 데이터를 불러오지 못했습니다.");
+            applyDeskRecruitingApplicants_(res.applicants || {});
+            state.desk.recruiting.loaded = true;
+            setDeskRecruitingSyncStatus_("idle");
+            renderDeskRecruiting_();
+          }).catch(function(innerErr) {
+            setDeskRecruitingSyncStatus_("error");
+            showClientMessage(innerErr && innerErr.message ? innerErr.message : "인사 관리 데이터를 불러오지 못했습니다.");
+          });
+        })
+        .finally(function() {
+          state.desk.recruiting.loadingPromise = null;
+        });
+      return state.desk.recruiting.loadingPromise;
+    }
+
+    function saveDeskRecruitingApplicantRemote_(applicant) {
+      return deskRealtimeFetchJson_("PUT", buildDeskRecruitingRealtimeUrl_(applicant.id), applicant)
+        .catch(function() {
+          return runServer("saveDeskRecruitingApplicant", { applicant: applicant }).then(function(res) {
+            if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 저장에 실패했습니다.");
+            return res.applicant || applicant;
+          });
+        });
+    }
+
+    function deleteDeskRecruitingApplicantRemote_(id) {
+      return deskRealtimeFetchJson_("DELETE", buildDeskRecruitingRealtimeUrl_(id), null)
+        .catch(function() {
+          return runServer("deleteDeskRecruitingApplicant", { id: id }).then(function(res) {
+            if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 삭제에 실패했습니다.");
+            return res;
+          });
+        });
+    }
+
+    function getDeskVisibleRecruitingApplicants_() {
+      var hr = state.desk.recruiting;
+      var platform = normalizeDeskSearchValue_(hr.platformFilter);
+      var keyword = normalizeDeskSearchValue_(hr.keywordFilter);
+      return (hr.applicants || []).filter(function(item) {
+        if (hr.statusFilter && item.status !== hr.statusFilter) return false;
+        if (hr.roleFilter && item.roleType !== hr.roleFilter) return false;
+        if (platform && normalizeDeskSearchValue_(item.platform).indexOf(platform) === -1) return false;
+        if (keyword) {
+          var haystack = normalizeDeskSearchValue_([
+            item.applicantName, item.school, item.major, item.subject, item.subjectDetail,
+            item.jobPostTitle, item.note
+          ].join(" "));
+          if (haystack.indexOf(keyword) === -1) return false;
+        }
+        return true;
+      });
+    }
+
+    function getDeskRecruitingMonthApplicants_() {
+      var monthKey = state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date());
+      return getDeskVisibleRecruitingApplicants_().filter(function(item) {
+        return String(item.interviewDate || "").slice(0, 7) === monthKey;
+      });
+    }
+
+    function renderDeskRecruiting_() {
+      syncDeskRecruitingControls_();
+      renderDeskRecruitingSummary_();
+      renderDeskRecruitingCalendar_();
+      renderDeskRecruitingSelectedDate_();
+      renderDeskRecruitingTable_();
+      refreshDeskRecruitingReportPreview_();
+      if (!state.desk.recruiting.loaded) ensureDeskRecruitingLoaded_(false);
+      refreshLucideIcons_();
+    }
+
+    function syncDeskRecruitingControls_() {
+      var hr = state.desk.recruiting;
+      if (!hr.currentMonth) hr.currentMonth = getDeskMonthKey_(new Date());
+      if (!hr.selectedDateKey) hr.selectedDateKey = getDeskDateKey_(new Date());
+      if (deskHrMonthInputEl) deskHrMonthInputEl.value = hr.currentMonth;
+      if (deskHrStatusFilterEl) deskHrStatusFilterEl.value = hr.statusFilter || "";
+      if (deskHrRoleFilterEl) deskHrRoleFilterEl.value = hr.roleFilter || "";
+      if (deskHrPlatformFilterEl) deskHrPlatformFilterEl.value = hr.platformFilter || "";
+      if (deskHrKeywordFilterEl) deskHrKeywordFilterEl.value = hr.keywordFilter || "";
+      if (deskHrApplicantCountEl) deskHrApplicantCountEl.textContent = getDeskVisibleRecruitingApplicants_().length + "명";
+    }
+
+    function renderDeskRecruitingSummary_() {
+      var monthItems = getDeskRecruitingMonthApplicants_();
+      var todayKey = getDeskDateKey_(new Date());
+      var recall = getDeskVisibleRecruitingApplicants_().filter(function(item) {
+        return item.status === "재연락 필요" || (!!item.nextContactAt && item.nextContactAt <= todayKey && item.status !== "종료");
+      });
+      if (deskHrKpiInterviewEl) deskHrKpiInterviewEl.textContent = monthItems.length + "건";
+      if (deskHrKpiInterviewSubEl) deskHrKpiInterviewSubEl.textContent = (state.desk.recruiting.currentMonth || "").replace("-", "년 ") + "월 기준";
+      if (deskHrKpiRecallEl) deskHrKpiRecallEl.textContent = recall.length + "건";
+      if (deskHrKpiConfirmedEl) deskHrKpiConfirmedEl.textContent = monthItems.filter(function(item) { return item.status === "면접 확정"; }).length + "건";
+      if (deskHrKpiClosedEl) deskHrKpiClosedEl.textContent = monthItems.filter(function(item) { return item.status === "종료"; }).length + "건";
+    }
+
+    function renderDeskRecruitingCalendar_() {
+      if (!deskHrCalendarGridEl) return;
+      var monthKey = state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date());
+      var parts = monthKey.split("-");
+      var year = Number(parts[0]);
+      var month = Number(parts[1]);
+      var first = new Date(year, month - 1, 1);
+      var start = new Date(year, month - 1, 1 - ((first.getDay() + 6) % 7));
+      var todayKey = getDeskDateKey_(new Date());
+      var selectedKey = state.desk.recruiting.selectedDateKey || todayKey;
+      var byDate = {};
+      getDeskVisibleRecruitingApplicants_().forEach(function(item) {
+        if (!item.interviewDate) return;
+        if (!byDate[item.interviewDate]) byDate[item.interviewDate] = [];
+        byDate[item.interviewDate].push(item);
+      });
+      var cells = [];
+      for (var i = 0; i < 42; i += 1) {
+        var date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        var dateKey = getDeskDateKey_(date);
+        var items = (byDate[dateKey] || []).sort(compareDeskRecruitingApplicants_);
+        var classes = ["desk-hr-day"];
+        if (String(dateKey).slice(0, 7) !== monthKey) classes.push("outside");
+        if (dateKey === todayKey) classes.push("today");
+        if (dateKey === selectedKey) classes.push("selected");
+        cells.push('<button class="' + classes.join(" ") + '" type="button" data-desk-hr-date="' + escapeHtml(dateKey) + '">' +
+          '<span class="desk-hr-day-top"><span>' + date.getDate() + '</span>' +
+          (items.length ? '<span class="desk-hr-day-count">' + items.length + '건</span>' : '') + '</span>' +
+          '<span class="desk-hr-event-list">' + items.slice(0, 3).map(function(item) {
+            return '<span class="desk-hr-event">' + escapeHtml((item.interviewTime || "--:--") + " " + (item.applicantName || "이름 미입력")) +
+              '<span>' + escapeHtml(formatDeskHrRoleSubject_(item)) + ' · ' + escapeHtml(item.status) + '</span></span>';
+          }).join("") + (items.length > 3 ? '<span class="desk-hr-muted">+' + (items.length - 3) + '명 더 있음</span>' : '') + '</span>' +
+        '</button>');
+      }
+      deskHrCalendarGridEl.innerHTML = cells.join("");
+    }
+
+    function renderDeskRecruitingSelectedDate_() {
+      var dateKey = state.desk.recruiting.selectedDateKey || getDeskDateKey_(new Date());
+      var items = getDeskVisibleRecruitingApplicants_().filter(function(item) {
+        return item.interviewDate === dateKey;
+      }).sort(compareDeskRecruitingApplicants_);
+      if (deskHrSelectedDateTitleEl) deskHrSelectedDateTitleEl.textContent = formatDeskDateLabel_(dateKey);
+      if (deskHrSelectedDateSubEl) deskHrSelectedDateSubEl.textContent = items.length ? ("면접 예정 " + items.length + "건") : "선택 날짜 면접 일정이 없습니다.";
+      if (!deskHrSelectedDateListEl) return;
+      if (!items.length) {
+        deskHrSelectedDateListEl.innerHTML = '<div class="desk-empty">등록된 면접 일정이 없습니다.</div>';
+        return;
+      }
+      deskHrSelectedDateListEl.innerHTML = items.map(function(item) {
+        return '<article class="desk-hr-selected-item">' +
+          '<div class="desk-hr-selected-top"><div><strong>' + escapeHtml(item.applicantName || "이름 미입력") + '</strong>' +
+          '<div class="desk-hr-muted">' + escapeHtml((item.interviewTime || "시간 미정") + " · " + formatDeskHrRoleSubject_(item)) + '</div></div>' +
+          '<button class="desk-ghost-btn" type="button" data-desk-hr-select="' + escapeHtml(item.id) + '">선택</button></div>' +
+          '<div class="desk-hr-chip-row">' + renderDeskHrChips_(item) + '</div>' +
+          '<div class="desk-hr-muted" style="margin-top:7px;">' + escapeHtml(formatDeskHrContactLine_(item)) + '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function renderDeskRecruitingTable_() {
+      if (!deskHrApplicantTableBodyEl) return;
+      var items = getDeskVisibleRecruitingApplicants_();
+      if (!items.length) {
+        deskHrApplicantTableBodyEl.innerHTML = '<tr><td colspan="9"><div class="desk-empty">등록된 지원자가 없습니다.</div></td></tr>';
+        return;
+      }
+      deskHrApplicantTableBodyEl.innerHTML = items.map(function(item) {
+        return '<tr>' +
+          '<td><strong>' + escapeHtml(item.applicantName || "이름 미입력") + '</strong><div class="desk-hr-muted">' + escapeHtml(item.jobPostTitle || "-") + '</div></td>' +
+          '<td>' + escapeHtml(formatDeskHrRoleSubject_(item)) + '</td>' +
+          '<td>' + escapeHtml((item.school || "학교 미입력") + " / " + (item.major || "전공 미입력")) + '</td>' +
+          '<td>' + escapeHtml((item.birthYear || "-") + " / " + (item.gender || "-")) + '</td>' +
+          '<td>' + escapeHtml(item.platform || "-") + '</td>' +
+          '<td><span class="desk-hr-chip' + (item.status === "재연락 필요" ? " warn" : "") + '">' + escapeHtml(item.status) + '</span></td>' +
+          '<td>' + escapeHtml((item.lastContactAt || "-") + " / " + (item.nextContactAt || "-")) + '</td>' +
+          '<td>' + escapeHtml((item.interviewDate || "-") + " " + (item.interviewTime || "")) + '</td>' +
+          '<td><div class="desk-hr-table-actions">' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-edit="' + escapeHtml(item.id) + '">수정</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-copy="' + escapeHtml(item.id) + '">복사</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join("");
+    }
+
+    function renderDeskHrChips_(item) {
+      var chips = [
+        item.status,
+        item.platform,
+        item.subjectDetail,
+        item.contactChannel
+      ].filter(Boolean);
+      return chips.map(function(chip) {
+        return '<span class="desk-hr-chip' + (chip === "재연락 필요" ? " warn" : "") + '">' + escapeHtml(chip) + '</span>';
+      }).join("");
+    }
+
+    function formatDeskHrRoleSubject_(item) {
+      var parts = [item.roleType || "직무 미입력"];
+      if (item.subject) parts.push(item.subject + (item.subjectDetail ? ("-" + item.subjectDetail) : ""));
+      return parts.join(" · ");
+    }
+
+    function formatDeskHrContactLine_(item) {
+      return "최근 연락 " + (item.lastContactAt || "-") + " · 다음 연락 " + (item.nextContactAt || "-") + " · " + (item.contactChannel || "-");
+    }
+
+    function collectDeskRecruitingApplicantDraft_() {
+      var id = String(deskHrApplicantIdEl && deskHrApplicantIdEl.value || "").trim();
+      var existing = findDeskRecruitingApplicant_(id) || {};
+      var now = new Date().toISOString();
+      return normalizeDeskRecruitingApplicant_(Object.assign({}, existing, {
+        id: id || buildDeskShiftId_("hr", Date.now(), Math.random().toString(36).slice(2)),
+        applicantName: deskHrApplicantNameEl && deskHrApplicantNameEl.value,
+        roleType: deskHrRoleTypeEl && deskHrRoleTypeEl.value,
+        subject: deskHrSubjectEl && deskHrSubjectEl.value,
+        subjectDetail: deskHrSubjectDetailEl && deskHrSubjectDetailEl.value,
+        school: deskHrSchoolEl && deskHrSchoolEl.value,
+        major: deskHrMajorEl && deskHrMajorEl.value,
+        birthYear: deskHrBirthYearEl && deskHrBirthYearEl.value,
+        gender: deskHrGenderEl && deskHrGenderEl.value,
+        platform: deskHrPlatformEl && deskHrPlatformEl.value,
+        status: deskHrStatusEl && deskHrStatusEl.value,
+        interviewDate: deskHrInterviewDateEl && deskHrInterviewDateEl.value,
+        interviewTime: deskHrInterviewTimeEl && deskHrInterviewTimeEl.value,
+        lastContactAt: deskHrLastContactAtEl && deskHrLastContactAtEl.value,
+        nextContactAt: deskHrNextContactAtEl && deskHrNextContactAtEl.value,
+        contactChannel: deskHrContactChannelEl && deskHrContactChannelEl.value,
+        contactLogs: normalizeDeskHrContactLogs_(deskHrContactLogsEl && deskHrContactLogsEl.value),
+        jobPostTitle: deskHrJobPostTitleEl && deskHrJobPostTitleEl.value,
+        note: deskHrNoteEl && deskHrNoteEl.value,
+        createdAt: existing.createdAt || now,
+        updatedAt: now
+      }), 0);
+    }
+
+    function saveDeskRecruitingApplicantFromForm_() {
+      var applicant = collectDeskRecruitingApplicantDraft_();
+      if (!applicant.applicantName) {
+        alert("지원자명을 입력해 주세요.");
+        return;
+      }
+      var next = (state.desk.recruiting.applicants || []).filter(function(item) { return item.id !== applicant.id; });
+      next.unshift(applicant);
+      state.desk.recruiting.applicants = next.sort(compareDeskRecruitingApplicants_);
+      state.desk.recruiting.selectedApplicantId = applicant.id;
+      if (applicant.interviewDate) {
+        state.desk.recruiting.selectedDateKey = applicant.interviewDate;
+        state.desk.recruiting.currentMonth = applicant.interviewDate.slice(0, 7);
+      }
+      resetDeskRecruitingForm_();
+      renderDeskRecruiting_();
+      setDeskRecruitingSyncStatus_("pending");
+      saveDeskRecruitingApplicantRemote_(applicant)
+        .then(function() { setDeskRecruitingSyncStatus_("idle"); })
+        .catch(function(err) {
+          setDeskRecruitingSyncStatus_("error");
+          alert("지원자 저장 오류: " + ((err && err.message) || String(err)));
+        });
+    }
+
+    function findDeskRecruitingApplicant_(id) {
+      return (state.desk.recruiting.applicants || []).filter(function(item) { return item.id === id; })[0] || null;
+    }
+
+    function loadDeskRecruitingApplicantIntoForm_(id) {
+      var item = findDeskRecruitingApplicant_(id);
+      if (!item) return;
+      state.desk.recruiting.editingApplicantId = item.id;
+      state.desk.recruiting.selectedApplicantId = item.id;
+      if (deskHrApplicantIdEl) deskHrApplicantIdEl.value = item.id;
+      if (deskHrApplicantNameEl) deskHrApplicantNameEl.value = item.applicantName || "";
+      if (deskHrRoleTypeEl) deskHrRoleTypeEl.value = item.roleType || "강사";
+      if (deskHrSubjectEl) deskHrSubjectEl.value = item.subject || "";
+      if (deskHrSubjectDetailEl) deskHrSubjectDetailEl.value = item.subjectDetail || "";
+      if (deskHrSchoolEl) deskHrSchoolEl.value = item.school || "";
+      if (deskHrMajorEl) deskHrMajorEl.value = item.major || "";
+      if (deskHrBirthYearEl) deskHrBirthYearEl.value = item.birthYear || "";
+      if (deskHrGenderEl) deskHrGenderEl.value = item.gender || "";
+      if (deskHrPlatformEl) deskHrPlatformEl.value = item.platform || "";
+      if (deskHrStatusEl) deskHrStatusEl.value = item.status || "미연락";
+      if (deskHrInterviewDateEl) deskHrInterviewDateEl.value = item.interviewDate || "";
+      if (deskHrInterviewTimeEl) deskHrInterviewTimeEl.value = item.interviewTime || "";
+      if (deskHrLastContactAtEl) deskHrLastContactAtEl.value = item.lastContactAt || "";
+      if (deskHrNextContactAtEl) deskHrNextContactAtEl.value = item.nextContactAt || "";
+      if (deskHrContactChannelEl) deskHrContactChannelEl.value = item.contactChannel || "전화";
+      if (deskHrJobPostTitleEl) deskHrJobPostTitleEl.value = item.jobPostTitle || "";
+      if (deskHrContactLogsEl) deskHrContactLogsEl.value = formatDeskHrContactLogs_(item.contactLogs);
+      if (deskHrNoteEl) deskHrNoteEl.value = item.note || "";
+      if (deskHrFormTitleEl) deskHrFormTitleEl.textContent = "지원자 수정";
+      if (deskHrCancelEditBtnEl) deskHrCancelEditBtnEl.classList.remove("hidden");
+      refreshDeskRecruitingReportPreview_();
+    }
+
+    function resetDeskRecruitingForm_() {
+      state.desk.recruiting.editingApplicantId = "";
+      if (deskHrApplicantFormEl) deskHrApplicantFormEl.reset();
+      if (deskHrApplicantIdEl) deskHrApplicantIdEl.value = "";
+      if (deskHrRoleTypeEl) deskHrRoleTypeEl.value = "강사";
+      if (deskHrStatusEl) deskHrStatusEl.value = "미연락";
+      if (deskHrContactChannelEl) deskHrContactChannelEl.value = "전화";
+      if (deskHrSubjectDetailEl) deskHrSubjectDetailEl.value = "";
+      if (deskHrFormTitleEl) deskHrFormTitleEl.textContent = "지원자 입력";
+      if (deskHrCancelEditBtnEl) deskHrCancelEditBtnEl.classList.add("hidden");
+    }
+
+    function deleteDeskRecruitingApplicant_(id) {
+      if (!id) return;
+      if (!confirm("이 지원자를 삭제할까요?")) return;
+      state.desk.recruiting.applicants = (state.desk.recruiting.applicants || []).filter(function(item) { return item.id !== id; });
+      if (state.desk.recruiting.selectedApplicantId === id) state.desk.recruiting.selectedApplicantId = "";
+      if (state.desk.recruiting.editingApplicantId === id) resetDeskRecruitingForm_();
+      renderDeskRecruiting_();
+      setDeskRecruitingSyncStatus_("pending");
+      deleteDeskRecruitingApplicantRemote_(id)
+        .then(function() { setDeskRecruitingSyncStatus_("idle"); })
+        .catch(function(err) {
+          setDeskRecruitingSyncStatus_("error");
+          alert("지원자 삭제 오류: " + ((err && err.message) || String(err)));
+        });
+    }
+
+    function buildDeskRecruitingApplicantReportText_(item) {
+      if (!item) return "";
+      var lines = [];
+      lines.push("[인사 지원자 보고]");
+      lines.push("- 지원자: " + (item.applicantName || "-"));
+      lines.push("- 지원직무: " + formatDeskHrRoleSubject_(item));
+      lines.push("- 학교/전공: " + (item.school || "-") + " / " + (item.major || "-"));
+      lines.push("- 출생/성별: " + (item.birthYear || "-") + " / " + (item.gender || "-"));
+      lines.push("- 지원 플랫폼: " + (item.platform || "-"));
+      lines.push("- 연락상태: " + (item.status || "-") + " (" + (item.contactChannel || "-") + ")");
+      lines.push("- 최근/다음 연락: " + (item.lastContactAt || "-") + " / " + (item.nextContactAt || "-"));
+      lines.push("- 면접 일정: " + (item.interviewDate || "-") + " " + (item.interviewTime || ""));
+      if (item.jobPostTitle) lines.push("- 공고/포지션: " + item.jobPostTitle);
+      if (item.contactLogs && item.contactLogs.length) {
+        lines.push("");
+        lines.push("[연락 이력]");
+        item.contactLogs.forEach(function(log) {
+          lines.push("- " + [log.at, log.channel, log.summary].filter(Boolean).join(" / "));
+        });
+      }
+      if (item.note) {
+        lines.push("");
+        lines.push("[메모]");
+        lines.push(item.note);
+      }
+      return lines.join("\n");
+    }
+
+    function buildDeskRecruitingDayReportText_(dateKey) {
+      var targetDate = dateKey || state.desk.recruiting.selectedDateKey || getDeskDateKey_(new Date());
+      var items = getDeskVisibleRecruitingApplicants_().filter(function(item) {
+        return item.interviewDate === targetDate;
+      }).sort(compareDeskRecruitingApplicants_);
+      var lines = [];
+      lines.push("[인사 면접 브리핑]");
+      lines.push(formatDeskDateLabel_(targetDate) + " / 총 " + items.length + "건");
+      if (!items.length) {
+        lines.push("- 등록된 면접 일정 없음");
+        return lines.join("\n");
+      }
+      items.forEach(function(item, index) {
+        lines.push("");
+        lines.push((index + 1) + ". " + (item.interviewTime || "시간 미정") + " " + (item.applicantName || "-"));
+        lines.push("- " + formatDeskHrRoleSubject_(item) + " / " + (item.status || "-"));
+        lines.push("- " + (item.school || "학교 미입력") + " / " + (item.major || "전공 미입력") + " / " + (item.birthYear || "-") + " / " + (item.gender || "-"));
+        lines.push("- 플랫폼 " + (item.platform || "-") + " · 최근 연락 " + (item.lastContactAt || "-") + " · 채널 " + (item.contactChannel || "-"));
+      });
+      return lines.join("\n");
+    }
+
+    function refreshDeskRecruitingReportPreview_() {
+      if (!deskHrReportPreviewEl) return;
+      var selected = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
+      deskHrReportPreviewEl.value = selected
+        ? buildDeskRecruitingApplicantReportText_(selected)
+        : buildDeskRecruitingDayReportText_(state.desk.recruiting.selectedDateKey);
+    }
+
+    function copyDeskRecruitingText_(text) {
+      var safeText = String(text || "").trim();
+      if (!safeText) {
+        showDeskRecruitingCopyStatus_("복사할 보고 내용이 없습니다.", true);
+        return;
+      }
+      function done(msg, isError) {
+        showDeskRecruitingCopyStatus_(msg, isError);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(safeText).then(function() {
+          done("보고용 텍스트를 복사했습니다.");
+        }).catch(function() {
+          if (deskHrReportPreviewEl) {
+            deskHrReportPreviewEl.focus();
+            deskHrReportPreviewEl.select();
+          }
+          try {
+            document.execCommand("copy");
+            done("보고용 텍스트를 복사했습니다.");
+          } catch (err) {
+            done("복사에 실패했습니다. 수동 복사해 주세요.", true);
+          }
+        });
+        return;
+      }
+      if (deskHrReportPreviewEl) {
+        deskHrReportPreviewEl.focus();
+        deskHrReportPreviewEl.select();
+      }
+      try {
+        document.execCommand("copy");
+        done("보고용 텍스트를 복사했습니다.");
+      } catch (err2) {
+        done("복사에 실패했습니다. 수동 복사해 주세요.", true);
+      }
+    }
+
+    function showDeskRecruitingCopyStatus_(text, isError) {
+      if (!deskHrCopyStatusEl) return;
+      deskHrCopyStatusEl.textContent = text || "";
+      deskHrCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
+    }
+
     function loadDeskScheduleItems_() {
       var saved = null;
       try {
@@ -11998,6 +13168,7 @@
       if (state.desk.activeTab === "monthlySchedule") renderDeskMonthlySchedule_();
       if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
+      if (state.desk.activeTab === "recruiting") renderDeskRecruiting_();
       renderDeskLiveFeed_();
       refreshLucideIcons_();
     }
@@ -17041,6 +18212,152 @@
           if (!deleteBtn) return;
           if (!confirm("이 신규 구매 요청 품목을 삭제할까요?")) return;
           deleteDeskPurchaseCustom_(deleteBtn.getAttribute("data-desk-purchase-custom-delete") || "");
+        });
+      }
+
+      if (deskHrReloadBtnEl) {
+        deskHrReloadBtnEl.addEventListener("click", function() {
+          state.desk.recruiting.loaded = false;
+          ensureDeskRecruitingLoaded_(true);
+        });
+      }
+
+      if (deskHrMonthInputEl) {
+        deskHrMonthInputEl.addEventListener("change", function() {
+          state.desk.recruiting.currentMonth = deskHrMonthInputEl.value || getDeskMonthKey_(new Date());
+          state.desk.recruiting.selectedDateKey = state.desk.recruiting.currentMonth + "-01";
+          state.desk.recruiting.selectedApplicantId = "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrPrevMonthBtnEl) {
+        deskHrPrevMonthBtnEl.addEventListener("click", function() {
+          var parts = String(state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date())).split("-");
+          var date = new Date(Number(parts[0]), Number(parts[1]) - 2, 1);
+          state.desk.recruiting.currentMonth = getDeskMonthKey_(date);
+          state.desk.recruiting.selectedDateKey = getDeskDateKey_(date);
+          state.desk.recruiting.selectedApplicantId = "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrNextMonthBtnEl) {
+        deskHrNextMonthBtnEl.addEventListener("click", function() {
+          var parts = String(state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date())).split("-");
+          var date = new Date(Number(parts[0]), Number(parts[1]), 1);
+          state.desk.recruiting.currentMonth = getDeskMonthKey_(date);
+          state.desk.recruiting.selectedDateKey = getDeskDateKey_(date);
+          state.desk.recruiting.selectedApplicantId = "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrTodayBtnEl) {
+        deskHrTodayBtnEl.addEventListener("click", function() {
+          var today = new Date();
+          state.desk.recruiting.currentMonth = getDeskMonthKey_(today);
+          state.desk.recruiting.selectedDateKey = getDeskDateKey_(today);
+          state.desk.recruiting.selectedApplicantId = "";
+          renderDeskRecruiting_();
+        });
+      }
+
+      if (deskHrStatusFilterEl) {
+        deskHrStatusFilterEl.addEventListener("change", function() {
+          state.desk.recruiting.statusFilter = deskHrStatusFilterEl.value || "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrRoleFilterEl) {
+        deskHrRoleFilterEl.addEventListener("change", function() {
+          state.desk.recruiting.roleFilter = deskHrRoleFilterEl.value || "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrPlatformFilterEl) {
+        deskHrPlatformFilterEl.addEventListener("input", function() {
+          state.desk.recruiting.platformFilter = String(deskHrPlatformFilterEl.value || "");
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrKeywordFilterEl) {
+        deskHrKeywordFilterEl.addEventListener("input", function() {
+          state.desk.recruiting.keywordFilter = String(deskHrKeywordFilterEl.value || "");
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrCalendarGridEl) {
+        deskHrCalendarGridEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-hr-date]");
+          if (!btn) return;
+          state.desk.recruiting.selectedDateKey = btn.getAttribute("data-desk-hr-date") || getDeskDateKey_(new Date());
+          state.desk.recruiting.currentMonth = state.desk.recruiting.selectedDateKey.slice(0, 7);
+          state.desk.recruiting.selectedApplicantId = "";
+          renderDeskRecruiting_();
+        });
+      }
+      if (deskHrSelectedDateListEl) {
+        deskHrSelectedDateListEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-hr-select]");
+          if (!btn) return;
+          state.desk.recruiting.selectedApplicantId = btn.getAttribute("data-desk-hr-select") || "";
+          refreshDeskRecruitingReportPreview_();
+        });
+      }
+      if (deskHrNewApplicantBtnEl) {
+        deskHrNewApplicantBtnEl.addEventListener("click", function() {
+          resetDeskRecruitingForm_();
+          if (deskHrInterviewDateEl) deskHrInterviewDateEl.value = state.desk.recruiting.selectedDateKey || getDeskDateKey_(new Date());
+          if (deskHrApplicantNameEl) deskHrApplicantNameEl.focus();
+        });
+      }
+      if (deskHrApplicantFormEl) {
+        deskHrApplicantFormEl.addEventListener("submit", function(event) {
+          event.preventDefault();
+          saveDeskRecruitingApplicantFromForm_();
+        });
+      }
+      if (deskHrResetFormBtnEl) {
+        deskHrResetFormBtnEl.addEventListener("click", function() {
+          resetDeskRecruitingForm_();
+        });
+      }
+      if (deskHrCancelEditBtnEl) {
+        deskHrCancelEditBtnEl.addEventListener("click", function() {
+          resetDeskRecruitingForm_();
+        });
+      }
+      if (deskHrApplicantTableBodyEl) {
+        deskHrApplicantTableBodyEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-hr-edit]");
+          if (editBtn) {
+            loadDeskRecruitingApplicantIntoForm_(editBtn.getAttribute("data-desk-hr-edit") || "");
+            return;
+          }
+          var copyBtn = event.target.closest("[data-desk-hr-copy]");
+          if (copyBtn) {
+            var item = findDeskRecruitingApplicant_(copyBtn.getAttribute("data-desk-hr-copy") || "");
+            state.desk.recruiting.selectedApplicantId = item ? item.id : "";
+            refreshDeskRecruitingReportPreview_();
+            copyDeskRecruitingText_(buildDeskRecruitingApplicantReportText_(item));
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-hr-delete]");
+          if (!deleteBtn) return;
+          deleteDeskRecruitingApplicant_(deleteBtn.getAttribute("data-desk-hr-delete") || "");
+        });
+      }
+      if (deskHrCopyDayReportBtnEl) {
+        deskHrCopyDayReportBtnEl.addEventListener("click", function() {
+          var text = buildDeskRecruitingDayReportText_(state.desk.recruiting.selectedDateKey);
+          if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = text;
+          copyDeskRecruitingText_(text);
+        });
+      }
+      if (deskHrCopyApplicantReportBtnEl) {
+        deskHrCopyApplicantReportBtnEl.addEventListener("click", function() {
+          var item = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
+          var text = buildDeskRecruitingApplicantReportText_(item);
+          if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = text;
+          copyDeskRecruitingText_(text);
         });
       }
 
