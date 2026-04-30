@@ -7873,22 +7873,27 @@
     .desk-daily-user-card p { margin: 3px 0 0; font-size: 12px; color: #cfe9df; font-weight: 800; }
     .desk-daily-user-avatar { width: 44px; height: 44px; border-radius: 999px; background: #f8fafc; color: #0d684d; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; }
     .desk-daily-journal-mode .desk-panel[data-desk-panel="dailyJournal"] { padding: 16px; background: #fff; }
+    .desk-daily-journal-mode .desk-daily-sync-status {
+      display: inline-flex;
+    }
     .desk-journal-statusbar {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      display: flex;
+      justify-content: space-between;
       gap: 12px;
       align-items: center;
       border: 1px solid #d8e4de;
       border-radius: 8px;
       padding: 10px;
       background: #fbfdfc;
+      flex-wrap: wrap;
     }
     .desk-journal-date-nav,
     .desk-journal-status-cards { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .desk-journal-status-cards { justify-content: flex-end; }
+    .desk-journal-date-nav { flex: 0 0 auto; }
+    .desk-journal-status-cards { flex: 1 1 620px; justify-content: flex-end; }
     .desk-journal-status-card {
       min-height: 44px;
-      min-width: 132px;
+      min-width: 122px;
       border: 1px solid #d8e4de;
       border-radius: 8px;
       background: #fff;
@@ -7907,6 +7912,37 @@
     .desk-journal-status-card.purple strong { color: #6d28d9; }
     .desk-journal-status-card.sync strong { font-size: 13px; color: #0d684d; display: inline-flex; align-items: center; gap: 6px; }
     .desk-sync-dot { width: 8px; height: 8px; border-radius: 999px; background: #10b981; display: inline-block; }
+    .desk-journal-sync-card {
+      min-width: 178px;
+      min-height: 44px;
+      border-radius: 8px;
+      padding: 7px 12px;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.035);
+      gap: 8px;
+    }
+    .desk-journal-sync-card .desk-daily-sync-ring {
+      width: 9px;
+      height: 9px;
+      border: 0;
+      background: #10b981;
+      box-shadow: 0 0 0 4px rgba(16,185,129,0.12);
+    }
+    .desk-journal-sync-card.error .desk-daily-sync-ring {
+      background: #dc2626;
+      box-shadow: 0 0 0 4px rgba(220,38,38,0.12);
+    }
+    .desk-journal-sync-card.stopped .desk-daily-sync-ring {
+      background: #94a3b8;
+      box-shadow: 0 0 0 4px rgba(148,163,184,0.14);
+    }
+    .desk-journal-sync-card .desk-daily-sync-copy { gap: 0; }
+    .desk-journal-sync-card .desk-daily-sync-label {
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    .desk-journal-sync-card .desk-daily-sync-sub {
+      display: none;
+    }
     .desk-journal-shared-strip {
       border: 1px solid #d8e4de;
       border-radius: 8px;
@@ -7932,6 +7968,20 @@
       gap: 6px;
       flex-wrap: nowrap;
       overflow-x: auto;
+      align-items: stretch;
+    }
+    .desk-journal-worker-tabs::before {
+      content: "근무자 탭";
+      min-height: 44px;
+      padding: 0 13px;
+      border-radius: 8px;
+      background: #073f31;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      font-size: 12px;
+      font-weight: 900;
     }
     .desk-worker-tab {
       min-height: 44px;
@@ -8077,9 +8127,33 @@
     .desk-task-queue-card,
     .desk-report-preview-card { border-radius: 8px; }
     .desk-report-preview-card {
-      width: fit-content;
+      width: 100%;
       max-width: 100%;
     }
+    .desk-report-preview-card > summary {
+      list-style: none;
+      cursor: pointer;
+    }
+    .desk-report-preview-card > summary::-webkit-details-marker { display: none; }
+    .desk-report-preview-card .desk-report-summary-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-report-preview-card .desk-report-summary-meta svg { width: 15px; height: 15px; }
+    .desk-report-preview-card[open] .desk-report-summary-meta .closed-label,
+    .desk-report-preview-card:not([open]) .desk-report-summary-meta .open-label { display: none; }
+    .desk-report-preview-card .desk-report-body {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .desk-report-preview-card[open] .desk-report-summary-meta svg { transform: rotate(180deg); }
     .desk-journal-note-list {
       position: relative;
       margin-top: 8px;
@@ -8330,6 +8404,13 @@
       .desk-editor-layout,
       .desk-journal-layout,
       .desk-overview-grid { grid-template-columns: 1fr; }
+      .desk-journal-layout.worker-focus,
+      .desk-composer-row,
+      .desk-memo-compose-row,
+      .desk-report-preview-card .desk-report-shell { grid-template-columns: 1fr; }
+      .desk-journal-status-cards { justify-content: flex-start; }
+      .desk-memo-compose-row { max-width: none; }
+      .desk-memo-submit-btn { width: 100%; }
       .desk-supply-editor-grid,
       .desk-analytics-report-grid,
       .desk-analytics-overview-grid,
@@ -9800,13 +9881,6 @@
                 <h2 class="desk-panel-title">일일 업무일지</h2>
                 <p class="desk-panel-sub">빠른 기록, 미해결 업무 처리, 보고용 복사를 한 화면에서 처리합니다.</p>
               </div>
-              <section class="desk-daily-sync-status" id="deskDailySyncStatus" aria-live="polite">
-                <span class="desk-daily-sync-ring" aria-hidden="true"></span>
-                <span class="desk-daily-sync-copy">
-                  <span class="desk-daily-sync-label" id="deskDailySyncLabel">동기화 확인 중</span>
-                  <span class="desk-daily-sync-sub" id="deskDailySyncSub">Firebase 연결 상태를 점검하고 있습니다.</span>
-                </span>
-              </section>
             </header>
             <div class="desk-journal-shell">
               <section class="desk-journal-statusbar">
@@ -9829,10 +9903,13 @@
                     <span>보고 준비 근무자 수</span>
                     <strong id="deskJournalWorkerSummary">0명</strong>
                   </article>
-                  <article class="desk-journal-status-card sync">
-                    <span>동기화 상태</span>
-                    <strong><span class="desk-sync-dot"></span>실시간 동기화 중</strong>
-                  </article>
+                  <section class="desk-daily-sync-status desk-journal-sync-card" id="deskDailySyncStatus" aria-live="polite">
+                    <span class="desk-daily-sync-ring" aria-hidden="true"></span>
+                    <span class="desk-daily-sync-copy">
+                      <span class="desk-daily-sync-label" id="deskDailySyncLabel">동기화 확인 중</span>
+                      <span class="desk-daily-sync-sub" id="deskDailySyncSub">Firebase 연결 상태를 점검하고 있습니다.</span>
+                    </span>
+                  </section>
                   <button class="desk-ghost-btn" id="deskJournalReloadBtn" type="button"><i data-lucide="refresh-cw"></i>새로고침</button>
                 </div>
                 <span class="hidden" id="deskJournalTaskSummary">0건</span>
@@ -10018,30 +10095,37 @@
                 </div>
               </section>
 
-              <article class="desk-editor-card desk-report-preview-card">
-                <div class="desk-card-title-row">
+              <details class="desk-editor-card desk-report-preview-card">
+                <summary class="desk-card-title-row">
                   <div>
                     <div class="desk-side-title">보고용 미리보기 <span id="deskReportWorkerInline"></span></div>
                     <div class="desk-side-sub">오늘 입력된 기록을 기준으로 모바일 보고 형식으로 자동 생성됩니다.</div>
                   </div>
+                  <span class="desk-report-summary-meta">
+                    <span class="closed-label">열기</span>
+                    <span class="open-label">접기</span>
+                    <i data-lucide="chevron-down"></i>
+                  </span>
+                </summary>
+                <div class="desk-report-body">
                   <div class="desk-report-actions">
                     <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
                     <button class="modal-action ghost" id="deskJournalCopyImageBtn" type="button"><i data-lucide="image"></i>이미지 복사</button>
                   </div>
-                </div>
-                <div class="desk-report-shell">
-                  <div class="desk-report-side">
-                    <div class="field">
-                      <label for="deskJournalReportWorker">보고 근무자</label>
-                      <select id="deskJournalReportWorker" class="modal-select"></select>
+                  <div class="desk-report-shell">
+                    <div class="desk-report-side">
+                      <div class="field">
+                        <label for="deskJournalReportWorker">보고 근무자</label>
+                        <select id="deskJournalReportWorker" class="modal-select"></select>
+                      </div>
+                      <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
                     </div>
-                    <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
-                  </div>
-                  <div class="desk-report-preview">
-                    <div id="deskJournalReportPreview"></div>
+                    <div class="desk-report-preview">
+                      <div id="deskJournalReportPreview"></div>
+                    </div>
                   </div>
                 </div>
-              </article>
+              </details>
 
               <div class="desk-journal-pending-list hidden" id="deskJournalPendingList"></div>
               <div class="desk-notice">일일 업무일지는 근무표와 별도로 Firebase 서버에 저장됩니다. 다른 PC에서도 같은 날짜의 업무 배정, 완료 체크, 현장 기록을 그대로 이어서 볼 수 있습니다.</div>
@@ -17552,7 +17636,7 @@
       var canWrite = selectedWorker !== "전체" && selectedWorker !== DESK_ROUTINE_TAB_KEY;
       if (deskJournalMemoEditorCardEl) deskJournalMemoEditorCardEl.classList.toggle("disabled", !canWrite);
       if (deskJournalComposerTitleEl) {
-        deskJournalComposerTitleEl.textContent = canWrite ? (selectedWorker + "님의 업무 입력") : "근무자를 선택하세요";
+        deskJournalComposerTitleEl.textContent = canWrite ? (selectedWorker + "님의 빠른 입력") : "근무자를 선택하세요";
       }
       if (deskJournalComposerTimeEl) {
         deskJournalComposerTimeEl.textContent = canWrite ? ("근무 시간 " + formatDeskDailyWorkerShiftSummary_(selectedWorker)) : "전체 탭에서는 입력 비활성";
