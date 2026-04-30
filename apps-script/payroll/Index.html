@@ -10610,6 +10610,7 @@
     var DESK_DAILY_CARRYOVER_QUICK_SCAN_DAYS = 1;
     var DESK_DAILY_CARRYOVER_SCAN_BATCH_SIZE = 5;
     var DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS = 7000;
+    var DESK_DAILY_SERVER_POLL_MS = 3500;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
@@ -10741,7 +10742,7 @@
           carryoverLoadingDateKey: "",
           loadedDates: {},
           loadingDates: {},
-          realtimeEnabled: false,
+          realtimeEnabled: true,
           realtimeSources: {},
           realtimeSnapshots: {},
           assignmentAlertSeen: {},
@@ -11255,6 +11256,9 @@
     var loadingProgressValue = 0;
     var deskTodayWorkerTimer_ = null;
     var deskTaskAssignAlertTimer_ = null;
+    var deskDailyJournalPollTimer_ = null;
+    var deskDailyJournalPollInFlight_ = false;
+    var deskDailyJournalRoutinePollTick_ = 0;
     var entryGateEl = document.getElementById("entryGate");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
     var entrySubmitBtnEl = document.getElementById("entrySubmitBtn");
@@ -11273,6 +11277,9 @@
       deskTaskAssignAlertTimer_ = setInterval(function() {
         pollDeskTaskAssignmentAlerts_();
       }, 15000);
+      deskDailyJournalPollTimer_ = setInterval(function() {
+        pollDeskDailyJournalServerUpdates_();
+      }, DESK_DAILY_SERVER_POLL_MS);
     });
 
     function renderModuleLayout() {
@@ -11369,6 +11376,7 @@
       state.desk.daily.editorMode = "manager";
       state.desk.daily.editingMemoId = "";
       state.desk.daily.syncStatus = "idle";
+      state.desk.daily.realtimeEnabled = true;
       state.desk.daily.liveFeedPage = 1;
       state.desk.daily.loadedDates = {};
       state.desk.daily.loadingDates = {};
@@ -11622,7 +11630,7 @@
       }
       if (state.desk.activeTab === "dailyJournal") {
         var dailyStatus = state.desk.daily.syncStatus || "idle";
-        if (!state.desk.daily.realtimeEnabled || typeof EventSource === "undefined") {
+        if (!state.desk.daily.realtimeEnabled) {
           dailyStatus = "stopped";
         }
         return {
@@ -15947,7 +15955,7 @@
     function renderDeskDailySyncStatus_() {
       if (!deskDailySyncStatusEl) return;
       var status = state.desk.daily.syncStatus || "idle";
-      if (!state.desk.daily.realtimeEnabled || typeof EventSource === "undefined") {
+      if (!state.desk.daily.realtimeEnabled) {
         status = "stopped";
       }
       deskDailySyncStatusEl.classList.remove("error", "stopped");
@@ -15963,7 +15971,7 @@
         deskDailySyncSubEl.textContent =
           status === "error" ? "실시간 연결 또는 저장에 문제가 있어 자동 재시도 중입니다." :
           status === "stopped" ? "서버 저장과 새로고침 기준으로 공유 중입니다. 표시가 다르면 새로고침으로 다시 맞춰 주세요." :
-          "Firebase 서버와 같은 날짜 업무일지를 공유 중입니다.";
+          "서버 API를 짧은 주기로 확인하며 같은 날짜 업무일지를 공유 중입니다.";
       }
       renderGlobalSyncWidget_();
     }
@@ -16183,8 +16191,12 @@
 
     function startDeskDailyJournalRealtime_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
-      if (!safeDateKey || !state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || typeof EventSource === "undefined") {
+      if (!safeDateKey || !state.desk.daily.realtimeEnabled) {
         setDeskDailySyncStatus_("stopped");
+        return;
+      }
+      if (!DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || typeof EventSource === "undefined") {
+        setDeskDailySyncStatus_("idle");
         return;
       }
       if (state.desk.daily.realtimeSources[safeDateKey]) return;
@@ -16676,7 +16688,7 @@
       state.desk.daily.dateKey = dateKey;
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
       ensureDeskDailyScheduleMonthLoaded_(dateKey);
-      if (!state.desk.daily.loadedDates[dateKey] || !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
+      if (!state.desk.daily.loadedDates[dateKey]) {
         renderDeskDailyJournalLoadingState_();
         renderDeskLiveFeed_();
         Promise.all([
@@ -16684,6 +16696,9 @@
           ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY)
         ]);
         return;
+      }
+      if (!state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
+        ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
       }
       var tasks = getDeskDailyJournalTasks_(dateKey);
       var memos = getDeskDailyJournalMemos_(dateKey);
@@ -16718,9 +16733,15 @@
 
     function renderDeskDailyJournalLoadingState_() {
       if (deskJournalWorkerTabsEl) deskJournalWorkerTabsEl.innerHTML = '<div class="desk-empty" style="width:100%;">일일 업무일지 탭을 불러오는 중입니다...</div>';
+      if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = "확인 중";
+      if (deskJournalSharedSummaryListEl) deskJournalSharedSummaryListEl.innerHTML = '<div class="desk-shared-summary-empty">공동 업무를 불러오는 중입니다.</div>';
       if (deskJournalTaskBoardEl) deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">업무 배정 목록을 불러오는 중입니다.</div>';
       if (deskJournalMemoListEl) deskJournalMemoListEl.innerHTML = '<div class="desk-empty">근무 이슈를 불러오는 중입니다.</div>';
       if (deskJournalMemoMetaEl) deskJournalMemoMetaEl.textContent = "기록을 불러오는 중입니다.";
+      if (deskJournalMemoSummaryEl) deskJournalMemoSummaryEl.textContent = "확인 중";
+      if (deskJournalPendingSummaryEl) deskJournalPendingSummaryEl.textContent = "확인 중";
+      if (deskJournalWorkerSummaryEl) deskJournalWorkerSummaryEl.textContent = "확인 중";
+      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = "확인 중";
       if (deskJournalMemoPaginationEl) deskJournalMemoPaginationEl.innerHTML = "";
       if (deskJournalPendingListEl) deskJournalPendingListEl.innerHTML = '<div class="desk-empty">미해결 업무를 정리하는 중입니다.</div>';
       if (deskJournalReportPreviewEl) deskJournalReportPreviewEl.innerHTML = '<div class="desk-empty">근무자 보고 화면을 준비하는 중입니다.</div>';
@@ -17252,6 +17273,52 @@
         });
     }
 
+    function pollDeskDailyJournalServerUpdates_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.activeModule !== "expense" || state.desk.activeTab !== "dailyJournal") return;
+      if (deskDailyJournalPollInFlight_) return;
+      if ((state.desk.daily.syncStatus || "") === "pending") return;
+      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      if (!state.desk.daily.loadedDates[dateKey]) return;
+      deskDailyJournalRoutinePollTick_ += 1;
+      var dateKeys = [dateKey];
+      var shouldPollRoutine = !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY] || deskDailyJournalRoutinePollTick_ % 6 === 0;
+      if (shouldPollRoutine) dateKeys.push(DESK_ROUTINE_TEMPLATE_KEY);
+      var viewKeyAtStart = dateKey;
+      var beforeSignature = buildDeskDailyJournalSignature_(dateKeys);
+      deskDailyJournalPollInFlight_ = true;
+      dateKeys.reduce(function(chain, pollDateKey) {
+        return chain.then(function() {
+          return runServer("getDeskDailyJournalData", { dateKey: pollDateKey });
+        }).then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "일일 업무일지 동기화 실패");
+          }
+          mergeDeskDailyJournalData_(pollDateKey, res.tasks || [], res.memos || []);
+          refreshDeskDailyJournalSnapshotForDate_(pollDateKey);
+          state.desk.daily.loadedDates[pollDateKey] = true;
+        });
+      }, Promise.resolve())
+        .then(function() {
+          var afterSignature = buildDeskDailyJournalSignature_(dateKeys);
+          setDeskDailySyncStatus_("idle");
+          if (beforeSignature !== afterSignature && state.activeModule === "expense" && state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === viewKeyAtStart) {
+            renderDeskDailyJournal_();
+          } else {
+            renderDeskDailySyncStatus_();
+            renderDeskLiveFeed_();
+          }
+        })
+        .catch(function(err) {
+          console.warn("desk daily journal server polling failed", err && err.message ? err.message : err);
+          setDeskDailySyncStatus_("error");
+          renderDeskDailySyncStatus_();
+        })
+        .finally(function() {
+          deskDailyJournalPollInFlight_ = false;
+        });
+    }
+
     function showDeskTaskAssignAlert_(dateKey, worker, task) {
       if (!deskTaskAssignAlertStackEl || !task) return;
       var alertKey = buildDeskTaskAssignAlertKey_(dateKey || task.dateKey, worker || task.worker, task.id);
@@ -17572,32 +17639,32 @@
         ? "전체 근무자의 입력 흐름을 한눈에 확인합니다."
         : "근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.";
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
-      var usingFallbackFeed = false;
       var items;
-      if (!state.desk.daily.loadedDates[dateKey] || !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY]) {
-        usingFallbackFeed = true;
-        items = getDeskLiveFeedFallbackItems_();
+      var isDailyJournalFeed = state.desk.activeTab === "dailyJournal";
+      var isDailyJournalLoading = isDailyJournalFeed && !state.desk.daily.loadedDates[dateKey];
+      if (!state.desk.daily.loadedDates[dateKey]) {
+        items = [];
         if (!shouldDeferPortalDataLoad_()) {
           ensureDeskDailyJournalLoaded_(dateKey);
           ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
         }
       } else {
         items = collectDeskLiveFeedItems_();
-        if (!items.length) {
-          usingFallbackFeed = true;
-          items = getDeskLiveFeedFallbackItems_();
-        }
       }
       var pageSize = state.desk.daily.liveFeedPageSize || 10;
       var totalPages = Math.max(1, Math.ceil(items.length / pageSize));
       state.desk.daily.liveFeedPage = Math.min(Math.max(state.desk.daily.liveFeedPage || 1, 1), totalPages);
       var startIndex = (state.desk.daily.liveFeedPage - 1) * pageSize;
       var pageItems = items.slice(startIndex, startIndex + pageSize);
-      if (deskLiveFeedCountEl) deskLiveFeedCountEl.textContent = usingFallbackFeed ? "28건" : (items.length + "건");
+      if (deskLiveFeedCountEl) deskLiveFeedCountEl.textContent = isDailyJournalLoading ? "확인 중" : (items.length + "건");
       if (deskLiveFeedPageEl) deskLiveFeedPageEl.textContent = state.desk.daily.liveFeedPage + " / " + totalPages;
       if (deskLiveFeedPrevBtnEl) deskLiveFeedPrevBtnEl.disabled = state.desk.daily.liveFeedPage <= 1;
       if (deskLiveFeedNextBtnEl) deskLiveFeedNextBtnEl.disabled = state.desk.daily.liveFeedPage >= totalPages;
       if (!deskLiveFeedBodyEl) return;
+      if (isDailyJournalLoading) {
+        deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">업무일지 데이터를 불러오는 중입니다.</div>';
+        return;
+      }
       if (!pageItems.length) {
         deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">아직 기록된 근무 이슈나 배정 업무가 없습니다.</div>';
         return;
