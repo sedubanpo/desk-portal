@@ -7987,16 +7987,19 @@
       line-height: 1.55;
     }
     .desk-journal-worker-tabs {
-      padding: 0 0 1px;
+      padding: 0;
       border: 0;
       border-radius: 0;
       background: transparent;
       gap: 6px;
-      flex-wrap: nowrap;
-      overflow-x: auto;
+      flex-wrap: wrap;
+      overflow: visible;
       align-items: stretch;
       border-bottom: 1px solid #d8e4de;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    .desk-journal-worker-tabs::-webkit-scrollbar { display: none; }
     .desk-journal-worker-tabs::before {
       content: "근무자 탭";
       min-height: 44px;
@@ -8093,12 +8096,28 @@
     .desk-count-pill.danger { color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
     .desk-composer-row {
       display: grid;
-      grid-template-columns: minmax(260px, 0.9fr) minmax(360px, 1.1fr);
-      gap: 12px;
-      align-items: end;
+      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
     }
     .desk-composer-label { margin-bottom: 7px; color: #334155; font-size: 12px; font-weight: 900; }
     .desk-chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
+    .desk-template-panel {
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .desk-template-panel .desk-composer-label {
+      margin-bottom: 0;
+    }
+    .desk-template-panel .desk-chip-row {
+      padding: 8px;
+      border: 1px solid #e1ece6;
+      border-radius: 8px;
+      background: #fbfdfc;
+    }
     .desk-memo-type-chip,
     .desk-template-chip {
       border: 1px solid #d8e4de;
@@ -8116,10 +8135,11 @@
     .desk-memo-type-chip.urgent { color: #dc2626; }
     .desk-memo-compose-row {
       display: grid;
-      grid-template-columns: minmax(360px, 1fr) 112px;
+      grid-template-columns: minmax(0, 1fr) 112px;
       align-items: stretch;
       gap: 10px;
-      max-width: 760px;
+      max-width: none;
+      grid-column: 2;
     }
     .desk-memo-compose-input {
       min-height: 74px;
@@ -8165,6 +8185,16 @@
     .desk-journal-layout.worker-focus {
       grid-template-columns: minmax(0, 1.33fr) minmax(360px, 0.95fr) minmax(260px, 0.68fr);
       gap: 14px;
+    }
+    .desk-journal-layout.manager-mode,
+    .desk-journal-layout.manager-mode.worker-focus {
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.52fr);
+    }
+    .desk-journal-layout.manager-mode .desk-journal-main {
+      display: none;
+    }
+    .desk-journal-layout.manager-mode .desk-journal-side {
+      min-width: 0;
     }
     .desk-journal-layout.worker-focus .desk-journal-main,
     .desk-journal-layout.worker-focus .desk-journal-side { order: initial; }
@@ -8326,6 +8356,10 @@
       flex-direction: column;
       gap: 10px;
     }
+    .desk-task-queue-card .desk-empty {
+      border-radius: 8px;
+      padding: 14px;
+    }
     .desk-task-queue-card .desk-task-card.done { opacity: 0.65; }
     .desk-queue-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
     .desk-task-card.shared .desk-queue-top { grid-template-columns: minmax(0, 1fr) auto; }
@@ -8359,6 +8393,41 @@
       cursor: pointer;
     }
     .desk-completed-toggle svg { width: 14px; height: 14px; }
+    .desk-task-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-top: 1px solid #edf2ef;
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+    .desk-task-page-info {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-task-page-actions {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .desk-task-page-btn {
+      min-width: 34px;
+      height: 34px;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-task-page-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
     .desk-report-preview-card .desk-report-shell { grid-template-columns: 1fr; gap: 12px; align-items: start; }
     .desk-report-preview-card .desk-report-actions {
       display: grid;
@@ -8478,11 +8547,13 @@
       .desk-journal-layout,
       .desk-overview-grid { grid-template-columns: 1fr; }
       .desk-journal-layout.worker-focus,
+      .desk-journal-layout.manager-mode,
+      .desk-journal-layout.manager-mode.worker-focus,
       .desk-composer-row,
       .desk-memo-compose-row,
       .desk-report-preview-card .desk-report-shell { grid-template-columns: 1fr; }
       .desk-journal-status-cards { justify-content: flex-start; }
-      .desk-memo-compose-row { max-width: none; }
+      .desk-memo-compose-row { max-width: none; grid-column: auto; }
       .desk-memo-submit-btn { width: 100%; }
       .desk-supply-editor-grid,
       .desk-analytics-report-grid,
@@ -10027,7 +10098,7 @@
                         <button class="desk-memo-type-chip urgent" type="button" data-desk-memo-type="긴급">긴급</button>
                       </div>
                     </div>
-                    <div class="desk-composer-group">
+                    <div class="desk-template-panel">
                       <div class="desk-composer-label">빠른 템플릿</div>
                       <div class="desk-chip-row">
                         <button class="desk-template-chip" type="button" data-desk-memo-template="학부모 방문 상담 요청 접수 후 전달">학부모 방문</button>
@@ -10038,10 +10109,10 @@
                         <button class="desk-template-chip" type="button" data-desk-memo-template="">+ 직접 입력</button>
                       </div>
                     </div>
-                  </div>
-                  <div class="desk-memo-compose-row">
-                    <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
-                    <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
+                    <div class="desk-memo-compose-row">
+                      <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
+                      <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
+                    </div>
                   </div>
                   <div class="desk-memo-submit-hint">Enter로 저장 · Shift+Enter로 줄바꿈 · 기록은 아래 미리보기에 자동 반영됩니다.</div>
                   <div class="desk-memo-save-status" id="deskJournalMemoSaveStatus"></div>
@@ -10872,6 +10943,8 @@
           liveFeedPageSize: 10,
           memoPage: 1,
           memoPageSize: 5,
+          taskQueuePage: 1,
+          taskQueuePageSize: 4,
           tasks: [],
           memos: [],
           carryoverTasks: [],
@@ -11516,6 +11589,7 @@
       state.desk.daily.syncStatus = "idle";
       state.desk.daily.realtimeEnabled = true;
       state.desk.daily.liveFeedPage = 1;
+      state.desk.daily.taskQueuePage = 1;
       state.desk.daily.loadedDates = {};
       state.desk.daily.loadingDates = {};
       state.desk.daily.assignmentAlertSeen = loadDeskTaskAssignAlertSeen_();
@@ -17880,6 +17954,10 @@
       }
       if (deskJournalLayoutEl) {
         deskJournalLayoutEl.classList.toggle("worker-focus", !isRoutineManager);
+        deskJournalLayoutEl.classList.toggle("manager-mode", isRoutineManager);
+      }
+      if (deskJournalMemoEditorCardEl) {
+        deskJournalMemoEditorCardEl.style.display = isRoutineManager ? "none" : "";
       }
       if (deskJournalTaskEditorCardEl) {
         deskJournalTaskEditorCardEl.classList.toggle("hidden", !isRoutineManager);
@@ -17997,7 +18075,23 @@
         refreshLucideIcons_();
         return;
       }
-      deskJournalTaskBoardEl.innerHTML = visible.map(function(item) {
+      var pageSize = state.desk.daily.taskQueuePageSize || 4;
+      var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
+      state.desk.daily.taskQueuePage = Math.min(Math.max(state.desk.daily.taskQueuePage || 1, 1), totalPages);
+      var page = state.desk.daily.taskQueuePage;
+      var startIndex = (page - 1) * pageSize;
+      var pageItems = visible.slice(startIndex, startIndex + pageSize);
+      var paginationHtml = visible.length > pageSize
+        ? '<div class="desk-task-pagination">' +
+            '<span class="desk-task-page-info">' + escapeHtml(String(startIndex + 1)) + '-' + escapeHtml(String(startIndex + pageItems.length)) + ' / ' + escapeHtml(String(visible.length)) + '건</span>' +
+            '<span class="desk-task-page-actions">' +
+              '<button class="desk-task-page-btn" type="button" data-desk-journal-task-page="' + escapeHtml(String(page - 1)) + '"' + (page <= 1 ? ' disabled' : '') + '>이전</button>' +
+              '<span class="desk-task-page-info">' + escapeHtml(String(page)) + ' / ' + escapeHtml(String(totalPages)) + '</span>' +
+              '<button class="desk-task-page-btn" type="button" data-desk-journal-task-page="' + escapeHtml(String(page + 1)) + '"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>' +
+            '</span>' +
+          '</div>'
+        : '';
+      deskJournalTaskBoardEl.innerHTML = pageItems.map(function(item) {
         var meta = getDeskTaskMeta_(item);
         var isShared = isDeskSharedTask_(item);
         var isCarryover = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
@@ -18029,7 +18123,7 @@
             '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i>' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
           '</div>' +
         '</article>';
-      }).join("") + '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
+      }).join("") + paginationHtml + '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
       refreshLucideIcons_();
     }
 
@@ -18814,6 +18908,7 @@
       state.desk.daily.dateKey = getDeskDateKey_(date);
       state.desk.daily.memoPage = 1;
       state.desk.daily.liveFeedPage = 1;
+      state.desk.daily.taskQueuePage = 1;
       showDeskCopyStatus_("");
       renderDeskDailyJournal_();
     }
@@ -19619,6 +19714,7 @@
           if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey;
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
+          state.desk.daily.taskQueuePage = 1;
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
         });
@@ -19634,6 +19730,7 @@
           if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey;
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
+          state.desk.daily.taskQueuePage = 1;
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
         });
@@ -19647,6 +19744,7 @@
             state.desk.daily.editorMode = "manager";
           }
           state.desk.daily.memoPage = 1;
+          state.desk.daily.taskQueuePage = 1;
           if (state.desk.daily.selectedWorker !== "전체" && state.desk.daily.selectedWorker !== DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.reportWorker = state.desk.daily.selectedWorker;
           }
@@ -19681,6 +19779,7 @@
           var btn = event.target.closest("[data-desk-editor-tab]");
           if (!btn) return;
           state.desk.daily.editorMode = btn.getAttribute("data-desk-editor-tab") || "manager";
+          state.desk.daily.taskQueuePage = 1;
           renderDeskDailyJournal_();
         });
       }
@@ -19731,6 +19830,12 @@
           if (routineDeleteBtn) {
             if (!confirm("이 업무 템플릿을 삭제할까요?")) return;
             deleteDeskDailyTask_(routineDeleteBtn.getAttribute("data-desk-routine-delete") || "", DESK_ROUTINE_TEMPLATE_KEY);
+            return;
+          }
+          var taskPageBtn = event.target.closest("[data-desk-journal-task-page]");
+          if (taskPageBtn && !taskPageBtn.disabled) {
+            state.desk.daily.taskQueuePage = Number(taskPageBtn.getAttribute("data-desk-journal-task-page") || 1);
+            renderDeskDailyJournal_();
             return;
           }
           var saveBtn = event.target.closest("[data-desk-journal-task-save]");
