@@ -7873,19 +7873,27 @@
     .desk-daily-user-card p { margin: 3px 0 0; font-size: 12px; color: #cfe9df; font-weight: 800; }
     .desk-daily-user-avatar { width: 44px; height: 44px; border-radius: 999px; background: #f8fafc; color: #0d684d; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 900; }
     .desk-daily-journal-mode .desk-panel[data-desk-panel="dailyJournal"] { padding: 16px; background: #fff; }
+    .desk-daily-journal-mode .desk-panel-head {
+      margin-bottom: 14px;
+    }
+    .desk-daily-journal-mode .desk-panel-title {
+      font-size: 22px;
+      line-height: 1.18;
+    }
     .desk-daily-journal-mode .desk-daily-sync-status {
       display: inline-flex;
     }
     .desk-journal-statusbar {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       border: 1px solid #d8e4de;
       border-radius: 8px;
-      padding: 10px;
+      padding: 10px 12px;
       background: #fbfdfc;
       flex-wrap: wrap;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.025);
     }
     .desk-journal-date-nav,
     .desk-journal-status-cards { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -7947,13 +7955,31 @@
       border: 1px solid #d8e4de;
       border-radius: 8px;
       background: #f8fbf9;
-      padding: 9px 12px;
+      padding: 10px 12px;
     }
     .desk-journal-shared-strip .desk-shared-summary-head { margin-bottom: 8px; align-items: center; }
     .desk-journal-shared-strip .desk-shared-summary-title { font-size: 14px; }
     .desk-journal-shared-strip .desk-shared-summary-sub { font-size: 11px; }
     .desk-journal-shared-strip .desk-shared-summary-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-    .desk-journal-shared-strip .desk-shared-summary-item { border-radius: 8px; padding: 9px 10px; }
+    .desk-journal-shared-strip .desk-shared-summary-item {
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 112px;
+      justify-content: flex-start;
+      background: #fff;
+    }
+    .desk-journal-shared-strip .desk-shared-summary-item-title {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .desk-journal-shared-strip .desk-shared-summary-item-note {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 12px;
+      line-height: 1.55;
+    }
     .desk-journal-shared-strip .desk-shared-summary-empty {
       max-width: 640px;
       padding: 10px 12px;
@@ -7961,7 +7987,7 @@
       line-height: 1.55;
     }
     .desk-journal-worker-tabs {
-      padding: 0;
+      padding: 0 0 1px;
       border: 0;
       border-radius: 0;
       background: transparent;
@@ -7969,6 +7995,7 @@
       flex-wrap: nowrap;
       overflow-x: auto;
       align-items: stretch;
+      border-bottom: 1px solid #d8e4de;
     }
     .desk-journal-worker-tabs::before {
       content: "근무자 탭";
@@ -7990,7 +8017,7 @@
       border-bottom: 1px solid #d8e4de;
       background: var(--desk-tab-bg, #f8fafc);
       color: var(--desk-tab-fg, #334155);
-      padding: 8px 13px;
+      padding: 8px 14px;
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -8005,6 +8032,18 @@
       color: #fff !important;
       box-shadow: 0 8px 18px rgba(6,78,59,0.18);
       transform: none;
+      position: relative;
+    }
+    .desk-worker-tab.active::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -8px;
+      width: 14px;
+      height: 14px;
+      background: #064e3b;
+      transform: translateX(-50%) rotate(45deg);
+      border-radius: 2px;
     }
     .desk-worker-tab-count,
     .desk-worker-tab-pending {
@@ -8027,10 +8066,10 @@
       border: 1px solid #d8e4de;
       border-radius: 8px;
       background: #fff;
-      padding: 14px;
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
     .desk-journal-composer.disabled { opacity: 0.72; }
     .desk-journal-composer-head,
@@ -8052,7 +8091,12 @@
       white-space: nowrap;
     }
     .desk-count-pill.danger { color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
-    .desk-composer-row { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr); gap: 12px; align-items: end; }
+    .desk-composer-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(360px, 1.1fr);
+      gap: 12px;
+      align-items: end;
+    }
     .desk-composer-label { margin-bottom: 7px; color: #334155; font-size: 12px; font-weight: 900; }
     .desk-chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
     .desk-memo-type-chip,
@@ -8072,13 +8116,13 @@
     .desk-memo-type-chip.urgent { color: #dc2626; }
     .desk-memo-compose-row {
       display: grid;
-      grid-template-columns: minmax(320px, 560px) auto;
+      grid-template-columns: minmax(360px, 1fr) 112px;
       align-items: stretch;
       gap: 10px;
-      max-width: 690px;
+      max-width: 760px;
     }
     .desk-memo-compose-input {
-      min-height: 66px;
+      min-height: 74px;
       border-radius: 8px;
       padding: 12px 14px;
       font-size: 14px;
@@ -8108,17 +8152,18 @@
     .desk-report-mode-toggle button.active { background: #ecfdf5; color: #0d684d; box-shadow: inset 0 0 0 1px #10b981; }
     .desk-memo-submit-btn {
       min-width: 112px;
-      min-height: 44px;
+      min-height: 74px;
       border-radius: 8px;
       background: #064e3b;
       box-shadow: none;
       gap: 6px;
+      flex-direction: column;
     }
     .desk-memo-submit-btn svg { width: 15px; height: 15px; }
     .desk-memo-submit-hint { margin-top: 0; }
     .desk-journal-layout,
     .desk-journal-layout.worker-focus {
-      grid-template-columns: minmax(0, 1.45fr) minmax(420px, 1fr);
+      grid-template-columns: minmax(0, 1.33fr) minmax(360px, 0.95fr) minmax(260px, 0.68fr);
       gap: 14px;
     }
     .desk-journal-layout.worker-focus .desk-journal-main,
@@ -8126,9 +8171,16 @@
     .desk-journal-timeline-card,
     .desk-task-queue-card,
     .desk-report-preview-card { border-radius: 8px; }
+    .desk-journal-report-side {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .desk-report-preview-card {
       width: 100%;
       max-width: 100%;
+      padding: 14px;
     }
     .desk-report-preview-card > summary {
       list-style: none;
@@ -8192,8 +8244,8 @@
       grid-template-columns: 52px 14px auto minmax(0, 1fr) auto;
       gap: 10px;
       align-items: center;
-      min-height: 52px;
-      padding: 8px 0;
+      min-height: 48px;
+      padding: 7px 0;
       position: relative;
       z-index: 1;
     }
@@ -8266,8 +8318,13 @@
       border: 1px solid #d8e4de;
       border-radius: 8px;
       background: #fff;
-      padding: 12px;
+      padding: 12px 14px;
       box-shadow: 0 10px 22px rgba(15,23,42,0.035);
+    }
+    .desk-task-queue-card .desk-journal-task-board {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .desk-task-queue-card .desk-task-card.done { opacity: 0.65; }
     .desk-queue-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
@@ -8281,6 +8338,11 @@
     .desk-task-title { font-size: 14px; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere; }
     .desk-task-meta { margin-top: 4px; gap: 7px; }
     .desk-task-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .desk-task-actions .modal-action {
+      min-height: 36px;
+      border-radius: 8px;
+      padding: 0 12px;
+    }
     .desk-task-reason-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; margin-top: 10px; align-items: center; }
     .desk-task-reason-row input { min-height: 38px; border-radius: 8px; }
     .desk-task-reason-row .modal-action { min-height: 38px; border-radius: 8px; }
@@ -8297,31 +8359,42 @@
       cursor: pointer;
     }
     .desk-completed-toggle svg { width: 14px; height: 14px; }
-    .desk-report-preview-card .desk-report-shell { grid-template-columns: 190px 420px; gap: 16px; align-items: start; }
+    .desk-report-preview-card .desk-report-shell { grid-template-columns: 1fr; gap: 12px; align-items: start; }
+    .desk-report-preview-card .desk-report-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .desk-report-preview-card .desk-report-actions .modal-action {
+      min-width: 0;
+      justify-content: center;
+    }
     .desk-report-preview-card .desk-report-preview {
-      border: 0;
-      border-radius: 0;
-      background: transparent;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fbfdfc;
       box-shadow: none;
-      overflow: visible;
+      overflow: auto;
       display: flex;
       align-items: flex-start;
       justify-content: flex-start;
       min-width: 0;
+      max-height: 310px;
+      padding: 8px;
     }
     .desk-report-preview-card .desk-report-card,
     .desk-report-preview-card .desk-report-compact { border-radius: 8px; padding: 0; border: 0; box-shadow: none; }
     .desk-report-compact {
-      width: min(100%, 420px);
+      width: 100%;
       align-self: start;
     }
     .desk-mobile-report-card {
-      width: min(100%, 420px);
-      min-height: 520px;
+      width: 100%;
+      min-height: 0;
       border: 1px solid #dbe8e2;
       border-radius: 8px;
       background: #fff;
-      padding: 22px;
+      padding: 16px;
       box-shadow: 0 14px 28px rgba(15,23,42,0.06);
       color: #0f172a;
     }
@@ -10093,39 +10166,41 @@
                     <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
                   </article>
                 </div>
-              </section>
 
-              <details class="desk-editor-card desk-report-preview-card">
-                <summary class="desk-card-title-row">
-                  <div>
-                    <div class="desk-side-title">보고용 미리보기 <span id="deskReportWorkerInline"></span></div>
-                    <div class="desk-side-sub">오늘 입력된 기록을 기준으로 모바일 보고 형식으로 자동 생성됩니다.</div>
-                  </div>
-                  <span class="desk-report-summary-meta">
-                    <span class="closed-label">열기</span>
-                    <span class="open-label">접기</span>
-                    <i data-lucide="chevron-down"></i>
-                  </span>
-                </summary>
-                <div class="desk-report-body">
-                  <div class="desk-report-actions">
-                    <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
-                    <button class="modal-action ghost" id="deskJournalCopyImageBtn" type="button"><i data-lucide="image"></i>이미지 복사</button>
-                  </div>
-                  <div class="desk-report-shell">
-                    <div class="desk-report-side">
-                      <div class="field">
-                        <label for="deskJournalReportWorker">보고 근무자</label>
-                        <select id="deskJournalReportWorker" class="modal-select"></select>
+                <div class="desk-journal-report-side">
+                  <details class="desk-editor-card desk-report-preview-card" open>
+                    <summary class="desk-card-title-row">
+                      <div>
+                        <div class="desk-side-title">보고 준비 <span id="deskReportWorkerInline"></span></div>
+                        <div class="desk-side-sub">오늘 기록과 업무를 기반으로 보고 내용을 준비합니다.</div>
                       </div>
-                      <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
+                      <span class="desk-report-summary-meta">
+                        <span class="closed-label">미리보기</span>
+                        <span class="open-label">접기</span>
+                        <i data-lucide="chevron-down"></i>
+                      </span>
+                    </summary>
+                    <div class="desk-report-body">
+                      <div class="desk-report-actions">
+                        <button class="modal-action ghost" id="deskJournalCopyImageBtn" type="button"><i data-lucide="image"></i>이미지 복사</button>
+                        <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
+                      </div>
+                      <div class="desk-report-shell">
+                        <div class="desk-report-side">
+                          <div class="field">
+                            <label for="deskJournalReportWorker">보고 근무자</label>
+                            <select id="deskJournalReportWorker" class="modal-select"></select>
+                          </div>
+                          <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
+                        </div>
+                        <div class="desk-report-preview">
+                          <div id="deskJournalReportPreview"></div>
+                        </div>
+                      </div>
                     </div>
-                    <div class="desk-report-preview">
-                      <div id="deskJournalReportPreview"></div>
-                    </div>
-                  </div>
+                  </details>
                 </div>
-              </details>
+              </section>
 
               <div class="desk-journal-pending-list hidden" id="deskJournalPendingList"></div>
               <div class="desk-notice">일일 업무일지는 근무표와 별도로 Firebase 서버에 저장됩니다. 다른 PC에서도 같은 날짜의 업무 배정, 완료 체크, 현장 기록을 그대로 이어서 볼 수 있습니다.</div>
