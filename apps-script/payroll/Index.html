@@ -8310,27 +8310,6 @@
       border-radius: 8px;
       padding: 14px;
     }
-    .desk-daily-journal-mode .desk-live-feed { width: 340px; top: 76px; }
-    .desk-daily-journal-mode .desk-live-feed-title { font-size: 18px; }
-    .desk-daily-journal-mode .desk-live-feed-list { gap: 0; padding: 0; }
-    .desk-daily-journal-mode .desk-live-feed-list::before { display: none; }
-    .desk-daily-journal-mode .desk-live-feed-item { grid-template-columns: 30px 46px minmax(0, 1fr) 24px; gap: 8px; border-bottom: 1px solid #edf2ef; padding: 10px 0; }
-    .desk-daily-journal-mode .desk-live-feed-row {
-      background: #fff;
-      border-left: 0;
-      border-radius: 0;
-      padding: 10px 0;
-      margin-bottom: 0;
-    }
-    .desk-live-feed-index { width: 24px; height: 24px; border-radius: 999px; background: #064e3b; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; }
-    .desk-live-feed-row-main { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-    .desk-live-feed-row-meta { display: flex; gap: 7px; align-items: center; min-width: 0; }
-    .desk-live-feed-row-worker { color: #475569; font-size: 12px; font-weight: 900; }
-    .desk-live-feed-row-content { color: #0f172a; font-size: 12px; line-height: 1.45; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .desk-daily-journal-mode .desk-live-feed-edit {
-      background: transparent;
-      border: 0;
-    }
     .folder-card,
     .folder-tab,
     .folder-body { border-radius: 8px; }
@@ -17634,10 +17613,8 @@
       if (!show) return;
       var liveTitleEl = deskLiveFeedEl.querySelector(".desk-live-feed-title");
       var liveSubEl = deskLiveFeedEl.querySelector(".desk-live-feed-sub");
-      if (liveTitleEl) liveTitleEl.textContent = state.desk.activeTab === "dailyJournal" ? "실시간 전체 활동 피드" : "실시간 현황";
-      if (liveSubEl) liveSubEl.textContent = state.desk.activeTab === "dailyJournal"
-        ? "전체 근무자의 입력 흐름을 한눈에 확인합니다."
-        : "근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.";
+      if (liveTitleEl) liveTitleEl.textContent = "실시간 현황";
+      if (liveSubEl) liveSubEl.textContent = "근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.";
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var items;
       var isDailyJournalFeed = state.desk.activeTab === "dailyJournal";
@@ -17667,28 +17644,6 @@
       }
       if (!pageItems.length) {
         deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">아직 기록된 근무 이슈나 배정 업무가 없습니다.</div>';
-        return;
-      }
-      if (state.desk.activeTab === "dailyJournal") {
-        deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
-          var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
-          var type = item.category || item.type || "일반";
-          return '<article class="desk-live-feed-item desk-live-feed-row" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '">' +
-            '<span class="desk-live-feed-index">' + escapeHtml(String(startIndex + index + 1)) + '</span>' +
-            '<div class="desk-live-feed-timeblock">' +
-              '<span class="desk-live-feed-time-clock">' + escapeHtml(stampMeta.time) + '</span>' +
-            '</div>' +
-            '<div class="desk-live-feed-row-main">' +
-              '<div class="desk-live-feed-row-meta">' +
-                '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
-                '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '">' + escapeHtml(type) + '</span>' +
-              '</div>' +
-              '<div class="desk-live-feed-row-content">' + escapeHtml(item.content || "-") + '</div>' +
-            '</div>' +
-            '<button class="desk-live-feed-edit" type="button" aria-label="활동 수정"><i data-lucide="pencil"></i></button>' +
-          '</article>';
-        }).join("");
-        refreshLucideIcons_();
         return;
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
