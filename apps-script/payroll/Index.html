@@ -7804,6 +7804,268 @@
     .desk-day-shift-table tbody tr:hover { background: #f8fbf9; }
     .desk-day-shift-memo { max-width: 300px; color: #465d70; line-height: 1.45; }
     .desk-table-actions { display: inline-flex; align-items: center; gap: 5px; }
+    .desk-day-copy-frame {
+      border: 1px solid #d7e7df;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .desk-day-report-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #edf3ef;
+      padding-bottom: 12px;
+    }
+    .desk-day-report-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .desk-day-report-kicker svg { width: 14px; height: 14px; }
+    .desk-day-report-title {
+      display: block;
+      color: #173042;
+      font-size: 21px;
+      line-height: 1.15;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+    .desk-day-report-sub {
+      display: block;
+      margin-top: 5px;
+      color: #5c7084;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .desk-day-report-actions {
+      display: inline-flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid #dce9e2;
+      border-radius: 999px;
+      background: #f6faf8;
+    }
+    .desk-day-report-date-btn {
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #52677a;
+      min-height: 30px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-day-report-date-btn.active {
+      background: #0d684d;
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(13, 104, 77, 0.14);
+    }
+    .desk-day-report-grid {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .desk-day-phone-schedule {
+      border: 1px solid #dbe8e2;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fbfefd 0%, #f6fbf8 100%);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    .desk-day-phone-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid #e6f0ea;
+      padding-bottom: 10px;
+    }
+    .desk-day-phone-head strong {
+      display: block;
+      color: #173042;
+      font-size: 16px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+    .desk-day-phone-head span {
+      display: block;
+      margin-top: 4px;
+      color: #607082;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .desk-day-phone-count {
+      border-radius: 999px;
+      border: 1px solid #bfe5d1;
+      background: #effbf5;
+      color: #0d684d;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-day-report-worker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .desk-day-report-worker-card {
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      border: 1px solid var(--desk-card-border, #d8e4de);
+      border-radius: 14px;
+      background: var(--desk-card-tint, #fff);
+      padding: 12px;
+      min-width: 0;
+    }
+    .desk-day-report-time {
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      color: var(--desk-card-text, #173042);
+    }
+    .desk-day-report-time strong {
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 900;
+      word-break: keep-all;
+    }
+    .desk-day-report-time span {
+      color: #607082;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.3;
+    }
+    .desk-day-report-worker-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+    .desk-day-report-worker-line {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .desk-day-report-worker-main p {
+      margin: 0;
+      color: #183044;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 800;
+      word-break: keep-all;
+    }
+    .desk-day-calendar-placeholder {
+      border: 1px solid #dbe8e2;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+    .desk-day-calendar-placeholder-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid #edf3ef;
+      padding-bottom: 10px;
+    }
+    .desk-day-calendar-placeholder-title {
+      color: #173042;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+    .desk-day-calendar-placeholder-sub {
+      margin-top: 4px;
+      color: #607082;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+    .desk-day-calendar-status {
+      border-radius: 999px;
+      border: 1px solid #cfe4d9;
+      background: #f3faf6;
+      color: #0d684d;
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-day-calendar-slot-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .desk-day-calendar-slot {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      border: 1px dashed #cbdcd4;
+      border-radius: 12px;
+      background: #fbfefd;
+      padding: 11px;
+    }
+    .desk-day-calendar-slot-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: #e7fbf3;
+      color: #0d684d;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .desk-day-calendar-slot-icon svg { width: 16px; height: 16px; }
+    .desk-day-calendar-slot strong {
+      display: block;
+      color: #173042;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.35;
+    }
+    .desk-day-calendar-slot span {
+      display: block;
+      margin-top: 3px;
+      color: #607082;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .desk-day-manage-table {
+      border-top: 1px solid #edf3ef;
+      padding-top: 10px;
+    }
     .desk-icon-btn {
       width: 28px;
       height: 28px;
@@ -8561,6 +8823,9 @@
       .desk-analytics-metric-grid { grid-template-columns: 1fr; }
       .desk-week-summary-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .desk-calendar-side { grid-template-columns: 1fr; }
+      .desk-day-report-grid { grid-template-columns: 1fr; }
+      .desk-day-report-worker-card { grid-template-columns: 1fr; }
+      .desk-day-report-actions { width: 100%; justify-content: space-between; }
       .desk-form-grid { grid-template-columns: 1fr 1fr; }
       .desk-mini-grid { grid-template-columns: 1fr; }
       .desk-toolbar-right { align-items: flex-start; margin-left: 0; }
@@ -14374,22 +14639,53 @@
       '</aside>';
     }
 
-    function renderDeskSelectedDatePanel_(items) {
-      if (!deskSelectedDateListEl) return;
-      var dateKey = state.desk.selectedDateKey;
-      var dayItems = items.filter(function(item) { return item.date === dateKey; }).sort(compareDeskShift_);
-      if (deskSelectedDateTitleEl) deskSelectedDateTitleEl.textContent = formatDeskDateLabel_(dateKey);
-      if (deskSelectedDateSubEl) {
-        deskSelectedDateSubEl.textContent = dayItems.length
-          ? ("선택 날짜 일정 " + dayItems.length + "건 · 집계 대상 " + formatDeskHours_(sumDeskCountedHours_(dayItems)))
-          : "이 날짜에는 등록된 근무 일정이 없습니다. 편집 탭에서 바로 추가할 수 있습니다.";
-      }
-      if (!dayItems.length) {
-        deskSelectedDateListEl.innerHTML = '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>선택 날짜 일정이 없습니다.</strong><span>근무 일정 추가 버튼으로 바로 등록할 수 있습니다.</span></div>';
-        refreshLucideIcons_();
-        return;
-      }
-      deskSelectedDateListEl.innerHTML = '<div class="desk-day-shift-table-wrap"><table class="desk-day-shift-table">' +
+    function renderDeskReportDateShortcuts_(dateKey) {
+      var todayKey = getDeskDateKey_(new Date());
+      return '<div class="desk-day-report-actions" data-desk-copy-hide="true" aria-label="보고용 근무자 스케줄 날짜 선택">' + [
+        { label: "어제", key: shiftDeskDateKey_(todayKey, -1), offset: -1 },
+        { label: "오늘", key: todayKey, offset: 0 },
+        { label: "내일", key: shiftDeskDateKey_(todayKey, 1), offset: 1 }
+      ].map(function(item) {
+        return '<button type="button" class="desk-day-report-date-btn' + (item.key === dateKey ? ' active' : '') + '" data-desk-report-date-offset="' + item.offset + '">' + escapeHtml(item.label) + '</button>';
+      }).join("") + '</div>';
+    }
+
+    function renderDeskDayReportWorkerCard_(item) {
+      var tone = getDeskShiftTone_(item);
+      var memo = item.note || getDeskToneLabel_(tone) || "메모 없음";
+      return '<article class="desk-day-report-worker-card" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
+        '<div class="desk-day-report-time">' +
+          '<strong>' + escapeHtml(formatDeskReportShiftTime_(item)) + '</strong>' +
+          '<span>' + escapeHtml(formatDeskReportShiftSub_(item)) + '</span>' +
+        '</div>' +
+        '<div class="desk-day-report-worker-main">' +
+          '<div class="desk-day-report-worker-line">' + getDeskWorkerBadgeHtml_(item.worker) + getDeskRoleBadgeHtml_(item) + renderDeskDurationBadge_(item) + '</div>' +
+          '<p>' + escapeHtml(memo) + '</p>' +
+        '</div>' +
+      '</article>';
+    }
+
+    function renderDeskTomorrowCalendarPlaceholder_(dateKey) {
+      var tomorrowKey = shiftDeskDateKey_(dateKey, 1) || shiftDeskDateKey_(getDeskDateKey_(new Date()), 1);
+      return '<aside class="desk-day-calendar-placeholder">' +
+        '<div class="desk-day-calendar-placeholder-head">' +
+          '<div>' +
+            '<div class="desk-day-calendar-placeholder-title">내일 구글 캘린더</div>' +
+            '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(tomorrowKey, true)) + ' 일정이 이 영역에 표시될 예정입니다.</div>' +
+          '</div>' +
+          '<span class="desk-day-calendar-status">연동 대기</span>' +
+        '</div>' +
+        '<div class="desk-day-calendar-slot-list">' +
+          '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="calendar-days"></i></span><div><strong>내일 운영 일정</strong><span>Google Calendar 일정 제목과 시간이 들어갈 자리입니다.</span></div></div>' +
+          '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="clock-3"></i></span><div><strong>시간대 구분</strong><span>오전/오후 표현으로 보고 이미지에서 바로 읽히게 구성합니다.</span></div></div>' +
+          '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="list-checks"></i></span><div><strong>전달 메모</strong><span>연동 후 상담, 보강, 운영 메모를 함께 표시합니다.</span></div></div>' +
+        '</div>' +
+      '</aside>';
+    }
+
+    function renderDeskDayManageTable_(dayItems) {
+      if (!dayItems.length) return '<div class="desk-empty desk-selected-empty" data-desk-copy-hide="true"><i data-lucide="calendar-plus"></i><strong>선택 날짜 일정이 없습니다.</strong><span>근무 일정 추가 버튼으로 바로 등록할 수 있습니다.</span></div>';
+      return '<div class="desk-day-manage-table" data-desk-copy-hide="true"><div class="desk-day-shift-table-wrap"><table class="desk-day-shift-table">' +
         '<thead><tr>' +
           '<th>근무자</th><th>근무 역할</th><th>근무 시간</th><th>근무시간</th><th>주요 업무 / 메모</th><th>관리</th>' +
         '</tr></thead><tbody>' + dayItems.map(function(item) {
@@ -14406,7 +14702,44 @@
             '<button type="button" class="desk-icon-btn danger" title="일정 삭제" data-desk-copy-hide="true" data-desk-delete-shift="' + escapeHtml(item.id) + '" data-desk-delete-month="' + escapeHtml(String(item.date || "").slice(0, 7)) + '"><i data-lucide="trash-2"></i></button>' +
           '</div></td>' +
         '</tr>';
-      }).join("") + '</tbody></table></div>';
+      }).join("") + '</tbody></table></div></div>';
+    }
+
+    function renderDeskSelectedDatePanel_(items) {
+      if (!deskSelectedDateListEl) return;
+      var dateKey = state.desk.selectedDateKey;
+      var dayItems = items.filter(function(item) { return item.date === dateKey; }).sort(compareDeskShift_);
+      var countedHours = sumDeskCountedHours_(dayItems);
+      var workerMap = {};
+      dayItems.forEach(function(item) {
+        if (item.worker && !item.unavailable) workerMap[item.worker] = true;
+      });
+      var workerCount = Object.keys(workerMap).length;
+      if (deskSelectedDateTitleEl) deskSelectedDateTitleEl.textContent = formatDeskDateLabel_(dateKey);
+      if (deskSelectedDateSubEl) {
+        deskSelectedDateSubEl.textContent = dayItems.length
+          ? ("선택 날짜 일정 " + dayItems.length + "건 · 집계 대상 " + formatDeskHours_(countedHours))
+          : "이 날짜에는 등록된 근무 일정이 없습니다. 편집 탭에서 바로 추가할 수 있습니다.";
+      }
+      deskSelectedDateListEl.innerHTML =
+        '<div class="desk-day-copy-frame">' +
+          '<div class="desk-day-report-head">' +
+            '<div>' +
+              '<span class="desk-day-report-kicker"><i data-lucide="smartphone"></i>보고용 근무자 스케줄</span>' +
+              '<strong class="desk-day-report-title">' + escapeHtml(formatDeskDateLabel_(dateKey)) + '</strong>' +
+              '<span class="desk-day-report-sub">근무자 ' + workerCount + '명 · 일정 ' + dayItems.length + '건 · 집계 대상 ' + escapeHtml(formatDeskHours_(countedHours)) + '</span>' +
+            '</div>' +
+            renderDeskReportDateShortcuts_(dateKey) +
+          '</div>' +
+          '<div class="desk-day-report-grid">' +
+            '<section class="desk-day-phone-schedule">' +
+              '<div class="desk-day-phone-head"><div><strong>근무자 목록</strong><span>공유 이미지에서 세로로 읽히는 일정입니다.</span></div><span class="desk-day-phone-count">' + dayItems.length + '건</span></div>' +
+              '<div class="desk-day-report-worker-list">' + (dayItems.length ? dayItems.map(renderDeskDayReportWorkerCard_).join("") : '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>등록된 근무자가 없습니다.</strong><span>일정을 추가하면 이 영역에 세로 목록으로 표시됩니다.</span></div>') + '</div>' +
+            '</section>' +
+            renderDeskTomorrowCalendarPlaceholder_(dateKey) +
+          '</div>' +
+        '</div>' +
+        renderDeskDayManageTable_(dayItems);
       refreshLucideIcons_();
     }
 
@@ -15115,7 +15448,7 @@
     }
 
     async function copyDeskSelectedDateImage_() {
-      var node = deskSelectedDateCardEl;
+      var node = deskSelectedDateListEl && deskSelectedDateListEl.querySelector(".desk-day-copy-frame") || deskSelectedDateCardEl;
       if (!node) {
         flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "대상 없음", true);
         return;
@@ -15678,6 +16011,34 @@
       if (item.resident) return "근무시간 상주";
       if (item.start && item.end) return item.start + " - " + item.end;
       return "시간 미입력";
+    }
+
+    function formatDeskKoreanClock_(value) {
+      var raw = String(value || "").trim();
+      if (!raw || raw.indexOf(":") === -1) return raw || "-";
+      var parts = raw.split(":");
+      var hours = Number(parts[0] || 0);
+      var minutes = Number(parts[1] || 0);
+      if (!isFinite(hours) || !isFinite(minutes)) return raw;
+      var period = hours < 12 ? "오전" : "오후";
+      var displayHour = hours % 12 || 12;
+      return period + " " + displayHour + "시" + (minutes ? (" " + minutes + "분") : "");
+    }
+
+    function formatDeskReportShiftTime_(item) {
+      if (!item) return "-";
+      if (item.unavailable) return "근무 불가";
+      if (item.resident) return "근무시간 상주";
+      if (item.start && item.end) return formatDeskKoreanClock_(item.start) + " - " + formatDeskKoreanClock_(item.end);
+      return "시간 미입력";
+    }
+
+    function formatDeskReportShiftSub_(item) {
+      if (!item) return "";
+      if (item.unavailable) return "일정 제외";
+      if (item.resident) return "상주 근무";
+      if (item.start && item.end) return item.start + " - " + item.end;
+      return getDeskDisplayRole_(item);
     }
 
     function formatDeskHours_(hours) {
@@ -19515,6 +19876,17 @@
 
       if (deskSelectedDateListEl) {
         deskSelectedDateListEl.addEventListener("click", function(event) {
+          var reportDateBtn = event.target.closest("[data-desk-report-date-offset]");
+          if (reportDateBtn) {
+            var todayKey = getDeskDateKey_(new Date());
+            var targetDateKey = shiftDeskDateKey_(todayKey, Number(reportDateBtn.getAttribute("data-desk-report-date-offset") || 0));
+            if (!targetDateKey) return;
+            state.desk.currentMonth = targetDateKey.slice(0, 7);
+            state.desk.selectedDateKey = targetDateKey;
+            state.desk.selectedShiftId = "";
+            renderDeskMonthlySchedule_();
+            return;
+          }
           var copyBtn = event.target.closest("[data-desk-copy-next-shift]");
           if (copyBtn) {
             copyDeskShiftToNextDate_(copyBtn.getAttribute("data-desk-copy-next-shift") || "");
