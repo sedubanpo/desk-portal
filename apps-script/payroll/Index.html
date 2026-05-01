@@ -7874,7 +7874,7 @@
     }
     .desk-day-report-grid {
       display: grid;
-      grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 0.72fr);
       gap: 14px;
       align-items: stretch;
     }
@@ -7927,7 +7927,7 @@
     }
     .desk-day-report-worker-card {
       display: grid;
-      grid-template-columns: 112px minmax(0, 1fr);
+      grid-template-columns: 205px minmax(0, 1fr);
       gap: 12px;
       align-items: stretch;
       border: 1px solid var(--desk-card-border, #d8e4de);
@@ -7948,14 +7948,18 @@
       color: var(--desk-card-text, #173042);
     }
     .desk-day-report-time strong {
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1.25;
       font-weight: 900;
       word-break: keep-all;
     }
-    .desk-day-report-time span {
+    .desk-day-report-time strong span {
+      display: block;
+      white-space: nowrap;
+    }
+    .desk-day-report-duration {
       color: #607082;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 900;
       line-height: 1.3;
     }
@@ -7971,6 +7975,34 @@
       align-items: center;
       gap: 7px;
       flex-wrap: wrap;
+    }
+    .desk-day-report-worker-name {
+      color: var(--desk-card-text, #173042);
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 900;
+      letter-spacing: 0;
+      margin-right: 2px;
+    }
+    .desk-day-report-coverage {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 1px;
+    }
+    .desk-day-report-coverage-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.26);
+      background: rgba(255, 255, 255, 0.72);
+      color: #385168;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.25;
+      word-break: keep-all;
     }
     .desk-day-report-worker-main p {
       margin: 0;
@@ -14650,16 +14682,17 @@
       }).join("") + '</div>';
     }
 
-    function renderDeskDayReportWorkerCard_(item) {
+    function renderDeskDayReportWorkerCard_(item, dayItems) {
       var tone = getDeskShiftTone_(item);
       var memo = item.note || getDeskToneLabel_(tone) || "메모 없음";
       return '<article class="desk-day-report-worker-card" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
         '<div class="desk-day-report-time">' +
-          '<strong>' + escapeHtml(formatDeskReportShiftTime_(item)) + '</strong>' +
-          '<span>' + escapeHtml(formatDeskReportShiftSub_(item)) + '</span>' +
+          '<strong>' + formatDeskReportShiftTimeHtml_(item) + '</strong>' +
+          '<span class="desk-day-report-duration">' + escapeHtml(formatDeskReportDuration_(item)) + '</span>' +
         '</div>' +
         '<div class="desk-day-report-worker-main">' +
-          '<div class="desk-day-report-worker-line">' + getDeskWorkerBadgeHtml_(item.worker) + getDeskRoleBadgeHtml_(item) + renderDeskDurationBadge_(item) + '</div>' +
+          '<div class="desk-day-report-worker-line"><strong class="desk-day-report-worker-name">' + escapeHtml(item.worker || "-") + '</strong>' + getDeskRoleBadgeHtml_(item) + '</div>' +
+          renderDeskCoverageSummaryHtml_(item, dayItems) +
           '<p>' + escapeHtml(memo) + '</p>' +
         '</div>' +
       '</article>';
@@ -14734,7 +14767,7 @@
           '<div class="desk-day-report-grid">' +
             '<section class="desk-day-phone-schedule">' +
               '<div class="desk-day-phone-head"><div><strong>근무자 목록</strong><span>공유 이미지에서 세로로 읽히는 일정입니다.</span></div><span class="desk-day-phone-count">' + dayItems.length + '건</span></div>' +
-              '<div class="desk-day-report-worker-list">' + (dayItems.length ? dayItems.map(renderDeskDayReportWorkerCard_).join("") : '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>등록된 근무자가 없습니다.</strong><span>일정을 추가하면 이 영역에 세로 목록으로 표시됩니다.</span></div>') + '</div>' +
+              '<div class="desk-day-report-worker-list">' + (dayItems.length ? dayItems.map(function(item) { return renderDeskDayReportWorkerCard_(item, dayItems); }).join("") : '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>등록된 근무자가 없습니다.</strong><span>일정을 추가하면 이 영역에 세로 목록으로 표시됩니다.</span></div>') + '</div>' +
             '</section>' +
             renderDeskTomorrowCalendarPlaceholder_(dateKey) +
           '</div>' +
@@ -16025,6 +16058,31 @@
       return period + " " + displayHour + "시" + (minutes ? (" " + minutes + "분") : "");
     }
 
+    function formatDeskKoreanClockFromMinutes_(minutes) {
+      var total = Math.max(0, Number(minutes || 0));
+      var hours = Math.floor(total / 60);
+      var mins = total % 60;
+      return formatDeskKoreanClock_(pad2_(hours) + ":" + pad2_(mins));
+    }
+
+    function hasDeskMinutePart_(value) {
+      var parts = String(value || "").split(":");
+      return Number(parts[1] || 0) > 0;
+    }
+
+    function formatDeskReportShiftTimeHtml_(item) {
+      if (!item) return '<span>-</span>';
+      if (item.unavailable) return '<span>근무 불가</span>';
+      if (item.resident) return '<span>근무시간 상주</span>';
+      if (!item.start || !item.end) return '<span>시간 미입력</span>';
+      var startText = formatDeskKoreanClock_(item.start);
+      var endText = formatDeskKoreanClock_(item.end);
+      if (hasDeskMinutePart_(item.start) || hasDeskMinutePart_(item.end)) {
+        return '<span>' + escapeHtml(startText + " -") + '</span><span>' + escapeHtml(endText) + '</span>';
+      }
+      return '<span>' + escapeHtml(startText + " - " + endText) + '</span>';
+    }
+
     function formatDeskReportShiftTime_(item) {
       if (!item) return "-";
       if (item.unavailable) return "근무 불가";
@@ -16033,12 +16091,65 @@
       return "시간 미입력";
     }
 
-    function formatDeskReportShiftSub_(item) {
+    function formatDeskReportDuration_(item) {
       if (!item) return "";
       if (item.unavailable) return "일정 제외";
       if (item.resident) return "상주 근무";
-      if (item.start && item.end) return item.start + " - " + item.end;
-      return getDeskDisplayRole_(item);
+      var hours = getDeskShiftDurationHours_(item);
+      return hours ? (formatDeskHours_(hours) + " 근무") : "근무시간 미집계";
+    }
+
+    function buildDeskCoverageSegments_(item, dayItems) {
+      if (!item || item.resident || item.unavailable) return [];
+      var itemStart = parseDeskTimeToMinutes_(item.start);
+      var itemEnd = parseDeskTimeToMinutes_(item.end);
+      if (itemStart < 0 || itemEnd <= itemStart) return [];
+      var activeItems = (dayItems || []).filter(function(row) {
+        if (!row || row.resident || row.unavailable) return false;
+        var rowStart = parseDeskTimeToMinutes_(row.start);
+        var rowEnd = parseDeskTimeToMinutes_(row.end);
+        return rowStart >= 0 && rowEnd > rowStart && rowStart < itemEnd && rowEnd > itemStart;
+      });
+      var points = [itemStart, itemEnd];
+      activeItems.forEach(function(row) {
+        var rowStart = parseDeskTimeToMinutes_(row.start);
+        var rowEnd = parseDeskTimeToMinutes_(row.end);
+        points.push(Math.max(itemStart, rowStart));
+        points.push(Math.min(itemEnd, rowEnd));
+      });
+      points = points.filter(function(value, index, list) {
+        return value >= itemStart && value <= itemEnd && list.indexOf(value) === index;
+      }).sort(function(a, b) { return a - b; });
+      var segments = [];
+      for (var i = 0; i < points.length - 1; i += 1) {
+        var start = points[i];
+        var end = points[i + 1];
+        if (end <= start) continue;
+        var count = activeItems.filter(function(row) {
+          var rowStart = parseDeskTimeToMinutes_(row.start);
+          var rowEnd = parseDeskTimeToMinutes_(row.end);
+          return rowStart < end && rowEnd > start;
+        }).length;
+        if (count > 0) segments.push({ start: start, end: end, count: count });
+      }
+      return segments;
+    }
+
+    function renderDeskCoverageSummaryHtml_(item, dayItems) {
+      if (!item) return "";
+      if (item.unavailable) {
+        return '<div class="desk-day-report-coverage"><span class="desk-day-report-coverage-chip">근무 제외 일정</span></div>';
+      }
+      if (item.resident) {
+        return '<div class="desk-day-report-coverage"><span class="desk-day-report-coverage-chip">상주 관리 근무</span></div>';
+      }
+      var segments = buildDeskCoverageSegments_(item, dayItems);
+      if (!segments.length) return "";
+      return '<div class="desk-day-report-coverage">' + segments.map(function(segment) {
+        return '<span class="desk-day-report-coverage-chip">' +
+          escapeHtml(formatDeskKoreanClockFromMinutes_(segment.start) + " - " + formatDeskKoreanClockFromMinutes_(segment.end) + " " + segment.count + "인 근무") +
+        '</span>';
+      }).join("") + '</div>';
     }
 
     function formatDeskHours_(hours) {
