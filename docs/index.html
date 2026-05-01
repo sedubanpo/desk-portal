@@ -2759,6 +2759,7 @@
     }
     .desk-shift-chip {
       border: 1px solid var(--desk-card-border, transparent);
+      border-left: 5px solid var(--desk-card-accent, var(--desk-card-border, transparent));
       border-radius: 14px;
       padding: 8px 10px;
       text-align: left;
@@ -7931,6 +7932,7 @@
       gap: 12px;
       align-items: stretch;
       border: 1px solid var(--desk-card-border, #d8e4de);
+      border-left: 6px solid var(--desk-card-accent, var(--desk-card-border, #d8e4de));
       border-radius: 14px;
       background: var(--desk-card-tint, #fff);
       padding: 12px;
@@ -8004,6 +8006,33 @@
       line-height: 1.25;
       word-break: keep-all;
     }
+    .desk-day-report-coverage-chip.solo {
+      min-height: 30px;
+      border-color: var(--desk-card-border, #bfe5d1);
+      background: #fffdf7;
+      color: var(--desk-card-text, #0d684d);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.54);
+    }
+    .desk-day-report-coverage-chip.solo::before {
+      content: "1";
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 6px;
+      background: var(--desk-card-accent, #0d684d);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .desk-day-report-coverage-chip.multi {
+      border-color: rgba(13, 104, 77, 0.25);
+      background: #f4fbf7;
+      color: #0d684d;
+    }
     .desk-day-report-worker-main p {
       margin: 0;
       color: #183044;
@@ -8029,6 +8058,13 @@
       gap: 10px;
       border-bottom: 1px solid #edf3ef;
       padding-bottom: 10px;
+    }
+    .desk-day-calendar-head-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
     .desk-day-calendar-placeholder-title {
       color: #173042;
@@ -8062,6 +8098,28 @@
       border-color: #fecaca;
       background: #fef2f2;
       color: #dc2626;
+    }
+    .desk-day-calendar-refresh-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      border: 1px solid #cfe4d9;
+      background: #fff;
+      color: #0d684d;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .desk-day-calendar-refresh-btn:hover {
+      border-color: #0d684d;
+      background: #f3faf6;
+      transform: translateY(-1px);
+    }
+    .desk-day-calendar-refresh-btn svg {
+      width: 15px;
+      height: 15px;
     }
     .desk-day-calendar-slot-list {
       display: flex;
@@ -14420,9 +14478,11 @@
       if (deskScheduleTableBodyEl) deskScheduleTableBodyEl.innerHTML = '<tr><td colspan="7">월간 일정 목록을 불러오는 중입니다.</td></tr>';
     }
 
-    function ensureDeskCalendarEventsLoaded_(dateKey) {
+    function ensureDeskCalendarEventsLoaded_(dateKey, force) {
       var safeDateKey = String(dateKey || "").trim();
-      if (!safeDateKey || state.desk.calendarEventsByDate[safeDateKey]) return Promise.resolve();
+      if (!safeDateKey) return Promise.resolve();
+      if (force && !state.desk.calendarEventsLoading[safeDateKey]) delete state.desk.calendarEventsByDate[safeDateKey];
+      if (!force && state.desk.calendarEventsByDate[safeDateKey]) return Promise.resolve();
       if (state.desk.calendarEventsLoading[safeDateKey]) return state.desk.calendarEventsLoading[safeDateKey];
       var request = runServer("getDeskCalendarEvents", { dateKey: safeDateKey }).then(function(res) {
         if (!res || !res.success) {
@@ -14453,6 +14513,14 @@
       });
       state.desk.calendarEventsLoading[safeDateKey] = request;
       return request;
+    }
+
+    function refreshDeskCalendarEvents_(dateKey) {
+      var safeDateKey = String(dateKey || state.desk.selectedDateKey || getDeskDateKey_(new Date())).trim();
+      if (!safeDateKey) return Promise.resolve();
+      delete state.desk.calendarEventsByDate[safeDateKey];
+      renderDeskMonthlySchedule_();
+      return ensureDeskCalendarEventsLoaded_(safeDateKey, true);
     }
 
     function renderDeskCalendarWeekdays_() {
@@ -14771,7 +14839,10 @@
             '<div class="desk-day-calendar-placeholder-title">구글 캘린더</div>' +
             '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(calendarDateKey, true)) + ' 반포관 데스크 일정입니다.</div>' +
           '</div>' +
-          '<span class="desk-day-calendar-status' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
+          '<div class="desk-day-calendar-head-actions">' +
+            '<span class="desk-day-calendar-status' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
+            '<button type="button" class="desk-day-calendar-refresh-btn" data-desk-copy-hide="true" data-desk-calendar-refresh="' + escapeHtml(calendarDateKey) + '" title="구글 캘린더 새로고침" aria-label="구글 캘린더 새로고침"><i data-lucide="refresh-cw"></i></button>' +
+          '</div>' +
         '</div>' +
         '<div class="desk-day-calendar-slot-list">' + renderDeskCalendarEventSlotsHtml_(events, isLoading, calendarState, warningText) + '</div>' +
       '</aside>';
@@ -16242,7 +16313,8 @@
       var segments = buildDeskCoverageSegments_(item, dayItems);
       if (!segments.length) return "";
       return '<div class="desk-day-report-coverage">' + segments.map(function(segment) {
-        return '<span class="desk-day-report-coverage-chip">' +
+        var chipClass = segment.count === 1 ? " solo" : " multi";
+        return '<span class="desk-day-report-coverage-chip' + chipClass + '">' +
           escapeHtml(formatDeskKoreanClockFromMinutes_(segment.start) + " - " + formatDeskKoreanClockFromMinutes_(segment.end) + " " + segment.count + "인 근무") +
         '</span>';
       }).join("") + '</div>';
@@ -17057,17 +17129,17 @@
 
     function getDeskWorkerPalette_(name) {
       var map = {
-        "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ff8a3d", accentFg: "#ffffff" },
-        "이상언": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#14b8a6", accentFg: "#ffffff" },
+        "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ea580c", accentFg: "#ffffff" },
+        "이상언": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#0f766e", accentFg: "#ffffff" },
         "안정성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#7c3aed", accentFg: "#ffffff" },
-        "유기현": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd", accent: "#3b82f6", accentFg: "#ffffff" },
-        "이동혁": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff", accent: "#2563eb", accentFg: "#ffffff" },
-        "안종성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#8b5cf6", accentFg: "#ffffff" },
-        "인유빈": { bg: "#e6f1ff", fg: "#1d4ed8", border: "#c7dafd", accent: "#3b82f6", accentFg: "#ffffff" },
-        "이미현": { bg: "#f4e8ff", fg: "#7c3aed", border: "#ddc4ff", accent: "#c084fc", accentFg: "#ffffff" },
-        "유지연": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#14b8a6", accentFg: "#ffffff" },
-        "김유민": { bg: "#edf5ff", fg: "#2563eb", border: "#cfe0ff", accent: "#2563eb", accentFg: "#ffffff" },
-        "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd", accent: "#2dd4bf", accentFg: "#0f172a" }
+        "유기현": { bg: "#eff6ff", fg: "#1d4ed8", border: "#bfdbfe", accent: "#2563eb", accentFg: "#ffffff" },
+        "이동혁": { bg: "#eaf7ff", fg: "#0369a1", border: "#bae6fd", accent: "#0284c7", accentFg: "#ffffff" },
+        "안종성": { bg: "#f4e8ff", fg: "#7e22ce", border: "#e9d5ff", accent: "#9333ea", accentFg: "#ffffff" },
+        "인유빈": { bg: "#fff7d6", fg: "#a16207", border: "#fde68a", accent: "#ca8a04", accentFg: "#ffffff" },
+        "이미현": { bg: "#f1f5f9", fg: "#334155", border: "#cbd5e1", accent: "#475569", accentFg: "#ffffff" },
+        "유지연": { bg: "#ecfdf3", fg: "#15803d", border: "#bbf7d0", accent: "#16a34a", accentFg: "#ffffff" },
+        "김유민": { bg: "#eef2ff", fg: "#4338ca", border: "#c7d2fe", accent: "#4f46e5", accentFg: "#ffffff" },
+        "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd", accent: "#14b8a6", accentFg: "#0f172a" }
       };
       return map[name] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8", accent: "#64748b", accentFg: "#ffffff" };
     }
@@ -17278,6 +17350,7 @@
         '--desk-card-tint:' + palette.bg,
         '--desk-card-border:' + palette.border,
         '--desk-card-text:' + palette.fg,
+        '--desk-card-accent:' + palette.accent,
         getDeskWorkerSceneStyle_(item)
       ].join(";");
     }
@@ -20083,6 +20156,15 @@
 
       if (deskSelectedDateListEl) {
         deskSelectedDateListEl.addEventListener("click", function(event) {
+          var calendarRefreshBtn = event.target.closest("[data-desk-calendar-refresh]");
+          if (calendarRefreshBtn) {
+            var refreshDateKey = calendarRefreshBtn.getAttribute("data-desk-calendar-refresh") || state.desk.selectedDateKey;
+            calendarRefreshBtn.disabled = true;
+            refreshDeskCalendarEvents_(refreshDateKey).finally(function() {
+              calendarRefreshBtn.disabled = false;
+            });
+            return;
+          }
           var reportDateBtn = event.target.closest("[data-desk-report-date-offset]");
           if (reportDateBtn) {
             var todayKey = getDeskDateKey_(new Date());

@@ -366,7 +366,7 @@ function getDeskReportCalendarEvents_(start, end) {
   var calendarId = String(props.getProperty(DESK_REPORT_CALENDAR_ID_PROP) || DESK_REPORT_CALENDAR_ID).trim();
   if (!calendarId) return [];
 
-  var url = DESK_REPORT_CALENDAR_ICS_BASE_URL + encodeURIComponent(calendarId) + "/public/basic.ics";
+  var url = DESK_REPORT_CALENDAR_ICS_BASE_URL + encodeURIComponent(calendarId) + "/public/basic.ics?deskPortalCacheBust=" + new Date().getTime();
   var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
   var status = response.getResponseCode();
   if (status < 200 || status >= 300) {
