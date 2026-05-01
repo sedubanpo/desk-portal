@@ -14,6 +14,7 @@ const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
 const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
 const DESK_REPORT_CALENDAR_ID = "1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com";
 const DESK_REPORT_CALENDAR_ID_PROP = "DESK_REPORT_CALENDAR_ID";
+const DESK_REPORT_CALENDAR_ICS_BASE_URL = "https://calendar.google.com/calendar/ical/";
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
@@ -363,10 +364,17 @@ function getDeskCalendarEvents(payload) {
 function getDeskReportCalendarEvents_(start, end) {
   var props = PropertiesService.getScriptProperties();
   var calendarId = String(props.getProperty(DESK_REPORT_CALENDAR_ID_PROP) || DESK_REPORT_CALENDAR_ID).trim();
-  var calendar = calendarId ? CalendarApp.getCalendarById(calendarId) : null;
-  if (!calendar) return [];
-  return calendar.getEvents(start, end).map(function(event) {
-    return normalizeDeskReportCalendarEvent_(event);
+  if (!calendarId) return [];
+
+  var url = DESK_REPORT_CALENDAR_ICS_BASE_URL + encodeURIComponent(calendarId) + "/public/basic.ics";
+  var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  var status = response.getResponseCode();
+  if (status < 200 || status >= 300) {
+    throw new Error("반포관 데스크 공개 캘린더를 읽을 수 없습니다. 상태 코드: " + status);
+  }
+
+  return parseDeskReportCalendarIcs_(response.getContentText(), start, end).map(function(event) {
+    return normalizeDeskReportCalendarIcsEvent_(event);
   }).filter(function(item) {
     return item && item.title && !/에스학원\s*대치관/.test(item.title);
   });
@@ -380,21 +388,123 @@ function buildDeskCalendarDateRange_(dateKey) {
   return { start: start, end: end };
 }
 
-function normalizeDeskReportCalendarEvent_(event) {
+function normalizeDeskReportCalendarIcsEvent_(event) {
   if (!event) return null;
-  var isAllDay = event.isAllDayEvent();
-  var start = event.getStartTime();
-  var end = event.getEndTime();
+  var isAllDay = !!event.allDay;
+  var start = event.start;
+  var end = event.end;
   return {
-    id: "calendar_" + String(event.getId() || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
+    id: "calendar_" + String(event.uid || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
     source: "calendar",
     sourceLabel: "반포관 데스크",
-    title: String(event.getTitle() || "제목 없음").trim(),
+    title: String(event.title || "제목 없음").trim(),
     start: start ? start.toISOString() : "",
     end: end ? end.toISOString() : "",
     allDay: isAllDay,
     timeLabel: isAllDay ? "종일" : (formatDeskReportClock_(start) + " - " + formatDeskReportClock_(end))
   };
+}
+
+function parseDeskReportCalendarIcs_(icsText, start, end) {
+  var events = [];
+  var lines = unfoldDeskReportIcsLines_(icsText);
+  var current = null;
+  lines.forEach(function(line) {
+    if (line === "BEGIN:VEVENT") {
+      current = {};
+      return;
+    }
+    if (line === "END:VEVENT") {
+      var event = buildDeskReportIcsEvent_(current);
+      if (event && doesDeskReportEventOverlap_(event, start, end)) events.push(event);
+      current = null;
+      return;
+    }
+    if (!current) return;
+    var parsed = parseDeskReportIcsLine_(line);
+    if (!parsed) return;
+    if (parsed.name === "UID") current.uid = parsed.value;
+    if (parsed.name === "SUMMARY") current.title = unescapeDeskReportIcsText_(parsed.value);
+    if (parsed.name === "DTSTART") current.startField = parsed;
+    if (parsed.name === "DTEND") current.endField = parsed;
+  });
+  return events;
+}
+
+function unfoldDeskReportIcsLines_(icsText) {
+  var rawLines = String(icsText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  var lines = [];
+  rawLines.forEach(function(line) {
+    if (/^[ \t]/.test(line) && lines.length) {
+      lines[lines.length - 1] += line.slice(1);
+    } else {
+      lines.push(line);
+    }
+  });
+  return lines;
+}
+
+function parseDeskReportIcsLine_(line) {
+  var divider = String(line || "").indexOf(":");
+  if (divider < 0) return null;
+  var head = line.slice(0, divider);
+  var parts = head.split(";");
+  var params = {};
+  parts.slice(1).forEach(function(part) {
+    var pair = part.split("=");
+    params[String(pair[0] || "").toUpperCase()] = pair.slice(1).join("=");
+  });
+  return {
+    name: String(parts[0] || "").toUpperCase(),
+    params: params,
+    value: line.slice(divider + 1)
+  };
+}
+
+function buildDeskReportIcsEvent_(raw) {
+  if (!raw || !raw.startField) return null;
+  var allDay = String(raw.startField.params.VALUE || "").toUpperCase() === "DATE";
+  var start = parseDeskReportIcsDate_(raw.startField.value, allDay);
+  var end = raw.endField ? parseDeskReportIcsDate_(raw.endField.value, allDay) : null;
+  if (!start) return null;
+  if (!end) {
+    end = new Date(start.getTime());
+    end.setHours(end.getHours() + (allDay ? 24 : 1));
+  }
+  return {
+    uid: raw.uid || "",
+    title: raw.title || "",
+    start: start,
+    end: end,
+    allDay: allDay
+  };
+}
+
+function parseDeskReportIcsDate_(value, allDay) {
+  var text = String(value || "").trim();
+  if (!text) return null;
+  if (allDay || /^\d{8}$/.test(text)) {
+    return new Date(Number(text.slice(0, 4)), Number(text.slice(4, 6)) - 1, Number(text.slice(6, 8)), 0, 0, 0, 0);
+  }
+
+  var m = text.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+  if (!m) return null;
+  if (m[7] === "Z") {
+    return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6])));
+  }
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]), 0);
+}
+
+function doesDeskReportEventOverlap_(event, start, end) {
+  return event && event.start && event.end && event.start < end && event.end > start;
+}
+
+function unescapeDeskReportIcsText_(value) {
+  return String(value || "")
+    .replace(/\\n/gi, "\n")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\\\/g, "\\");
 }
 
 function compareDeskReportEvents_(a, b) {
