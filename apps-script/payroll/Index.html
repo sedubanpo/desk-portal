@@ -14422,9 +14422,9 @@
 
     function ensureDeskCalendarEventsLoaded_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
-      if (!safeDateKey || state.desk.calendarEventsByDate[safeDateKey] || state.desk.calendarEventsLoading[safeDateKey]) return;
-      state.desk.calendarEventsLoading[safeDateKey] = true;
-      runServer("getDeskCalendarEvents", { dateKey: safeDateKey }).then(function(res) {
+      if (!safeDateKey || state.desk.calendarEventsByDate[safeDateKey]) return Promise.resolve();
+      if (state.desk.calendarEventsLoading[safeDateKey]) return state.desk.calendarEventsLoading[safeDateKey];
+      var request = runServer("getDeskCalendarEvents", { dateKey: safeDateKey }).then(function(res) {
         if (!res || !res.success) {
           state.desk.calendarEventsByDate[safeDateKey] = {
             success: false,
@@ -14451,6 +14451,8 @@
         delete state.desk.calendarEventsLoading[safeDateKey];
         renderDeskMonthlySchedule_();
       });
+      state.desk.calendarEventsLoading[safeDateKey] = request;
+      return request;
     }
 
     function renderDeskCalendarWeekdays_() {
@@ -14755,10 +14757,10 @@
       '</article>';
     }
 
-    function renderDeskTomorrowCalendarPlaceholder_(dateKey) {
-      var tomorrowKey = shiftDeskDateKey_(dateKey, 1) || shiftDeskDateKey_(getDeskDateKey_(new Date()), 1);
-      var calendarState = state.desk.calendarEventsByDate[tomorrowKey] || null;
-      var isLoading = !!state.desk.calendarEventsLoading[tomorrowKey];
+    function renderDeskReportCalendarPlaceholder_(dateKey) {
+      var calendarDateKey = String(dateKey || "").trim() || getDeskDateKey_(new Date());
+      var calendarState = state.desk.calendarEventsByDate[calendarDateKey] || null;
+      var isLoading = !!state.desk.calendarEventsLoading[calendarDateKey];
       var events = calendarState && Array.isArray(calendarState.events) ? calendarState.events : [];
       var warningText = calendarState && calendarState.warnings && calendarState.warnings.length ? calendarState.warnings.join(" · ") : "";
       var statusClass = isLoading ? " loading" : (calendarState && !calendarState.success ? " error" : "");
@@ -14766,8 +14768,8 @@
       return '<aside class="desk-day-calendar-placeholder">' +
         '<div class="desk-day-calendar-placeholder-head">' +
           '<div>' +
-            '<div class="desk-day-calendar-placeholder-title">내일 구글 캘린더</div>' +
-            '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(tomorrowKey, true)) + ' 반포관 데스크 일정입니다.</div>' +
+            '<div class="desk-day-calendar-placeholder-title">구글 캘린더</div>' +
+            '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(calendarDateKey, true)) + ' 반포관 데스크 일정입니다.</div>' +
           '</div>' +
           '<span class="desk-day-calendar-status' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
         '</div>' +
@@ -14783,7 +14785,7 @@
         return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="alert-circle"></i></span><div><strong>캘린더 연동 확인 필요</strong><span>' + escapeHtml(calendarState.message || "일정을 불러오지 못했습니다.") + '</span></div></div>';
       }
       if (!events.length) {
-        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="calendar-days"></i></span><div><strong>표시할 일정 없음</strong><span>반포관 데스크에 내일 일정이 없습니다.</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
+        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="calendar-days"></i></span><div><strong>표시할 일정 없음</strong><span>반포관 데스크에 해당 날짜 일정이 없습니다.</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
       }
       return events.map(function(item) {
         return '<div class="desk-day-calendar-slot source-calendar">' +
@@ -14819,7 +14821,7 @@
     function renderDeskSelectedDatePanel_(items) {
       if (!deskSelectedDateListEl) return;
       var dateKey = state.desk.selectedDateKey;
-      var calendarDateKey = shiftDeskDateKey_(dateKey, 1) || shiftDeskDateKey_(getDeskDateKey_(new Date()), 1);
+      var calendarDateKey = dateKey || getDeskDateKey_(new Date());
       ensureDeskCalendarEventsLoaded_(calendarDateKey);
       var dayItems = items.filter(function(item) { return item.date === dateKey; }).sort(compareDeskShift_);
       var countedHours = sumDeskCountedHours_(dayItems);
@@ -14849,7 +14851,7 @@
               '<div class="desk-day-phone-head"><div><strong>근무자 목록</strong><span>공유 이미지에서 세로로 읽히는 일정입니다.</span></div><span class="desk-day-phone-count">' + dayItems.length + '건</span></div>' +
               '<div class="desk-day-report-worker-list">' + (dayItems.length ? dayItems.map(function(item) { return renderDeskDayReportWorkerCard_(item, dayItems); }).join("") : '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>등록된 근무자가 없습니다.</strong><span>일정을 추가하면 이 영역에 세로 목록으로 표시됩니다.</span></div>') + '</div>' +
             '</section>' +
-            renderDeskTomorrowCalendarPlaceholder_(dateKey) +
+            renderDeskReportCalendarPlaceholder_(dateKey) +
           '</div>' +
         '</div>' +
         renderDeskDayManageTable_(dayItems);
@@ -15561,6 +15563,8 @@
     }
 
     async function copyDeskSelectedDateImage_() {
+      var selectedDateKey = state.desk.selectedDateKey || getDeskDateKey_(new Date());
+      await ensureDeskCalendarEventsLoaded_(selectedDateKey);
       var node = deskSelectedDateListEl && deskSelectedDateListEl.querySelector(".desk-day-copy-frame") || deskSelectedDateCardEl;
       if (!node) {
         flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "대상 없음", true);
