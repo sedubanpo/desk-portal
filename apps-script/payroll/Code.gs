@@ -14,7 +14,6 @@ const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
 const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
 const DESK_REPORT_CALENDAR_ID = "1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com";
 const DESK_REPORT_CALENDAR_ID_PROP = "DESK_REPORT_CALENDAR_ID";
-const DESK_REPORT_TASKLIST_NAME_PROP = "DESK_REPORT_TASKLIST_NAME";
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
@@ -345,17 +344,15 @@ function getDeskCalendarEvents(payload) {
 
     var range = buildDeskCalendarDateRange_(dateKey);
     var calendarEvents = getDeskReportCalendarEvents_(range.start, range.end);
-    var taskResult = getDeskReportTaskEvents_(range.start, range.end);
-    var events = calendarEvents.concat(taskResult.events || []).sort(compareDeskReportEvents_);
+    var events = calendarEvents.sort(compareDeskReportEvents_);
 
     return {
       success: true,
       dateKey: dateKey,
       sources: {
-        calendar: calendarEvents.length,
-        tasks: (taskResult.events || []).length
+        calendar: calendarEvents.length
       },
-      warnings: taskResult.warning ? [taskResult.warning] : [],
+      warnings: [],
       events: events
     };
   } catch (e) {
@@ -373,46 +370,6 @@ function getDeskReportCalendarEvents_(start, end) {
   }).filter(function(item) {
     return item && item.title && !/에스학원\s*대치관/.test(item.title);
   });
-}
-
-function getDeskReportTaskEvents_(start, end) {
-  try {
-    if (typeof Tasks === "undefined" || !Tasks.Tasklists || !Tasks.Tasks) {
-      return { events: [], warning: "Tasks 고급 서비스를 켜면 Tasks 일정도 함께 표시됩니다." };
-    }
-    var targetName = String(PropertiesService.getScriptProperties().getProperty(DESK_REPORT_TASKLIST_NAME_PROP) || "Tasks").trim();
-    var taskLists = ((Tasks.Tasklists.list() || {}).items || []).filter(function(list) {
-      return !targetName || String(list.title || "") === targetName;
-    });
-    if (!taskLists.length) return { events: [], warning: "Tasks 목록을 찾지 못했습니다." };
-
-    var dueMin = start.toISOString();
-    var dueMax = end.toISOString();
-    var events = [];
-    taskLists.forEach(function(list) {
-      var pageToken = "";
-      do {
-        var options = {
-          dueMin: dueMin,
-          dueMax: dueMax,
-          showCompleted: false,
-          showDeleted: false,
-          showHidden: false,
-          maxResults: 100
-        };
-        if (pageToken) options.pageToken = pageToken;
-        var res = Tasks.Tasks.list(list.id, options) || {};
-        (res.items || []).forEach(function(task) {
-          var item = normalizeDeskReportTaskEvent_(task, list);
-          if (item) events.push(item);
-        });
-        pageToken = res.nextPageToken || "";
-      } while (pageToken);
-    });
-    return { events: events };
-  } catch (e) {
-    return { events: [], warning: "Tasks 조회 오류: " + e.message };
-  }
 }
 
 function buildDeskCalendarDateRange_(dateKey) {
@@ -437,21 +394,6 @@ function normalizeDeskReportCalendarEvent_(event) {
     end: end ? end.toISOString() : "",
     allDay: isAllDay,
     timeLabel: isAllDay ? "종일" : (formatDeskReportClock_(start) + " - " + formatDeskReportClock_(end))
-  };
-}
-
-function normalizeDeskReportTaskEvent_(task, list) {
-  if (!task || !task.due || !task.title) return null;
-  var due = new Date(task.due);
-  return {
-    id: "task_" + String(task.id || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
-    source: "tasks",
-    sourceLabel: String(list && list.title || "Tasks"),
-    title: String(task.title || "할 일").trim(),
-    start: due.toISOString(),
-    end: due.toISOString(),
-    allDay: true,
-    timeLabel: "할 일"
   };
 }
 
