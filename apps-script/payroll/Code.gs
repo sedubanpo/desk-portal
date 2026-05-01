@@ -12,6 +12,9 @@ const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
 const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
+const DESK_REPORT_CALENDAR_ID = "1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com";
+const DESK_REPORT_CALENDAR_ID_PROP = "DESK_REPORT_CALENDAR_ID";
+const DESK_REPORT_TASKLIST_NAME_PROP = "DESK_REPORT_TASKLIST_NAME";
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
@@ -43,6 +46,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveTuitionFollowup: true,
   appendTuitionPaymentEntry: true,
   getDeskScheduleMonthData: true,
+  getDeskCalendarEvents: true,
   saveDeskScheduleEntry: true,
   deleteDeskScheduleEntry: true,
   getDeskDailyJournalData: true,
@@ -123,6 +127,7 @@ function handlePayrollApiRequest_(params) {
       saveTuitionFollowup: saveTuitionFollowup,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
       getDeskScheduleMonthData: getDeskScheduleMonthData,
+      getDeskCalendarEvents: getDeskCalendarEvents,
       saveDeskScheduleEntry: saveDeskScheduleEntry,
       deleteDeskScheduleEntry: deleteDeskScheduleEntry,
       getDeskDailyJournalData: getDeskDailyJournalData,
@@ -331,6 +336,134 @@ function getDeskScheduleMonthData(payload) {
   } catch (e) {
     return { success: false, message: "근무표 조회 오류: " + e.message };
   }
+}
+
+function getDeskCalendarEvents(payload) {
+  try {
+    var dateKey = normalizeDeskDateKey_(payload && payload.dateKey);
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+
+    var range = buildDeskCalendarDateRange_(dateKey);
+    var calendarEvents = getDeskReportCalendarEvents_(range.start, range.end);
+    var taskResult = getDeskReportTaskEvents_(range.start, range.end);
+    var events = calendarEvents.concat(taskResult.events || []).sort(compareDeskReportEvents_);
+
+    return {
+      success: true,
+      dateKey: dateKey,
+      sources: {
+        calendar: calendarEvents.length,
+        tasks: (taskResult.events || []).length
+      },
+      warnings: taskResult.warning ? [taskResult.warning] : [],
+      events: events
+    };
+  } catch (e) {
+    return { success: false, message: "캘린더 조회 오류: " + e.message };
+  }
+}
+
+function getDeskReportCalendarEvents_(start, end) {
+  var props = PropertiesService.getScriptProperties();
+  var calendarId = String(props.getProperty(DESK_REPORT_CALENDAR_ID_PROP) || DESK_REPORT_CALENDAR_ID).trim();
+  var calendar = calendarId ? CalendarApp.getCalendarById(calendarId) : null;
+  if (!calendar) return [];
+  return calendar.getEvents(start, end).map(function(event) {
+    return normalizeDeskReportCalendarEvent_(event);
+  }).filter(function(item) {
+    return item && item.title && !/에스학원\s*대치관/.test(item.title);
+  });
+}
+
+function getDeskReportTaskEvents_(start, end) {
+  try {
+    if (typeof Tasks === "undefined" || !Tasks.Tasklists || !Tasks.Tasks) {
+      return { events: [], warning: "Tasks 고급 서비스를 켜면 Tasks 일정도 함께 표시됩니다." };
+    }
+    var targetName = String(PropertiesService.getScriptProperties().getProperty(DESK_REPORT_TASKLIST_NAME_PROP) || "Tasks").trim();
+    var taskLists = ((Tasks.Tasklists.list() || {}).items || []).filter(function(list) {
+      return !targetName || String(list.title || "") === targetName;
+    });
+    if (!taskLists.length) return { events: [], warning: "Tasks 목록을 찾지 못했습니다." };
+
+    var dueMin = start.toISOString();
+    var dueMax = end.toISOString();
+    var events = [];
+    taskLists.forEach(function(list) {
+      var pageToken = "";
+      do {
+        var options = {
+          dueMin: dueMin,
+          dueMax: dueMax,
+          showCompleted: false,
+          showDeleted: false,
+          showHidden: false,
+          maxResults: 100
+        };
+        if (pageToken) options.pageToken = pageToken;
+        var res = Tasks.Tasks.list(list.id, options) || {};
+        (res.items || []).forEach(function(task) {
+          var item = normalizeDeskReportTaskEvent_(task, list);
+          if (item) events.push(item);
+        });
+        pageToken = res.nextPageToken || "";
+      } while (pageToken);
+    });
+    return { events: events };
+  } catch (e) {
+    return { events: [], warning: "Tasks 조회 오류: " + e.message };
+  }
+}
+
+function buildDeskCalendarDateRange_(dateKey) {
+  var parts = String(dateKey || "").split("-");
+  var start = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 0, 0, 0, 0);
+  var end = new Date(start.getTime());
+  end.setDate(end.getDate() + 1);
+  return { start: start, end: end };
+}
+
+function normalizeDeskReportCalendarEvent_(event) {
+  if (!event) return null;
+  var isAllDay = event.isAllDayEvent();
+  var start = event.getStartTime();
+  var end = event.getEndTime();
+  return {
+    id: "calendar_" + String(event.getId() || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
+    source: "calendar",
+    sourceLabel: "반포관 데스크",
+    title: String(event.getTitle() || "제목 없음").trim(),
+    start: start ? start.toISOString() : "",
+    end: end ? end.toISOString() : "",
+    allDay: isAllDay,
+    timeLabel: isAllDay ? "종일" : (formatDeskReportClock_(start) + " - " + formatDeskReportClock_(end))
+  };
+}
+
+function normalizeDeskReportTaskEvent_(task, list) {
+  if (!task || !task.due || !task.title) return null;
+  var due = new Date(task.due);
+  return {
+    id: "task_" + String(task.id || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
+    source: "tasks",
+    sourceLabel: String(list && list.title || "Tasks"),
+    title: String(task.title || "할 일").trim(),
+    start: due.toISOString(),
+    end: due.toISOString(),
+    allDay: true,
+    timeLabel: "할 일"
+  };
+}
+
+function compareDeskReportEvents_(a, b) {
+  if (!!a.allDay !== !!b.allDay) return a.allDay ? -1 : 1;
+  if (a.start !== b.start) return String(a.start || "").localeCompare(String(b.start || ""));
+  return String(a.title || "").localeCompare(String(b.title || ""), "ko");
+}
+
+function formatDeskReportClock_(date) {
+  if (!date || isNaN(date.getTime())) return "--:--";
+  return Utilities.formatDate(date, "Asia/Seoul", "HH:mm");
 }
 
 function saveDeskScheduleEntry(payload) {
