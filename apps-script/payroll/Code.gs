@@ -1082,6 +1082,10 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
     note: String((item && item.note) || "").trim(),
     completed: !!(item && item.completed),
     unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
+    ackWorkers: normalizeDeskDailyWorkerNameArray_(item && item.ackWorkers),
+    hiddenFromWorkerBand: !!(item && item.hiddenFromWorkerBand),
+    sortOrder: normalizeDeskDailyTaskSortOrder_(item && item.sortOrder),
+    targetWorkers: normalizeDeskDailyWorkerNameArray_(item && item.targetWorkers),
     createdAt: String((item && item.createdAt) || now).trim(),
     updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim()
   };
@@ -1089,6 +1093,28 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
     task.unresolvedReason = "";
   }
   return task;
+}
+
+function normalizeDeskDailyWorkerNameArray_(value) {
+  var source = Array.isArray(value) ? value : [];
+  var seen = {};
+  var names = [];
+  source.forEach(function(name) {
+    var text = String(name || "").trim();
+    var key = normalizeDeskWorkerNameKey_(text);
+    if (!text || !key || seen[key]) return;
+    try {
+      text = text.normalize("NFC");
+    } catch (e) {}
+    seen[key] = true;
+    names.push(text);
+  });
+  return names;
+}
+
+function normalizeDeskDailyTaskSortOrder_(value) {
+  var num = Number(value);
+  return isFinite(num) ? num : 0;
 }
 
 function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {

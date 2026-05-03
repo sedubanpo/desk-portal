@@ -8326,33 +8326,111 @@
       display: none;
     }
     .desk-journal-shared-strip {
-      border: 1px solid #d8e4de;
+      border: 1px solid #bddfd1;
       border-radius: 8px;
-      background: #f8fbf9;
-      padding: 10px 12px;
+      background: linear-gradient(180deg, #f0faf5 0%, #f8fbf9 100%);
+      padding: 12px 14px;
+      box-shadow: inset 4px 0 0 #0d684d;
     }
     .desk-journal-shared-strip .desk-shared-summary-head { margin-bottom: 8px; align-items: center; }
     .desk-journal-shared-strip .desk-shared-summary-title { font-size: 14px; }
     .desk-journal-shared-strip .desk-shared-summary-sub { font-size: 11px; }
-    .desk-journal-shared-strip .desk-shared-summary-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .desk-journal-shared-strip .desk-shared-summary-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      max-height: 238px;
+      overflow: hidden;
+    }
+    .desk-journal-shared-strip .desk-shared-summary-list.expanded {
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
     .desk-journal-shared-strip .desk-shared-summary-item {
       border-radius: 8px;
-      padding: 10px 12px;
-      min-height: 112px;
+      padding: 0;
+      min-height: 0;
       justify-content: flex-start;
       background: #fff;
+      border: 1px solid #d2e6dd;
+      overflow: hidden;
+    }
+    .desk-shared-summary-trigger {
+      list-style: none;
+      cursor: pointer;
+      padding: 12px 14px;
+    }
+    .desk-shared-summary-trigger::-webkit-details-marker { display: none; }
+    .desk-shared-summary-detail {
+      border-top: 1px solid #e1ece6;
+      padding: 10px 14px 12px;
+      background: #fbfdfc;
     }
     .desk-journal-shared-strip .desk-shared-summary-item-title {
-      font-size: 13px;
+      font-size: 14px;
       line-height: 1.45;
-    }
-    .desk-journal-shared-strip .desk-shared-summary-item-note {
+      font-weight: 900;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+    }
+    .desk-journal-shared-strip .desk-shared-summary-item-note {
       font-size: 12px;
       line-height: 1.55;
+      color: #334155;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .desk-shared-summary-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .desk-shared-ack-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .desk-shared-ack-label {
+      color: #334155;
+      font-size: 12px;
+      font-weight: 900;
+      margin-right: 2px;
+    }
+    .desk-shared-ack-chip {
+      border: 1px solid var(--desk-worker-border, #d8e4de);
+      background: var(--desk-worker-bg, #f8fafc);
+      color: var(--desk-worker-fg, #334155);
+      border-radius: 999px;
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      opacity: 0.72;
+    }
+    .desk-shared-ack-chip.active {
+      opacity: 1;
+      box-shadow: inset 0 0 0 2px var(--desk-worker-accent, #0d684d);
+    }
+    .desk-shared-more-btn,
+    .desk-task-more-btn {
+      border: 1px dashed #bad7ca;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.74);
+      color: #0d684d;
+      min-height: 42px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
     }
     .desk-journal-shared-strip .desk-shared-summary-empty {
       max-width: 640px;
@@ -8360,6 +8438,7 @@
       font-size: 12px;
       line-height: 1.55;
     }
+    .desk-journal-shared-strip .desk-shared-summary-empty.compact { background: rgba(255,255,255,0.72); }
     .desk-journal-worker-tabs {
       padding: 0;
       border: 0;
@@ -8440,13 +8519,14 @@
     .desk-worker-tab.active .desk-worker-tab-count { background: rgba(255,255,255,0.92); color: #0d684d; }
     .desk-worker-tab.active .desk-worker-tab-pending { background: #fecaca; color: #b91c1c; }
     .desk-journal-composer {
-      border: 1px solid #d8e4de;
+      border: 1px solid #b7d8ca;
       border-radius: 8px;
-      background: #fff;
+      background: #fbfdfc;
       padding: 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      box-shadow: 0 10px 28px rgba(15,23,42,0.045);
     }
     .desk-journal-composer.disabled { opacity: 0.72; }
     .desk-journal-composer-head,
@@ -8470,27 +8550,29 @@
     .desk-count-pill.danger { color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
     .desk-composer-row {
       display: grid;
-      grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-      gap: 14px;
+      grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+      gap: 10px 14px;
       align-items: start;
     }
     .desk-composer-label { margin-bottom: 7px; color: #334155; font-size: 12px; font-weight: 900; }
     .desk-chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
     .desk-template-panel {
+      grid-column: 1 / -1;
       align-self: stretch;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 10px;
       min-width: 0;
+      padding-top: 2px;
     }
     .desk-template-panel .desk-composer-label {
       margin-bottom: 0;
     }
     .desk-template-panel .desk-chip-row {
-      padding: 8px;
-      border: 1px solid #e1ece6;
-      border-radius: 8px;
-      background: #fbfdfc;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
     }
     .desk-memo-type-chip,
     .desk-template-chip {
@@ -8509,21 +8591,22 @@
     .desk-memo-type-chip.urgent { color: #dc2626; }
     .desk-memo-compose-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 112px;
+      grid-template-columns: minmax(0, 1fr) 96px;
       align-items: stretch;
       gap: 10px;
       max-width: none;
-      grid-column: 2;
+      grid-column: 1 / -1;
     }
     .desk-memo-compose-input {
-      min-height: 74px;
+      min-height: 48px;
+      max-height: 120px;
       border-radius: 8px;
-      padding: 12px 14px;
+      padding: 13px 14px;
       font-size: 14px;
       line-height: 1.45;
       background: #fff;
       box-shadow: none;
-      resize: vertical;
+      resize: none;
     }
     .desk-report-mode-toggle {
       display: inline-grid;
@@ -8545,19 +8628,19 @@
     }
     .desk-report-mode-toggle button.active { background: #ecfdf5; color: #0d684d; box-shadow: inset 0 0 0 1px #10b981; }
     .desk-memo-submit-btn {
-      min-width: 112px;
-      min-height: 74px;
+      min-width: 96px;
+      min-height: 48px;
       border-radius: 8px;
       background: #064e3b;
       box-shadow: none;
       gap: 6px;
-      flex-direction: column;
+      flex-direction: row;
     }
     .desk-memo-submit-btn svg { width: 15px; height: 15px; }
     .desk-memo-submit-hint { margin-top: 0; }
     .desk-journal-layout,
     .desk-journal-layout.worker-focus {
-      grid-template-columns: minmax(0, 1.33fr) minmax(360px, 0.95fr) minmax(260px, 0.68fr);
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.52fr);
       gap: 14px;
     }
     .desk-journal-layout.manager-mode,
@@ -8565,7 +8648,9 @@
       grid-template-columns: minmax(0, 1fr) minmax(280px, 0.52fr);
     }
     .desk-journal-layout.manager-mode .desk-journal-main {
-      display: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
     .desk-journal-layout.manager-mode .desk-journal-side {
       min-width: 0;
@@ -8575,6 +8660,7 @@
     .desk-journal-timeline-card,
     .desk-task-queue-card,
     .desk-report-preview-card { border-radius: 8px; }
+    .desk-journal-timeline-card { display: none; }
     .desk-journal-report-side {
       min-width: 0;
       display: flex;
@@ -8730,11 +8816,49 @@
       flex-direction: column;
       gap: 10px;
     }
+    .desk-daily-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .desk-daily-overview-grid article {
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #f8fbf9;
+      padding: 12px;
+    }
+    .desk-daily-overview-grid span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .desk-daily-overview-grid strong {
+      color: #0f172a;
+      font-size: 20px;
+      font-weight: 900;
+    }
     .desk-task-queue-card .desk-empty {
       border-radius: 8px;
       padding: 14px;
     }
     .desk-task-queue-card .desk-task-card.done { opacity: 0.65; }
+    .desk-task-card.compact { padding: 10px 12px; box-shadow: none; }
+    .desk-task-card.manager { background: #fff; }
+    .desk-shared-manager-list,
+    .desk-completed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-shared-edit-options {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid #e1ece6;
+      border-radius: 8px;
+      background: #f8fbf9;
+    }
     .desk-queue-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; }
     .desk-task-card.shared .desk-queue-top { grid-template-columns: minmax(0, 1fr) auto; }
     .desk-task-card.shared .desk-task-title,
@@ -10498,6 +10622,17 @@
 
               <section class="desk-journal-layout" id="deskJournalLayout">
                 <div class="desk-journal-main">
+                  <article class="desk-editor-card desk-task-queue-card">
+                    <div class="desk-card-title-row">
+                      <div>
+                        <div class="desk-side-title">미해결 업무 / 작업 큐</div>
+                        <div class="desk-side-sub">선택 근무자에게 필요한 처리 대기 목록입니다.</div>
+                      </div>
+                      <span class="desk-count-pill danger" id="deskTaskQueueCount">0건</span>
+                    </div>
+                    <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
+                  </article>
+
                   <article class="desk-editor-card desk-journal-timeline-card">
                     <div class="desk-card-title-row">
                       <div>
@@ -10519,9 +10654,9 @@
                     <div class="desk-side-title" id="deskJournalTaskEditorTitle">업무 관리자</div>
                     <div class="desk-side-sub" id="deskJournalTaskEditorSub">오늘 근무자에게 바로 배정할 업무를 추가합니다.</div>
                     <div class="desk-journal-editor-tabs" id="deskJournalEditorTabs">
-                      <button class="desk-journal-editor-tab active" type="button" data-desk-editor-tab="manager">업무 관리자</button>
+                      <button class="desk-journal-editor-tab active" type="button" data-desk-editor-tab="shared">공지/공동업무</button>
+                      <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="manager">업무 배정</button>
                       <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="routine">루틴 업무</button>
-                      <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="shared">공동 업무</button>
                     </div>
                     <form id="deskJournalTaskForm" class="desk-journal-editor-panel">
                       <div class="desk-mini-grid">
@@ -10578,6 +10713,7 @@
                       </div>
                     </div>
                     <div class="desk-journal-editor-panel hidden" id="deskJournalSharedPanel">
+                      <input id="deskJournalSharedId" type="hidden">
                       <div class="desk-mini-grid">
                         <div class="field">
                           <label for="deskJournalSharedDate">공동 업무 일자</label>
@@ -10596,23 +10732,21 @@
                         <label for="deskJournalSharedNote">공동 업무 내용</label>
                         <input id="deskJournalSharedNote" class="modal-input" type="text" placeholder="확인해야 할 내용이나 전달 사항을 적어 주세요">
                       </div>
-                      <div class="desk-routine-meta-hint" style="margin-top:8px;">공동 업무는 해당 일자 모든 근무자 작업판에 공지처럼 표시되며, 완료 체크나 미해결 처리 대상이 아닙니다.</div>
+                      <div class="desk-shared-edit-options">
+                        <label class="check-inline"><input id="deskJournalSharedVisible" type="checkbox" checked>상단 공동 업무/공지에 노출</label>
+                      </div>
+                      <div class="field" style="margin-top:10px;">
+                        <label>대상 근무자</label>
+                        <div class="desk-assignee-quick-row" id="deskJournalSharedTargetQuick"></div>
+                      </div>
+                      <div class="desk-routine-meta-hint" style="margin-top:8px;">대상 근무자를 비워두면 해당 날짜 모든 근무자에게 표시됩니다. 확인자는 상단 공지 상세에서 근무자가 직접 선택합니다.</div>
                       <div class="desk-form-actions" style="margin-top:12px;">
-                        <button class="modal-action primary" id="deskJournalSaveSharedBtn" type="button">공동 업무 추가</button>
+                        <button class="modal-action primary" id="deskJournalSaveSharedBtn" type="button">공동 업무 저장</button>
+                        <button class="modal-action ghost" id="deskJournalClearSharedBtn" type="button">새 항목</button>
                       </div>
                     </div>
                   </article>
 
-                  <article class="desk-editor-card desk-task-queue-card">
-                    <div class="desk-card-title-row">
-                      <div>
-                        <div class="desk-side-title">미해결 업무 / 작업 큐</div>
-                        <div class="desk-side-sub">업무 기록과 분리된 처리 대기 목록입니다.</div>
-                      </div>
-                      <span class="desk-count-pill danger" id="deskTaskQueueCount">0건</span>
-                    </div>
-                    <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
-                  </article>
                 </div>
 
                 <div class="desk-journal-report-side">
@@ -11312,19 +11446,22 @@
           dateKey: "",
           selectedWorker: "",
           reportWorker: "",
-          editorMode: "manager",
+          editorMode: "shared",
           memoType: "일반",
           memoMode: "report",
           editingMemoId: "",
           syncStatus: "idle",
           routineLabelFilter: "전체",
+          sharedSummaryExpanded: false,
+          taskQueueExpanded: false,
+          completedTasksExpanded: false,
           liveFeedDateKey: "",
           liveFeedPage: 1,
           liveFeedPageSize: 10,
           memoPage: 1,
           memoPageSize: 5,
           taskQueuePage: 1,
-          taskQueuePageSize: 4,
+          taskQueuePageSize: 5,
           tasks: [],
           memos: [],
           carryoverTasks: [],
@@ -11693,10 +11830,14 @@
     var deskJournalRoutineTitleEl = document.getElementById("deskJournalRoutineTitle");
     var deskJournalRoutineNoteEl = document.getElementById("deskJournalRoutineNote");
     var deskJournalSharedPanelEl = document.getElementById("deskJournalSharedPanel");
+    var deskJournalSharedIdEl = document.getElementById("deskJournalSharedId");
     var deskJournalSharedDateEl = document.getElementById("deskJournalSharedDate");
     var deskJournalSharedLabelEl = document.getElementById("deskJournalSharedLabel");
     var deskJournalSharedTitleEl = document.getElementById("deskJournalSharedTitle");
     var deskJournalSharedNoteEl = document.getElementById("deskJournalSharedNote");
+    var deskJournalSharedVisibleEl = document.getElementById("deskJournalSharedVisible");
+    var deskJournalSharedTargetQuickEl = document.getElementById("deskJournalSharedTargetQuick");
+    var deskJournalClearSharedBtnEl = document.getElementById("deskJournalClearSharedBtn");
     var deskJournalSaveSharedBtnEl = document.getElementById("deskJournalSaveSharedBtn");
     var deskRoutineMetaRowEl = document.getElementById("deskRoutineMetaRow");
     var deskJournalRoutineLabelEl = document.getElementById("deskJournalRoutineLabel");
@@ -11965,10 +12106,13 @@
       state.desk.recruiting.keywordFilter = "";
       state.desk.daily.tasks = [];
       state.desk.daily.memos = [];
-      state.desk.daily.editorMode = "manager";
+      state.desk.daily.editorMode = "shared";
       state.desk.daily.editingMemoId = "";
       state.desk.daily.syncStatus = "idle";
       state.desk.daily.realtimeEnabled = true;
+      state.desk.daily.sharedSummaryExpanded = false;
+      state.desk.daily.taskQueueExpanded = false;
+      state.desk.daily.completedTasksExpanded = false;
       state.desk.daily.liveFeedDateKey = "";
       state.desk.daily.liveFeedPage = 1;
       state.desk.daily.taskQueuePage = 1;
@@ -16649,9 +16793,35 @@
         note: String((item && item.note) || "").trim(),
         completed: !!(item && item.completed),
         unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
+        ackWorkers: normalizeDeskWorkerNameArray_(item && item.ackWorkers),
+        hiddenFromWorkerBand: !!(item && item.hiddenFromWorkerBand),
+        sortOrder: normalizeDeskTaskSortOrder_(item && item.sortOrder),
+        targetWorkers: normalizeDeskWorkerNameArray_(item && item.targetWorkers),
         createdAt: String((item && item.createdAt) || ""),
         updatedAt: String((item && item.updatedAt) || "")
       };
+    }
+
+    function normalizeDeskWorkerNameArray_(value) {
+      var source = Array.isArray(value) ? value : [];
+      var seen = {};
+      var names = [];
+      source.forEach(function(name) {
+        var text = String(name || "").trim();
+        var key = normalizeDeskWorkerKey_(text);
+        if (!text || !key || seen[key]) return;
+        try {
+          text = text.normalize("NFC");
+        } catch (err) {}
+        seen[key] = true;
+        names.push(text);
+      });
+      return names;
+    }
+
+    function normalizeDeskTaskSortOrder_(value) {
+      var num = Number(value);
+      return isFinite(num) ? num : 0;
     }
 
     function normalizeDeskDailyMemo_(item) {
@@ -16751,6 +16921,50 @@
       return !!getDeskTaskMeta_(item).shared || isSameDeskWorkerName_(item && item.worker, DESK_SHARED_WORKER_NAME);
     }
 
+    function compareDeskSharedTask_(a, b) {
+      var aOrder = normalizeDeskTaskSortOrder_(a && a.sortOrder);
+      var bOrder = normalizeDeskTaskSortOrder_(b && b.sortOrder);
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
+    }
+
+    function isDeskTaskTargetedToWorker_(item, worker) {
+      var targets = normalizeDeskWorkerNameArray_(item && item.targetWorkers);
+      if (!targets.length) return true;
+      return targets.some(function(name) { return isSameDeskWorkerName_(name, worker); });
+    }
+
+    function getDeskSharedAckWorkers_(item) {
+      return normalizeDeskWorkerNameArray_(item && item.ackWorkers);
+    }
+
+    function getDeskSharedAckCandidates_(dateKey) {
+      return getDeskShiftWorkersForDate_(dateKey).map(function(item) { return item.worker; });
+    }
+
+    function hasDeskWorkerAckedTask_(item, worker) {
+      return getDeskSharedAckWorkers_(item).some(function(name) { return isSameDeskWorkerName_(name, worker); });
+    }
+
+    function toggleDeskSharedTaskAck_(taskId, worker) {
+      var task = findDeskDailyTaskById_(taskId);
+      var name = String(worker || "").trim();
+      if (!task || !name || !isDeskSharedTask_(task)) return;
+      var next = getDeskSharedAckWorkers_(task).filter(function(item) {
+        return !isSameDeskWorkerName_(item, name);
+      });
+      if (next.length === getDeskSharedAckWorkers_(task).length) next.push(name);
+      upsertDeskDailyTask_(Object.assign({}, task, { ackWorkers: next }));
+    }
+
+    function getNextDeskSharedSortOrder_(dateKey) {
+      var shared = getDeskDailyJournalTasks_(dateKey).filter(isDeskSharedTask_);
+      if (!shared.length) return -10;
+      return Math.min.apply(null, shared.map(function(item) {
+        return normalizeDeskTaskSortOrder_(item.sortOrder);
+      })) - 10;
+    }
+
     function buildDeskJournalDateTime_(dateKey, timeValue, fallback) {
       var safeDate = String(dateKey || "").trim();
       var safeTime = String(timeValue || "").trim();
@@ -16765,10 +16979,11 @@
       return buildDeskJournalDateTime_(dateKey, pad2_(now.getHours()) + ":" + pad2_(now.getMinutes()), "");
     }
 
-    function parseDeskMemoExplicitTime_(text) {
+    function parseDeskMemoTimeText_(text, requireLeading) {
       var source = String(text || "").trim();
       if (!source) return "";
-      var match = source.match(/(오전|오후)?\s*(\d{1,2})\s*[:：]\s*(\d{1,2})/);
+      var prefix = requireLeading ? "^\\s*" : "";
+      var match = source.match(new RegExp(prefix + "(오전|오후)?\\s*(\\d{1,2})\\s*[:：]\\s*(\\d{1,2})"));
       var meridiem = "";
       var hours = 0;
       var minutes = 0;
@@ -16777,7 +16992,7 @@
         hours = Number(match[2] || 0);
         minutes = Number(match[3] || 0);
       } else {
-        match = source.match(/(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분?)?/);
+        match = source.match(new RegExp(prefix + "(오전|오후)?\\s*(\\d{1,2})\\s*시(?:\\s*(\\d{1,2})\\s*분?)?"));
         if (!match) return "";
         meridiem = String(match[1] || "").trim();
         hours = Number(match[2] || 0);
@@ -16793,6 +17008,46 @@
       }
       if (hours < 0 || hours > 23) return "";
       return pad2_(hours) + ":" + pad2_(minutes);
+    }
+
+    function parseDeskMemoExplicitTime_(text) {
+      return parseDeskMemoTimeText_(text, false);
+    }
+
+    function parseDeskMemoLeadingTime_(text) {
+      var source = String(text || "").trim();
+      if (!source) return null;
+      var patterns = [
+        /^((?:오전|오후)?\s*\d{1,2}\s*[:：]\s*\d{1,2})\s*(.*)$/i,
+        /^((?:오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분?)?)\s*(.*)$/i
+      ];
+      for (var i = 0; i < patterns.length; i += 1) {
+        var match = source.match(patterns[i]);
+        if (!match) continue;
+        var time = parseDeskMemoTimeText_(match[1], true);
+        if (!time) continue;
+        return {
+          raw: String(match[1] || "").trim(),
+          time: time,
+          text: String(match[2] || "").replace(/^[\s·,./:-]+/, "").trim()
+        };
+      }
+      return null;
+    }
+
+    function getDeskMemoDisplayParts_(memo) {
+      var text = String((memo && memo.text) || "").trim();
+      var dateKey = String((memo && memo.dateKey) || state.desk.daily.dateKey || getDeskDateKey_(new Date())).trim();
+      var stamp = String((memo && (memo.createdAt || memo.updatedAt)) || "");
+      var parsed = parseDeskMemoLeadingTime_(text);
+      if (!parsed) {
+        return { text: text, createdAt: stamp, parsedTime: "" };
+      }
+      return {
+        text: parsed.text || text.slice(parsed.raw.length).trim(),
+        createdAt: buildDeskJournalDateTime_(dateKey, parsed.time, stamp) || stamp,
+        parsedTime: parsed.time
+      };
     }
 
     function resolveDeskMemoCreatedAt_(dateKey, text, fallback) {
@@ -18333,24 +18588,53 @@
 
     function renderDeskDailySharedSummary_(tasks) {
       if (!deskJournalSharedSummaryListEl) return;
-      var sharedTasks = (tasks || []).filter(isDeskSharedTask_).sort(compareDeskDailyTask_);
+      var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      var sharedTasks = (tasks || [])
+        .filter(isDeskSharedTask_)
+        .filter(function(item) { return !item.hiddenFromWorkerBand; })
+        .sort(compareDeskSharedTask_);
+      var ackCandidates = getDeskSharedAckCandidates_(dateKey);
+      var expanded = !!state.desk.daily.sharedSummaryExpanded;
+      var visibleTasks = expanded ? sharedTasks : sharedTasks.slice(0, 2);
+      deskJournalSharedSummaryListEl.classList.toggle("expanded", expanded);
       if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = sharedTasks.length + "건";
       if (!sharedTasks.length) {
-        deskJournalSharedSummaryListEl.innerHTML = '<div class="desk-shared-summary-empty">등록된 공동 업무가 없습니다. 업무 관리자 탭에서 해당 날짜의 공동 업무를 추가하면 모든 근무자가 이곳에서 확인할 수 있습니다.</div>';
+        deskJournalSharedSummaryListEl.innerHTML = '<div class="desk-shared-summary-empty compact">상단에 노출 중인 공동 업무가 없습니다. 업무 관리자 탭에서 공지/공동업무를 추가하거나 노출 상태를 켤 수 있습니다.</div>';
         return;
       }
-      deskJournalSharedSummaryListEl.innerHTML = sharedTasks.map(function(item) {
+      var listHtml = visibleTasks.map(function(item) {
         var meta = getDeskTaskMeta_(item);
-        return '<article class="desk-shared-summary-item">' +
-          '<div class="desk-shared-summary-meta">' +
-            '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
-            '<span>공동 업무</span>' +
-            '<span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span>' +
+        var ackWorkers = getDeskSharedAckWorkers_(item);
+        return '<details class="desk-shared-summary-item" data-desk-shared-id="' + escapeHtml(item.id) + '">' +
+          '<summary class="desk-shared-summary-trigger">' +
+            '<div class="desk-shared-summary-title">' + escapeHtml(item.title || "-") + '</div>' +
+            '<div class="desk-shared-summary-meta">' +
+              '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
+              '<span>확인 ' + escapeHtml(String(ackWorkers.length)) + '/' + escapeHtml(String(ackCandidates.length)) + '</span>' +
+              '<span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span>' +
+            '</div>' +
+          '</summary>' +
+          '<div class="desk-shared-summary-detail">' +
+            (item.note ? '<div class="desk-shared-summary-item-note">' + escapeHtml(item.note) + '</div>' : '<div class="desk-shared-summary-item-note muted">상세 내용이 없습니다.</div>') +
+            '<div class="desk-shared-ack-row">' +
+              '<span class="desk-shared-ack-label">확인자</span>' +
+              (ackCandidates.length ? ackCandidates.map(function(name) {
+                var active = hasDeskWorkerAckedTask_(item, name);
+                return '<button type="button" class="desk-shared-ack-chip' + (active ? ' active' : '') + '"' +
+                  ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
+                  ' data-desk-shared-ack="' + escapeHtml(item.id) + '"' +
+                  ' data-desk-shared-ack-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+              }).join("") : '<span class="desk-muted">이 날짜의 근무자가 없습니다.</span>') +
+            '</div>' +
           '</div>' +
-          '<div class="desk-shared-summary-item-title">' + escapeHtml(item.title || "-") + '</div>' +
-          (item.note ? '<div class="desk-shared-summary-item-note">' + escapeHtml(item.note) + '</div>' : '') +
-        '</article>';
+        '</details>';
       }).join("");
+      var moreHtml = sharedTasks.length > 2
+        ? '<button type="button" class="desk-shared-more-btn" data-desk-shared-summary-toggle="1">' +
+            (expanded ? '접기' : ('+' + escapeHtml(String(sharedTasks.length - 2)) + '개 더 보기')) +
+          '</button>'
+        : '';
+      deskJournalSharedSummaryListEl.innerHTML = listHtml + moreHtml;
     }
 
     function getDeskLiveFeedDateKey_() {
@@ -18365,14 +18649,16 @@
     function collectDeskLiveFeedItems_(dateKey) {
       var feedDateKey = String(dateKey || state.desk.daily.liveFeedDateKey || getDeskDateKey_(new Date())).trim();
       var memoItems = getDeskDailyJournalMemos_(feedDateKey).map(function(item) {
+        var display = getDeskMemoDisplayParts_(item);
         return {
           id: "memo_" + item.id,
           type: "이슈",
           category: getDeskMemoType_(item),
           mode: getDeskMemoMode_(item),
           worker: item.worker || "-",
-          content: item.text || "",
+          content: display.text || "",
           stamp: item.updatedAt || item.createdAt || "",
+          displayStamp: display.createdAt || item.createdAt || "",
           style: getDeskLiveFeedCardStyle_(item.worker || "-", "memo")
         };
       });
@@ -18460,12 +18746,12 @@
         deskJournalComposerTitleEl.textContent = canWrite ? (selectedWorker + "님의 빠른 입력") : "근무자를 선택하세요";
       }
       if (deskJournalComposerTimeEl) {
-        deskJournalComposerTimeEl.textContent = canWrite ? ("근무 시간 " + formatDeskDailyWorkerShiftSummary_(selectedWorker)) : "전체 탭에서는 입력 비활성";
+        deskJournalComposerTimeEl.textContent = canWrite ? "Enter 저장" : "전체 탭에서는 입력 비활성";
       }
       if (deskJournalMemoInputEl) {
         deskJournalMemoInputEl.disabled = !canWrite;
         deskJournalMemoInputEl.placeholder = canWrite
-          ? "예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"
+          ? "예: 13:00 학부모 방문 상담 요청 접수 후 전달"
           : "상단 근무자 탭에서 기록할 근무자를 선택해 주세요";
       }
       if (deskJournalMemoSubmitBtnEl) deskJournalMemoSubmitBtnEl.disabled = !canWrite;
@@ -18551,7 +18837,7 @@
         return;
       }
       deskLiveFeedBodyEl.innerHTML = pageItems.map(function(item, index) {
-        var stampMeta = getDeskLiveFeedStampMeta_(item.stamp);
+        var stampMeta = getDeskLiveFeedStampMeta_(item.displayStamp || item.stamp);
         var seqHtml = item.workerRunTotal > 1
           ? '<span class="desk-live-feed-seq">' + escapeHtml(String(item.workerRunIndex) + '/' + String(item.workerRunTotal)) + '</span>'
           : '';
@@ -18618,6 +18904,7 @@
     function renderDeskDailyWorkerInputs_(workers) {
       var names = (workers || []).slice();
       var isRoutineManager = state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY;
+      var isOverviewTab = state.desk.daily.selectedWorker === "전체";
       if (deskJournalWorkerNameListEl) {
         deskJournalWorkerNameListEl.innerHTML = names.map(function(name) {
           return '<option value="' + escapeHtml(name) + '"></option>';
@@ -18628,7 +18915,7 @@
         deskJournalLayoutEl.classList.toggle("manager-mode", isRoutineManager);
       }
       if (deskJournalMemoEditorCardEl) {
-        deskJournalMemoEditorCardEl.style.display = isRoutineManager ? "none" : "";
+        deskJournalMemoEditorCardEl.style.display = (isRoutineManager || isOverviewTab) ? "none" : "";
       }
       if (deskJournalTaskEditorCardEl) {
         deskJournalTaskEditorCardEl.classList.toggle("hidden", !isRoutineManager);
@@ -18651,15 +18938,15 @@
       if (deskJournalTaskEditorTitleEl) {
         deskJournalTaskEditorTitleEl.textContent =
           state.desk.daily.editorMode === "routine" ? "루틴 업무" :
-          state.desk.daily.editorMode === "shared" ? "공동 업무" :
-          "업무 관리자";
+          state.desk.daily.editorMode === "shared" ? "공지/공동업무 관리" :
+          "업무 배정";
       }
       if (deskJournalTaskEditorSubEl) {
         deskJournalTaskEditorSubEl.textContent =
           state.desk.daily.editorMode === "routine"
             ? "반복해서 쓰는 기본 업무를 따로 저장해 두고, 필요할 때 오늘 근무자에게 빠르게 배정합니다."
             : state.desk.daily.editorMode === "shared"
-              ? "일자를 지정해 모든 근무자가 확인할 공동 공지형 업무를 추가합니다."
+              ? "상단 공지 노출, 대상 근무자, 순서를 관리합니다."
               : "업무 관리자 탭에서는 오늘 근무자에게 바로 배정할 업무를 추가합니다.";
       }
       if (deskRoutineMetaRowEl) {
@@ -18683,6 +18970,20 @@
                 ' data-desk-assign-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
             }).join("")
           : '<span class="desk-muted">오늘 근무자가 아직 없습니다.</span>';
+      }
+      if (deskJournalSharedTargetQuickEl) {
+        var editingSharedId = String(deskJournalSharedIdEl && deskJournalSharedIdEl.value || "").trim();
+        var editingShared = editingSharedId ? findDeskDailyTaskById_(editingSharedId) : null;
+        var selectedTargets = normalizeDeskWorkerNameArray_(editingShared && editingShared.targetWorkers);
+        var targetNames = getDeskSharedAckCandidates_(state.desk.daily.dateKey || getDeskDateKey_(new Date()));
+        deskJournalSharedTargetQuickEl.innerHTML = targetNames.length
+          ? targetNames.map(function(name) {
+              var active = selectedTargets.some(function(target) { return isSameDeskWorkerName_(target, name); });
+              return '<button type="button" class="desk-assignee-quick-btn' + (active ? ' active' : '') + '"' +
+                ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
+                ' data-desk-shared-target="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+            }).join("")
+          : '<span class="desk-muted">이 날짜의 근무자가 아직 없습니다.</span>';
       }
       if (deskJournalMemoWorkerEl) {
         var preferredMemoWorker = state.desk.daily.selectedWorker;
@@ -18728,39 +19029,42 @@
         renderDeskRoutineTaskBoard_();
         return;
       }
+      if (isManagerTab && state.desk.daily.editorMode === "shared") {
+        renderDeskSharedTaskManagerBoard_(tasks);
+        return;
+      }
+      if (selectedWorker === "전체") {
+        renderDeskDailyOverviewBoard_(tasks);
+        return;
+      }
       var visible = (tasks || []).filter(function(item) {
-        if (isDeskSharedTask_(item)) return true;
+        if (isDeskSharedTask_(item)) return false;
         if (item.completed) return false;
-        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
+        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, selectedWorker));
       });
       var completedItems = (tasks || []).filter(function(item) {
         if (isDeskSharedTask_(item) || !item.completed) return false;
-        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || isDeskImportantTask_(item);
+        return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, selectedWorker));
       });
       if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = visible.length + "건";
       if (!visible.length) {
         var loadingCarryover = state.desk.daily.carryoverLoadingDateKey &&
           state.desk.daily.carryoverLoadingDateKey.indexOf(String(state.desk.daily.dateKey || "")) === 0;
         deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : '미해결 업무가 없습니다. 작업 큐가 비어 있습니다.') + '</div>' +
-          '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
+          renderDeskCompletedTasksHtml_(completedItems);
         refreshLucideIcons_();
         return;
       }
-      var pageSize = state.desk.daily.taskQueuePageSize || 4;
+      var pageSize = state.desk.daily.taskQueueExpanded ? visible.length : (state.desk.daily.taskQueuePageSize || 5);
       var totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
       state.desk.daily.taskQueuePage = Math.min(Math.max(state.desk.daily.taskQueuePage || 1, 1), totalPages);
       var page = state.desk.daily.taskQueuePage;
       var startIndex = (page - 1) * pageSize;
       var pageItems = visible.slice(startIndex, startIndex + pageSize);
-      var paginationHtml = visible.length > pageSize
-        ? '<div class="desk-task-pagination">' +
-            '<span class="desk-task-page-info">' + escapeHtml(String(startIndex + 1)) + '-' + escapeHtml(String(startIndex + pageItems.length)) + ' / ' + escapeHtml(String(visible.length)) + '건</span>' +
-            '<span class="desk-task-page-actions">' +
-              '<button class="desk-task-page-btn" type="button" data-desk-journal-task-page="' + escapeHtml(String(page - 1)) + '"' + (page <= 1 ? ' disabled' : '') + '>이전</button>' +
-              '<span class="desk-task-page-info">' + escapeHtml(String(page)) + ' / ' + escapeHtml(String(totalPages)) + '</span>' +
-              '<button class="desk-task-page-btn" type="button" data-desk-journal-task-page="' + escapeHtml(String(page + 1)) + '"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>' +
-            '</span>' +
-          '</div>'
+      var paginationHtml = visible.length > (state.desk.daily.taskQueuePageSize || 5)
+        ? '<button class="desk-task-more-btn" type="button" data-desk-task-queue-toggle="1">' +
+            (state.desk.daily.taskQueueExpanded ? '접기' : ('+' + escapeHtml(String(visible.length - pageItems.length)) + '개 더 보기')) +
+          '</button>'
         : '';
       deskJournalTaskBoardEl.innerHTML = pageItems.map(function(item) {
         var meta = getDeskTaskMeta_(item);
@@ -18794,7 +19098,74 @@
             '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i>' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
           '</div>' +
         '</article>';
-      }).join("") + paginationHtml + '<button class="desk-completed-toggle" type="button">완료된 업무 보기 (' + completedItems.length + ') <i data-lucide="chevron-down"></i></button>';
+      }).join("") + paginationHtml + renderDeskCompletedTasksHtml_(completedItems);
+      refreshLucideIcons_();
+    }
+
+    function renderDeskCompletedTasksHtml_(items) {
+      var completedItems = (items || []);
+      if (!completedItems.length) {
+        return '<button class="desk-completed-toggle" type="button" data-desk-completed-toggle="1">완료된 업무 보기 (0) <i data-lucide="chevron-down"></i></button>';
+      }
+      var open = !!state.desk.daily.completedTasksExpanded;
+      return '<div class="desk-completed-section">' +
+        '<button class="desk-completed-toggle" type="button" data-desk-completed-toggle="1">완료된 업무 보기 (' + escapeHtml(String(completedItems.length)) + ') <i data-lucide="' + (open ? 'chevron-up' : 'chevron-down') + '"></i></button>' +
+        (open ? '<div class="desk-completed-list">' + completedItems.slice(0, 12).map(function(item) {
+          return '<article class="desk-task-card done compact">' +
+            '<div class="desk-task-title">' + escapeHtml(item.title || "-") + '</div>' +
+            '<div class="desk-task-meta"><span>담당자 ' + escapeHtml(item.worker || "-") + '</span><span>완료됨</span></div>' +
+          '</article>';
+        }).join("") + '</div>' : '') +
+      '</div>';
+    }
+
+    function renderDeskDailyOverviewBoard_(tasks) {
+      var allTasks = (tasks || []);
+      var shared = allTasks.filter(isDeskSharedTask_);
+      var pending = allTasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); });
+      var completed = allTasks.filter(function(item) { return item.completed && !isDeskSharedTask_(item); });
+      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = pending.length + "건";
+      deskJournalTaskBoardEl.innerHTML = '<div class="desk-daily-overview-grid">' +
+        '<article><span>전체 기록</span><strong>' + escapeHtml(String(getDeskDailyJournalMemos_(state.desk.daily.dateKey || getDeskDateKey_(new Date())).length)) + '건</strong></article>' +
+        '<article><span>미해결 업무</span><strong>' + escapeHtml(String(pending.length)) + '건</strong></article>' +
+        '<article><span>완료 업무</span><strong>' + escapeHtml(String(completed.length)) + '건</strong></article>' +
+        '<article><span>공지/공동업무</span><strong>' + escapeHtml(String(shared.length)) + '건</strong></article>' +
+      '</div>';
+    }
+
+    function renderDeskSharedTaskManagerBoard_(tasks) {
+      var shared = (tasks || []).filter(isDeskSharedTask_).sort(compareDeskSharedTask_);
+      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = shared.length + "건";
+      if (!shared.length) {
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">아직 등록된 공지/공동업무가 없습니다. 위 편집 패널에서 새 항목을 저장해 주세요.</div>';
+        return;
+      }
+      deskJournalTaskBoardEl.innerHTML = '<div class="desk-shared-manager-list">' + shared.map(function(item, index) {
+        var meta = getDeskTaskMeta_(item);
+        var targets = normalizeDeskWorkerNameArray_(item.targetWorkers);
+        return '<article class="desk-task-card shared manager">' +
+          '<div class="desk-task-top">' +
+            '<div>' +
+              '<div class="desk-task-title">' + escapeHtml(item.title || "-") + '</div>' +
+              '<div class="desk-task-meta">' +
+                '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
+                '<span>' + (item.hiddenFromWorkerBand ? '상단 숨김' : '상단 노출') + '</span>' +
+                '<span>대상 ' + escapeHtml(targets.length ? targets.join(", ") : "전체") + '</span>' +
+                '<span>확인 ' + escapeHtml(String(getDeskSharedAckWorkers_(item).length)) + '명</span>' +
+              '</div>' +
+            '</div>' +
+            '<span class="desk-task-status pending">' + escapeHtml(String(index + 1)) + '</span>' +
+          '</div>' +
+          (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
+          '<div class="desk-task-actions">' +
+            '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="-1">위로</button>' +
+            '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="1">아래로</button>' +
+            '<button class="modal-action ghost" type="button" data-desk-shared-edit="' + escapeHtml(item.id) + '">편집</button>' +
+            '<button class="modal-action ghost" type="button" data-desk-shared-visibility="' + escapeHtml(item.id) + '">' + (item.hiddenFromWorkerBand ? '상단 노출' : '상단 숨김') + '</button>' +
+            '<button class="modal-action ghost danger" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+          '</div>' +
+        '</article>';
+      }).join("") + '</div>';
       refreshLucideIcons_();
     }
 
@@ -18877,16 +19248,17 @@
       deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
         var isEditing = state.desk.daily.editingMemoId === item.id;
         var type = getDeskMemoType_(item);
+        var display = getDeskMemoDisplayParts_(item);
         return '<article class="desk-note-card desk-note-row-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
           '<div class="desk-note-row">' +
-            '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
+            '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(formatDeskJournalTimeOnly_(display.createdAt || item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
             '<span class="desk-note-dot" aria-hidden="true"></span>' +
             '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '">' + escapeHtml(type) + '</span>' +
             '<div class="desk-note-main">' +
               '<span class="desk-note-worker-inline">' + escapeHtml(item.worker || "-") + '</span>' +
               (isEditing
                 ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
-                : '<span class="desk-note-text">' + escapeHtml(item.text || "") + '</span>') +
+                : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
             '</div>' +
             '<div class="desk-note-icon-actions">' +
               '<button type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '" aria-label="시간 저장"><i data-lucide="clock-3"></i></button>' +
@@ -18945,7 +19317,9 @@
         return;
       }
       var workerTasks = (tasks || []).filter(function(item) {
-        return isDeskSharedTask_(item) || isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
+        return (isDeskSharedTask_(item) && isDeskTaskTargetedToWorker_(item, worker)) ||
+          isSameDeskWorkerName_(item.worker, worker) ||
+          (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, worker));
       });
       var workerMemos = (memos || []).filter(function(item) {
         return isSameDeskWorkerName_(item.worker, worker);
@@ -18992,7 +19366,8 @@
           '<section class="desk-mobile-report-section">' +
             '<h4>[시간대별 기록]</h4>' +
           '<ul>' + (timeline.length ? timeline.map(function(item) {
-            return '<li><span>' + escapeHtml(formatDeskJournalTimeOnly_(item.createdAt)) + '</span>[' + escapeHtml(getDeskMemoType_(item)) + '] ' + escapeHtml(item.text || "") + '</li>';
+            var display = getDeskMemoDisplayParts_(item);
+            return '<li><span>' + escapeHtml(formatDeskJournalTimeOnly_(display.createdAt || item.createdAt)) + '</span>[' + escapeHtml(getDeskMemoType_(item)) + '] ' + escapeHtml(display.text || "") + '</li>';
           }).join("") : '<li>기록 없음</li>') + '</ul>' +
           '</section>' +
           '<section class="desk-mobile-report-section">' +
@@ -19025,7 +19400,9 @@
       if (!worker) return "";
       var workers = collectDeskDailyWorkers_(dateKey);
       var tasks = mergeDeskDailyCarryoverTasks_(dateKey, getDeskDailyJournalTasks_(dateKey), workers).filter(function(item) {
-        return isDeskSharedTask_(item) || isSameDeskWorkerName_(item.worker, worker) || isDeskImportantTask_(item);
+        return (isDeskSharedTask_(item) && isDeskTaskTargetedToWorker_(item, worker)) ||
+          isSameDeskWorkerName_(item.worker, worker) ||
+          (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, worker));
       });
       var memos = getDeskDailyJournalMemos_(dateKey)
         .filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); })
@@ -19063,7 +19440,8 @@
       lines.push("3. 시간대별 현장 기록");
       if (memos.length) {
         memos.forEach(function(item) {
-          lines.push("- " + formatDeskJournalTimeOnly_(item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (item.text || ""));
+          var display = getDeskMemoDisplayParts_(item);
+          lines.push("- " + formatDeskJournalTimeOnly_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
         });
       } else {
         lines.push("- 기록 없음");
@@ -19249,10 +19627,17 @@
 
     function collectDeskSharedTaskDraft_() {
       return {
+        id: String(deskJournalSharedIdEl && deskJournalSharedIdEl.value || "").trim(),
         dateKey: String(deskJournalSharedDateEl && deskJournalSharedDateEl.value || "").trim(),
         title: String(deskJournalSharedTitleEl && deskJournalSharedTitleEl.value || "").trim(),
         note: String(deskJournalSharedNoteEl && deskJournalSharedNoteEl.value || "").trim(),
-        label: String(deskJournalSharedLabelEl && deskJournalSharedLabelEl.value || "공지").trim() || "공지"
+        label: String(deskJournalSharedLabelEl && deskJournalSharedLabelEl.value || "공지").trim() || "공지",
+        hiddenFromWorkerBand: !(deskJournalSharedVisibleEl && deskJournalSharedVisibleEl.checked),
+        targetWorkers: deskJournalSharedTargetQuickEl
+          ? Array.prototype.slice.call(deskJournalSharedTargetQuickEl.querySelectorAll("[data-desk-shared-target].active")).map(function(btn) {
+              return btn.getAttribute("data-desk-shared-target") || "";
+            })
+          : []
       };
     }
 
@@ -19270,10 +19655,18 @@
     }
 
     function clearDeskSharedTaskDraft_() {
+      if (deskJournalSharedIdEl) deskJournalSharedIdEl.value = "";
       if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       if (deskJournalSharedTitleEl) deskJournalSharedTitleEl.value = "";
       if (deskJournalSharedNoteEl) deskJournalSharedNoteEl.value = "";
       if (deskJournalSharedLabelEl) deskJournalSharedLabelEl.value = "";
+      if (deskJournalSharedVisibleEl) deskJournalSharedVisibleEl.checked = true;
+      if (deskJournalSaveSharedBtnEl) deskJournalSaveSharedBtnEl.textContent = "공동 업무 저장";
+      if (deskJournalSharedTargetQuickEl) {
+        Array.prototype.forEach.call(deskJournalSharedTargetQuickEl.querySelectorAll("[data-desk-shared-target]"), function(btn) {
+          btn.classList.remove("active");
+        });
+      }
     }
 
     function saveDeskDailyTaskFromForm_() {
@@ -19339,19 +19732,64 @@
         return;
       }
       upsertDeskDailyTask_({
-        id: buildDeskShiftId_("shared", Date.now(), Math.random().toString(36).slice(2)),
+        id: draft.id || buildDeskShiftId_("shared", Date.now(), Math.random().toString(36).slice(2)),
         dateKey: draft.dateKey,
         worker: DESK_SHARED_WORKER_NAME,
         category: buildDeskSharedTaskCategory_(draft.label),
         title: draft.title,
         note: draft.note,
         completed: false,
-        unresolvedReason: ""
+        unresolvedReason: "",
+        ackWorkers: draft.id ? getDeskSharedAckWorkers_(findDeskDailyTaskById_(draft.id)) : [],
+        hiddenFromWorkerBand: draft.hiddenFromWorkerBand,
+        sortOrder: draft.id ? normalizeDeskTaskSortOrder_(findDeskDailyTaskById_(draft.id) && findDeskDailyTaskById_(draft.id).sortOrder) : getNextDeskSharedSortOrder_(draft.dateKey),
+        targetWorkers: draft.targetWorkers
       }, function() {
         clearDeskSharedTaskDraft_();
         state.desk.daily.editorMode = "shared";
         state.desk.daily.selectedWorker = DESK_ROUTINE_TAB_KEY;
       });
+    }
+
+    function startDeskSharedTaskEdit_(taskId) {
+      var task = findDeskDailyTaskById_(taskId);
+      if (!task || !isDeskSharedTask_(task)) return;
+      var meta = getDeskTaskMeta_(task);
+      state.desk.daily.selectedWorker = DESK_ROUTINE_TAB_KEY;
+      state.desk.daily.editorMode = "shared";
+      if (deskJournalSharedIdEl) deskJournalSharedIdEl.value = task.id;
+      if (deskJournalSharedDateEl) deskJournalSharedDateEl.value = task.dateKey || state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      if (deskJournalSharedLabelEl) deskJournalSharedLabelEl.value = meta.label || "공지";
+      if (deskJournalSharedTitleEl) deskJournalSharedTitleEl.value = task.title || "";
+      if (deskJournalSharedNoteEl) deskJournalSharedNoteEl.value = task.note || "";
+      if (deskJournalSharedVisibleEl) deskJournalSharedVisibleEl.checked = !task.hiddenFromWorkerBand;
+      if (deskJournalSaveSharedBtnEl) deskJournalSaveSharedBtnEl.textContent = "수정 저장";
+      renderDeskDailyJournal_();
+    }
+
+    function toggleDeskSharedTaskVisibility_(taskId) {
+      var task = findDeskDailyTaskById_(taskId);
+      if (!task || !isDeskSharedTask_(task)) return;
+      upsertDeskDailyTask_(Object.assign({}, task, {
+        hiddenFromWorkerBand: !task.hiddenFromWorkerBand
+      }));
+    }
+
+    function moveDeskSharedTask_(taskId, delta) {
+      var task = findDeskDailyTaskById_(taskId);
+      if (!task || !isDeskSharedTask_(task)) return;
+      var shared = getDeskDailyJournalTasks_(task.dateKey).filter(isDeskSharedTask_).sort(compareDeskSharedTask_);
+      var index = shared.findIndex(function(item) { return item.id === taskId; });
+      var targetIndex = index + delta;
+      if (index < 0 || targetIndex < 0 || targetIndex >= shared.length) return;
+      shared.forEach(function(item, order) {
+        item.sortOrder = (order + 1) * 10;
+      });
+      var currentOrder = shared[index].sortOrder;
+      shared[index].sortOrder = shared[targetIndex].sortOrder;
+      shared[targetIndex].sortOrder = currentOrder;
+      upsertDeskDailyTask_(shared[index]);
+      upsertDeskDailyTask_(shared[targetIndex]);
     }
 
     function assignDeskRoutineTask_(templateId, worker) {
@@ -19481,14 +19919,20 @@
         text: text,
         category: state.desk.daily.memoType || "일반",
         mode: state.desk.daily.memoMode || "report",
-        createdAt: resolveDeskMemoCreatedAt_(dateKey, text, buildDeskCurrentDateTimeForKey_(dateKey))
+        createdAt: buildDeskCurrentDateTimeForKey_(dateKey)
       }, function() {
-        if (deskJournalMemoInputEl) deskJournalMemoInputEl.value = "";
         state.desk.daily.editingMemoId = "";
         state.desk.daily.selectedWorker = worker;
         state.desk.daily.reportWorker = worker;
         state.desk.daily.memoPage = 1;
+        state.desk.daily.memoType = "일반";
+        syncDeskMemoComposerState_();
         showDeskMemoSaveStatus_("저장되었습니다.", "saved");
+        setTimeout(function() {
+          if (deskJournalMemoInputEl && String(deskJournalMemoInputEl.value || "").trim() === text) {
+            deskJournalMemoInputEl.value = "";
+          }
+        }, 900);
       });
     }
 
@@ -20432,10 +20876,12 @@
           if (!btn) return;
           state.desk.daily.selectedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
           if (state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY) {
-            state.desk.daily.editorMode = "manager";
+            state.desk.daily.editorMode = "shared";
           }
           state.desk.daily.memoPage = 1;
           state.desk.daily.taskQueuePage = 1;
+          state.desk.daily.taskQueueExpanded = false;
+          state.desk.daily.completedTasksExpanded = false;
           if (state.desk.daily.selectedWorker !== "전체" && state.desk.daily.selectedWorker !== DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.reportWorker = state.desk.daily.selectedWorker;
           }
@@ -20484,6 +20930,37 @@
           saveDeskSharedTaskFromForm_();
         });
       }
+      if (deskJournalClearSharedBtnEl) {
+        deskJournalClearSharedBtnEl.addEventListener("click", function() {
+          clearDeskSharedTaskDraft_();
+          renderDeskDailyJournal_();
+        });
+      }
+      if (deskJournalSharedTargetQuickEl) {
+        deskJournalSharedTargetQuickEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-shared-target]");
+          if (!btn) return;
+          btn.classList.toggle("active");
+        });
+      }
+      if (deskJournalSharedSummaryListEl) {
+        deskJournalSharedSummaryListEl.addEventListener("click", function(event) {
+          var toggleBtn = event.target.closest("[data-desk-shared-summary-toggle]");
+          if (toggleBtn) {
+            state.desk.daily.sharedSummaryExpanded = !state.desk.daily.sharedSummaryExpanded;
+            renderDeskDailyJournal_();
+            return;
+          }
+          var ackBtn = event.target.closest("[data-desk-shared-ack]");
+          if (ackBtn) {
+            event.preventDefault();
+            toggleDeskSharedTaskAck_(
+              ackBtn.getAttribute("data-desk-shared-ack") || "",
+              ackBtn.getAttribute("data-desk-shared-ack-worker") || ""
+            );
+          }
+        });
+      }
       if (deskJournalTaskBoardEl) {
         deskJournalTaskBoardEl.addEventListener("change", function(event) {
           var toggle = event.target.closest("[data-desk-journal-task-toggle]");
@@ -20527,6 +21004,36 @@
           if (taskPageBtn && !taskPageBtn.disabled) {
             state.desk.daily.taskQueuePage = Number(taskPageBtn.getAttribute("data-desk-journal-task-page") || 1);
             renderDeskDailyJournal_();
+            return;
+          }
+          var taskQueueToggleBtn = event.target.closest("[data-desk-task-queue-toggle]");
+          if (taskQueueToggleBtn) {
+            state.desk.daily.taskQueueExpanded = !state.desk.daily.taskQueueExpanded;
+            renderDeskDailyJournal_();
+            return;
+          }
+          var completedToggleBtn = event.target.closest("[data-desk-completed-toggle]");
+          if (completedToggleBtn) {
+            state.desk.daily.completedTasksExpanded = !state.desk.daily.completedTasksExpanded;
+            renderDeskDailyJournal_();
+            return;
+          }
+          var sharedEditBtn = event.target.closest("[data-desk-shared-edit]");
+          if (sharedEditBtn) {
+            startDeskSharedTaskEdit_(sharedEditBtn.getAttribute("data-desk-shared-edit") || "");
+            return;
+          }
+          var sharedVisibilityBtn = event.target.closest("[data-desk-shared-visibility]");
+          if (sharedVisibilityBtn) {
+            toggleDeskSharedTaskVisibility_(sharedVisibilityBtn.getAttribute("data-desk-shared-visibility") || "");
+            return;
+          }
+          var sharedMoveBtn = event.target.closest("[data-desk-shared-move]");
+          if (sharedMoveBtn) {
+            moveDeskSharedTask_(
+              sharedMoveBtn.getAttribute("data-desk-shared-move") || "",
+              Number(sharedMoveBtn.getAttribute("data-desk-shared-move-dir") || 0)
+            );
             return;
           }
           var saveBtn = event.target.closest("[data-desk-journal-task-save]");
