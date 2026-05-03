@@ -915,6 +915,18 @@ function normalizeDeskDateKey_(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
 }
 
+var DESK_WORKER_NAME_ALIASES = {
+  "이미현": "이민현"
+};
+
+function canonicalizeDeskWorkerName_(name) {
+  var text = String(name || "").trim();
+  try {
+    text = text.normalize("NFC");
+  } catch (e) {}
+  return DESK_WORKER_NAME_ALIASES[text] || text;
+}
+
 function shiftDeskDateKey_(dateKey, days) {
   var safeDateKey = normalizeDeskDateKey_(dateKey);
   if (!safeDateKey) return "";
@@ -928,7 +940,7 @@ function normalizeDeskScheduleEntry_(item, fallbackId) {
   var entry = {
     id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
     date: String((item && item.date) || "").trim(),
-    worker: String((item && item.worker) || "").trim(),
+    worker: canonicalizeDeskWorkerName_((item && item.worker) || ""),
     role: String((item && item.role) || "").trim(),
     start: String((item && item.start) || "").trim(),
     end: String((item && item.end) || "").trim(),
@@ -1076,7 +1088,7 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
   var task = {
     id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
     dateKey: normalizeDeskDateKey_((item && item.dateKey) || dateKey),
-    worker: String((item && item.worker) || "").trim(),
+    worker: canonicalizeDeskWorkerName_((item && item.worker) || ""),
     category: String((item && item.category) || "일반").trim(),
     title: String((item && item.title) || "").trim(),
     note: String((item && item.note) || "").trim(),
@@ -1100,12 +1112,9 @@ function normalizeDeskDailyWorkerNameArray_(value) {
   var seen = {};
   var names = [];
   source.forEach(function(name) {
-    var text = String(name || "").trim();
+    var text = canonicalizeDeskWorkerName_(name);
     var key = normalizeDeskWorkerNameKey_(text);
     if (!text || !key || seen[key]) return;
-    try {
-      text = text.normalize("NFC");
-    } catch (e) {}
     seen[key] = true;
     names.push(text);
   });
@@ -1123,7 +1132,7 @@ function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
   return {
     id: String((item && item.id) || fallbackId || buildDeskScheduleEntryId_()).trim(),
     dateKey: normalizeDeskDateKey_((item && item.dateKey) || dateKey),
-    worker: String((item && item.worker) || "").trim(),
+    worker: canonicalizeDeskWorkerName_((item && item.worker) || ""),
     text: String((item && item.text) || "").trim(),
     category: String((item && (item.category || item.type || item.memoType)) || "일반").trim() || "일반",
     mode: mode === "record" ? "record" : "report",
@@ -1133,10 +1142,7 @@ function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
 }
 
 function normalizeDeskWorkerNameKey_(name) {
-  var text = String(name || "").trim();
-  try {
-    text = text.normalize("NFC");
-  } catch (e) {}
+  var text = canonicalizeDeskWorkerName_(name);
   return text.replace(/\s+/g, "").toLowerCase();
 }
 
@@ -1167,7 +1173,7 @@ function buildDefaultDeskScheduleMonthSeed_(monthKey) {
     { worker: "홍성우", role: "총괄 팀장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 운영 총괄" },
     { worker: "안종성", role: "오후 데스크", days: [2, 4, 5, 6], start: "14:00", end: "22:30", note: "상담/학부모 응대" },
     { worker: "인유빈", role: "오전 데스크", days: [1, 3, 5, 0], start: "09:30", end: "18:00", note: "등원 응대 및 등록 안내" },
-    { worker: "이미현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
+    { worker: "이민현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
     { worker: "유지연", role: "운영 지원", days: [2, 6, 0], start: "13:00", end: "19:00", note: "자료 정리 및 업무 지원" },
     { worker: "김유민", role: "오전 데스크", days: [2, 4], start: "09:30", end: "17:00", note: "접수 및 행정 처리" },
     { worker: "이창연", role: "주임", days: [3], start: "11:00", end: "18:00", note: "실무 운영 점검" },

@@ -11331,11 +11331,15 @@
     var DESK_DAILY_CARRYOVER_SCAN_BATCH_SIZE = 5;
     var DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS = 7000;
     var DESK_DAILY_SERVER_POLL_MS = 3500;
+    var DESK_LIVE_FEED_HISTORY_DAYS = 14;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
     var DESK_SHARED_WORKER_NAME = "공동업무";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
+    var DESK_WORKER_NAME_ALIASES = {
+      "이미현": "이민현"
+    };
     var DESK_HR_STATUSES = ["이력서 검토", "추천", "면접 조율", "면접 진행", "합격 안내", "불합격 안내"];
     var DESK_HR_STATUS_ALIASES = {
       "미연락": "이력서 검토",
@@ -11355,6 +11359,15 @@
       lead: { role: "주임", start: "11:00", end: "18:00", resident: false },
       resident: { role: "반포관 부원장", start: "", end: "", resident: true }
     };
+
+    function canonicalizeDeskWorkerName_(name) {
+      var text = String(name || "").trim();
+      try {
+        text = text.normalize("NFC");
+      } catch (err) {}
+      return DESK_WORKER_NAME_ALIASES[text] || text;
+    }
+
     var state = {
       portalAccessKey: "",
       privilegedAccessKey: "",
@@ -14283,7 +14296,7 @@
 
     function normalizeDeskFixedScheduleEntry_(item) {
       return {
-        worker: String((item && item.worker) || "").trim(),
+        worker: canonicalizeDeskWorkerName_((item && item.worker) || ""),
         weekday: Math.max(0, Math.min(6, Number(item && item.weekday))),
         slotKey: String((item && item.slotKey) || "").trim(),
         status: String((item && item.status) || "").trim(),
@@ -14296,10 +14309,10 @@
       var names = [];
       var hiddenMap = {};
       (state.desk.fixedSchedule.hiddenWorkers || []).forEach(function(name) {
-        hiddenMap[String(name || "").trim()] = true;
+        hiddenMap[canonicalizeDeskWorkerName_(name)] = true;
       });
       function push(name) {
-        var safe = String(name || "").trim();
+        var safe = canonicalizeDeskWorkerName_(name);
         if (!safe || seen[safe] || safe === "루틴업무" || hiddenMap[safe]) return;
         seen[safe] = true;
         names.push(safe);
@@ -14371,10 +14384,10 @@
         buildDeskFixedEntriesFromPreset_("인유빈", 1, "morning"),
         buildDeskFixedEntriesFromPreset_("인유빈", 3, "morning"),
         buildDeskFixedEntriesFromPreset_("인유빈", 5, "morning"),
-        buildDeskFixedEntriesFromPreset_("이미현", 1, "close"),
-        buildDeskFixedEntriesFromPreset_("이미현", 4, "close"),
-        buildDeskFixedEntriesFromPreset_("이미현", 5, "close"),
-        buildDeskFixedEntriesFromPreset_("이미현", 6, "close"),
+        buildDeskFixedEntriesFromPreset_("이민현", 1, "close"),
+        buildDeskFixedEntriesFromPreset_("이민현", 4, "close"),
+        buildDeskFixedEntriesFromPreset_("이민현", 5, "close"),
+        buildDeskFixedEntriesFromPreset_("이민현", 6, "close"),
         buildDeskFixedEntriesFromPreset_("유지연", 0, "support"),
         buildDeskFixedEntriesFromPreset_("유지연", 2, "support"),
         buildDeskFixedEntriesFromPreset_("유지연", 6, "support"),
@@ -14420,7 +14433,7 @@
         var raw = localStorage.getItem(DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY);
         var parsed = JSON.parse(raw || "[]");
         if (Array.isArray(parsed)) {
-          return parsed.map(function(name) { return String(name || "").trim(); }).filter(Boolean);
+          return parsed.map(canonicalizeDeskWorkerName_).filter(Boolean);
         }
       } catch (err) {}
       return [];
@@ -14428,7 +14441,7 @@
 
     function persistDeskFixedScheduleHiddenWorkers_(names) {
       state.desk.fixedSchedule.hiddenWorkers = (names || []).map(function(name) {
-        return String(name || "").trim();
+        return canonicalizeDeskWorkerName_(name);
       }).filter(Boolean);
       try {
         localStorage.setItem(DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY, JSON.stringify(state.desk.fixedSchedule.hiddenWorkers));
@@ -14465,7 +14478,7 @@
         { worker: "홍성우", role: "반포관 부원장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 반포관 총괄" },
         { worker: "안종성", role: "오후 데스크", days: [2, 4, 5, 6], start: "14:00", end: "22:30", note: "상담/학부모 응대" },
         { worker: "인유빈", role: "오전 데스크", days: [1, 3, 5, 0], start: "09:30", end: "18:00", note: "등원 응대 및 등록 안내" },
-        { worker: "이미현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
+        { worker: "이민현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
         { worker: "유지연", role: "운영 지원", days: [2, 6, 0], start: "13:00", end: "19:00", note: "자료 정리 및 업무 지원" },
         { worker: "김유민", role: "오전 데스크", days: [2, 4], start: "09:30", end: "17:00", note: "접수 및 행정 처리" },
         { worker: "이창연", role: "주임", days: [3], start: "11:00", end: "18:00", note: "실무 운영 점검" },
@@ -14523,7 +14536,7 @@
       var out = {
         id: String((item && item.id) || buildDeskShiftId_("desk", Date.now(), Math.random().toString(36).slice(2))),
         date: String((item && item.date) || ""),
-        worker: String((item && item.worker) || "").trim(),
+        worker: canonicalizeDeskWorkerName_((item && item.worker) || ""),
         role: String((item && item.role) || "").trim(),
         start: String((item && item.start) || "").trim(),
         end: String((item && item.end) || "").trim(),
@@ -16780,10 +16793,7 @@
     }
 
     function normalizeDeskDailyTask_(item) {
-      var worker = String((item && item.worker) || "").trim();
-      try {
-        worker = worker.normalize("NFC");
-      } catch (err) {}
+      var worker = canonicalizeDeskWorkerName_((item && item.worker) || "");
       return {
         id: String((item && item.id) || buildDeskShiftId_("journalTask", Date.now(), Math.random().toString(36).slice(2))),
         dateKey: String((item && item.dateKey) || "").trim(),
@@ -16807,12 +16817,9 @@
       var seen = {};
       var names = [];
       source.forEach(function(name) {
-        var text = String(name || "").trim();
+        var text = canonicalizeDeskWorkerName_(name);
         var key = normalizeDeskWorkerKey_(text);
         if (!text || !key || seen[key]) return;
-        try {
-          text = text.normalize("NFC");
-        } catch (err) {}
         seen[key] = true;
         names.push(text);
       });
@@ -16830,10 +16837,7 @@
       var updatedAt = String((item && item.updatedAt) || "");
       var category = String((item && (item.category || item.type || item.memoType)) || "일반").trim() || "일반";
       var mode = String((item && item.mode) || "report").trim();
-      var worker = String((item && item.worker) || "").trim();
-      try {
-        worker = worker.normalize("NFC");
-      } catch (err) {}
+      var worker = canonicalizeDeskWorkerName_((item && item.worker) || "");
       if (!createdAt && dateKey) {
         createdAt = resolveDeskMemoCreatedAt_(dateKey, String((item && item.text) || ""), updatedAt || buildDeskCurrentDateTimeForKey_(dateKey));
       }
@@ -16850,10 +16854,7 @@
     }
 
     function normalizeDeskWorkerKey_(name) {
-      var text = String(name || "").trim();
-      try {
-        text = text.normalize("NFC");
-      } catch (err) {}
+      var text = canonicalizeDeskWorkerName_(name);
       return text.replace(/\s+/g, "").toLowerCase();
     }
 
@@ -17269,7 +17270,7 @@
       state.desk.daily.loadedDates[safeDateKey] = true;
       if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
         renderDeskDailyJournal_();
-      } else if ((state.desk.daily.liveFeedDateKey || getDeskDateKey_(new Date())) === safeDateKey) {
+      } else if (isDeskLiveFeedDateKey_(safeDateKey)) {
         renderDeskLiveFeed_();
       }
     }
@@ -17389,6 +17390,7 @@
     }
 
     function getDeskWorkerPalette_(name) {
+      var safeName = canonicalizeDeskWorkerName_(name);
       var map = {
         "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ea580c", accentFg: "#ffffff" },
         "이상언": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#0f766e", accentFg: "#ffffff" },
@@ -17397,21 +17399,21 @@
         "이동혁": { bg: "#eaf7ff", fg: "#0369a1", border: "#bae6fd", accent: "#0284c7", accentFg: "#ffffff" },
         "안종성": { bg: "#f4e8ff", fg: "#7e22ce", border: "#e9d5ff", accent: "#9333ea", accentFg: "#ffffff" },
         "인유빈": { bg: "#fff7d6", fg: "#a16207", border: "#fde68a", accent: "#ca8a04", accentFg: "#ffffff" },
-        "이미현": { bg: "#f1f5f9", fg: "#334155", border: "#cbd5e1", accent: "#475569", accentFg: "#ffffff" },
+        "이민현": { bg: "#f1f5f9", fg: "#334155", border: "#cbd5e1", accent: "#475569", accentFg: "#ffffff" },
         "유지연": { bg: "#ecfdf3", fg: "#15803d", border: "#bbf7d0", accent: "#16a34a", accentFg: "#ffffff" },
         "김유민": { bg: "#eef2ff", fg: "#4338ca", border: "#c7d2fe", accent: "#4f46e5", accentFg: "#ffffff" },
         "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd", accent: "#14b8a6", accentFg: "#0f172a" }
       };
-      return map[name] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8", accent: "#64748b", accentFg: "#ffffff" };
+      return map[safeName] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8", accent: "#64748b", accentFg: "#ffffff" };
     }
 
     function getDeskWorkerBadgeStyle_(name) {
-      var palette = getDeskWorkerPalette_(String(name || "").trim());
+      var palette = getDeskWorkerPalette_(name);
       return '--desk-worker-bg:' + palette.bg + ';--desk-worker-fg:' + palette.fg + ';--desk-worker-border:' + palette.border + ';';
     }
 
     function getDeskWorkerTabStyle_(name) {
-      var safeName = String(name || "").trim();
+      var safeName = canonicalizeDeskWorkerName_(name);
       if (!safeName || safeName === "전체" || safeName === DESK_ROUTINE_TAB_KEY) return "";
       var palette = getDeskWorkerPalette_(safeName);
       return [
@@ -17423,7 +17425,7 @@
     }
 
     function getDeskWorkerCardStyle_(name) {
-      var palette = getDeskWorkerPalette_(String(name || "").trim());
+      var palette = getDeskWorkerPalette_(name);
       var darkText = (palette.accentFg || "#ffffff") !== "#ffffff";
       return [
         '--desk-worker-bg:' + palette.bg,
@@ -17445,7 +17447,8 @@
     }
 
     function getDeskLiveFeedCardStyle_(name, kind) {
-      var palette = getDeskWorkerPalette_(String(name || "").trim());
+      var safeName = canonicalizeDeskWorkerName_(name);
+      var palette = getDeskWorkerPalette_(safeName);
       var themeMap = {
         memo: { bg: "#efe3ff" },
         task: { bg: "#fff7b8" },
@@ -17459,12 +17462,12 @@
         "이동혁": { bg: "#dfeaff" },
         "이창연": { bg: "#d9fbf2" },
         "홍성우": { bg: "#ffe5d6" },
-        "이미현": { bg: "#efe0ff" },
+        "이민현": { bg: "#efe0ff" },
         "안종성": { bg: "#e7ddff" },
         "인유빈": { bg: "#e3eeff" },
         "유지연": { bg: "#dafaf0" }
       };
-      var tone = workerTone[name] || themeMap[kind] || { bg: palette.bg };
+      var tone = workerTone[safeName] || themeMap[kind] || { bg: palette.bg };
       return [
         '--desk-feed-bg:' + tone.bg
       ].join(";");
@@ -17574,7 +17577,7 @@
     }
 
     function getDeskWorkerInitial_(name) {
-      var source = String(name || "").trim();
+      var source = canonicalizeDeskWorkerName_(name);
       if (!source) return "?";
       return source.charAt(0);
     }
@@ -17883,7 +17886,7 @@
           setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
           if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === key) {
             renderDeskDailyJournal_();
-          } else if ((state.desk.daily.liveFeedDateKey || getDeskDateKey_(new Date())) === key) {
+          } else if (isDeskLiveFeedDateKey_(key)) {
             renderDeskLiveFeed_();
           }
         })
@@ -18396,11 +18399,14 @@
       if (state.activeModule !== "expense") return;
       if (deskDailyJournalPollInFlight_) return;
       if ((state.desk.daily.syncStatus || "") === "pending") return;
-      var liveDateKey = getDeskLiveFeedDateKey_();
+      var liveDateKeys = getDeskLiveFeedDateKeys_();
+      var liveDateKey = liveDateKeys[0] || getDeskLiveFeedDateKey_();
       var dateKey = state.desk.daily.dateKey || liveDateKey;
       var dateKeys = [liveDateKey];
       if (state.desk.activeTab === "dailyJournal" && dateKey !== liveDateKey) dateKeys.push(dateKey);
-      var unloadedDateKeys = dateKeys.filter(function(pollDateKey) {
+      var loadDateKeys = liveDateKeys.slice();
+      if (dateKey && loadDateKeys.indexOf(dateKey) === -1) loadDateKeys.push(dateKey);
+      var unloadedDateKeys = loadDateKeys.filter(function(pollDateKey) {
         return pollDateKey && !state.desk.daily.loadedDates[pollDateKey];
       });
       if (unloadedDateKeys.length) {
@@ -18409,7 +18415,7 @@
         });
         ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
         renderDeskLiveFeed_();
-        return;
+        if (dateKeys.some(function(pollDateKey) { return !state.desk.daily.loadedDates[pollDateKey]; })) return;
       }
       deskDailyJournalRoutinePollTick_ += 1;
       var shouldPollRoutine = !state.desk.daily.loadedDates[DESK_ROUTINE_TEMPLATE_KEY] || deskDailyJournalRoutinePollTick_ % 6 === 0;
@@ -18504,12 +18510,9 @@
       var names = [];
       var seen = {};
       function pushName(name) {
-        var text = String(name || "").trim();
+        var text = canonicalizeDeskWorkerName_(name);
         var key = normalizeDeskWorkerKey_(text);
         if (!text || !key || seen[key]) return;
-        try {
-          text = text.normalize("NFC");
-        } catch (err) {}
         seen[key] = true;
         names.push(text);
       }
@@ -18646,35 +18649,56 @@
       return todayKey;
     }
 
-    function collectDeskLiveFeedItems_(dateKey) {
-      var feedDateKey = String(dateKey || state.desk.daily.liveFeedDateKey || getDeskDateKey_(new Date())).trim();
-      var memoItems = getDeskDailyJournalMemos_(feedDateKey).map(function(item) {
-        var display = getDeskMemoDisplayParts_(item);
-        return {
-          id: "memo_" + item.id,
-          type: "이슈",
-          category: getDeskMemoType_(item),
-          mode: getDeskMemoMode_(item),
-          worker: item.worker || "-",
-          content: display.text || "",
-          stamp: item.updatedAt || item.createdAt || "",
-          displayStamp: display.createdAt || item.createdAt || "",
-          style: getDeskLiveFeedCardStyle_(item.worker || "-", "memo")
-        };
-      });
-      var taskItems = getDeskDailyJournalTasks_(feedDateKey).map(function(item) {
-        var meta = getDeskTaskMeta_(item);
-        var content = [item.title || "", item.note || "", item.unresolvedReason || ""].filter(Boolean).join(" · ");
-        return {
-          id: "task_" + item.id,
-          type: meta.important ? "중요 업무" : "배정 업무",
-          category: meta.label,
-          mode: item.completed ? "record" : "report",
-          worker: item.worker || "-",
-          content: content || "-",
-          stamp: item.updatedAt || item.createdAt || "",
-          style: getDeskLiveFeedCardStyle_(item.worker || "-", meta.important ? "important" : "task")
-        };
+    function getDeskLiveFeedDateKeys_() {
+      var todayKey = getDeskLiveFeedDateKey_();
+      var keys = [];
+      for (var offset = 0; offset < DESK_LIVE_FEED_HISTORY_DAYS; offset += 1) {
+        var key = shiftDeskDateKey_(todayKey, -offset);
+        if (key) keys.push(key);
+      }
+      return keys;
+    }
+
+    function isDeskLiveFeedDateKey_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      return !!safeDateKey && getDeskLiveFeedDateKeys_().indexOf(safeDateKey) !== -1;
+    }
+
+    function collectDeskLiveFeedItems_(dateKeys) {
+      var sourceKeys = Array.isArray(dateKeys)
+        ? dateKeys
+        : [String(dateKeys || state.desk.daily.liveFeedDateKey || getDeskDateKey_(new Date())).trim()];
+      var memoItems = [];
+      var taskItems = [];
+      sourceKeys.filter(Boolean).forEach(function(feedDateKey) {
+        getDeskDailyJournalMemos_(feedDateKey).forEach(function(item) {
+          var display = getDeskMemoDisplayParts_(item);
+          memoItems.push({
+            id: "memo_" + feedDateKey + "_" + item.id,
+            type: "이슈",
+            category: getDeskMemoType_(item),
+            mode: getDeskMemoMode_(item),
+            worker: item.worker || "-",
+            content: display.text || "",
+            stamp: item.updatedAt || item.createdAt || "",
+            displayStamp: display.createdAt || item.createdAt || "",
+            style: getDeskLiveFeedCardStyle_(item.worker || "-", "memo")
+          });
+        });
+        getDeskDailyJournalTasks_(feedDateKey).forEach(function(item) {
+          var meta = getDeskTaskMeta_(item);
+          var content = [item.title || "", item.note || "", item.unresolvedReason || ""].filter(Boolean).join(" · ");
+          taskItems.push({
+            id: "task_" + feedDateKey + "_" + item.id,
+            type: meta.important ? "중요 업무" : "배정 업무",
+            category: meta.label,
+            mode: item.completed ? "record" : "report",
+            worker: item.worker || "-",
+            content: content || "-",
+            stamp: item.updatedAt || item.createdAt || "",
+            style: getDeskLiveFeedCardStyle_(item.worker || "-", meta.important ? "important" : "task")
+          });
+        });
       });
       var combined = memoItems.concat(taskItems).sort(function(a, b) {
         return String(b.stamp || "").localeCompare(String(a.stamp || ""));
@@ -18806,18 +18830,21 @@
       var liveSubEl = deskLiveFeedEl.querySelector(".desk-live-feed-sub");
       if (liveTitleEl) liveTitleEl.textContent = "실시간 현황";
       if (liveSubEl) liveSubEl.textContent = "근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.";
-      var dateKey = getDeskLiveFeedDateKey_();
-      var items;
-      var isLiveFeedLoading = !state.desk.daily.loadedDates[dateKey];
-      if (!state.desk.daily.loadedDates[dateKey]) {
-        items = [];
-        if (!shouldDeferPortalDataLoad_()) {
+      var dateKeys = getDeskLiveFeedDateKeys_();
+      var loadedDateKeys = dateKeys.filter(function(dateKey) {
+        return !!state.desk.daily.loadedDates[dateKey];
+      });
+      var missingDateKeys = dateKeys.filter(function(dateKey) {
+        return dateKey && !state.desk.daily.loadedDates[dateKey];
+      });
+      if (missingDateKeys.length && !shouldDeferPortalDataLoad_()) {
+        missingDateKeys.forEach(function(dateKey) {
           ensureDeskDailyJournalLoaded_(dateKey);
-          ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
-        }
-      } else {
-        items = collectDeskLiveFeedItems_(dateKey);
+        });
+        ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
       }
+      var isLiveFeedLoading = !loadedDateKeys.length && missingDateKeys.length;
+      var items = loadedDateKeys.length ? collectDeskLiveFeedItems_(loadedDateKeys) : [];
       var pageSize = state.desk.daily.liveFeedPageSize || 10;
       var totalPages = Math.max(1, Math.ceil(items.length / pageSize));
       state.desk.daily.liveFeedPage = Math.min(Math.max(state.desk.daily.liveFeedPage || 1, 1), totalPages);
