@@ -9302,6 +9302,105 @@
       border-radius: 8px;
       padding: 14px;
     }
+    .worker-item.shift-ended {
+      --desk-card-bg: #f0f3f2;
+      --desk-card-border: #cfd8d3;
+      opacity: 0.62;
+      filter: grayscale(0.65) saturate(0.45);
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.05);
+      position: relative;
+    }
+    .worker-item.shift-ended::after {
+      content: "";
+      display: block !important;
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        linear-gradient(135deg, rgba(15,23,42,0.11), rgba(15,23,42,0.03)),
+        repeating-linear-gradient(45deg, rgba(15,23,42,0.04) 0 1px, transparent 1px 9px);
+      pointer-events: none;
+    }
+    .worker-item.shift-ended .worker-name,
+    .worker-item.shift-ended .worker-shift-time,
+    .worker-item.shift-ended .worker-shift-note {
+      color: #667789;
+    }
+    .worker-item.shift-ended .worker-item-progress-fill {
+      background: #6b7280;
+    }
+    .worker-item.shift-ended .percent-badge {
+      background: #f8fafc;
+      color: #64748b;
+      border-color: #d1d5db;
+    }
+    .desk-template-panel-head {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-template-manage-btn {
+      min-height: 28px;
+      border: 1px solid #d8e4de;
+      border-radius: 999px;
+      background: #fff;
+      color: #42576a;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .desk-template-manage-btn.active {
+      border-color: #0d684d;
+      background: #ecfdf5;
+      color: #0d684d;
+    }
+    .desk-template-manage-btn svg { width: 13px; height: 13px; }
+    .desk-template-panel .desk-chip-row.editing .desk-template-chip {
+      border-style: dashed;
+      background: #fffdf4 !important;
+    }
+    .desk-report-shift-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .desk-report-shift-line {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid #dbe8e2;
+      border-radius: 999px;
+      background: #f8fbf9;
+      padding: 6px 8px 6px 10px;
+      color: #173a2e;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-report-timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-bottom: 5px;
+    }
+    .desk-report-time-label {
+      min-width: 78px;
+      color: #64748b;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-report-timeline-text {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
     .desk-daily-journal-mode .main {
       background: #eef4ef;
     }
@@ -9516,7 +9615,7 @@
     .desk-daily-journal-mode .desk-journal-layout.worker-focus,
     .desk-daily-journal-mode .desk-journal-layout.manager-mode,
     .desk-daily-journal-mode .desk-journal-layout.manager-mode.worker-focus {
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+      grid-template-columns: minmax(0, 0.96fr) minmax(420px, 0.82fr);
       gap: 14px;
     }
     .desk-daily-journal-mode .desk-journal-report-side {
@@ -9560,7 +9659,26 @@
       background: #f7fbf8;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-row {
-      grid-template-columns: 52px minmax(0, 1fr);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 8px 10px;
+      padding: 12px 0;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-main {
+      flex: 1 1 100%;
+      min-width: 0;
+      width: 100%;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-text {
+      font-size: 14px;
+      line-height: 1.55;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions {
+      flex: 1 1 100%;
+      justify-content: flex-end;
     }
     .desk-daily-journal-mode .desk-journal-note-list::before {
       background: #d7e2dc;
@@ -11207,15 +11325,12 @@
                       </div>
                     </div>
                     <div class="desk-template-panel">
-                      <div class="desk-composer-label">빠른 템플릿</div>
-                      <div class="desk-chip-row">
-                        <button class="desk-template-chip" type="button" data-desk-memo-template="학부모 방문 상담 요청 접수 후 전달"><i data-lucide="users"></i><span>학부모 방문</span></button>
-                        <button class="desk-template-chip" type="button" data-desk-memo-template="학생들 당톡사 노션입력"><i data-lucide="clipboard-list"></i><span>노션 입력</span></button>
-                        <button class="desk-template-chip" type="button" data-desk-memo-template="강의실 청소"><i data-lucide="sparkles"></i><span>청소 완료</span></button>
-                        <button class="desk-template-chip" type="button" data-desk-memo-template="S-LMS 자료 업로드"><i data-lucide="upload"></i><span>자료 업로드</span></button>
-                        <button class="desk-template-chip" type="button" data-desk-memo-template="학생 시간표 수정"><i data-lucide="calendar-clock"></i><span>시간표 수정</span></button>
-                        <button class="desk-template-chip" type="button" data-desk-memo-template=""><i data-lucide="plus"></i><span>직접 입력</span></button>
+                      <div class="desk-template-panel-head">
+                        <div class="desk-composer-label">빠른 템플릿</div>
+                        <button class="desk-template-manage-btn" id="deskMemoTemplateEditBtn" type="button"><i data-lucide="settings-2"></i>템플릿 수정</button>
+                        <button class="desk-template-manage-btn hidden" id="deskMemoTemplateResetBtn" type="button"><i data-lucide="rotate-ccw"></i>기본값</button>
                       </div>
+                      <div class="desk-chip-row" id="deskMemoTemplateChips"></div>
                     </div>
                     <div class="desk-memo-compose-row">
                       <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
@@ -11924,6 +12039,7 @@
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
+    var DESK_DAILY_CONFIG_RT_PATH = "desk_portal/daily_config";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_RECRUITING_RT_PATH = "desk_portal/hr_recruiting/applicants";
@@ -11932,6 +12048,7 @@
     var DESK_FIXED_SCHEDULE_HIDDEN_WORKERS_KEY = "desk_portal_fixed_schedule_hidden_workers_v1";
     var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_dismissed_v1";
     var DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY = "desk_portal_task_assign_alert_active_v1";
+    var DESK_MEMO_TEMPLATES_STORAGE_KEY = "desk_portal_daily_memo_templates_v1";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_DAILY_CARRYOVER_SCAN_DAYS = 60;
@@ -11967,6 +12084,14 @@
       lead: { role: "주임", start: "11:00", end: "18:00", resident: false },
       resident: { role: "반포관 부원장", start: "", end: "", resident: true }
     };
+    var DESK_DEFAULT_MEMO_TEMPLATES = [
+      { icon: "users", label: "학부모 방문", text: "학부모 방문 상담 요청 접수 후 전달" },
+      { icon: "clipboard-list", label: "노션 입력", text: "학생들 당톡사 노션입력" },
+      { icon: "sparkles", label: "청소 완료", text: "강의실 청소" },
+      { icon: "upload", label: "자료 업로드", text: "S-LMS 자료 업로드" },
+      { icon: "calendar-clock", label: "시간표 수정", text: "학생 시간표 수정" },
+      { icon: "plus", label: "직접 입력", text: "" }
+    ];
 
     function canonicalizeDeskWorkerName_(name) {
       var text = String(name || "").trim();
@@ -12085,6 +12210,10 @@
           memoPageSize: 5,
           taskQueuePage: 1,
           taskQueuePageSize: 5,
+          templateEditMode: false,
+          memoTemplates: [],
+          memoTemplatesLoaded: false,
+          memoTemplatesLoading: false,
           tasks: [],
           memos: [],
           carryoverTasks: [],
@@ -12479,6 +12608,9 @@
     var deskJournalMemoInputEl = document.getElementById("deskJournalMemoInput");
     var deskJournalMemoSubmitBtnEl = document.getElementById("deskJournalMemoSubmitBtn");
     var deskJournalMemoSaveStatusEl = document.getElementById("deskJournalMemoSaveStatus");
+    var deskMemoTemplateChipsEl = document.getElementById("deskMemoTemplateChips");
+    var deskMemoTemplateEditBtnEl = document.getElementById("deskMemoTemplateEditBtn");
+    var deskMemoTemplateResetBtnEl = document.getElementById("deskMemoTemplateResetBtn");
     var deskJournalMemoPanelTitleEl = document.getElementById("deskJournalMemoPanelTitle");
     var deskJournalMemoPanelSubEl = document.getElementById("deskJournalMemoPanelSub");
     var deskJournalWorkerDetailTabsEl = document.getElementById("deskJournalWorkerDetailTabs");
@@ -12734,6 +12866,10 @@
       state.desk.recruiting.keywordFilter = "";
       state.desk.daily.tasks = [];
       state.desk.daily.memos = [];
+      state.desk.daily.memoTemplates = loadDeskMemoTemplates_();
+      state.desk.daily.memoTemplatesLoaded = false;
+      state.desk.daily.memoTemplatesLoading = false;
+      state.desk.daily.templateEditMode = false;
       state.desk.daily.editorMode = "shared";
       state.desk.daily.editingMemoId = "";
       state.desk.daily.syncStatus = "idle";
@@ -12847,6 +12983,135 @@
 
     function formatDeskTagList_(tags) {
       return parseDeskTagList_(tags).join(" ");
+    }
+
+    function normalizeDeskMemoTemplate_(item, index) {
+      var fallback = DESK_DEFAULT_MEMO_TEMPLATES[index] || {};
+      return {
+        icon: String((item && item.icon) || fallback.icon || "plus").trim() || "plus",
+        label: String((item && item.label) || fallback.label || "템플릿").trim() || "템플릿",
+        text: String((item && item.text) || "").trim()
+      };
+    }
+
+    function getDefaultDeskMemoTemplates_() {
+      return DESK_DEFAULT_MEMO_TEMPLATES.map(normalizeDeskMemoTemplate_);
+    }
+
+    function loadDeskMemoTemplates_() {
+      try {
+        var raw = localStorage.getItem(DESK_MEMO_TEMPLATES_STORAGE_KEY);
+        var parsed = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed) && parsed.length) {
+          return parsed.slice(0, DESK_DEFAULT_MEMO_TEMPLATES.length).map(normalizeDeskMemoTemplate_);
+        }
+      } catch (err) {}
+      return getDefaultDeskMemoTemplates_();
+    }
+
+    function saveDeskMemoTemplates_() {
+      try {
+        localStorage.setItem(DESK_MEMO_TEMPLATES_STORAGE_KEY, JSON.stringify(state.desk.daily.memoTemplates || []));
+      } catch (err) {}
+      saveDeskMemoTemplatesRemote_();
+    }
+
+    function buildDeskDailyConfigRealtimeUrl_(childPath) {
+      var path = DESK_DAILY_CONFIG_RT_PATH;
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
+    function ensureDeskMemoTemplatesLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.daily.memoTemplatesLoaded || state.desk.daily.memoTemplatesLoading) return;
+      state.desk.daily.memoTemplatesLoading = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTemplates"), null)
+        .then(function(snapshot) {
+          if (Array.isArray(snapshot) && snapshot.length) {
+            state.desk.daily.memoTemplates = snapshot.slice(0, DESK_DEFAULT_MEMO_TEMPLATES.length).map(normalizeDeskMemoTemplate_);
+            try {
+              localStorage.setItem(DESK_MEMO_TEMPLATES_STORAGE_KEY, JSON.stringify(state.desk.daily.memoTemplates || []));
+            } catch (err) {}
+          }
+          state.desk.daily.memoTemplatesLoaded = true;
+          renderDeskMemoTemplates_();
+        })
+        .catch(function(err) {
+          console.warn("desk memo templates load failed", err);
+        })
+        .finally(function() {
+          state.desk.daily.memoTemplatesLoading = false;
+        });
+    }
+
+    function saveDeskMemoTemplatesRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("memoTemplates"), state.desk.daily.memoTemplates || [])
+        .then(function() {
+          state.desk.daily.memoTemplatesLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk memo templates save failed", err);
+        });
+    }
+
+    function resetDeskMemoTemplates_() {
+      state.desk.daily.memoTemplates = getDefaultDeskMemoTemplates_();
+      state.desk.daily.templateEditMode = false;
+      saveDeskMemoTemplates_();
+      renderDeskMemoTemplates_();
+      showDeskMemoSaveStatus_("빠른 템플릿을 기본값으로 되돌렸습니다.", "saved");
+    }
+
+    function editDeskMemoTemplate_(index) {
+      var templates = state.desk.daily.memoTemplates || getDefaultDeskMemoTemplates_();
+      var current = normalizeDeskMemoTemplate_(templates[index], index);
+      var nextLabel = window.prompt("템플릿 버튼 이름을 입력해 주세요.", current.label);
+      if (nextLabel === null) return;
+      nextLabel = String(nextLabel || "").trim();
+      if (!nextLabel) {
+        alert("버튼 이름은 비워둘 수 없습니다.");
+        return;
+      }
+      var nextText = window.prompt("입력창에 넣을 템플릿 문장을 입력해 주세요. 비워두면 직접 입력 버튼처럼 동작합니다.", current.text);
+      if (nextText === null) return;
+      templates[index] = normalizeDeskMemoTemplate_(Object.assign({}, current, {
+        label: nextLabel,
+        text: String(nextText || "").trim()
+      }), index);
+      state.desk.daily.memoTemplates = templates;
+      saveDeskMemoTemplates_();
+      renderDeskMemoTemplates_();
+      showDeskMemoSaveStatus_("빠른 템플릿을 수정했습니다.", "saved");
+    }
+
+    function renderDeskMemoTemplates_() {
+      if (!deskMemoTemplateChipsEl) return;
+      var templates = state.desk.daily.memoTemplates && state.desk.daily.memoTemplates.length
+        ? state.desk.daily.memoTemplates
+        : getDefaultDeskMemoTemplates_();
+      state.desk.daily.memoTemplates = templates;
+      var editMode = !!state.desk.daily.templateEditMode;
+      deskMemoTemplateChipsEl.classList.toggle("editing", editMode);
+      deskMemoTemplateChipsEl.innerHTML = templates.map(function(item, index) {
+        var normalized = normalizeDeskMemoTemplate_(item, index);
+        return '<button class="desk-template-chip" type="button" data-desk-memo-template="' + escapeHtml(normalized.text) + '" data-desk-memo-template-index="' + escapeHtml(String(index)) + '">' +
+          '<i data-lucide="' + escapeHtml(editMode ? "pencil" : normalized.icon) + '"></i><span>' + escapeHtml(normalized.label) + '</span>' +
+        '</button>';
+      }).join("");
+      if (deskMemoTemplateEditBtnEl) {
+        deskMemoTemplateEditBtnEl.classList.toggle("active", editMode);
+        deskMemoTemplateEditBtnEl.innerHTML = editMode
+          ? '<i data-lucide="check"></i>수정 완료'
+          : '<i data-lucide="settings-2"></i>템플릿 수정';
+      }
+      if (deskMemoTemplateResetBtnEl) deskMemoTemplateResetBtnEl.classList.toggle("hidden", !editMode);
+      refreshLucideIcons_();
     }
 
     function renderDeskTagChips_(tags) {
@@ -16691,6 +16956,9 @@
         };
         var progress = getDeskTodayWorkerProgress_(item);
         card.style.setProperty("--fill-level", progress.percent + "%");
+        card.classList.toggle("shift-ended", progress.status === "ended");
+        card.classList.toggle("shift-active", progress.status === "active");
+        card.classList.toggle("shift-upcoming", progress.status === "upcoming");
         var fillEl = card.querySelector("[data-desk-worker-fill]");
         var percentEl = card.querySelector("[data-desk-worker-percent]");
         var leftEl = card.querySelector("[data-desk-worker-left]");
@@ -16706,6 +16974,7 @@
       if (!item || item.resident) {
         return {
           percent: 100,
+          status: "resident",
           leftLabel: "상주 근무",
           rightLabel: "시간 집계 제외"
         };
@@ -16713,6 +16982,7 @@
       if (!item.start || !item.end) {
         return {
           percent: 0,
+          status: "unknown",
           leftLabel: "시간 미설정",
           rightLabel: "진행 계산 불가"
         };
@@ -16722,6 +16992,7 @@
       if (!startDate || !endDate || endDate.getTime() <= startDate.getTime()) {
         return {
           percent: 0,
+          status: "unknown",
           leftLabel: "시간 확인 필요",
           rightLabel: "진행 계산 불가"
         };
@@ -16733,6 +17004,7 @@
       if (now.getTime() < startDate.getTime()) {
         return {
           percent: 100,
+          status: "upcoming",
           leftLabel: "근무 전",
           rightLabel: "시작까지 " + formatDeskDurationLabel_(startDate.getTime() - now.getTime())
         };
@@ -16740,12 +17012,14 @@
       if (now.getTime() >= endDate.getTime()) {
         return {
           percent: 0,
+          status: "ended",
           leftLabel: "근무 종료",
           rightLabel: "근무 완료"
         };
       }
       return {
         percent: percent,
+        status: "active",
         leftLabel: "잔여 " + percent + "%",
         rightLabel: "남은 " + formatDeskDurationLabel_(remainingMs)
       };
@@ -17129,6 +17403,34 @@
       return "시간 미입력";
     }
 
+    function formatDeskReportKoreanTime_(minutes, includeZeroMinute) {
+      var total = Math.max(0, Math.min(1439, parseInt(minutes, 10) || 0));
+      var hour24 = Math.floor(total / 60);
+      var minute = total % 60;
+      var period = hour24 >= 12 ? "오후" : "오전";
+      var hour12 = hour24 % 12;
+      if (hour12 === 0) hour12 = 12;
+      return period + " " + hour12 + "시" + (minute || includeZeroMinute ? " " + minute + "분" : "");
+    }
+
+    function formatDeskReportTimeFromStamp_(stamp) {
+      if (!stamp) return "--";
+      var date = new Date(stamp);
+      if (!isNaN(date.getTime())) {
+        return formatDeskReportKoreanTime_(date.getHours() * 60 + date.getMinutes(), false);
+      }
+      var clock = formatDeskJournalTimeOnly_(stamp);
+      var minutes = parseDeskTimeToMinutes_(clock);
+      return minutes >= 0 ? formatDeskReportKoreanTime_(minutes, false) : String(stamp);
+    }
+
+    function renderDeskReportShiftPill_(item) {
+      return '<span class="desk-report-shift-line">' +
+        '<span>' + escapeHtml(getDeskDisplayRole_(item)) + ' · ' + escapeHtml(formatDeskReportShiftTime_(item)) + '</span>' +
+        renderDeskDurationBadge_(item) +
+      '</span>';
+    }
+
     function formatDeskKoreanClock_(value) {
       var raw = String(value || "").trim();
       if (!raw || raw.indexOf(":") === -1) return raw || "-";
@@ -17173,16 +17475,16 @@
       var startText = formatDeskKoreanClock_(item.start);
       var endText = formatDeskKoreanClock_(item.end);
       if (hasDeskMinutePart_(item.start) || hasDeskMinutePart_(item.end)) {
-        return '<span>' + escapeHtml(startText + " -") + '</span><span>' + escapeHtml(endText) + '</span>';
+        return '<span>' + escapeHtml(startText + " ~") + '</span><span>' + escapeHtml(endText) + '</span>';
       }
-      return '<span>' + escapeHtml(startText + " - " + endText) + '</span>';
+      return '<span>' + escapeHtml(startText + " ~ " + endText) + '</span>';
     }
 
     function formatDeskReportShiftTime_(item) {
       if (!item) return "-";
       if (item.unavailable) return "근무 불가";
       if (item.resident) return "근무시간 상주";
-      if (item.start && item.end) return formatDeskKoreanClock_(item.start) + " - " + formatDeskKoreanClock_(item.end);
+      if (item.start && item.end) return formatDeskKoreanClock_(item.start) + " ~ " + formatDeskKoreanClock_(item.end);
       return "시간 미입력";
     }
 
@@ -18600,6 +18902,8 @@
     function renderDeskDailyJournal_() {
       if (shouldDeferPortalDataLoad_()) return;
       renderDeskDailySyncStatus_();
+      renderDeskMemoTemplates_();
+      ensureDeskMemoTemplatesLoaded_();
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       state.desk.daily.dateKey = dateKey;
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
@@ -19580,6 +19884,13 @@
       return "pencil";
     }
 
+    function renderDeskMemoTypeBadge_(type) {
+      var label = String(type || "일반").trim() || "일반";
+      return '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(label)) + '">' +
+        '<i data-lucide="' + escapeHtml(getDeskMemoTypeIcon_(label)) + '"></i>' + escapeHtml(label) +
+      '</span>';
+    }
+
     function getDeskDailySelectedWorkerShifts_(worker) {
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       return state.desk.scheduleItems
@@ -20221,10 +20532,11 @@
         var type = getDeskMemoType_(item);
         typeCounts[type] = (typeCounts[type] || 0) + 1;
       });
-      var shiftText = shifts.length ? shifts.map(function(item) { return formatDeskShiftTime_(item); }).join(" / ") : "등록된 근무시간 없음";
+      var shiftText = shifts.length ? shifts.map(formatDeskReportShiftTime_).join(" / ") : "등록된 근무시간 없음";
+      var weekLabel = getDeskWeekIndex_(dateKey, String(dateKey || "").slice(0, 7)) + "주차";
       var summaryHtml = Object.keys(typeCounts).length
         ? Object.keys(typeCounts).sort(function(a, b) { return a.localeCompare(b, "ko"); }).map(function(type) {
-            return '<li>' + escapeHtml(type) + ': ' + escapeHtml(String(typeCounts[type])) + '건</li>';
+            return '<li>' + renderDeskMemoTypeBadge_(type) + '<strong>' + escapeHtml(String(typeCounts[type])) + '건</strong></li>';
           }).join("")
         : '<li>기록 없음</li>';
       var dateLabel = formatDeskDateLabel_(dateKey);
@@ -20233,10 +20545,11 @@
           '<div class="desk-mobile-report-eyebrow">SEDU DESK REPORT</div>' +
           '<h3 class="desk-mobile-report-title">' + escapeHtml(worker) + '</h3>' +
           '<div class="desk-mobile-report-meta">' +
-            '<div>' + escapeHtml(dateLabel) + '</div>' +
+            '<div>' + escapeHtml(dateLabel) + ' · ' + escapeHtml(weekLabel) + '</div>' +
             '<div>근무 시간 ' + escapeHtml(shiftText) + '</div>' +
             '<div>기록 항목 ' + escapeHtml(String(timeline.length)) + '건</div>' +
           '</div>' +
+          (shifts.length ? '<div class="desk-report-shift-list">' + shifts.map(renderDeskReportShiftPill_).join("") + '</div>' : '') +
           '<section class="desk-mobile-report-section">' +
             '<h4>[업무 요약]</h4>' +
             '<ul>' + summaryHtml + '</ul>' +
@@ -20245,7 +20558,7 @@
             '<h4>[시간대별 기록]</h4>' +
           '<ul>' + (timeline.length ? timeline.map(function(item) {
             var display = getDeskMemoDisplayParts_(item);
-            return '<li><span>' + escapeHtml(formatDeskJournalTimeOnly_(display.createdAt || item.createdAt)) + '</span>[' + escapeHtml(getDeskMemoType_(item)) + '] ' + escapeHtml(display.text || "") + '</li>';
+            return '<li class="desk-report-timeline-item"><span class="desk-report-time-label">' + escapeHtml(formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt)) + '</span>' + renderDeskMemoTypeBadge_(getDeskMemoType_(item)) + '<span class="desk-report-timeline-text">' + escapeHtml(display.text || "") + '</span></li>';
           }).join("") : '<li>기록 없음</li>') + '</ul>' +
           '</section>' +
           '<section class="desk-mobile-report-section">' +
@@ -20292,14 +20605,15 @@
       var countedTasks = tasks.filter(function(item) { return !isDeskSharedTask_(item); });
       var completed = countedTasks.filter(function(item) { return item.completed; }).length;
       var pending = countedTasks.length - completed;
+      var weekLabel = getDeskWeekIndex_(dateKey, String(dateKey || "").slice(0, 7)) + "주차";
       var lines = [];
       lines.push("[데스크 근무 보고]");
-      lines.push(formatDeskDateLabel_(dateKey) + " / " + worker);
+      lines.push(formatDeskDateLabel_(dateKey) + " (" + weekLabel + ") / " + worker);
       lines.push("");
       lines.push("1. 근무 정보");
       if (shifts.length) {
         shifts.forEach(function(item) {
-          lines.push("- " + getDeskDisplayRole_(item) + " : " + formatDeskShiftTime_(item));
+          lines.push("- " + getDeskDisplayRole_(item) + " : " + formatDeskReportShiftTime_(item) + " (" + formatDeskHours_(getDeskCountedHours_(item)) + ")");
         });
       } else {
         lines.push("- 등록된 근무시간 없음");
@@ -20319,7 +20633,7 @@
       if (memos.length) {
         memos.forEach(function(item) {
           var display = getDeskMemoDisplayParts_(item);
-          lines.push("- " + formatDeskJournalTimeOnly_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
+          lines.push("- " + formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
         });
       } else {
         lines.push("- 기록 없음");
@@ -22003,6 +22317,10 @@
           }
           var templateBtn = event.target.closest("[data-desk-memo-template]");
           if (templateBtn) {
+            if (state.desk.daily.templateEditMode) {
+              editDeskMemoTemplate_(Number(templateBtn.getAttribute("data-desk-memo-template-index") || 0));
+              return;
+            }
             var value = String(templateBtn.getAttribute("data-desk-memo-template") || "").trim();
             if (deskJournalMemoInputEl) {
               if (value) {
@@ -22012,6 +22330,18 @@
               deskJournalMemoInputEl.focus();
             }
           }
+        });
+      }
+      if (deskMemoTemplateEditBtnEl) {
+        deskMemoTemplateEditBtnEl.addEventListener("click", function() {
+          state.desk.daily.templateEditMode = !state.desk.daily.templateEditMode;
+          renderDeskMemoTemplates_();
+        });
+      }
+      if (deskMemoTemplateResetBtnEl) {
+        deskMemoTemplateResetBtnEl.addEventListener("click", function() {
+          if (!confirm("빠른 템플릿을 기본값으로 되돌릴까요?")) return;
+          resetDeskMemoTemplates_();
         });
       }
       if (deskJournalMemoInputEl) {
