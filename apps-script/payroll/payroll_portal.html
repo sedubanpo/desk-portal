@@ -8739,6 +8739,43 @@
       min-height: 360px;
       box-shadow: 0 12px 28px rgba(15,23,42,0.045);
     }
+    .desk-worker-detail-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      min-height: 38px;
+      padding: 4px;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #f8fbf9;
+      margin-top: 10px;
+    }
+    .desk-worker-detail-tab {
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #607082;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-worker-detail-tab svg { width: 15px; height: 15px; }
+    .desk-worker-detail-tab.active {
+      background: #0d684d;
+      color: #fff;
+      box-shadow: 0 6px 14px rgba(13,104,77,0.16);
+    }
+    .desk-worker-detail-panel {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .desk-worker-detail-panel.hidden { display: none; }
     .desk-journal-side .desk-journal-note-list {
       min-height: 0;
       overflow: auto;
@@ -8820,6 +8857,13 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+    }
+    .desk-report-inline-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 10px;
     }
     .desk-report-preview-card[open] .desk-report-summary-meta svg { transform: rotate(180deg); }
     .desk-journal-note-list {
@@ -9410,8 +9454,12 @@
       border-color: #dfe7e1;
       min-height: 340px;
     }
+    .desk-daily-journal-mode .desk-worker-detail-tabs {
+      border-color: #dfe7e1;
+      background: #f7fbf8;
+    }
     .desk-daily-journal-mode .desk-journal-side .desk-note-row {
-      grid-template-columns: 52px minmax(0, 1fr) auto;
+      grid-template-columns: 52px minmax(0, 1fr);
     }
     .desk-daily-journal-mode .desk-journal-note-list::before {
       background: #d7e2dc;
@@ -9438,9 +9486,17 @@
       border-color: #dfe7e1;
       box-shadow: none;
     }
+    .desk-daily-journal-mode .desk-journal-side .desk-report-preview-card {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
     .desk-daily-journal-mode .desk-report-preview-card .desk-report-preview {
       max-height: 360px;
       background: #fbfaf5;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-report-preview-card .desk-report-preview {
+      max-height: 430px;
     }
     .desk-daily-journal-mode .desk-notice {
       border-color: #d9e7df;
@@ -9720,8 +9776,9 @@
           <div class="mode-wrap">
             <button class="mode-btn active" type="button" id="modeRatioBtn">비율제</button>
             <button class="mode-btn" type="button" id="modeHourlyBtn">시급제</button>
-          </div>
-        </div>
+		                    </div>
+		                  </article>
+		                </div>
         <div class="field" id="ratioField">
           <label for="ratioInput">비율제 퍼센트</label>
           <input id="ratioInput" type="number" min="0" max="100" step="0.5" value="50">
@@ -9800,8 +9857,9 @@
           <div class="field">
             <label for="suspectOnlyCheck">단가 의심만 보기</label>
             <label class="check-inline"><input id="suspectOnlyCheck" type="checkbox">의심 행만 표시</label>
-          </div>
-        </div>
+		                    </div>
+		                  </article>
+		                </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -11189,49 +11247,48 @@
                       </div>
                       <span class="desk-count-pill" id="deskJournalMemoMeta">0건</span>
                     </div>
-                    <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
-                    <div class="desk-journal-memo-foot">
-                      <button class="desk-load-more-btn" type="button">더 불러오기 <i data-lucide="chevron-down"></i></button>
-                      <div class="desk-journal-pagination" id="deskJournalMemoPagination"></div>
+                    <div class="desk-worker-detail-tabs" id="deskJournalWorkerDetailTabs" role="tablist" aria-label="근무자 기록 보기">
+                      <button class="desk-worker-detail-tab active" type="button" data-desk-worker-detail-tab="memos" role="tab" aria-selected="true"><i data-lucide="list-checks"></i>입력 기록</button>
+                      <button class="desk-worker-detail-tab" type="button" data-desk-worker-detail-tab="report" role="tab" aria-selected="false"><i data-lucide="copy"></i>보고 복사</button>
+                    </div>
+                    <div class="desk-worker-detail-panel" data-desk-worker-detail-panel="memos">
+                      <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
+                      <div class="desk-journal-memo-foot">
+                        <button class="desk-load-more-btn" type="button">더 불러오기 <i data-lucide="chevron-down"></i></button>
+                        <div class="desk-journal-pagination" id="deskJournalMemoPagination"></div>
+                      </div>
+                    </div>
+                    <div class="desk-worker-detail-panel hidden" data-desk-worker-detail-panel="report">
+                      <div class="desk-report-preview-card">
+                        <div class="desk-report-inline-head">
+                          <div>
+                            <div class="desk-side-title">보고 복사 <span id="deskReportWorkerInline"></span></div>
+                            <div class="desk-side-sub">오늘 기록과 업무를 보고용 이미지와 텍스트로 준비합니다.</div>
+                          </div>
+                        </div>
+                        <div class="desk-report-body">
+                          <div class="desk-report-actions">
+                            <button class="modal-action ghost" id="deskJournalCopyImageBtn" type="button"><i data-lucide="image"></i>이미지 복사</button>
+                            <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
+                          </div>
+                          <div class="desk-report-shell">
+                            <div class="desk-report-side">
+                              <div class="field">
+                                <label for="deskJournalReportWorker">보고 근무자</label>
+                                <select id="deskJournalReportWorker" class="modal-select"></select>
+                              </div>
+                              <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
+                            </div>
+                            <div class="desk-report-preview">
+                              <div id="deskJournalReportPreview"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </article>
-
                 </div>
-
-                <div class="desk-journal-report-side">
-                  <details class="desk-editor-card desk-report-preview-card" open>
-                    <summary class="desk-card-title-row">
-                      <div>
-                        <div class="desk-side-title">보고 준비 <span id="deskReportWorkerInline"></span></div>
-                        <div class="desk-side-sub">오늘 기록과 업무를 기반으로 보고 내용을 준비합니다.</div>
-                      </div>
-                      <span class="desk-report-summary-meta">
-                        <span class="closed-label">미리보기</span>
-                        <span class="open-label">접기</span>
-                        <i data-lucide="chevron-down"></i>
-                      </span>
-                    </summary>
-                    <div class="desk-report-body">
-                      <div class="desk-report-actions">
-                        <button class="modal-action ghost" id="deskJournalCopyImageBtn" type="button"><i data-lucide="image"></i>이미지 복사</button>
-                        <button class="modal-action primary" id="deskJournalCopyTextBtn" type="button"><i data-lucide="copy"></i>텍스트 복사</button>
-                      </div>
-                      <div class="desk-report-shell">
-                        <div class="desk-report-side">
-                          <div class="field">
-                            <label for="deskJournalReportWorker">보고 근무자</label>
-                            <select id="deskJournalReportWorker" class="modal-select"></select>
-                          </div>
-                          <div class="desk-copy-status" id="deskJournalCopyStatus"></div>
-                        </div>
-                        <div class="desk-report-preview">
-                          <div id="deskJournalReportPreview"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </details>
-                </div>
-              </section>
+	              </section>
 
               <div class="desk-journal-pending-list hidden" id="deskJournalPendingList"></div>
               <div class="desk-notice">일일 업무일지는 근무표와 별도로 Firebase 서버에 저장됩니다. 다른 PC에서도 같은 날짜의 업무 배정, 완료 체크, 현장 기록을 그대로 이어서 볼 수 있습니다.</div>
@@ -11918,6 +11975,7 @@
           sharedSummaryExpanded: false,
           taskQueueExpanded: false,
           completedTasksExpanded: false,
+          workerDetailTab: "memos",
           liveFeedDateKey: "",
           liveFeedCollapsed: false,
           liveFeedPage: 1,
@@ -12322,6 +12380,7 @@
     var deskJournalMemoSaveStatusEl = document.getElementById("deskJournalMemoSaveStatus");
     var deskJournalMemoPanelTitleEl = document.getElementById("deskJournalMemoPanelTitle");
     var deskJournalMemoPanelSubEl = document.getElementById("deskJournalMemoPanelSub");
+    var deskJournalWorkerDetailTabsEl = document.getElementById("deskJournalWorkerDetailTabs");
     var deskJournalMemoListEl = document.getElementById("deskJournalMemoList");
     var deskJournalMemoMetaEl = document.getElementById("deskJournalMemoMeta");
     var deskJournalMemoPaginationEl = document.getElementById("deskJournalMemoPagination");
@@ -19728,14 +19787,14 @@
       var visible = (memos || []).filter(function(item) {
         return selectedWorker === "전체" || selectedWorker === DESK_ROUTINE_TAB_KEY || isSameDeskWorkerName_(item.worker, selectedWorker);
       });
-      if (deskJournalMemoPanelTitleEl) {
-        deskJournalMemoPanelTitleEl.textContent = isWorkerView ? (selectedWorker + "님의 입력 기록") : "입력 기록";
-      }
-      if (deskJournalMemoPanelSubEl) {
-        deskJournalMemoPanelSubEl.textContent = isWorkerView
-          ? "이 탭에서 남긴 빠른 기록을 바로 수정하거나 삭제합니다."
-          : "근무자 탭을 선택하면 해당 근무자의 빠른 기록이 표시됩니다.";
-      }
+	      if (deskJournalMemoPanelTitleEl) {
+	        deskJournalMemoPanelTitleEl.textContent = isWorkerView ? (selectedWorker + "님의 기록") : "근무자 기록";
+	      }
+	      if (deskJournalMemoPanelSubEl) {
+	        deskJournalMemoPanelSubEl.textContent = isWorkerView
+	          ? "입력 기록을 수정하거나 보고용 복사를 준비합니다."
+	          : "근무자 탭을 선택하면 입력 기록과 보고 복사를 확인할 수 있습니다.";
+	      }
       var pageSize = state.desk.daily.memoPageSize || 7;
       var total = visible.length;
       var totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -19750,11 +19809,12 @@
           ? buildDeskMemoPaginationHtml_(state.desk.daily.memoPage, totalPages)
           : "";
       }
-      if (!pageItems.length) {
-        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
-        return;
-      }
-      deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
+	      if (!pageItems.length) {
+	        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
+	        syncDeskWorkerDetailTabs_();
+	        return;
+	      }
+	      deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
         var isEditing = state.desk.daily.editingMemoId === item.id;
         var type = getDeskMemoType_(item);
         var display = getDeskMemoDisplayParts_(item);
@@ -19780,9 +19840,10 @@
             '</div>' +
           '</div>' +
         '</article>';
-      }).join("");
-      refreshLucideIcons_();
-    }
+	      }).join("");
+	      syncDeskWorkerDetailTabs_();
+	      refreshLucideIcons_();
+	    }
 
     function buildDeskMemoPaginationHtml_(currentPage, totalPages) {
       var buttons = [];
@@ -20043,8 +20104,29 @@
       deskJournalCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
     }
 
+    function syncDeskWorkerDetailTabs_() {
+      var activeTab = state.desk.daily.workerDetailTab === "report" ? "report" : "memos";
+      if (deskJournalWorkerDetailTabsEl) {
+        Array.prototype.forEach.call(deskJournalWorkerDetailTabsEl.querySelectorAll("[data-desk-worker-detail-tab]"), function(btn) {
+          var isActive = btn.getAttribute("data-desk-worker-detail-tab") === activeTab;
+          btn.classList.toggle("active", isActive);
+          btn.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
+      }
+      Array.prototype.forEach.call(document.querySelectorAll("[data-desk-worker-detail-panel]"), function(panel) {
+        panel.classList.toggle("hidden", panel.getAttribute("data-desk-worker-detail-panel") !== activeTab);
+      });
+    }
+
+    function setDeskWorkerDetailTab_(tab) {
+      state.desk.daily.workerDetailTab = tab === "report" ? "report" : "memos";
+      syncDeskWorkerDetailTabs_();
+      refreshLucideIcons_();
+    }
+
     function openDeskDailyReportPanel_() {
-      var reportCard = document.querySelector(".desk-report-preview-card");
+      setDeskWorkerDetailTab_("report");
+      var reportCard = document.querySelector(".desk-journal-timeline-card") || document.querySelector(".desk-report-preview-card");
       if (!reportCard) return;
       if (reportCard.tagName && reportCard.tagName.toLowerCase() === "details") {
         reportCard.open = true;
@@ -21645,6 +21727,13 @@
             deskJournalMemoWorkerEl.value = btn.getAttribute("data-desk-journal-memo-worker") || "";
           }
           syncDeskJournalMemoWorkerQuick_();
+        });
+      }
+      if (deskJournalWorkerDetailTabsEl) {
+        deskJournalWorkerDetailTabsEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-worker-detail-tab]");
+          if (!btn) return;
+          setDeskWorkerDetailTab_(btn.getAttribute("data-desk-worker-detail-tab") || "memos");
         });
       }
       if (deskJournalReportShortcutBtnEl) {
