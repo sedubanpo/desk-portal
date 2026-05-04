@@ -8211,7 +8211,7 @@
     .desk-insight-icon svg { width: 16px; height: 16px; }
     .desk-insight-item-main { min-width: 0; }
     .desk-insight-item p { margin-top: 3px; line-height: 1.45; color: #4a6072; }
-    .desk-live-feed { top: 76px; right: 18px; width: 348px; max-height: calc(100vh - 94px); padding: 18px 16px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
+    .desk-live-feed { top: 76px; right: 18px; width: 328px; max-height: calc(100vh - 94px); padding: 18px 16px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
     .desk-live-feed-title { font-size: 20px; letter-spacing: 0; }
     .global-sync-ring { width: 9px; height: 9px; border-width: 0; background: #10b981; }
     .global-sync-widget.error .global-sync-ring { background: #dc2626; }
@@ -8241,7 +8241,48 @@
       cursor: pointer;
     }
     .desk-live-feed-more:hover { border-color: #8bc7ad; color: #0d684d; background: #f8fbf9; }
-    .desk-daily-journal-mode .main { padding-right: 378px; }
+    .desk-live-feed-toggle {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #d4e0da;
+      border-radius: 8px;
+      background: #fff;
+      color: #173a2e;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .desk-live-feed-toggle:hover { border-color: #8bc7ad; color: #0d684d; background: #f8fbf9; }
+    .desk-live-feed-toggle svg { width: 16px; height: 16px; transition: transform .16s ease; }
+    .desk-live-feed.collapsed {
+      width: 58px;
+      padding: 12px 8px;
+      overflow: hidden;
+      align-items: center;
+    }
+    .desk-live-feed.collapsed .desk-live-feed-head {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .desk-live-feed.collapsed .desk-live-feed-head > div:first-child,
+    .desk-live-feed.collapsed .desk-live-feed-head-right .global-sync-widget,
+    .desk-live-feed.collapsed .desk-live-feed-head-right .desk-live-feed-pill,
+    .desk-live-feed.collapsed .desk-live-feed-list,
+    .desk-live-feed.collapsed .desk-live-feed-nav,
+    .desk-live-feed.collapsed .desk-live-feed-more {
+      display: none;
+    }
+    .desk-live-feed.collapsed .desk-live-feed-head-right {
+      display: flex;
+      justify-content: center;
+    }
+    .desk-live-feed.collapsed .desk-live-feed-toggle svg { transform: rotate(180deg); }
+    .desk-daily-journal-mode .main { padding-right: 358px; }
+    .desk-daily-journal-mode .main.expense-live-collapsed { padding-right: 88px; }
+    .desk-daily-journal-mode .main.expense-live-collapsed .module-tabs { margin-right: -88px; }
     .desk-daily-user-card { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: center; }
     .desk-daily-user-card h3 { margin: 0; font-size: 15px; color: #fff; }
     .desk-daily-user-card p { margin: 3px 0 0; font-size: 12px; color: #cfe9df; font-weight: 800; }
@@ -8536,6 +8577,34 @@
       justify-content: space-between;
       gap: 12px;
     }
+    .desk-journal-composer-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .desk-journal-report-shortcut {
+      min-height: 32px;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fff;
+      color: #173a2e;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .desk-journal-report-shortcut:hover {
+      border-color: #8bc7ad;
+      color: #0d684d;
+      background: #f8fbf9;
+    }
+    .desk-journal-report-shortcut svg { width: 15px; height: 15px; }
     .desk-journal-shift-pill,
     .desk-count-pill {
       border: 1px solid #d8e4de;
@@ -8679,11 +8748,11 @@
       display: none;
     }
     .desk-journal-side .desk-note-row {
-      grid-template-columns: 48px minmax(0, 1fr) auto;
+      grid-template-columns: 54px minmax(0, 1fr);
       gap: 8px;
       align-items: start;
       min-height: 54px;
-      padding: 9px 0;
+      padding: 10px 0;
     }
     .desk-journal-side .desk-note-dot,
     .desk-journal-side .desk-note-worker-inline {
@@ -8706,7 +8775,9 @@
       -webkit-box-orient: vertical;
     }
     .desk-journal-side .desk-note-icon-actions {
-      align-self: center;
+      grid-column: 1 / -1;
+      justify-content: flex-end;
+      padding-top: 2px;
     }
     .desk-journal-side .desk-note-edit-input {
       min-height: 86px;
@@ -8836,16 +8907,23 @@
     .desk-note-text { color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .desk-note-icon-actions { display: inline-flex; align-items: center; gap: 5px; }
     .desk-note-icon-actions button {
-      width: 28px;
+      min-width: 42px;
       height: 28px;
       border: 0;
-      background: transparent;
+      border-radius: 8px;
+      background: #f8fbf9;
       color: #64748b;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 4px;
+      padding: 0 8px;
+      font-size: 11px;
+      font-weight: 900;
     }
+    .desk-note-icon-actions button:hover { background: #eef8f3; color: #0d684d; }
+    .desk-note-icon-actions button.danger:hover { background: #fff1f2; color: #dc2626; }
     .desk-note-icon-actions svg { width: 15px; height: 15px; }
     .desk-load-more-btn {
       border: 0;
@@ -9199,16 +9277,16 @@
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-journal-composer {
-      padding: 16px;
+      padding: 14px;
     }
     .desk-daily-journal-mode .desk-composer-row {
       grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
-      gap: 12px 16px;
+      gap: 10px 14px;
     }
     .desk-daily-journal-mode .desk-template-panel {
       grid-column: 2 / 3;
       align-self: end;
-      min-height: 76px;
+      min-height: 60px;
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -9219,8 +9297,8 @@
     }
     .desk-daily-journal-mode .desk-template-panel .desk-chip-row {
       display: grid;
-      grid-template-columns: repeat(6, minmax(86px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(6, minmax(76px, 1fr));
+      gap: 8px;
     }
     .desk-daily-journal-mode .desk-memo-type-chip {
       min-height: 36px;
@@ -9234,7 +9312,7 @@
     }
     .desk-daily-journal-mode .desk-template-chip {
       --desk-template-icon-bg: #334155;
-      min-height: 66px;
+      min-height: 54px;
       border-color: #e0e7e1;
       background: #ffffff;
       color: #233645;
@@ -9242,8 +9320,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 7px;
-      padding: 8px 10px;
+      gap: 5px;
+      padding: 6px 8px;
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-template-chip:nth-child(1) { --desk-template-icon-bg: #b45309; color: #b45309; background: #fffaf4; }
@@ -9258,10 +9336,10 @@
       color: #0d684d;
     }
     .desk-daily-journal-mode .desk-template-chip svg {
-      width: 18px;
-      height: 18px;
+      width: 15px;
+      height: 15px;
       flex: 0 0 auto;
-      padding: 7px;
+      padding: 6px;
       box-sizing: content-box;
       border-radius: 999px;
       background: var(--desk-template-icon-bg, currentColor);
@@ -9272,19 +9350,19 @@
       white-space: nowrap;
     }
     .desk-daily-journal-mode .desk-memo-compose-row {
-      grid-template-columns: minmax(0, 1fr) 112px;
+      grid-template-columns: minmax(0, 1fr) 104px;
       gap: 10px;
     }
     .desk-daily-journal-mode .desk-memo-compose-input {
-      min-height: 52px;
+      min-height: 48px;
       border-radius: 8px;
       border-color: #dfe7e1;
       background: #fff;
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-memo-submit-btn {
-      min-height: 52px;
-      min-width: 112px;
+      min-height: 48px;
+      min-width: 104px;
       border-radius: 8px;
       background: #0d684d;
       box-shadow: none;
@@ -10949,7 +11027,10 @@
                     <div class="desk-side-title" id="deskJournalComposerTitle">근무자를 선택하세요</div>
                     <div class="desk-side-sub">선택 근무자 기준으로 3초 안에 기록을 남깁니다.</div>
                   </div>
-                  <span class="desk-journal-shift-pill" id="deskJournalComposerTime">근무 시간 확인 중</span>
+                  <div class="desk-journal-composer-actions">
+                    <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
+                    <span class="desk-journal-shift-pill" id="deskJournalComposerTime">근무 시간 확인 중</span>
+                  </div>
                 </div>
                 <form id="deskJournalMemoForm">
                   <input id="deskJournalMemoWorker" class="hidden" type="text" list="deskJournalWorkerNameList" placeholder="선택한 탭 근무자 자동 반영">
@@ -11171,6 +11252,7 @@
               <span class="global-sync-text" id="globalSyncLabel">동기화 정상</span>
             </div>
             <div class="desk-live-feed-pill" id="deskLiveFeedCount">0건</div>
+            <button class="desk-live-feed-toggle" id="deskLiveFeedToggleBtn" type="button" aria-label="실시간 현황 접기"><i data-lucide="panel-right-close"></i></button>
           </div>
         </div>
         <div class="desk-live-feed-list" id="deskLiveFeedBody"></div>
@@ -11837,6 +11919,7 @@
           taskQueueExpanded: false,
           completedTasksExpanded: false,
           liveFeedDateKey: "",
+          liveFeedCollapsed: false,
           liveFeedPage: 1,
           liveFeedPageSize: 10,
           memoPage: 1,
@@ -12229,6 +12312,7 @@
     var deskJournalMemoEditorCardEl = document.getElementById("deskJournalMemoEditorCard");
     var deskJournalComposerTitleEl = document.getElementById("deskJournalComposerTitle");
     var deskJournalComposerTimeEl = document.getElementById("deskJournalComposerTime");
+    var deskJournalReportShortcutBtnEl = document.getElementById("deskJournalReportShortcutBtn");
     var deskTaskQueueCountEl = document.getElementById("deskTaskQueueCount");
     var deskReportWorkerInlineEl = document.getElementById("deskReportWorkerInline");
     var deskJournalMemoWorkerEl = document.getElementById("deskJournalMemoWorker");
@@ -12255,6 +12339,7 @@
     var deskLiveFeedPrevBtnEl = document.getElementById("deskLiveFeedPrevBtn");
     var deskLiveFeedNextBtnEl = document.getElementById("deskLiveFeedNextBtn");
     var deskLiveFeedMoreBtnEl = document.getElementById("deskLiveFeedMoreBtn");
+    var deskLiveFeedToggleBtnEl = document.getElementById("deskLiveFeedToggleBtn");
     var deskTaskAssignAlertStackEl = document.getElementById("deskTaskAssignAlertStack");
     var tuitionMonthSelectEl = document.getElementById("tuitionMonthSelect");
     var tuitionStatusFilterEl = document.getElementById("tuitionStatusFilter");
@@ -19204,7 +19289,14 @@
       if (!deskLiveFeedEl) return;
       var show = state.activeModule === "expense";
       deskLiveFeedEl.classList.toggle("active", show);
+      deskLiveFeedEl.classList.toggle("collapsed", show && !!state.desk.daily.liveFeedCollapsed);
       if (mainShellEl) mainShellEl.classList.toggle("expense-live-mode", show);
+      if (mainShellEl) mainShellEl.classList.toggle("expense-live-collapsed", show && !!state.desk.daily.liveFeedCollapsed);
+      if (deskLiveFeedToggleBtnEl) {
+        deskLiveFeedToggleBtnEl.setAttribute("aria-label", state.desk.daily.liveFeedCollapsed ? "실시간 현황 펼치기" : "실시간 현황 접기");
+        deskLiveFeedToggleBtnEl.innerHTML = '<i data-lucide="' + (state.desk.daily.liveFeedCollapsed ? 'panel-right-open' : 'panel-right-close') + '"></i>';
+        refreshLucideIcons_();
+      }
       if (!show) return;
       var liveTitleEl = deskLiveFeedEl.querySelector(".desk-live-feed-title");
       var liveSubEl = deskLiveFeedEl.querySelector(".desk-live-feed-sub");
@@ -19458,7 +19550,7 @@
       if (!visible.length) {
         var loadingCarryover = state.desk.daily.carryoverLoadingDateKey &&
           state.desk.daily.carryoverLoadingDateKey.indexOf(String(state.desk.daily.dateKey || "")) === 0;
-        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : '미해결 업무가 없습니다. 작업 큐가 비어 있습니다.') + '</div>' +
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : '선택 근무자에게 배정된 미해결 업무가 없습니다.') + '</div>' +
           renderDeskCompletedTasksHtml_(completedItems);
         refreshLucideIcons_();
         return;
@@ -19679,12 +19771,12 @@
                 : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
             '</div>' +
             '<div class="desk-note-icon-actions">' +
-              '<button type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '" aria-label="시간 저장"><i data-lucide="clock-3"></i></button>' +
+              '<button type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '" aria-label="시간 저장" title="시간 저장"><i data-lucide="clock-3"></i><span>시간</span></button>' +
               (isEditing
-                ? '<button type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '" aria-label="취소"><i data-lucide="x"></i></button>' +
-                  '<button type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '" aria-label="저장"><i data-lucide="check"></i></button>'
-                : '<button type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '" aria-label="수정"><i data-lucide="pencil"></i></button>') +
-              '<button type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '" aria-label="삭제"><i data-lucide="trash-2"></i></button>' +
+                ? '<button type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '" aria-label="취소" title="취소"><i data-lucide="x"></i><span>취소</span></button>' +
+                  '<button type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '" aria-label="저장" title="저장"><i data-lucide="check"></i><span>저장</span></button>'
+                : '<button type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '" aria-label="수정" title="수정"><i data-lucide="pencil"></i><span>수정</span></button>') +
+              '<button class="danger" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '" aria-label="삭제" title="삭제"><i data-lucide="trash-2"></i><span>삭제</span></button>' +
             '</div>' +
           '</div>' +
         '</article>';
@@ -19949,6 +20041,16 @@
       if (!deskJournalCopyStatusEl) return;
       deskJournalCopyStatusEl.textContent = text || "";
       deskJournalCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
+    }
+
+    function openDeskDailyReportPanel_() {
+      var reportCard = document.querySelector(".desk-report-preview-card");
+      if (!reportCard) return;
+      if (reportCard.tagName && reportCard.tagName.toLowerCase() === "details") {
+        reportCard.open = true;
+      }
+      reportCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      showDeskCopyStatus_("보고 복사 영역을 열었습니다.");
     }
 
     var deskMemoSaveStatusTimer_ = null;
@@ -21545,6 +21647,11 @@
           syncDeskJournalMemoWorkerQuick_();
         });
       }
+      if (deskJournalReportShortcutBtnEl) {
+        deskJournalReportShortcutBtnEl.addEventListener("click", function() {
+          openDeskDailyReportPanel_();
+        });
+      }
       if (deskLiveFeedPrevBtnEl) {
         deskLiveFeedPrevBtnEl.addEventListener("click", function() {
           if ((state.desk.daily.liveFeedPage || 1) <= 1) return;
@@ -21561,6 +21668,12 @@
       if (deskLiveFeedMoreBtnEl) {
         deskLiveFeedMoreBtnEl.addEventListener("click", function() {
           flashDeskButtonFeedback_(deskLiveFeedMoreBtnEl, "준비 중");
+        });
+      }
+      if (deskLiveFeedToggleBtnEl) {
+        deskLiveFeedToggleBtnEl.addEventListener("click", function() {
+          state.desk.daily.liveFeedCollapsed = !state.desk.daily.liveFeedCollapsed;
+          renderDeskLiveFeed_();
         });
       }
       if (deskJournalMemoListEl) {
