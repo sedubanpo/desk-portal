@@ -17786,6 +17786,15 @@
         renderDeskDailyJournal_();
       } else if (isDeskLiveFeedDateKey_(safeDateKey)) {
         renderDeskLiveFeed_();
+        if (
+          state.desk.activeTab === "dailyJournal" &&
+          state.desk.daily.dateKey &&
+          state.desk.daily.dateKey !== safeDateKey &&
+          safeDateKey < state.desk.daily.dateKey &&
+          state.desk.daily.loadedDates[state.desk.daily.dateKey]
+        ) {
+          renderDeskDailyJournal_();
+        }
       }
     }
 
@@ -18402,6 +18411,15 @@
             renderDeskDailyJournal_();
           } else if (isDeskLiveFeedDateKey_(key)) {
             renderDeskLiveFeed_();
+            if (
+              state.desk.activeTab === "dailyJournal" &&
+              state.desk.daily.dateKey &&
+              state.desk.daily.dateKey !== key &&
+              key < state.desk.daily.dateKey &&
+              state.desk.daily.loadedDates[state.desk.daily.dateKey]
+            ) {
+              renderDeskDailyJournal_();
+            }
           }
         })
         .catch(function(err) {
@@ -18459,7 +18477,9 @@
       base.forEach(function(item) { currentIds[item.id] = true; });
       var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
       var carryoverSource = state.desk.daily.carryoverDateKey === safeDateKey ? (state.desk.daily.carryoverTasks || []) : [];
-      var carryovers = carryoverSource.filter(function(item) {
+      var cachedSource = collectDeskCachedCarryoverTasks_(safeDateKey, workerNames);
+      var mergedSource = mergeDeskCarryoverTaskLists_(carryoverSource, cachedSource);
+      var carryovers = mergedSource.filter(function(item) {
         return shouldShowDeskCarryoverTask_(item, safeDateKey, workerNames) && !currentIds[item.id];
       });
       return base.concat(carryovers).sort(compareDeskDailyTask_);
@@ -18470,6 +18490,14 @@
       if (!task || !task.dateKey || task.dateKey >= safeDateKey || task.completed) return false;
       if (isDeskSharedTask_(task)) return true;
       return (workerNames || []).some(function(name) { return isSameDeskWorkerName_(task.worker, name); });
+    }
+
+    function collectDeskCachedCarryoverTasks_(dateKey, workerNames) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return [];
+      return (state.desk.daily.tasks || []).filter(function(task) {
+        return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames || []);
+      });
     }
 
     function mergeDeskCarryoverTaskLists_(primary, secondary) {
@@ -19113,10 +19141,13 @@
       var ackCandidates = getDeskSharedAckCandidates_(dateKey);
       var expanded = !!state.desk.daily.sharedSummaryExpanded;
       var visibleTasks = expanded ? sharedTasks : sharedTasks.slice(0, 2);
+      var carryoverLoading = String(state.desk.daily.carryoverLoadingDateKey || "").indexOf(dateKey + "::") === 0;
       deskJournalSharedSummaryListEl.classList.toggle("expanded", expanded);
       if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = sharedTasks.length + "건";
       if (!sharedTasks.length) {
-        deskJournalSharedSummaryListEl.innerHTML = '<div class="desk-shared-summary-empty compact">상단에 노출 중인 공동 업무가 없습니다. 업무 관리자 탭에서 공지/공동업무를 추가하거나 노출 상태를 켤 수 있습니다.</div>';
+        deskJournalSharedSummaryListEl.innerHTML = carryoverLoading
+          ? '<div class="desk-shared-summary-empty compact">이월된 공동 업무/공지를 확인하는 중입니다.</div>'
+          : '<div class="desk-shared-summary-empty compact">상단에 노출 중인 공동 업무가 없습니다. 업무 관리자 탭에서 공지/공동업무를 추가하거나 노출 상태를 켤 수 있습니다.</div>';
         return;
       }
       var listHtml = visibleTasks.map(function(item) {
