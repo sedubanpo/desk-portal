@@ -7743,6 +7743,16 @@
     }
     .desk-shift-chip.active { box-shadow: inset 0 0 0 2px rgba(13,104,77,0.28); }
     .desk-shift-name { min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-calendar-worker-name {
+      display: block;
+      color: var(--desk-calendar-worker-fg, var(--desk-card-text, #173042));
+      font-size: 15px;
+      line-height: 1.12;
+      font-weight: 950;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .desk-shift-time,
     .desk-shift-meta,
     .desk-shift-note { font-size: 11px; }
@@ -7751,7 +7761,41 @@
     .desk-shift-order,
     .desk-shift-chip .desk-duration-badge { padding: 2px 6px; font-size: 10px; }
     .desk-time-badge-row { gap: 4px; }
-    .desk-shift-time-row { grid-column: 1 / -1; gap: 4px; }
+    .desk-shift-time-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(42px, 0.52fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .desk-shift-time-gauge {
+      display: block;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(148,163,184,0.22);
+      overflow: hidden;
+      min-width: 42px;
+    }
+    .desk-shift-time-gauge span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--desk-card-accent, #0d684d), color-mix(in srgb, var(--desk-card-accent, #0d684d) 58%, #ffffff));
+    }
+    .desk-shift-time-detail {
+      min-width: 0;
+      color: #263f52;
+      font-size: 11px;
+      line-height: 1.25;
+      font-weight: 900;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .desk-shift-time-row.resident .desk-shift-time-detail,
+    .desk-shift-time-row.unavailable .desk-shift-time-detail { color: #607082; }
     .desk-shift-meta { justify-self: end; }
     .desk-calendar-day .desk-shift-order { display: none; }
     .desk-shift-note { display: none; color: #607082; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -8211,6 +8255,63 @@
     .desk-insight-icon svg { width: 16px; height: 16px; }
     .desk-insight-item-main { min-width: 0; }
     .desk-insight-item p { margin-top: 3px; line-height: 1.45; color: #4a6072; }
+    .desk-insight-rank-list {
+      margin: 9px 0 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .desk-insight-rank-list li {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      border: 1px solid #e2ece7;
+      border-radius: 10px;
+      background: #fff;
+      padding: 7px 8px;
+    }
+    .desk-insight-rank-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #edf8f1;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 950;
+    }
+    .desk-insight-rank-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .desk-insight-rank-main strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .desk-insight-rank-main small {
+      color: #66798a;
+      font-size: 11px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desk-insight-rank-value {
+      color: #173042;
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
     .desk-live-feed { top: 76px; right: 18px; width: 328px; max-height: calc(100vh - 94px); padding: 18px 16px 12px; gap: 12px; border: 1px solid #d4e0da; background: #fff; box-shadow: none; backdrop-filter: none; }
     .desk-live-feed-title { font-size: 20px; letter-spacing: 0; }
     .global-sync-ring { width: 9px; height: 9px; border-width: 0; background: #10b981; }
@@ -12651,8 +12752,9 @@
       state.desk.daily.assignmentAlertContextKey = "";
       state.desk.daily.assignmentAlertHighlightedIds = {};
       var today = new Date();
-      state.desk.currentMonth = getDeskMonthKey_(today);
-      state.desk.selectedDateKey = getDeskDateKey_(today);
+      var defaultDeskReportDateKey = shiftDeskDateKey_(getDeskDateKey_(today), 1);
+      state.desk.currentMonth = defaultDeskReportDateKey.slice(0, 7);
+      state.desk.selectedDateKey = defaultDeskReportDateKey;
       state.desk.recruiting.currentMonth = getDeskMonthKey_(today);
       state.desk.recruiting.selectedDateKey = getDeskDateKey_(today);
       state.desk.daily.dateKey = getDeskDateKey_(today);
@@ -15329,8 +15431,8 @@
               (primaryItems.length ? primaryItems.map(function(item, itemIndex) {
                 var tone = getDeskShiftTone_(item);
                 return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                  '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
-                  '<span class="desk-shift-time-row"><span class="desk-time-badge-row"><span class="desk-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' + renderDeskDurationBadge_(item) + '</span><span class="desk-shift-order">' + escapeHtml(formatDeskShiftOrder_(itemIndex)) + '</span></span>' +
+                  '<span class="desk-shift-name">' + getDeskCalendarWorkerNameHtml_(item.worker) + '</span>' +
+                  renderDeskCalendarShiftTimeHtml_(item) +
                   '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
                   (item.note ? '<span class="desk-shift-note">' + escapeHtml(item.note) + '</span>' : '') +
                 '</button>';
@@ -15342,8 +15444,8 @@
                 '</button>' +
                 (showUnavailable ? unavailableItems.map(function(item) {
                   return '<button type="button" class="desk-shift-chip tone-unavailable" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                    '<span class="desk-shift-name">' + getDeskWorkerBadgeHtml_(item.worker) + '</span>' +
-                    '<span class="desk-shift-time">근무 불가</span>' +
+                    '<span class="desk-shift-name">' + getDeskCalendarWorkerNameHtml_(item.worker) + '</span>' +
+                    renderDeskCalendarShiftTimeHtml_(item) +
                     '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + (item.note ? (' <span style="display:inline-block;margin-left:6px;">' + escapeHtml(item.note) + '</span>') : '') + '</span>' +
                   '</button>';
                 }).join("") : '')
@@ -15664,6 +15766,110 @@
       return best;
     }
 
+    function getDeskWeekdayLabelFromDate_(dateKey, longLabel) {
+      var parts = String(dateKey || "").split("-");
+      if (parts.length < 3) return "";
+      var date = new Date(Number(parts[0] || 0), Number(parts[1] || 1) - 1, Number(parts[2] || 1));
+      var labels = longLabel ? ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"] : ["일", "월", "화", "수", "목", "금", "토"];
+      return labels[date.getDay()] || "";
+    }
+
+    function summarizeDeskWeeklySparseDays_(items) {
+      var monthKey = state.desk.currentMonth || "";
+      var byDate = {};
+      (items || []).forEach(function(item) {
+        if (!item || item.unavailable || item.resident || String(item.date || "").slice(0, 7) !== monthKey) return;
+        if (!byDate[item.date]) byDate[item.date] = {};
+        if (item.worker) byDate[item.date][item.worker] = true;
+      });
+      var byWeek = {};
+      Object.keys(byDate).forEach(function(dateKey) {
+        var weekIndex = getDeskWeekIndex_(dateKey, monthKey);
+        var count = Object.keys(byDate[dateKey]).length;
+        if (!weekIndex || !count) return;
+        if (!byWeek[weekIndex]) byWeek[weekIndex] = [];
+        byWeek[weekIndex].push({
+          dateKey: dateKey,
+          count: count,
+          label: Number(dateKey.slice(5, 7)) + "/" + Number(dateKey.slice(8, 10)) + "(" + getDeskWeekdayLabelFromDate_(dateKey) + ")"
+        });
+      });
+      return Object.keys(byWeek).map(function(weekKey) {
+        var list = byWeek[weekKey].sort(function(a, b) {
+          if (a.count !== b.count) return a.count - b.count;
+          return String(a.dateKey || "").localeCompare(String(b.dateKey || ""));
+        });
+        var minCount = list[0] ? list[0].count : 0;
+        return {
+          week: Number(weekKey),
+          count: minCount,
+          days: list.filter(function(item) { return item.count === minCount; }).slice(0, 3)
+        };
+      }).sort(function(a, b) { return a.week - b.week; });
+    }
+
+    function getDeskBusiestDates_(items) {
+      var byDate = {};
+      (items || []).forEach(function(item) {
+        if (!item || item.unavailable || item.resident) return;
+        if (!byDate[item.date]) byDate[item.date] = { dateKey: item.date, shiftCount: 0, hours: 0, workers: {} };
+        byDate[item.date].shiftCount += 1;
+        byDate[item.date].hours += getDeskCountedHours_(item);
+        if (item.worker) byDate[item.date].workers[item.worker] = true;
+      });
+      return Object.keys(byDate).map(function(dateKey) {
+        var row = byDate[dateKey];
+        return {
+          dateKey: dateKey,
+          title: formatDeskDateLabel_(dateKey, true),
+          value: formatDeskHours_(row.hours),
+          meta: "일정 " + row.shiftCount + "건 · 근무자 " + Object.keys(row.workers).length + "명"
+        };
+      }).sort(function(a, b) {
+        var aHours = byDate[a.dateKey].hours;
+        var bHours = byDate[b.dateKey].hours;
+        if (bHours !== aHours) return bHours - aHours;
+        return String(a.dateKey || "").localeCompare(String(b.dateKey || ""));
+      }).slice(0, 3);
+    }
+
+    function getDeskRoleMixRanking_(items) {
+      var counts = {};
+      (items || []).forEach(function(item) {
+        if (!item || item.unavailable) return;
+        var role = getDeskDisplayRole_(item) || "미분류";
+        counts[role] = (counts[role] || 0) + 1;
+      });
+      return Object.keys(counts).map(function(role) {
+        return { title: role, value: counts[role] + "건", meta: "역할 빈도" };
+      }).sort(function(a, b) {
+        return Number(String(b.value).replace(/\D/g, "") || 0) - Number(String(a.value).replace(/\D/g, "") || 0);
+      }).slice(0, 5);
+    }
+
+    function getDeskNightCloseDates_(items) {
+      var rows = {};
+      (items || []).forEach(function(item) {
+        if (!item || item.unavailable || item.resident || getDeskShiftTone_(item) !== "night") return;
+        if (!rows[item.date]) rows[item.date] = { dateKey: item.date, count: 0, workers: [] };
+        rows[item.date].count += 1;
+        if (item.worker && rows[item.date].workers.indexOf(item.worker) === -1) rows[item.date].workers.push(item.worker);
+      });
+      return Object.keys(rows).map(function(dateKey) {
+        var row = rows[dateKey];
+        return {
+          title: formatDeskDateLabel_(dateKey, true),
+          value: row.count + "건",
+          meta: row.workers.join(", ") || "근무자 미지정"
+        };
+      }).sort(function(a, b) {
+        var av = Number(String(a.value).replace(/\D/g, "") || 0);
+        var bv = Number(String(b.value).replace(/\D/g, "") || 0);
+        if (bv !== av) return bv - av;
+        return String(a.title || "").localeCompare(String(b.title || ""), "ko");
+      }).slice(0, 5);
+    }
+
     function buildDeskInsightTabsData_(items) {
       var summary = summarizeDeskMonth_(items);
       var analytics = buildDeskWorkerAnalytics_(items);
@@ -15700,6 +15906,10 @@
         }
       });
       var varianceLeader = getDeskVarianceLeader_(analytics);
+      var sparseWeeks = summarizeDeskWeeklySparseDays_(items);
+      var busiestDates = getDeskBusiestDates_(items);
+      var roleMixRanking = getDeskRoleMixRanking_(items);
+      var nightCloseDates = getDeskNightCloseDates_(items);
       var unavailableWorkers = [];
       (items || []).forEach(function(item) {
         if (item.unavailable && unavailableWorkers.indexOf(item.worker) === -1) unavailableWorkers.push(item.worker);
@@ -15719,7 +15929,14 @@
           body: formatDeskHours_(weekHoursTotal) + " · " + (leader && leader.weekly[idx] ? (leader.name + " 최다 " + formatDeskHours_(leader.weekly[idx])) : "선두 근무자 없음")
         });
       }
-      var topWorkers = workers.slice(0, 4).map(function(item, index) {
+      var workerHourRanking = workers.slice(0, 5).map(function(item, index) {
+        return {
+          title: (index + 1) + ". " + item.name,
+          value: formatDeskHours_(item.totalHours),
+          meta: (item.mainRole || "-") + " · 일정 " + item.shiftCount + "건"
+        };
+      });
+      var topWorkers = workers.slice(0, 5).map(function(item, index) {
         var peak = getDeskWorkerPeakWeek_(item);
         return {
           workerName: item.name,
@@ -15729,9 +15946,16 @@
       });
       return {
         overview: [
-          summary.busiestDayText ? {
-            title: "가장 바쁜 날짜",
-            body: summary.busiestDayText + " · 일정 " + summary.busiestDayCount + "건 · 집계 " + formatDeskHours_(busiestHours) + "입니다."
+          busiestDates.length ? {
+            title: "혼잡 날짜 TOP 3",
+            body: "일정 수보다 실제 집계 시간이 긴 날짜를 우선 표시합니다.",
+            rankList: busiestDates
+          } : null,
+          sparseWeeks.length ? {
+            title: "주차별 최소 인원 요일",
+            body: sparseWeeks.map(function(item) {
+              return item.week + "주차 " + item.days.map(function(day) { return day.label; }).join(", ") + " " + item.count + "명";
+            }).join(" · ")
           } : null,
           summary.topWorker ? {
             title: "최다 근무시간",
@@ -15743,11 +15967,16 @@
           }
         ].filter(Boolean),
         hours: [
+          workerHourRanking.length ? {
+            title: "근무시간 TOP 5",
+            body: "상주·근무 불가를 제외한 월 집계 기준입니다.",
+            rankList: workerHourRanking
+          } : null,
           {
             title: "평균 월 근무시간",
             body: workers.length ? ("집계 대상 " + workers.length + "명 평균 " + formatDeskHours_(avgHours) + "입니다.") : "집계 가능한 근무시간이 없습니다."
           }
-        ].concat(topWorkers),
+        ].filter(Boolean).concat(topWorkers),
         variance: [
           peakWeek.index ? {
             title: "주차 변동폭",
@@ -15764,14 +15993,30 @@
             body: "근무자별 주차 변동을 계산할 데이터가 충분하지 않습니다."
           }
         ],
-        weekly: weekItems.length ? weekItems : [{
+        weekly: (sparseWeeks.length ? [{
+          title: "주차별 인원 취약 요일",
+          body: "각 주차에서 실제 근무자가 가장 적은 날짜입니다.",
+          rankList: sparseWeeks.map(function(item) {
+            return {
+              title: item.week + "주차",
+              value: item.count + "명",
+              meta: item.days.map(function(day) { return day.label; }).join(", ")
+            };
+          })
+        }] : []).concat(weekItems.length ? weekItems : [{
           title: "주차별 분석",
           body: "표시할 주차별 근무시간 데이터가 없습니다."
-        }],
+        }]),
         exceptions: [
           {
             title: "야간/마감 커버",
-            body: "야간·마감 근무 " + summary.nightCount + "건 · 상주 배치일 " + summary.residentDays + "일입니다."
+            body: "야간·마감 근무 " + summary.nightCount + "건 · 상주 배치일 " + summary.residentDays + "일입니다.",
+            rankList: nightCloseDates
+          },
+          {
+            title: "역할 빈도 TOP 5",
+            body: "이번 달 등록된 근무 역할의 분포입니다.",
+            rankList: roleMixRanking
           },
           {
             title: "근무 불가 기록",
@@ -15816,6 +16061,13 @@
           '<div class="desk-insight-item-main">' +
             '<div class="desk-insight-item-top">' + workerButton + '</div>' +
             '<p>' + escapeHtml(item.body) + '</p>' +
+            (item.rankList && item.rankList.length ? '<ol class="desk-insight-rank-list">' + item.rankList.map(function(rankItem, rankIndex) {
+              return '<li>' +
+                '<span class="desk-insight-rank-num">' + escapeHtml(String(rankIndex + 1)) + '</span>' +
+                '<span class="desk-insight-rank-main"><strong>' + escapeHtml(rankItem.title || "-") + '</strong><small>' + escapeHtml(rankItem.meta || "") + '</small></span>' +
+                '<span class="desk-insight-rank-value">' + escapeHtml(rankItem.value || "") + '</span>' +
+              '</li>';
+            }).join("") + '</ol>' : '') +
             miniCalendar +
           '</div>' +
         '</article>';
@@ -16527,8 +16779,9 @@
       var monthKey = state.desk.currentMonth || getDeskMonthKey_(new Date());
       if (!state.desk.selectedDateKey || String(state.desk.selectedDateKey).slice(0, 7) !== monthKey) {
         var today = new Date();
-        state.desk.selectedDateKey = getDeskMonthKey_(today) === monthKey
-          ? getDeskDateKey_(today)
+        var tomorrowKey = shiftDeskDateKey_(getDeskDateKey_(today), 1);
+        state.desk.selectedDateKey = String(tomorrowKey).slice(0, 7) === monthKey
+          ? tomorrowKey
           : (monthKey + "-01");
       }
     }
@@ -16987,10 +17240,11 @@
       }
       var segments = buildDeskCoverageSegments_(item, dayItems);
       if (!segments.length) return "";
-      return '<div class="desk-day-report-coverage">' + segments.map(function(segment) {
-        var chipClass = segment.count === 1 ? " solo" : " multi";
-        return '<span class="desk-day-report-coverage-chip' + chipClass + '">' +
-          escapeHtml(formatDeskKoreanClockFromMinutes_(segment.start) + " - " + formatDeskKoreanClockFromMinutes_(segment.end) + " " + segment.count + "인 근무") +
+      var soloSegments = segments.filter(function(segment) { return segment.count === 1; });
+      if (!soloSegments.length) return "";
+      return '<div class="desk-day-report-coverage">' + soloSegments.map(function(segment) {
+        return '<span class="desk-day-report-coverage-chip solo">' +
+          escapeHtml(formatDeskKoreanClockFromMinutes_(segment.start) + " - " + formatDeskKoreanClockFromMinutes_(segment.end) + " 1인 근무") +
         '</span>';
       }).join("") + '</div>';
     }
@@ -18111,6 +18365,28 @@
 
     function getDeskWorkerBadgeHtml_(name) {
       return '<span class="desk-worker-badge" style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '">' + escapeHtml(name || "-") + '</span>';
+    }
+
+    function getDeskCalendarWorkerNameHtml_(name) {
+      var palette = getDeskWorkerPalette_(name);
+      return '<span class="desk-calendar-worker-name" style="' + escapeHtml('--desk-calendar-worker-fg:' + palette.fg + ';') + '">' + escapeHtml(name || "-") + '</span>';
+    }
+
+    function renderDeskCalendarShiftTimeHtml_(item) {
+      if (!item) return "";
+      if (item.unavailable) {
+        return '<span class="desk-shift-time-row unavailable"><span class="desk-shift-time-detail">근무 불가</span></span>';
+      }
+      if (item.resident) {
+        return '<span class="desk-shift-time-row resident"><span class="desk-shift-time-gauge"><span style="width:100%;"></span></span><span class="desk-shift-time-detail">근무시간 상주</span></span>';
+      }
+      var hours = getDeskShiftDurationHours_(item);
+      var ratio = hours ? Math.max(8, Math.min(100, Math.round((hours / 8.5) * 100))) : 0;
+      var label = formatDeskShiftTime_(item) + (hours ? (" · " + formatDeskHours_(hours)) : "");
+      return '<span class="desk-shift-time-row">' +
+        '<span class="desk-shift-time-gauge"><span style="width:' + ratio + '%;"></span></span>' +
+        '<span class="desk-shift-time-detail">' + escapeHtml(label || "시간 미입력") + '</span>' +
+      '</span>';
     }
 
     function getDeskShiftWorkersForDate_(dateKey) {
