@@ -8661,6 +8661,61 @@
     .desk-task-queue-card,
     .desk-report-preview-card { border-radius: 8px; }
     .desk-journal-timeline-card { display: none; }
+    .desk-journal-layout.worker-focus:not(.manager-mode):not(.overview-mode) .desk-journal-timeline-card {
+      display: flex;
+      max-height: min(620px, calc(100vh - 320px));
+      overflow: hidden;
+    }
+    .desk-journal-side .desk-journal-timeline-card {
+      min-height: 360px;
+      box-shadow: 0 12px 28px rgba(15,23,42,0.045);
+    }
+    .desk-journal-side .desk-journal-note-list {
+      min-height: 0;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .desk-journal-side .desk-journal-note-list::before {
+      display: none;
+    }
+    .desk-journal-side .desk-note-row {
+      grid-template-columns: 48px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+      min-height: 54px;
+      padding: 9px 0;
+    }
+    .desk-journal-side .desk-note-dot,
+    .desk-journal-side .desk-note-worker-inline {
+      display: none;
+    }
+    .desk-journal-side .desk-note-main {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
+    .desk-journal-side .desk-memo-type-badge {
+      justify-self: start;
+      margin-bottom: 4px;
+    }
+    .desk-journal-side .desk-note-text {
+      display: block;
+      white-space: normal;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    .desk-journal-side .desk-note-icon-actions {
+      align-self: center;
+    }
+    .desk-journal-side .desk-note-edit-input {
+      min-height: 86px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .desk-journal-side .desk-load-more-btn {
+      display: none;
+    }
     .desk-journal-report-side {
       min-width: 0;
       display: flex;
@@ -10615,7 +10670,7 @@
                       <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
                     </div>
                   </div>
-                  <div class="desk-memo-submit-hint">Enter로 저장 · Shift+Enter로 줄바꿈 · 기록은 아래 미리보기에 자동 반영됩니다.</div>
+                  <div class="desk-memo-submit-hint">Enter로 저장 · Shift+Enter로 줄바꿈 · 기록은 오른쪽 입력 기록에 바로 반영됩니다.</div>
                   <div class="desk-memo-save-status" id="deskJournalMemoSaveStatus"></div>
                 </form>
               </article>
@@ -10633,20 +10688,6 @@
                     <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
                   </article>
 
-                  <article class="desk-editor-card desk-journal-timeline-card">
-                    <div class="desk-card-title-row">
-                      <div>
-                        <div class="desk-side-title">오늘 기록 타임라인</div>
-                        <div class="desk-side-sub">선택 근무자의 입력 흐름입니다.</div>
-                      </div>
-                      <span class="desk-count-pill" id="deskJournalMemoMeta">0건</span>
-                    </div>
-                    <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
-                    <div class="desk-journal-memo-foot">
-                      <button class="desk-load-more-btn" type="button">더 불러오기 <i data-lucide="chevron-down"></i></button>
-                      <div class="desk-journal-pagination" id="deskJournalMemoPagination"></div>
-                    </div>
-                  </article>
                 </div>
 
                 <div class="desk-journal-side">
@@ -10744,6 +10785,21 @@
                         <button class="modal-action primary" id="deskJournalSaveSharedBtn" type="button">공동 업무 저장</button>
                         <button class="modal-action ghost" id="deskJournalClearSharedBtn" type="button">새 항목</button>
                       </div>
+                    </div>
+                  </article>
+
+                  <article class="desk-editor-card desk-journal-timeline-card">
+                    <div class="desk-card-title-row">
+                      <div>
+                        <div class="desk-side-title" id="deskJournalMemoPanelTitle">내 빠른 기록</div>
+                        <div class="desk-side-sub" id="deskJournalMemoPanelSub">선택 근무자가 입력한 기록을 수정하거나 삭제합니다.</div>
+                      </div>
+                      <span class="desk-count-pill" id="deskJournalMemoMeta">0건</span>
+                    </div>
+                    <div class="desk-journal-note-list" id="deskJournalMemoList"></div>
+                    <div class="desk-journal-memo-foot">
+                      <button class="desk-load-more-btn" type="button">더 불러오기 <i data-lucide="chevron-down"></i></button>
+                      <div class="desk-journal-pagination" id="deskJournalMemoPagination"></div>
                     </div>
                   </article>
 
@@ -11868,6 +11924,8 @@
     var deskJournalMemoInputEl = document.getElementById("deskJournalMemoInput");
     var deskJournalMemoSubmitBtnEl = document.getElementById("deskJournalMemoSubmitBtn");
     var deskJournalMemoSaveStatusEl = document.getElementById("deskJournalMemoSaveStatus");
+    var deskJournalMemoPanelTitleEl = document.getElementById("deskJournalMemoPanelTitle");
+    var deskJournalMemoPanelSubEl = document.getElementById("deskJournalMemoPanelSub");
     var deskJournalMemoListEl = document.getElementById("deskJournalMemoList");
     var deskJournalMemoMetaEl = document.getElementById("deskJournalMemoMeta");
     var deskJournalMemoPaginationEl = document.getElementById("deskJournalMemoPagination");
@@ -18940,6 +18998,7 @@
       if (deskJournalLayoutEl) {
         deskJournalLayoutEl.classList.toggle("worker-focus", !isRoutineManager);
         deskJournalLayoutEl.classList.toggle("manager-mode", isRoutineManager);
+        deskJournalLayoutEl.classList.toggle("overview-mode", isOverviewTab);
       }
       if (deskJournalMemoEditorCardEl) {
         deskJournalMemoEditorCardEl.style.display = (isRoutineManager || isOverviewTab) ? "none" : "";
@@ -19251,9 +19310,18 @@
     function renderDeskDailyMemoPanel_(memos) {
       if (!deskJournalMemoListEl) return;
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
+      var isWorkerView = selectedWorker !== "전체" && selectedWorker !== DESK_ROUTINE_TAB_KEY;
       var visible = (memos || []).filter(function(item) {
         return selectedWorker === "전체" || selectedWorker === DESK_ROUTINE_TAB_KEY || isSameDeskWorkerName_(item.worker, selectedWorker);
       });
+      if (deskJournalMemoPanelTitleEl) {
+        deskJournalMemoPanelTitleEl.textContent = isWorkerView ? (selectedWorker + "님의 입력 기록") : "입력 기록";
+      }
+      if (deskJournalMemoPanelSubEl) {
+        deskJournalMemoPanelSubEl.textContent = isWorkerView
+          ? "이 탭에서 남긴 빠른 기록을 바로 수정하거나 삭제합니다."
+          : "근무자 탭을 선택하면 해당 근무자의 빠른 기록이 표시됩니다.";
+      }
       var pageSize = state.desk.daily.memoPageSize || 7;
       var total = visible.length;
       var totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -19269,7 +19337,7 @@
           : "";
       }
       if (!pageItems.length) {
-        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">등록된 근무 기록이 없습니다. 입력창에서 바로 Enter로 남길 수 있습니다.</div>';
+        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
         return;
       }
       deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
