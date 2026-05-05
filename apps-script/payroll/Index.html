@@ -2050,6 +2050,31 @@
       border-color: #fed7aa;
       color: #c2410c;
     }
+    .desk-hr-form-card.collapsed #deskHrApplicantForm {
+      display: none;
+    }
+    .desk-hr-form-collapsed-note {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      border: 1px dashed #c8ddd3;
+      border-radius: 8px;
+      background: #f8fcfa;
+      padding: 14px;
+      color: #52687b;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1.55;
+    }
+    .desk-hr-form-collapsed-note i {
+      width: 18px;
+      height: 18px;
+      color: #0d684d;
+      flex: 0 0 auto;
+    }
+    .desk-hr-form-card.collapsed .desk-hr-form-collapsed-note {
+      display: flex;
+    }
     .desk-hr-form-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2162,6 +2187,23 @@
       border: 1px solid #d8e6de;
       border-radius: 8px;
       background: #fff;
+    }
+    .desk-hr-list-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0 10px;
+    }
+    .desk-hr-list-search {
+      flex: 1 1 360px;
+      min-width: min(100%, 300px);
+    }
+    .desk-hr-list-tools .desk-hr-muted {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
     }
     .desk-hr-table {
       width: 100%;
@@ -10956,6 +10998,7 @@
                   <select id="deskHrRoleFilter" class="desk-inline-select" aria-label="지원직무 필터">
                     <option value="">전체 직무</option>
                     <option value="강사">강사</option>
+                    <option value="조교 지원자">조교 지원자</option>
                     <option value="데스크 직원">데스크 직원</option>
                   </select>
                   <input id="deskHrPlatformFilter" class="desk-inline-input" type="search" placeholder="플랫폼 검색">
@@ -11056,13 +11099,17 @@
                 </div>
               </section>
 
-              <section class="desk-hr-card">
+              <section class="desk-hr-card desk-hr-form-card collapsed" id="deskHrApplicantFormCard">
                 <div class="desk-supply-card-head">
                   <div>
                     <h3 id="deskHrFormTitle">지원자 입력</h3>
                     <p>연락한 시기, 학교/전공, 출생년도/성별, 플랫폼, 과학 세부과목을 함께 기록합니다.</p>
                   </div>
                   <button class="desk-ghost-btn hidden" id="deskHrCancelEditBtn" type="button">수정 취소</button>
+                </div>
+                <div class="desk-hr-form-collapsed-note" id="deskHrFormCollapsedNote">
+                  <i data-lucide="panel-top-open"></i>
+                  <span>지원자 목록에서 수정하거나 지원자 등록을 누르면 입력 폼이 열립니다.</span>
                 </div>
                 <form id="deskHrApplicantForm">
                   <input id="deskHrApplicantId" type="hidden">
@@ -11075,6 +11122,7 @@
                       <label for="deskHrRoleType">지원직무</label>
                       <select id="deskHrRoleType" class="desk-inline-select">
                         <option value="강사">강사</option>
+                        <option value="조교 지원자">조교 지원자</option>
                         <option value="데스크 직원">데스크 직원</option>
                       </select>
                     </div>
@@ -11087,6 +11135,7 @@
                         <option value="영어"></option>
                         <option value="국어"></option>
                         <option value="사회"></option>
+                        <option value="조교"></option>
                         <option value="데스크"></option>
                       </datalist>
                     </div>
@@ -11219,6 +11268,10 @@
                     <p>필터가 적용된 지원자 목록입니다. 행의 복사 버튼은 선택 지원자 상세 보고를 바로 만듭니다.</p>
                   </div>
                   <span class="desk-count-pill" id="deskHrApplicantCount">0명</span>
+                </div>
+                <div class="desk-hr-list-tools">
+                  <input id="deskHrApplicantListSearch" class="desk-inline-input desk-hr-list-search" type="search" placeholder="지원자명, 과목, 학교, 전공, 플랫폼, 메모 검색">
+                  <span class="desk-hr-muted"><i data-lucide="search"></i>현재 필터와 함께 적용됩니다.</span>
                 </div>
                 <div class="desk-hr-table-wrap">
                   <table class="desk-hr-table">
@@ -12181,6 +12234,7 @@
           selectedDateKey: "",
           selectedApplicantId: "",
           editingApplicantId: "",
+          formExpanded: false,
           parsedApplicants: [],
           bulkReportText: "",
           statusFilter: "",
@@ -12447,6 +12501,8 @@
     var deskHrClearBulkResumeBtnEl = document.getElementById("deskHrClearBulkResumeBtn");
     var deskHrBulkStatusEl = document.getElementById("deskHrBulkStatus");
     var deskHrParsedResumePreviewEl = document.getElementById("deskHrParsedResumePreview");
+    var deskHrApplicantFormCardEl = document.getElementById("deskHrApplicantFormCard");
+    var deskHrFormCollapsedNoteEl = document.getElementById("deskHrFormCollapsedNote");
     var deskHrApplicantFormEl = document.getElementById("deskHrApplicantForm");
     var deskHrApplicantIdEl = document.getElementById("deskHrApplicantId");
     var deskHrApplicantNameEl = document.getElementById("deskHrApplicantName");
@@ -12475,6 +12531,7 @@
     var deskHrCancelEditBtnEl = document.getElementById("deskHrCancelEditBtn");
     var deskHrResetFormBtnEl = document.getElementById("deskHrResetFormBtn");
     var deskHrApplicantCountEl = document.getElementById("deskHrApplicantCount");
+    var deskHrApplicantListSearchEl = document.getElementById("deskHrApplicantListSearch");
     var deskHrApplicantTableBodyEl = document.getElementById("deskHrApplicantTableBody");
     var deskMonthInputEl = document.getElementById("deskMonthInput");
     var deskPrevMonthBtnEl = document.getElementById("deskPrevMonthBtn");
@@ -12860,6 +12917,7 @@
       state.desk.recruiting.applicants = [];
       state.desk.recruiting.editingApplicantId = "";
       state.desk.recruiting.selectedApplicantId = "";
+      state.desk.recruiting.formExpanded = false;
       state.desk.recruiting.statusFilter = "";
       state.desk.recruiting.roleFilter = "";
       state.desk.recruiting.platformFilter = "";
@@ -14094,10 +14152,26 @@
       return DESK_HR_REVIEW_DECISIONS.indexOf(decision) === -1 ? "검토중" : decision;
     }
 
+    function normalizeDeskHrRoleType_(value) {
+      var text = String(value || "").trim();
+      if (/조교|보조|TA|assistant/i.test(text)) return "조교 지원자";
+      if (/데스크|행정|상담|직원/.test(text) && !/강사/.test(text)) return "데스크 직원";
+      return text === "강사" || text === "데스크 직원" || text === "조교 지원자" ? text : "강사";
+    }
+
     function normalizeDeskRecruitingApplicant_(item, index) {
       var source = item || {};
       var now = new Date().toISOString();
+      var roleType = normalizeDeskHrRoleType_([
+        source.roleType,
+        source.jobType,
+        source.position,
+        source.subject,
+        source.jobPostTitle,
+        source.note
+      ].filter(Boolean).join(" "));
       var subject = String(source.subject || "").trim();
+      if (subject === "조교" && roleType !== "조교 지원자") roleType = "조교 지원자";
       var detail = String(source.subjectDetail || "").trim();
       if (subject !== "과학" && DESK_HR_SCIENCE_DETAILS.indexOf(detail) !== -1) {
         subject = subject || "과학";
@@ -14106,8 +14180,8 @@
       return {
         id: String(source.id || ("desk_hr_" + index + "_" + Date.now())).trim(),
         applicantName: String(source.applicantName || source.name || "").trim(),
-        roleType: String(source.roleType || "강사").trim() || "강사",
-        subject: subject || (String(source.roleType || "") === "데스크 직원" ? "데스크" : ""),
+        roleType: roleType,
+        subject: subject || (roleType === "데스크 직원" ? "데스크" : roleType === "조교 지원자" ? "조교" : ""),
         subjectDetail: detail,
         school: String(source.school || "").trim(),
         major: String(source.major || "").trim(),
@@ -14288,7 +14362,8 @@
         if (keyword) {
           var haystack = normalizeDeskSearchValue_([
             item.applicantName, item.school, item.major, item.subject, item.subjectDetail,
-            item.jobPostTitle, item.note
+            item.roleType, item.platform, item.gender, item.jobPostTitle, item.note,
+            formatDeskHrContactLogs_(item.contactLogs), formatDeskHrGuidanceTemplates_(item.guidanceTemplates)
           ].join(" "));
           if (haystack.indexOf(keyword) === -1) return false;
         }
@@ -14318,6 +14393,17 @@
       refreshLucideIcons_();
     }
 
+    function setDeskRecruitingFormExpanded_(expanded) {
+      state.desk.recruiting.formExpanded = !!expanded;
+      syncDeskRecruitingFormVisibility_();
+    }
+
+    function syncDeskRecruitingFormVisibility_() {
+      if (!deskHrApplicantFormCardEl) return;
+      var expanded = !!state.desk.recruiting.formExpanded || !!state.desk.recruiting.editingApplicantId;
+      deskHrApplicantFormCardEl.classList.toggle("collapsed", !expanded);
+    }
+
     function syncDeskRecruitingControls_() {
       var hr = state.desk.recruiting;
       if (!hr.currentMonth) hr.currentMonth = getDeskMonthKey_(new Date());
@@ -14327,7 +14413,9 @@
       if (deskHrRoleFilterEl) deskHrRoleFilterEl.value = hr.roleFilter || "";
       if (deskHrPlatformFilterEl) deskHrPlatformFilterEl.value = hr.platformFilter || "";
       if (deskHrKeywordFilterEl) deskHrKeywordFilterEl.value = hr.keywordFilter || "";
+      if (deskHrApplicantListSearchEl) deskHrApplicantListSearchEl.value = hr.keywordFilter || "";
       if (deskHrApplicantCountEl) deskHrApplicantCountEl.textContent = getDeskVisibleRecruitingApplicants_().length + "명";
+      syncDeskRecruitingFormVisibility_();
     }
 
     function renderDeskRecruitingSummary_() {
@@ -14462,7 +14550,9 @@
 
     function formatDeskHrRoleSubject_(item) {
       var parts = [item.roleType || "직무 미입력"];
-      if (item.subject) parts.push(item.subject + (item.subjectDetail ? ("-" + item.subjectDetail) : ""));
+      if (item.subject && !(item.roleType === "조교 지원자" && item.subject === "조교")) {
+        parts.push(item.subject + (item.subjectDetail ? ("-" + item.subjectDetail) : ""));
+      }
       return parts.join(" · ");
     }
 
@@ -14497,7 +14587,7 @@
       var value = String(line || "").trim();
       if (!value || /^[-*•]/.test(value)) return false;
       if (!/[가-힣]{2,}/.test(value)) return false;
-      return /(강사|데스크|직원|과학|수학|영어|국어|사회|물리|화학|생명|지구과학|통합과학)/.test(value);
+      return /(강사|조교|보조|데스크|직원|과학|수학|영어|국어|사회|물리|화학|생명|지구과학|통합과학)/.test(value);
     }
 
     function normalizeDeskHrResumeLine_(line) {
@@ -14554,8 +14644,8 @@
     function parseDeskHrHeader_(header) {
       var value = normalizeDeskHrResumeLine_(header);
       var details = ["지구과학", "통합과학", "물리", "화학", "생명"];
-      var subjects = ["과학", "수학", "영어", "국어", "사회", "데스크"];
-      var roleType = /데스크|행정|상담|직원/.test(value) && !/강사/.test(value) ? "데스크 직원" : "강사";
+      var subjects = ["과학", "수학", "영어", "국어", "사회", "조교", "데스크"];
+      var roleType = normalizeDeskHrRoleType_(value);
       var subjectDetail = "";
       details.some(function(detail) {
         if (value.indexOf(detail) !== -1) {
@@ -14574,7 +14664,8 @@
       });
       if (subjectDetail) subject = "과학";
       if (roleType === "데스크 직원") subject = subject === "데스크" || !subject ? "데스크" : subject;
-      var ignore = subjects.concat(details).concat(["강사", "지원", "지원자", "데스크", "직원", "파트", "채용"]);
+      if (roleType === "조교 지원자") subject = subject === "조교" || !subject ? "조교" : subject;
+      var ignore = subjects.concat(details).concat(["강사", "조교", "보조", "지원", "지원자", "데스크", "직원", "파트", "채용"]);
       var applicantName = "";
       value.split(/\s+/).some(function(token) {
         var safeToken = token.replace(/[^\u3131-\u318E\uAC00-\uD7A3]/g, "");
@@ -14587,7 +14678,7 @@
       return {
         applicantName: applicantName,
         roleType: roleType,
-        subject: subject || (roleType === "데스크 직원" ? "데스크" : ""),
+        subject: subject || (roleType === "데스크 직원" ? "데스크" : roleType === "조교 지원자" ? "조교" : ""),
         subjectDetail: subjectDetail
       };
     }
@@ -14731,6 +14822,7 @@
       if (!item) return;
       state.desk.recruiting.editingApplicantId = item.id || "";
       state.desk.recruiting.selectedApplicantId = item.id || "";
+      state.desk.recruiting.formExpanded = true;
       if (deskHrApplicantIdEl) deskHrApplicantIdEl.value = item.id || "";
       if (deskHrApplicantNameEl) deskHrApplicantNameEl.value = item.applicantName || "";
       if (deskHrRoleTypeEl) deskHrRoleTypeEl.value = item.roleType || "강사";
@@ -14756,6 +14848,7 @@
       if (deskHrNoteEl) deskHrNoteEl.value = item.note || "";
       if (deskHrFormTitleEl) deskHrFormTitleEl.textContent = state.desk.recruiting.applicants.some(function(row) { return row.id === item.id; }) ? "지원자 수정" : "지원자 보완 입력";
       if (deskHrCancelEditBtnEl) deskHrCancelEditBtnEl.classList.remove("hidden");
+      syncDeskRecruitingFormVisibility_();
       refreshDeskRecruitingReportPreview_();
     }
 
@@ -14860,6 +14953,7 @@
       if (!item) return;
       state.desk.recruiting.editingApplicantId = item.id;
       state.desk.recruiting.selectedApplicantId = item.id;
+      state.desk.recruiting.formExpanded = true;
       if (deskHrApplicantIdEl) deskHrApplicantIdEl.value = item.id;
       if (deskHrApplicantNameEl) deskHrApplicantNameEl.value = item.applicantName || "";
       if (deskHrRoleTypeEl) deskHrRoleTypeEl.value = item.roleType || "강사";
@@ -14885,11 +14979,13 @@
       if (deskHrNoteEl) deskHrNoteEl.value = item.note || "";
       if (deskHrFormTitleEl) deskHrFormTitleEl.textContent = "지원자 수정";
       if (deskHrCancelEditBtnEl) deskHrCancelEditBtnEl.classList.remove("hidden");
+      syncDeskRecruitingFormVisibility_();
       refreshDeskRecruitingReportPreview_();
     }
 
     function resetDeskRecruitingForm_() {
       state.desk.recruiting.editingApplicantId = "";
+      state.desk.recruiting.formExpanded = false;
       if (deskHrApplicantFormEl) deskHrApplicantFormEl.reset();
       if (deskHrApplicantIdEl) deskHrApplicantIdEl.value = "";
       if (deskHrRoleTypeEl) deskHrRoleTypeEl.value = "강사";
@@ -14901,6 +14997,7 @@
       if (deskHrSubjectDetailEl) deskHrSubjectDetailEl.value = "";
       if (deskHrFormTitleEl) deskHrFormTitleEl.textContent = "지원자 입력";
       if (deskHrCancelEditBtnEl) deskHrCancelEditBtnEl.classList.add("hidden");
+      syncDeskRecruitingFormVisibility_();
     }
 
     function deleteDeskRecruitingApplicant_(id) {
@@ -21555,6 +21652,12 @@
           renderDeskRecruiting_();
         });
       }
+      if (deskHrApplicantListSearchEl) {
+        deskHrApplicantListSearchEl.addEventListener("input", function() {
+          state.desk.recruiting.keywordFilter = String(deskHrApplicantListSearchEl.value || "");
+          renderDeskRecruiting_();
+        });
+      }
       if (deskHrCalendarGridEl) {
         deskHrCalendarGridEl.addEventListener("click", function(event) {
           var btn = event.target.closest("[data-desk-hr-date]");
@@ -21584,6 +21687,7 @@
       if (deskHrNewApplicantBtnEl) {
         deskHrNewApplicantBtnEl.addEventListener("click", function() {
           resetDeskRecruitingForm_();
+          setDeskRecruitingFormExpanded_(true);
           if (deskHrInterviewDateEl) deskHrInterviewDateEl.value = state.desk.recruiting.selectedDateKey || getDeskDateKey_(new Date());
           if (deskHrApplicantNameEl) deskHrApplicantNameEl.focus();
         });
