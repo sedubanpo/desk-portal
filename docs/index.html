@@ -18411,7 +18411,15 @@
     }
 
     function compareDeskDailyMemo_(a, b) {
-      return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+      var left = getDeskMemoSortStamp_(a);
+      var right = getDeskMemoSortStamp_(b);
+      if (left !== right) return left.localeCompare(right);
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    }
+
+    function getDeskMemoSortStamp_(memo) {
+      var display = getDeskMemoDisplayParts_(memo);
+      return String((display && display.createdAt) || (memo && memo.createdAt) || (memo && memo.updatedAt) || "");
     }
 
     function getDeskRoutineTemplates_() {
@@ -19220,7 +19228,10 @@
       if (!safeSourceDateKey || !safeTargetDateKey) return;
       var sourceMonthKey = safeSourceDateKey.slice(0, 7);
       var targetMonthKey = safeTargetDateKey.slice(0, 7);
-      ensureDeskMonthLoaded_(sourceMonthKey).then(function() {
+      var monthLoads = sourceMonthKey === targetMonthKey
+        ? [ensureDeskMonthLoaded_(sourceMonthKey, true)]
+        : [ensureDeskMonthLoaded_(sourceMonthKey, true), ensureDeskMonthLoaded_(targetMonthKey, true)];
+      Promise.all(monthLoads).then(function() {
         var sourceItems = state.desk.scheduleItems.filter(function(item) {
           return item.date === safeSourceDateKey;
         }).sort(compareDeskShift_);
@@ -19232,10 +19243,17 @@
           return item.date === safeTargetDateKey;
         });
         var pendingEntries = sourceItems.map(function(item) {
-          return normalizeDeskShift_(Object.assign({}, item, {
+          return normalizeDeskShift_({
             id: buildDeskShiftId_("desk", Date.now(), Math.random().toString(36).slice(2), item.worker),
-            date: safeTargetDateKey
-          }));
+            date: safeTargetDateKey,
+            worker: item.worker,
+            role: item.role,
+            start: item.start,
+            end: item.end,
+            resident: item.resident,
+            unavailable: item.unavailable,
+            note: item.note
+          });
         }).filter(function(item) {
           return !existingTargetItems.some(function(existing) {
             return isSameDeskShiftSignature_(existing, item);
@@ -19266,6 +19284,7 @@
           Array.prototype.push.apply(merged, savedEntries);
           mergeDeskMonthItems_(targetMonthKey, merged);
           state.desk.loadedMonths[targetMonthKey] = true;
+          state.desk.currentMonth = targetMonthKey;
           state.desk.selectedDateKey = safeTargetDateKey;
           renderDeskMonthlySchedule_();
         }).catch(function(err) {
@@ -20985,9 +21004,7 @@
       var reportTasks = workerTasks.filter(function(item) { return !isDeskSharedTask_(item); });
       var completed = reportTasks.filter(function(item) { return item.completed; });
       var pending = reportTasks.filter(function(item) { return !item.completed; });
-      var timeline = workerMemos.slice().sort(function(a, b) {
-        return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
-      });
+      var timeline = workerMemos.slice().sort(compareDeskDailyMemo_);
       deskJournalReportPreviewEl.innerHTML = buildDeskDailyReportHtml_(dateKey, worker, workerShifts, workerTasks, completed, pending, timeline);
     }
 
@@ -21064,7 +21081,7 @@
       var memos = getDeskDailyJournalMemos_(dateKey)
         .filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); })
         .slice()
-        .sort(function(a, b) { return String(a.createdAt || "").localeCompare(String(b.createdAt || "")); });
+        .sort(compareDeskDailyMemo_);
       var shifts = state.desk.scheduleItems
         .filter(function(item) { return item.date === dateKey && isSameDeskWorkerName_(item.worker, worker) && !item.unavailable; })
         .sort(compareDeskShift_);
