@@ -2849,6 +2849,22 @@
       color: #0d684d;
       background: #f4fbf7;
     }
+    .desk-day-delete-btn {
+      min-height: 34px;
+      border: 1px dashed #f2c7c7;
+      border-radius: 12px;
+      background: #fff8f8;
+      color: #b42318;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    }
+    .desk-day-delete-btn:hover {
+      border-color: #dc2626;
+      color: #991b1b;
+      background: #fff1f1;
+    }
     .desk-shift-chip {
       border: 1px solid var(--desk-card-border, transparent);
       border-left: 5px solid var(--desk-card-accent, var(--desk-card-border, transparent));
@@ -7529,6 +7545,7 @@
     .desk-day-count,
     .desk-day-empty-slot,
     .desk-day-copy-btn,
+    .desk-day-delete-btn,
     .desk-side-card,
     .desk-day-shift-item,
     .desk-insight-item,
@@ -7920,6 +7937,8 @@
     .desk-day-empty-slot svg { width: 14px; height: 14px; }
     .desk-day-copy-btn { min-height: 30px; background: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
     .desk-day-copy-btn svg { width: 13px; height: 13px; }
+    .desk-day-delete-btn { min-height: 30px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .desk-day-delete-btn svg { width: 13px; height: 13px; }
     .desk-calendar-side { grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr); gap: 10px; }
     .desk-side-card { padding: 12px; gap: 10px; background: #fff; }
     .desk-day-shift-item,
@@ -16184,6 +16203,7 @@
               '<div class="desk-day-actions">' +
                 '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
                 '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '"><i data-lucide="copy"></i><span>지난주 같은 요일 복사</span></button>' +
+                (dayItems.length ? '<button type="button" class="desk-day-delete-btn" data-desk-copy-hide="true" data-desk-delete-date="' + escapeHtml(cell.date) + '"><i data-lucide="trash-2"></i><span>이 날짜 근무자 모두 삭제</span></button>' : '') +
               '</div>' +
             '</div>' +
           '</article>');
@@ -19239,9 +19259,6 @@
           alert(emptyMessage || "복사할 근무표가 없습니다.");
           return;
         }
-        var existingTargetItems = state.desk.scheduleItems.filter(function(item) {
-          return item.date === safeTargetDateKey;
-        });
         var pendingEntries = sourceItems.map(function(item) {
           return normalizeDeskShift_({
             id: buildDeskShiftId_("desk", Date.now(), Math.random().toString(36).slice(2), item.worker),
@@ -19254,18 +19271,31 @@
             unavailable: item.unavailable,
             note: item.note
           });
-        }).filter(function(item) {
-          return !existingTargetItems.some(function(existing) {
-            return isSameDeskShiftSignature_(existing, item);
-          });
         });
-        if (!pendingEntries.length) {
-          alert("이미 같은 구성의 근무표가 있어 새로 복사할 일정이 없습니다.");
-          return;
-        }
+        var replacingWorkerKeys = {};
+        pendingEntries.forEach(function(item) {
+          var key = normalizeDeskWorkerKey_(item.worker);
+          if (key) replacingWorkerKeys[key] = true;
+        });
+        var targetReplaceItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === safeTargetDateKey && !!replacingWorkerKeys[normalizeDeskWorkerKey_(item.worker)];
+        });
+        var deleteIds = targetReplaceItems.map(function(item) { return item.id; }).filter(Boolean);
         setLoading(true, loadingMessage || "근무표를 복사하는 중입니다...");
         var savedEntries = [];
         var chain = Promise.resolve();
+        deleteIds.forEach(function(deleteId) {
+          chain = chain.then(function() {
+            return runServer("deleteDeskScheduleEntry", {
+              monthKey: targetMonthKey,
+              id: deleteId
+            }).then(function(res) {
+              if (!res || !res.success) {
+                throw new Error(res && res.message ? res.message : "기존 근무표 삭제 실패");
+              }
+            });
+          });
+        });
         pendingEntries.forEach(function(entry) {
           chain = chain.then(function() {
             return runServer("saveDeskScheduleEntry", {
@@ -19280,7 +19310,9 @@
           });
         });
         chain.then(function() {
-          var merged = getDeskMonthItems_(targetMonthKey).slice();
+          var merged = getDeskMonthItems_(targetMonthKey).filter(function(item) {
+            return deleteIds.indexOf(item.id) === -1;
+          });
           Array.prototype.push.apply(merged, savedEntries);
           mergeDeskMonthItems_(targetMonthKey, merged);
           state.desk.loadedMonths[targetMonthKey] = true;
@@ -19289,6 +19321,54 @@
           renderDeskMonthlySchedule_();
         }).catch(function(err) {
           alert((errorPrefix || "근무표 복사 오류") + ": " + (err.message || String(err)));
+        }).finally(function() {
+          setLoading(false);
+        });
+      });
+    }
+
+    function deleteDeskDateSchedule_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return;
+      var monthKey = safeDateKey.slice(0, 7);
+      ensureDeskMonthLoaded_(monthKey, true).then(function() {
+        var dayItems = state.desk.scheduleItems.filter(function(item) {
+          return item.date === safeDateKey;
+        });
+        if (!dayItems.length) {
+          alert("삭제할 근무 일정이 없습니다.");
+          return;
+        }
+        if (!confirm(formatDeskDateLabel_(safeDateKey, true) + " 근무자 " + dayItems.length + "건을 모두 삭제할까요?")) {
+          return;
+        }
+        setLoading(true, "선택 날짜 근무자를 모두 삭제하는 중입니다...");
+        var chain = Promise.resolve();
+        dayItems.forEach(function(item) {
+          chain = chain.then(function() {
+            return runServer("deleteDeskScheduleEntry", {
+              monthKey: monthKey,
+              id: item.id
+            }).then(function(res) {
+              if (!res || !res.success) {
+                throw new Error(res && res.message ? res.message : "근무표 삭제 실패");
+              }
+            });
+          });
+        });
+        chain.then(function() {
+          mergeDeskMonthItems_(monthKey, getDeskMonthItems_(monthKey).filter(function(item) {
+            return item.date !== safeDateKey;
+          }));
+          state.desk.loadedMonths[monthKey] = true;
+          state.desk.currentMonth = monthKey;
+          state.desk.selectedDateKey = safeDateKey;
+          if (dayItems.some(function(item) { return item.id === state.desk.selectedShiftId; })) {
+            state.desk.selectedShiftId = "";
+          }
+          renderDeskMonthlySchedule_();
+        }).catch(function(err) {
+          alert("선택 날짜 근무표 삭제 오류: " + (err.message || String(err)));
         }).finally(function() {
           setLoading(false);
         });
@@ -22357,6 +22437,12 @@
           if (copyPrevWeekBtn) {
             event.stopPropagation();
             copyDeskPreviousWeekSchedule_(copyPrevWeekBtn.getAttribute("data-desk-copy-prev-week") || "");
+            return;
+          }
+          var deleteDateBtn = event.target.closest("[data-desk-delete-date]");
+          if (deleteDateBtn) {
+            event.stopPropagation();
+            deleteDeskDateSchedule_(deleteDateBtn.getAttribute("data-desk-delete-date") || "");
             return;
           }
           var addDateBtn = event.target.closest("[data-desk-add-date]");
