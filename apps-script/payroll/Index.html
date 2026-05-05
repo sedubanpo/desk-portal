@@ -2182,6 +2182,56 @@
       line-height: 1.6;
       resize: vertical;
     }
+    .desk-hr-guidance-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .desk-hr-guidance-picker select {
+      flex: 1 1 240px;
+    }
+    .desk-hr-guidance-form {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr 0.7fr;
+      gap: 10px;
+      align-items: end;
+    }
+    .desk-hr-guidance-form .field.message {
+      grid-column: 1 / -1;
+    }
+    .desk-hr-guidance-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .desk-hr-guidance-item {
+      border: 1px solid #d8e6de;
+      border-radius: 8px;
+      background: #fbfefc;
+      padding: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .desk-hr-guidance-item strong {
+      color: #173042;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .desk-hr-guidance-message {
+      color: #45586a;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
     .desk-hr-table-wrap {
       overflow: auto;
       border: 1px solid #d8e6de;
@@ -11063,6 +11113,12 @@
                         <button class="desk-ghost-btn" id="deskHrCopyGuidanceBtn" type="button"><i data-lucide="message-square-text"></i>안내 멘트</button>
                       </div>
                     </div>
+                    <div class="desk-hr-guidance-picker">
+                      <select id="deskHrGuidanceTemplateSelect" class="desk-inline-select" aria-label="안내 멘트 템플릿 선택">
+                        <option value="">지원자에 맞는 안내 멘트 자동 선택</option>
+                      </select>
+                      <span class="desk-hr-muted">과목/직무/채용 단계 기준으로 추천됩니다.</span>
+                    </div>
                     <textarea id="deskHrReportPreview" class="desk-hr-report-box" readonly></textarea>
                     <div class="desk-supply-copy-status" id="deskHrCopyStatus"></div>
                   </article>
@@ -11097,6 +11153,65 @@
                     </div>
                   </aside>
                 </div>
+              </section>
+
+              <section class="desk-hr-card">
+                <div class="desk-supply-card-head">
+                  <div>
+                    <h3>면접자 안내 멘트</h3>
+                    <p>강사/조교, 과목, 채용 단계별로 자주 보내는 안내 문안을 저장합니다.</p>
+                  </div>
+                  <span class="desk-count-pill" id="deskHrGuidanceTemplateCount">0개</span>
+                </div>
+                <div class="desk-hr-guidance-form">
+                  <div class="field">
+                    <label for="deskHrGuidanceTitle">제목</label>
+                    <input id="deskHrGuidanceTitle" class="desk-inline-input" type="text" placeholder="예: 수학 강사 면접 조율">
+                  </div>
+                  <div class="field">
+                    <label for="deskHrGuidanceRole">직무</label>
+                    <select id="deskHrGuidanceRole" class="desk-inline-select">
+                      <option value="">전체 직무</option>
+                      <option value="강사">강사</option>
+                      <option value="조교 지원자">조교 지원자</option>
+                      <option value="데스크 직원">데스크 직원</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="deskHrGuidanceSubject">과목</label>
+                    <input id="deskHrGuidanceSubject" class="desk-inline-input" type="text" list="deskHrSubjectList" placeholder="예: 수학">
+                  </div>
+                  <div class="field">
+                    <label for="deskHrGuidanceStage">단계</label>
+                    <select id="deskHrGuidanceStage" class="desk-inline-select">
+                      <option value="">전체 단계</option>
+                      <option value="이력서 검토">이력서 검토</option>
+                      <option value="추천">추천</option>
+                      <option value="면접 조율">면접 조율</option>
+                      <option value="면접 진행">면접 진행</option>
+                      <option value="합격 안내">합격 안내</option>
+                      <option value="불합격 안내">불합격 안내</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="deskHrGuidanceChannel">채널</label>
+                    <select id="deskHrGuidanceChannel" class="desk-inline-select">
+                      <option value="문자">문자</option>
+                      <option value="전화">전화</option>
+                      <option value="카카오톡">카카오톡</option>
+                      <option value="이메일">이메일</option>
+                    </select>
+                  </div>
+                  <div class="field message">
+                    <label for="deskHrGuidanceMessage">안내 문안</label>
+                    <textarea id="deskHrGuidanceMessage" class="desk-inline-textarea" placeholder="예: 안녕하세요. S-LMS 채용 담당자입니다. {지원자}님 {직무} 지원 건으로 연락드립니다. 면접 가능 시간을 확인 부탁드립니다."></textarea>
+                  </div>
+                </div>
+                <div class="desk-form-actions-row" style="margin-top:12px;">
+                  <button class="desk-ghost-btn" id="deskHrGuidanceResetBtn" type="button">새 멘트</button>
+                  <button class="desk-primary-btn" id="deskHrGuidanceSaveBtn" type="button"><i data-lucide="save"></i>멘트 저장</button>
+                </div>
+                <div class="desk-hr-guidance-list" id="deskHrGuidanceTemplateList"></div>
               </section>
 
               <section class="desk-hr-card desk-hr-form-card collapsed" id="deskHrApplicantFormCard">
@@ -12102,6 +12217,7 @@
     var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_dismissed_v1";
     var DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY = "desk_portal_task_assign_alert_active_v1";
     var DESK_MEMO_TEMPLATES_STORAGE_KEY = "desk_portal_daily_memo_templates_v1";
+    var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_DAILY_CARRYOVER_SCAN_DAYS = 60;
@@ -12235,6 +12351,9 @@
           selectedApplicantId: "",
           editingApplicantId: "",
           formExpanded: false,
+          guidanceTemplates: [],
+          editingGuidanceTemplateId: "",
+          selectedGuidanceTemplateId: "",
           parsedApplicants: [],
           bulkReportText: "",
           statusFilter: "",
@@ -12492,6 +12611,7 @@
     var deskHrCopyApplicantReportBtnEl = document.getElementById("deskHrCopyApplicantReportBtn");
     var deskHrCopyRecommendationReportBtnEl = document.getElementById("deskHrCopyRecommendationReportBtn");
     var deskHrCopyGuidanceBtnEl = document.getElementById("deskHrCopyGuidanceBtn");
+    var deskHrGuidanceTemplateSelectEl = document.getElementById("deskHrGuidanceTemplateSelect");
     var deskHrCopyStatusEl = document.getElementById("deskHrCopyStatus");
     var deskHrNewApplicantBtnEl = document.getElementById("deskHrNewApplicantBtn");
     var deskHrBulkResumeInputEl = document.getElementById("deskHrBulkResumeInput");
@@ -12501,6 +12621,16 @@
     var deskHrClearBulkResumeBtnEl = document.getElementById("deskHrClearBulkResumeBtn");
     var deskHrBulkStatusEl = document.getElementById("deskHrBulkStatus");
     var deskHrParsedResumePreviewEl = document.getElementById("deskHrParsedResumePreview");
+    var deskHrGuidanceTemplateCountEl = document.getElementById("deskHrGuidanceTemplateCount");
+    var deskHrGuidanceTitleEl = document.getElementById("deskHrGuidanceTitle");
+    var deskHrGuidanceRoleEl = document.getElementById("deskHrGuidanceRole");
+    var deskHrGuidanceSubjectEl = document.getElementById("deskHrGuidanceSubject");
+    var deskHrGuidanceStageEl = document.getElementById("deskHrGuidanceStage");
+    var deskHrGuidanceChannelEl = document.getElementById("deskHrGuidanceChannel");
+    var deskHrGuidanceMessageEl = document.getElementById("deskHrGuidanceMessage");
+    var deskHrGuidanceResetBtnEl = document.getElementById("deskHrGuidanceResetBtn");
+    var deskHrGuidanceSaveBtnEl = document.getElementById("deskHrGuidanceSaveBtn");
+    var deskHrGuidanceTemplateListEl = document.getElementById("deskHrGuidanceTemplateList");
     var deskHrApplicantFormCardEl = document.getElementById("deskHrApplicantFormCard");
     var deskHrFormCollapsedNoteEl = document.getElementById("deskHrFormCollapsedNote");
     var deskHrApplicantFormEl = document.getElementById("deskHrApplicantForm");
@@ -12918,6 +13048,9 @@
       state.desk.recruiting.editingApplicantId = "";
       state.desk.recruiting.selectedApplicantId = "";
       state.desk.recruiting.formExpanded = false;
+      state.desk.recruiting.guidanceTemplates = loadDeskHrGuidanceTemplates_();
+      state.desk.recruiting.editingGuidanceTemplateId = "";
+      state.desk.recruiting.selectedGuidanceTemplateId = "";
       state.desk.recruiting.statusFilter = "";
       state.desk.recruiting.roleFilter = "";
       state.desk.recruiting.platformFilter = "";
@@ -14159,6 +14292,11 @@
       return text === "강사" || text === "데스크 직원" || text === "조교 지원자" ? text : "강사";
     }
 
+    function normalizeDeskHrTemplateRole_(value) {
+      var text = String(value || "").trim();
+      return text ? normalizeDeskHrRoleType_(text) : "";
+    }
+
     function normalizeDeskRecruitingApplicant_(item, index) {
       var source = item || {};
       var now = new Date().toISOString();
@@ -14243,7 +14381,9 @@
           return {
             id: String(item && item.id || ("template_" + index)).trim(),
             title: String(item && item.title || "").trim() || "안내 멘트",
-            stage: normalizeDeskHrStatus_(item && item.stage),
+            roleType: normalizeDeskHrTemplateRole_(item && (item.roleType || item.role)),
+            subject: String(item && item.subject || "").trim(),
+            stage: item && item.stage ? normalizeDeskHrStatus_(item.stage) : "",
             channel: String(item && item.channel || "문자").trim() || "문자",
             message: String(item && item.message || "").trim()
           };
@@ -14265,6 +14405,8 @@
         return {
           id: "template_" + index,
           title: title,
+          roleType: "",
+          subject: "",
           stage: normalizeDeskHrStatus_(title),
           channel: channel,
           message: message
@@ -14278,6 +14420,65 @@
       return normalizeDeskHrGuidanceTemplates_(templates).map(function(item) {
         return [item.title, item.channel, item.message].filter(Boolean).join(" | ");
       }).join("\n");
+    }
+
+    function getDefaultDeskHrGuidanceTemplates_() {
+      return [
+        {
+          id: "default_teacher_interview",
+          title: "강사 면접 조율",
+          roleType: "강사",
+          subject: "",
+          stage: "면접 조율",
+          channel: "문자",
+          message: "안녕하세요. S-LMS 채용 담당자입니다. {지원자}님 {직무} 지원 건으로 연락드립니다. 면접 가능하신 시간을 확인 부탁드립니다."
+        },
+        {
+          id: "default_assistant_interview",
+          title: "조교 면접 조율",
+          roleType: "조교 지원자",
+          subject: "",
+          stage: "면접 조율",
+          channel: "문자",
+          message: "안녕하세요. S-LMS 채용 담당자입니다. {지원자}님 조교 지원 건으로 연락드립니다. 면접 가능 시간과 근무 가능 요일을 회신 부탁드립니다."
+        }
+      ].map(normalizeDeskHrGuidanceTemplate_);
+    }
+
+    function normalizeDeskHrGuidanceTemplate_(item, index) {
+      var source = item || {};
+      var now = new Date().toISOString();
+      return {
+        id: String(source.id || ("hr_guidance_" + index + "_" + Date.now())).trim(),
+        title: String(source.title || "").trim() || "안내 멘트",
+        roleType: normalizeDeskHrTemplateRole_(source.roleType || source.role),
+        subject: String(source.subject || "").trim(),
+        stage: source.stage ? normalizeDeskHrStatus_(source.stage) : "",
+        channel: String(source.channel || "문자").trim() || "문자",
+        message: String(source.message || "").trim(),
+        createdAt: String(source.createdAt || now).trim(),
+        updatedAt: String(source.updatedAt || source.createdAt || now).trim()
+      };
+    }
+
+    function loadDeskHrGuidanceTemplates_() {
+      try {
+        var saved = localStorage.getItem(DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY);
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed.map(normalizeDeskHrGuidanceTemplate_).filter(function(item) { return item.message; });
+        }
+      } catch (err) {}
+      return getDefaultDeskHrGuidanceTemplates_();
+    }
+
+    function persistDeskHrGuidanceTemplates_() {
+      state.desk.recruiting.guidanceTemplates = (state.desk.recruiting.guidanceTemplates || [])
+        .map(normalizeDeskHrGuidanceTemplate_)
+        .filter(function(item) { return item.message; });
+      try {
+        localStorage.setItem(DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY, JSON.stringify(state.desk.recruiting.guidanceTemplates));
+      } catch (err) {}
     }
 
     function applyDeskRecruitingApplicants_(snapshot) {
@@ -14388,6 +14589,7 @@
       renderDeskRecruitingCalendar_();
       renderDeskRecruitingSelectedDate_();
       renderDeskRecruitingTable_();
+      renderDeskHrGuidanceTemplates_();
       refreshDeskRecruitingReportPreview_();
       if (!state.desk.recruiting.loaded) ensureDeskRecruitingLoaded_(false);
       refreshLucideIcons_();
@@ -14416,6 +14618,156 @@
       if (deskHrApplicantListSearchEl) deskHrApplicantListSearchEl.value = hr.keywordFilter || "";
       if (deskHrApplicantCountEl) deskHrApplicantCountEl.textContent = getDeskVisibleRecruitingApplicants_().length + "명";
       syncDeskRecruitingFormVisibility_();
+    }
+
+    function getDeskHrTemplateMetaText_(template) {
+      return [
+        template.roleType || "전체 직무",
+        template.subject || "전체 과목",
+        template.stage || "전체 단계",
+        template.channel || "문자"
+      ].filter(Boolean).join(" · ");
+    }
+
+    function scoreDeskHrGuidanceTemplate_(template, item) {
+      if (!template || !item) return 0;
+      var score = 0;
+      if (template.roleType) {
+        if (template.roleType !== item.roleType) return -1;
+        score += 16;
+      }
+      if (template.subject) {
+        if (template.subject !== item.subject && template.subject !== item.subjectDetail) return -1;
+        score += 12;
+      }
+      if (template.stage) {
+        if (template.stage !== item.status) return -1;
+        score += 8;
+      }
+      return score + 1;
+    }
+
+    function getDeskHrGuidanceTemplatesForApplicant_(item) {
+      var globalTemplates = (state.desk.recruiting.guidanceTemplates || []).map(function(template) {
+        return Object.assign({ source: "global" }, normalizeDeskHrGuidanceTemplate_(template, 0));
+      });
+      var applicantTemplates = normalizeDeskHrGuidanceTemplates_(item && item.guidanceTemplates).map(function(template, index) {
+        return Object.assign({ source: "applicant" }, normalizeDeskHrGuidanceTemplate_(Object.assign({}, template, {
+          id: "applicant_template_" + index
+        }), index));
+      });
+      return globalTemplates.concat(applicantTemplates).map(function(template) {
+        return Object.assign({}, template, { matchScore: scoreDeskHrGuidanceTemplate_(template, item) });
+      }).filter(function(template) {
+        return template.source === "applicant" || template.matchScore >= 0;
+      }).sort(function(a, b) {
+        return (b.matchScore || 0) - (a.matchScore || 0) || String(a.title || "").localeCompare(String(b.title || ""), "ko");
+      });
+    }
+
+    function renderDeskHrGuidanceTemplateSelect_() {
+      if (!deskHrGuidanceTemplateSelectEl) return;
+      var item = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
+      var templates = item ? getDeskHrGuidanceTemplatesForApplicant_(item) : (state.desk.recruiting.guidanceTemplates || []);
+      var options = ['<option value="">지원자에 맞는 안내 멘트 자동 선택</option>'];
+      templates.forEach(function(template) {
+        options.push('<option value="' + escapeHtml(template.id) + '">' +
+          escapeHtml((template.title || "안내 멘트") + " · " + getDeskHrTemplateMetaText_(template)) +
+        '</option>');
+      });
+      deskHrGuidanceTemplateSelectEl.innerHTML = options.join("");
+      var selectedId = state.desk.recruiting.selectedGuidanceTemplateId || "";
+      deskHrGuidanceTemplateSelectEl.value = templates.some(function(template) { return template.id === selectedId; }) ? selectedId : "";
+    }
+
+    function renderDeskHrGuidanceTemplates_() {
+      var templates = (state.desk.recruiting.guidanceTemplates || []).map(normalizeDeskHrGuidanceTemplate_);
+      if (deskHrGuidanceTemplateCountEl) deskHrGuidanceTemplateCountEl.textContent = templates.length + "개";
+      renderDeskHrGuidanceTemplateSelect_();
+      if (!deskHrGuidanceTemplateListEl) return;
+      if (!templates.length) {
+        deskHrGuidanceTemplateListEl.innerHTML = '<div class="desk-empty">저장된 안내 멘트가 없습니다.</div>';
+        return;
+      }
+      deskHrGuidanceTemplateListEl.innerHTML = templates.map(function(template) {
+        return '<article class="desk-hr-guidance-item">' +
+          '<div><strong>' + escapeHtml(template.title || "안내 멘트") + '</strong>' +
+          '<div class="desk-hr-muted">' + escapeHtml(getDeskHrTemplateMetaText_(template)) + '</div></div>' +
+          '<div class="desk-hr-guidance-message">' + escapeHtml(template.message || "") + '</div>' +
+          '<div class="desk-hr-table-actions">' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-guidance-copy-template="' + escapeHtml(template.id) + '">선택 지원자에게 복사</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-guidance-edit-template="' + escapeHtml(template.id) + '">수정</button>' +
+            '<button class="desk-ghost-btn" type="button" data-desk-hr-guidance-delete-template="' + escapeHtml(template.id) + '">삭제</button>' +
+          '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function resetDeskHrGuidanceTemplateForm_() {
+      state.desk.recruiting.editingGuidanceTemplateId = "";
+      if (deskHrGuidanceTitleEl) deskHrGuidanceTitleEl.value = "";
+      if (deskHrGuidanceRoleEl) deskHrGuidanceRoleEl.value = "";
+      if (deskHrGuidanceSubjectEl) deskHrGuidanceSubjectEl.value = "";
+      if (deskHrGuidanceStageEl) deskHrGuidanceStageEl.value = "";
+      if (deskHrGuidanceChannelEl) deskHrGuidanceChannelEl.value = "문자";
+      if (deskHrGuidanceMessageEl) deskHrGuidanceMessageEl.value = "";
+    }
+
+    function collectDeskHrGuidanceTemplateDraft_() {
+      var id = state.desk.recruiting.editingGuidanceTemplateId || "";
+      var existing = (state.desk.recruiting.guidanceTemplates || []).filter(function(item) { return item.id === id; })[0] || {};
+      var now = new Date().toISOString();
+      return normalizeDeskHrGuidanceTemplate_(Object.assign({}, existing, {
+        id: id || buildDeskShiftId_("hr_guidance", Date.now(), Math.random().toString(36).slice(2)),
+        title: deskHrGuidanceTitleEl && deskHrGuidanceTitleEl.value,
+        roleType: deskHrGuidanceRoleEl && deskHrGuidanceRoleEl.value,
+        subject: deskHrGuidanceSubjectEl && deskHrGuidanceSubjectEl.value,
+        stage: deskHrGuidanceStageEl && deskHrGuidanceStageEl.value,
+        channel: deskHrGuidanceChannelEl && deskHrGuidanceChannelEl.value,
+        message: deskHrGuidanceMessageEl && deskHrGuidanceMessageEl.value,
+        createdAt: existing.createdAt || now,
+        updatedAt: now
+      }), 0);
+    }
+
+    function saveDeskHrGuidanceTemplateFromForm_() {
+      var template = collectDeskHrGuidanceTemplateDraft_();
+      if (!template.message) {
+        alert("안내 문안을 입력해 주세요.");
+        return;
+      }
+      var next = (state.desk.recruiting.guidanceTemplates || []).filter(function(item) { return item.id !== template.id; });
+      next.unshift(template);
+      state.desk.recruiting.guidanceTemplates = next.map(normalizeDeskHrGuidanceTemplate_);
+      state.desk.recruiting.selectedGuidanceTemplateId = template.id;
+      persistDeskHrGuidanceTemplates_();
+      resetDeskHrGuidanceTemplateForm_();
+      renderDeskRecruiting_();
+      showDeskRecruitingCopyStatus_("안내 멘트를 저장했습니다.");
+    }
+
+    function loadDeskHrGuidanceTemplateIntoForm_(id) {
+      var template = (state.desk.recruiting.guidanceTemplates || []).filter(function(item) { return item.id === id; })[0];
+      if (!template) return;
+      state.desk.recruiting.editingGuidanceTemplateId = template.id;
+      if (deskHrGuidanceTitleEl) deskHrGuidanceTitleEl.value = template.title || "";
+      if (deskHrGuidanceRoleEl) deskHrGuidanceRoleEl.value = template.roleType || "";
+      if (deskHrGuidanceSubjectEl) deskHrGuidanceSubjectEl.value = template.subject || "";
+      if (deskHrGuidanceStageEl) deskHrGuidanceStageEl.value = template.stage || "";
+      if (deskHrGuidanceChannelEl) deskHrGuidanceChannelEl.value = template.channel || "문자";
+      if (deskHrGuidanceMessageEl) deskHrGuidanceMessageEl.value = template.message || "";
+      if (deskHrGuidanceMessageEl) deskHrGuidanceMessageEl.focus();
+    }
+
+    function deleteDeskHrGuidanceTemplate_(id) {
+      if (!id) return;
+      if (!confirm("이 안내 멘트를 삭제할까요?")) return;
+      state.desk.recruiting.guidanceTemplates = (state.desk.recruiting.guidanceTemplates || []).filter(function(item) { return item.id !== id; });
+      if (state.desk.recruiting.editingGuidanceTemplateId === id) resetDeskHrGuidanceTemplateForm_();
+      if (state.desk.recruiting.selectedGuidanceTemplateId === id) state.desk.recruiting.selectedGuidanceTemplateId = "";
+      persistDeskHrGuidanceTemplates_();
+      renderDeskRecruiting_();
+      showDeskRecruitingCopyStatus_("안내 멘트를 삭제했습니다.");
     }
 
     function renderDeskRecruitingSummary_() {
@@ -14683,20 +15035,29 @@
       };
     }
 
+    function normalizeDeskHrSchoolName_(school) {
+      var value = String(school || "").trim();
+      if (/^[가-힣A-Za-z]+대$/.test(value) && !/(대학교|대학원|대학)$/.test(value)) {
+        return value.replace(/대$/, "대학교");
+      }
+      return value;
+    }
+
     function parseDeskHrSchoolMajorLine_(line) {
       var value = normalizeDeskHrResumeLine_(line);
       var result = { school: "", major: "" };
       if (!value || /경력|근무|가능/.test(value)) return result;
       if (/학원/.test(value) && !/대학원/.test(value)) return result;
-      if (!/(대학교|대학원|대학|학과|전공|[가-힣]+대\b)/.test(value)) return result;
+      if (!/(대학교|대학원|대학|학과|전공|[가-힣A-Za-z]+대(?=$|[\s,/·・-]))/.test(value)) return result;
       var parts = value.split(/\s*\/\s*|\s{2,}/).filter(Boolean);
       var first = parts[0] || value;
-      var schoolMatch = first.match(/([가-힣A-Za-z]+(?:대학교|대학원|대학|대))/);
-      result.school = schoolMatch ? schoolMatch[1] : "";
-      var majorText = value.replace(result.school, "").replace(/^[\s,/:-]+/, "").trim();
+      var schoolMatch = first.match(/([가-힣A-Za-z]+(?:대학교|대학원|대학|대))(?=$|[\s,/·・-])?/);
+      var rawSchool = schoolMatch ? schoolMatch[1] : "";
+      result.school = normalizeDeskHrSchoolName_(rawSchool);
+      var majorText = rawSchool ? value.replace(rawSchool, "").replace(/^[\s,/·・:-]+/, "").trim() : "";
       result.major = majorText || (parts.slice(1).join(" / "));
       if (!result.school && parts.length > 1) {
-        result.school = parts[0];
+        result.school = normalizeDeskHrSchoolName_(parts[0]);
         result.major = parts.slice(1).join(" / ");
       }
       return result;
@@ -15110,12 +15471,19 @@
       return lines.join("\n");
     }
 
-    function buildDeskRecruitingGuidanceText_(item) {
+    function findDeskHrGuidanceTemplateForApplicant_(item, templateId) {
+      if (!item) return null;
+      var templates = getDeskHrGuidanceTemplatesForApplicant_(item);
+      if (templateId) {
+        var selected = templates.filter(function(template) { return template.id === templateId; })[0];
+        if (selected) return selected;
+      }
+      return templates[0] || null;
+    }
+
+    function buildDeskRecruitingGuidanceText_(item, templateId) {
       if (!item) return "";
-      var templates = normalizeDeskHrGuidanceTemplates_(item.guidanceTemplates);
-      var matched = templates.filter(function(template) {
-        return template.stage === item.status || template.title.indexOf(item.status) !== -1;
-      })[0] || templates[0];
+      var matched = findDeskHrGuidanceTemplateForApplicant_(item, templateId || state.desk.recruiting.selectedGuidanceTemplateId);
       var fallback = "안녕하세요. S-LMS 채용 담당자입니다. " +
         (item.applicantName || "지원자") + "님 지원 건으로 연락드립니다. " +
         "면접 일정 조율 가능하신 시간 확인 부탁드립니다.";
@@ -15123,6 +15491,7 @@
       return message
         .replace(/\{지원자\}/g, item.applicantName || "")
         .replace(/\{직무\}/g, formatDeskHrRoleSubject_(item))
+        .replace(/\{과목\}/g, item.subject || "")
         .replace(/\{면접일\}/g, item.interviewDate || "")
         .replace(/\{면접시간\}/g, item.interviewTime || "")
         .replace(/\{플랫폼\}/g, item.platform || "");
@@ -21681,6 +22050,8 @@
           var btn = event.target.closest("[data-desk-hr-select]");
           if (!btn) return;
           state.desk.recruiting.selectedApplicantId = btn.getAttribute("data-desk-hr-select") || "";
+          state.desk.recruiting.selectedGuidanceTemplateId = "";
+          renderDeskHrGuidanceTemplateSelect_();
           refreshDeskRecruitingReportPreview_();
         });
       }
@@ -21720,6 +22091,50 @@
           state.desk.recruiting.bulkReportText = "";
           renderDeskHrParsedResumePreview_();
           if (deskHrBulkStatusEl) deskHrBulkStatusEl.textContent = "빈 줄로 지원자를 구분합니다.";
+        });
+      }
+      if (deskHrGuidanceTemplateSelectEl) {
+        deskHrGuidanceTemplateSelectEl.addEventListener("change", function() {
+          state.desk.recruiting.selectedGuidanceTemplateId = deskHrGuidanceTemplateSelectEl.value || "";
+          var item = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
+          if (item && state.desk.recruiting.selectedGuidanceTemplateId) {
+            if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = buildDeskRecruitingGuidanceText_(item, state.desk.recruiting.selectedGuidanceTemplateId);
+          } else {
+            refreshDeskRecruitingReportPreview_();
+          }
+        });
+      }
+      if (deskHrGuidanceSaveBtnEl) {
+        deskHrGuidanceSaveBtnEl.addEventListener("click", function() {
+          saveDeskHrGuidanceTemplateFromForm_();
+        });
+      }
+      if (deskHrGuidanceResetBtnEl) {
+        deskHrGuidanceResetBtnEl.addEventListener("click", function() {
+          resetDeskHrGuidanceTemplateForm_();
+        });
+      }
+      if (deskHrGuidanceTemplateListEl) {
+        deskHrGuidanceTemplateListEl.addEventListener("click", function(event) {
+          var copyTemplateBtn = event.target.closest("[data-desk-hr-guidance-copy-template]");
+          if (copyTemplateBtn) {
+            var templateId = copyTemplateBtn.getAttribute("data-desk-hr-guidance-copy-template") || "";
+            var item = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
+            state.desk.recruiting.selectedGuidanceTemplateId = templateId;
+            renderDeskHrGuidanceTemplateSelect_();
+            var text = buildDeskRecruitingGuidanceText_(item, templateId);
+            if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = text;
+            copyDeskRecruitingText_(text);
+            return;
+          }
+          var editTemplateBtn = event.target.closest("[data-desk-hr-guidance-edit-template]");
+          if (editTemplateBtn) {
+            loadDeskHrGuidanceTemplateIntoForm_(editTemplateBtn.getAttribute("data-desk-hr-guidance-edit-template") || "");
+            return;
+          }
+          var deleteTemplateBtn = event.target.closest("[data-desk-hr-guidance-delete-template]");
+          if (!deleteTemplateBtn) return;
+          deleteDeskHrGuidanceTemplate_(deleteTemplateBtn.getAttribute("data-desk-hr-guidance-delete-template") || "");
         });
       }
       if (deskHrParsedResumePreviewEl) {
@@ -21767,6 +22182,8 @@
           if (guidanceBtn) {
             var guidanceItem = findDeskRecruitingApplicant_(guidanceBtn.getAttribute("data-desk-hr-guidance") || "");
             state.desk.recruiting.selectedApplicantId = guidanceItem ? guidanceItem.id : "";
+            state.desk.recruiting.selectedGuidanceTemplateId = "";
+            renderDeskHrGuidanceTemplateSelect_();
             var guidanceText = buildDeskRecruitingGuidanceText_(guidanceItem);
             if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = guidanceText;
             copyDeskRecruitingText_(guidanceText);
@@ -21810,7 +22227,7 @@
       if (deskHrCopyGuidanceBtnEl) {
         deskHrCopyGuidanceBtnEl.addEventListener("click", function() {
           var item = findDeskRecruitingApplicant_(state.desk.recruiting.selectedApplicantId);
-          var text = buildDeskRecruitingGuidanceText_(item);
+          var text = buildDeskRecruitingGuidanceText_(item, state.desk.recruiting.selectedGuidanceTemplateId);
           if (deskHrReportPreviewEl) deskHrReportPreviewEl.value = text;
           copyDeskRecruitingText_(text);
         });
