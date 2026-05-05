@@ -48,6 +48,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   getDeskScheduleMonthData: true,
   getDeskCalendarEvents: true,
   saveDeskScheduleEntry: true,
+  batchUpdateDeskScheduleEntries: true,
   deleteDeskScheduleEntry: true,
   getDeskDailyJournalData: true,
   getDeskDailyJournalPendingTasks: true,
@@ -129,6 +130,7 @@ function handlePayrollApiRequest_(params) {
       getDeskScheduleMonthData: getDeskScheduleMonthData,
       getDeskCalendarEvents: getDeskCalendarEvents,
       saveDeskScheduleEntry: saveDeskScheduleEntry,
+      batchUpdateDeskScheduleEntries: batchUpdateDeskScheduleEntries,
       deleteDeskScheduleEntry: deleteDeskScheduleEntry,
       getDeskDailyJournalData: getDeskDailyJournalData,
       getDeskDailyJournalPendingTasks: getDeskDailyJournalPendingTasks,
@@ -550,6 +552,49 @@ function deleteDeskScheduleEntry(payload) {
     return { success: true, monthKey: monthKey, id: id };
   } catch (e) {
     return { success: false, message: "근무표 삭제 오류: " + e.message };
+  }
+}
+
+function batchUpdateDeskScheduleEntries(payload) {
+  try {
+    var req = payload || {};
+    var monthKey = normalizeDeskScheduleMonthKey_(req.monthKey);
+    if (!monthKey) return { success: false, message: "monthKey가 올바르지 않습니다." };
+
+    var deleteIds = Array.isArray(req.deleteIds) ? req.deleteIds.map(function(id) {
+      return String(id || "").trim();
+    }).filter(Boolean) : [];
+
+    var entries = Array.isArray(req.entries) ? req.entries.map(function(item) {
+      return normalizeDeskScheduleEntry_(item || {}, item && item.id);
+    }) : [];
+
+    for (var i = 0; i < entries.length; i += 1) {
+      var entry = entries[i];
+      if (!entry.date || entry.date.slice(0, 7) !== monthKey) {
+        return { success: false, message: "근무일과 monthKey가 일치하지 않습니다." };
+      }
+      if (!entry.worker) return { success: false, message: "근무자 이름이 필요합니다." };
+      if (!entry.resident && !entry.unavailable && (!entry.start || !entry.end)) {
+        return { success: false, message: "시작/종료 시간이 필요합니다." };
+      }
+    }
+
+    var updates = {};
+    deleteIds.forEach(function(id) {
+      updates[id] = null;
+    });
+    entries.forEach(function(entry) {
+      updates[entry.id] = entry;
+    });
+    if (!Object.keys(updates).length) {
+      return { success: true, monthKey: monthKey, entries: [], deletedIds: [] };
+    }
+
+    firebaseRequestWithServiceAccount_("patch", buildDeskScheduleMonthPath_(monthKey) + "/entries", updates);
+    return { success: true, monthKey: monthKey, entries: entries, deletedIds: deleteIds };
+  } catch (e) {
+    return { success: false, message: "근무표 일괄 업데이트 오류: " + e.message };
   }
 }
 

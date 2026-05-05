@@ -19249,8 +19249,8 @@
       var sourceMonthKey = safeSourceDateKey.slice(0, 7);
       var targetMonthKey = safeTargetDateKey.slice(0, 7);
       var monthLoads = sourceMonthKey === targetMonthKey
-        ? [ensureDeskMonthLoaded_(sourceMonthKey, true)]
-        : [ensureDeskMonthLoaded_(sourceMonthKey, true), ensureDeskMonthLoaded_(targetMonthKey, true)];
+        ? [ensureDeskMonthLoaded_(sourceMonthKey)]
+        : [ensureDeskMonthLoaded_(sourceMonthKey), ensureDeskMonthLoaded_(targetMonthKey)];
       Promise.all(monthLoads).then(function() {
         var sourceItems = state.desk.scheduleItems.filter(function(item) {
           return item.date === safeSourceDateKey;
@@ -19282,34 +19282,15 @@
         });
         var deleteIds = targetReplaceItems.map(function(item) { return item.id; }).filter(Boolean);
         setLoading(true, loadingMessage || "근무표를 복사하는 중입니다...");
-        var savedEntries = [];
-        var chain = Promise.resolve();
-        deleteIds.forEach(function(deleteId) {
-          chain = chain.then(function() {
-            return runServer("deleteDeskScheduleEntry", {
-              monthKey: targetMonthKey,
-              id: deleteId
-            }).then(function(res) {
-              if (!res || !res.success) {
-                throw new Error(res && res.message ? res.message : "기존 근무표 삭제 실패");
-              }
-            });
-          });
-        });
-        pendingEntries.forEach(function(entry) {
-          chain = chain.then(function() {
-            return runServer("saveDeskScheduleEntry", {
-              monthKey: targetMonthKey,
-              entry: entry
-            }).then(function(res) {
-              if (!res || !res.success) {
-                throw new Error(res && res.message ? res.message : "근무표 복사 실패");
-              }
-              savedEntries.push(normalizeDeskShift_(res.entry || entry));
-            });
-          });
-        });
-        chain.then(function() {
+        runServer("batchUpdateDeskScheduleEntries", {
+          monthKey: targetMonthKey,
+          deleteIds: deleteIds,
+          entries: pendingEntries
+        }).then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "근무표 복사 실패");
+          }
+          var savedEntries = (res.entries || pendingEntries).map(normalizeDeskShift_);
           var merged = getDeskMonthItems_(targetMonthKey).filter(function(item) {
             return deleteIds.indexOf(item.id) === -1;
           });
@@ -19331,7 +19312,7 @@
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey) return;
       var monthKey = safeDateKey.slice(0, 7);
-      ensureDeskMonthLoaded_(monthKey, true).then(function() {
+      ensureDeskMonthLoaded_(monthKey).then(function() {
         var dayItems = state.desk.scheduleItems.filter(function(item) {
           return item.date === safeDateKey;
         });
@@ -19343,20 +19324,14 @@
           return;
         }
         setLoading(true, "선택 날짜 근무자를 모두 삭제하는 중입니다...");
-        var chain = Promise.resolve();
-        dayItems.forEach(function(item) {
-          chain = chain.then(function() {
-            return runServer("deleteDeskScheduleEntry", {
-              monthKey: monthKey,
-              id: item.id
-            }).then(function(res) {
-              if (!res || !res.success) {
-                throw new Error(res && res.message ? res.message : "근무표 삭제 실패");
-              }
-            });
-          });
-        });
-        chain.then(function() {
+        runServer("batchUpdateDeskScheduleEntries", {
+          monthKey: monthKey,
+          deleteIds: dayItems.map(function(item) { return item.id; }).filter(Boolean),
+          entries: []
+        }).then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "근무표 삭제 실패");
+          }
           mergeDeskMonthItems_(monthKey, getDeskMonthItems_(monthKey).filter(function(item) {
             return item.date !== safeDateKey;
           }));
