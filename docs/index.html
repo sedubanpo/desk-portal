@@ -5164,6 +5164,64 @@
       font-weight: 900;
       padding: 0 4px;
     }
+    .tuition-brief-filter {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      border: 1px solid #dbe7e0;
+      border-radius: 14px;
+      background: #f8fcf9;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .tuition-brief-filter label {
+      display: grid;
+      gap: 4px;
+      color: #506479;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .tuition-brief-filter select,
+    .tuition-brief-filter input {
+      width: 100%;
+      border: 1px solid #cddbd3;
+      border-radius: 10px;
+      background: #fff;
+      color: #123044;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 9px;
+    }
+    .tuition-brief-weekdays {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .tuition-brief-weekdays span {
+      width: 100%;
+      color: #506479;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .tuition-brief-weekdays label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #d9e7de;
+      border-radius: 999px;
+      background: #fff;
+      padding: 5px 8px;
+      color: #1f3f57;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .tuition-brief-weekdays input {
+      width: auto;
+      margin: 0;
+      accent-color: #0d684d;
+    }
     .tuition-daily-kpis {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -5192,6 +5250,7 @@
     .tuition-daily-kpi.refund .v { color: #b45309; }
     .tuition-daily-kpi.net .v { color: #1d4ed8; }
     .tuition-daily-kpi.count .v { color: #065f46; }
+    .tuition-daily-kpi.guide .v { color: #7c3aed; }
     .tuition-daily-business {
       border: 1px solid #dbe7e0;
       border-radius: 12px;
@@ -11826,7 +11885,31 @@
         <h3 class="tuition-brief-title">대표님 일일 수강료 결산 보고</h3>
         <button class="tuition-brief-close" id="closeTuitionBriefPopupBtn" type="button">닫기</button>
       </div>
-      <article class="tuition-daily-card" style="width:100%; box-shadow:none;">
+      <div class="tuition-brief-filter" data-tuition-copy-hide="true">
+        <label>기준
+          <select id="tuitionBriefBasis">
+            <option value="paid">납입일 기준</option>
+            <option value="input">입력일자 기준</option>
+          </select>
+        </label>
+        <label>시작일
+          <input id="tuitionBriefStartDate" type="date">
+        </label>
+        <label>종료일
+          <input id="tuitionBriefEndDate" type="date">
+        </label>
+        <div class="tuition-brief-weekdays" id="tuitionBriefWeekdays">
+          <span>요일 선택</span>
+          <label><input type="checkbox" value="1" checked>월</label>
+          <label><input type="checkbox" value="2" checked>화</label>
+          <label><input type="checkbox" value="3" checked>수</label>
+          <label><input type="checkbox" value="4" checked>목</label>
+          <label><input type="checkbox" value="5" checked>금</label>
+          <label><input type="checkbox" value="6" checked>토</label>
+          <label><input type="checkbox" value="0" checked>일</label>
+        </div>
+      </div>
+      <article class="tuition-daily-card" id="tuitionBriefCapture" style="width:100%; box-shadow:none;">
         <div class="tuition-daily-head">
           <h3 class="tuition-daily-title">일일 수강료 수납 브리핑</h3>
           <div class="tuition-daily-date-nav">
@@ -11852,9 +11935,13 @@
             <div class="k">결제 건수</div>
             <div class="v" id="tuitionBriefCount">0건</div>
           </div>
+          <div class="tuition-daily-kpi guide">
+            <div class="k">안내 인원</div>
+            <div class="v" id="tuitionBriefGuideCount">0명</div>
+          </div>
         </div>
         <div id="tuitionBriefRouteWrap"></div>
-        <div class="tuition-daily-foot">기준: `납부` 일자 · 사업자 미입력 시 `반포`로 집계 · 카드/계좌/서울페이/현장결제/현금/기타 분류</div>
+        <div class="tuition-daily-foot" id="tuitionBriefFoot">기준: `납부` 일자 · 사업자 미입력 시 `반포`로 집계 · 카드/계좌/서울페이/현장결제/현금/기타 분류</div>
       </article>
       <div style="margin-top:10px;">
         <label style="display:block; font-size:12px; font-weight:900; color:#1f2937; margin-bottom:6px;">자동 보고 텍스트</label>
@@ -11862,6 +11949,7 @@
       </div>
       <div class="tuition-brief-copy-row">
         <span class="tuition-brief-copy-msg" id="tuitionBriefCopyMsg"></span>
+        <button class="tuition-brief-copy-btn" id="copyTuitionBriefImageBtn" type="button">이미지 복사</button>
         <button class="tuition-brief-copy-btn" id="copyTuitionBriefTextBtn" type="button">텍스트 복사</button>
       </div>
     </div>
@@ -12440,6 +12528,12 @@
         todayPayments: [],
         dailyDateKeys: [],
         dailyCursorDateKey: "",
+        briefFilters: {
+          basis: "paid",
+          startDate: "",
+          endDate: "",
+          weekdays: [0, 1, 2, 3, 4, 5, 6]
+        },
         rows: [],
         payments: [],
         paymentPage: 1,
@@ -12887,9 +12981,16 @@
     var tuitionBriefRefundEl = document.getElementById("tuitionBriefRefund");
     var tuitionBriefNetEl = document.getElementById("tuitionBriefNet");
     var tuitionBriefCountEl = document.getElementById("tuitionBriefCount");
+    var tuitionBriefGuideCountEl = document.getElementById("tuitionBriefGuideCount");
+    var tuitionBriefFootEl = document.getElementById("tuitionBriefFoot");
     var tuitionBriefRouteWrapEl = document.getElementById("tuitionBriefRouteWrap");
     var tuitionBriefTextEl = document.getElementById("tuitionBriefText");
+    var tuitionBriefBasisEl = document.getElementById("tuitionBriefBasis");
+    var tuitionBriefStartDateEl = document.getElementById("tuitionBriefStartDate");
+    var tuitionBriefEndDateEl = document.getElementById("tuitionBriefEndDate");
+    var tuitionBriefWeekdaysEl = document.getElementById("tuitionBriefWeekdays");
     var copyTuitionBriefTextBtnEl = document.getElementById("copyTuitionBriefTextBtn");
+    var copyTuitionBriefImageBtnEl = document.getElementById("copyTuitionBriefImageBtn");
     var tuitionBriefCopyMsgEl = document.getElementById("tuitionBriefCopyMsg");
     var openTuitionCalendarBtnEl = document.getElementById("openTuitionCalendarBtn");
     var tuitionCalendarModalEl = document.getElementById("tuitionCalendarModal");
@@ -23250,12 +23351,17 @@
       });
       closeTuitionBriefPopupBtnEl.addEventListener("click", closeTuitionBriefPopup_);
       tuitionBriefPrevBtnEl.addEventListener("click", function() {
-        moveTuitionDailyCursor_(-1);
+        moveTuitionBriefCursor_(-1);
       });
       tuitionBriefNextBtnEl.addEventListener("click", function() {
-        moveTuitionDailyCursor_(1);
+        moveTuitionBriefCursor_(1);
       });
+      if (tuitionBriefBasisEl) tuitionBriefBasisEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
+      if (tuitionBriefStartDateEl) tuitionBriefStartDateEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
+      if (tuitionBriefEndDateEl) tuitionBriefEndDateEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
+      if (tuitionBriefWeekdaysEl) tuitionBriefWeekdaysEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
       copyTuitionBriefTextBtnEl.addEventListener("click", copyTuitionBriefMessage_);
+      if (copyTuitionBriefImageBtnEl) copyTuitionBriefImageBtnEl.addEventListener("click", copyTuitionBriefImage_);
       tuitionBriefPopupEl.addEventListener("click", function(event) {
         if (event.target === tuitionBriefPopupEl) closeTuitionBriefPopup_();
       });
@@ -24289,6 +24395,85 @@
       return year + "-" + pad2(month) + "-" + pad2(day);
     }
 
+    function parseTuitionInputDateKey_(inputAtText, monthName) {
+      var ms = parseTuitionDateTimeMs_(inputAtText, monthName);
+      if (ms < 0) return "";
+      var d = new Date(ms);
+      return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate());
+    }
+
+    function getTuitionBriefDateKeyForRow_(row, basis) {
+      var monthName = getTuitionPaymentBaseMonth_(row);
+      return basis === "input"
+        ? parseTuitionInputDateKey_(row && row.inputAt, monthName)
+        : parseTuitionPaidDateKey_(row && row.paidAt, monthName);
+    }
+
+    function getTuitionDateWeekday_(dateKey) {
+      var m = String(dateKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return -1;
+      return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getDay();
+    }
+
+    function normalizeTuitionBriefFilters_() {
+      var defaults = state.tuition.briefFilters || {};
+      var currentKey = state.tuition.dailyCursorDateKey || (state.tuition.dailyDateKeys || [])[0] || getTodayDateKey_();
+      var basis = String(defaults.basis || "paid");
+      if (basis !== "input") basis = "paid";
+      var startDate = String(defaults.startDate || currentKey || "").trim();
+      var endDate = String(defaults.endDate || startDate || "").trim();
+      if (startDate && endDate && startDate > endDate) {
+        var swap = startDate;
+        startDate = endDate;
+        endDate = swap;
+      }
+      var weekdays = Array.isArray(defaults.weekdays) && defaults.weekdays.length
+        ? defaults.weekdays.map(function(item) { return Number(item); }).filter(function(item) { return item >= 0 && item <= 6; })
+        : [0, 1, 2, 3, 4, 5, 6];
+      if (!weekdays.length) weekdays = [0, 1, 2, 3, 4, 5, 6];
+      return { basis: basis, startDate: startDate, endDate: endDate, weekdays: weekdays };
+    }
+
+    function syncTuitionBriefFilterControls_(filters) {
+      var safe = filters || normalizeTuitionBriefFilters_();
+      if (tuitionBriefBasisEl) tuitionBriefBasisEl.value = safe.basis;
+      if (tuitionBriefStartDateEl) tuitionBriefStartDateEl.value = safe.startDate || "";
+      if (tuitionBriefEndDateEl) tuitionBriefEndDateEl.value = safe.endDate || "";
+      if (tuitionBriefWeekdaysEl) {
+        Array.prototype.forEach.call(tuitionBriefWeekdaysEl.querySelectorAll("input[type='checkbox']"), function(input) {
+          input.checked = safe.weekdays.indexOf(Number(input.value)) !== -1;
+        });
+      }
+    }
+
+    function readTuitionBriefFiltersFromControls_() {
+      var weekdays = [];
+      if (tuitionBriefWeekdaysEl) {
+        Array.prototype.forEach.call(tuitionBriefWeekdaysEl.querySelectorAll("input[type='checkbox']:checked"), function(input) {
+          weekdays.push(Number(input.value));
+        });
+      }
+      state.tuition.briefFilters = {
+        basis: tuitionBriefBasisEl && tuitionBriefBasisEl.value === "input" ? "input" : "paid",
+        startDate: tuitionBriefStartDateEl ? String(tuitionBriefStartDateEl.value || "").trim() : "",
+        endDate: tuitionBriefEndDateEl ? String(tuitionBriefEndDateEl.value || "").trim() : "",
+        weekdays: weekdays
+      };
+      state.tuition.briefFilters = normalizeTuitionBriefFilters_();
+      syncTuitionBriefFilterControls_(state.tuition.briefFilters);
+      renderTuitionBriefPopup_();
+    }
+
+    function setTuitionBriefSingleDate_(dateKey) {
+      var key = String(dateKey || "").trim();
+      if (!key) return;
+      state.tuition.briefFilters = Object.assign({}, state.tuition.briefFilters || {}, {
+        startDate: key,
+        endDate: key
+      });
+      syncTuitionBriefFilterControls_(normalizeTuitionBriefFilters_());
+    }
+
     function getTuitionPaymentBaseMonth_(row) {
       var monthName = row ? (row.sourceDueMonth || row.sourceMonth || state.tuition.selectedMonth || "") : (state.tuition.selectedMonth || "");
       var text = String(monthName || "").trim();
@@ -24386,19 +24571,30 @@
       renderTuitionDailyReport_();
     }
 
+    function moveTuitionBriefCursor_(step) {
+      moveTuitionDailyCursor_(step);
+      setTuitionBriefSingleDate_(state.tuition.dailyCursorDateKey);
+      renderTuitionBriefPopup_();
+    }
+
     function formatTuitionDateLabel_(dateKey) {
       var m = String(dateKey || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (!m) return "-";
       return m[1] + "." + m[2] + "." + m[3];
     }
 
-    function buildTuitionDailyBreakdown_(dateKey) {
+    function buildTuitionDailyBreakdown_(dateKey, filtersOverride) {
       var routeOrder = ["계좌", "서울페이", "현장결제", "현금", "카드", "기타"];
+      var filters = filtersOverride || { basis: "paid", startDate: dateKey, endDate: dateKey, weekdays: [0, 1, 2, 3, 4, 5, 6] };
       var list = (state.tuition.payments || []).filter(function(row) {
-        return parseTuitionPaidDateKey_(row.paidAt, state.tuition.selectedMonth) === dateKey;
+        var key = getTuitionBriefDateKeyForRow_(row, filters.basis);
+        if (!key) return false;
+        if (filters.startDate && key < filters.startDate) return false;
+        if (filters.endDate && key > filters.endDate) return false;
+        return filters.weekdays.indexOf(getTuitionDateWeekday_(key)) !== -1;
       });
       var todayKey = getTodayDateKey_();
-      if (dateKey && dateKey === todayKey) {
+      if (filters.basis === "paid" && filters.startDate <= todayKey && filters.endDate >= todayKey && filters.weekdays.indexOf(getTuitionDateWeekday_(todayKey)) !== -1) {
         var merged = list.slice();
         var keySet = {};
         merged.forEach(function(row) {
@@ -24427,6 +24623,16 @@
         });
         list = merged;
       }
+      var guidedStudents = {};
+      (state.tuition.rows || []).forEach(function(row) {
+        var key = parseTuitionInputDateKey_(row.lastContactAt, state.tuition.selectedMonth);
+        if (!key) return;
+        if (filters.startDate && key < filters.startDate) return;
+        if (filters.endDate && key > filters.endDate) return;
+        if (filters.weekdays.indexOf(getTuitionDateWeekday_(key)) === -1) return;
+        var name = formatStudentName(row.studentName);
+        if (name) guidedStudents[name] = true;
+      });
       var totalReceived = 0;
       var totalRefund = 0;
       var businessMap = {};
@@ -24455,7 +24661,9 @@
         count: list.length,
         routeOrder: routeOrder,
         businessMap: businessMap,
-        businessNames: businessNames
+        businessNames: businessNames,
+        filters: filters,
+        guideCount: Object.keys(guidedStudents).length
       };
     }
 
@@ -24498,14 +24706,19 @@
       if (!daily || !daily.dateKey) {
         return "대표님, 보고할 수납 데이터가 아직 없습니다.";
       }
-      var dateText = formatTuitionDateWithWeekday_(daily.dateKey);
+      var filters = daily.filters || {};
+      var basisText = filters.basis === "input" ? "입력일자 기준" : "납입일 기준";
+      var dateText = filters.startDate && filters.endDate && filters.startDate !== filters.endDate
+        ? (formatTuitionDateWithWeekday_(filters.startDate) + " ~ " + formatTuitionDateWithWeekday_(filters.endDate))
+        : formatTuitionDateWithWeekday_(daily.dateKey);
       var lines = [];
-      lines.push("대표님 안녕하세요. " + dateText + " 수강료 수납 브리핑 드립니다.");
+      lines.push("대표님 안녕하세요. " + dateText + " 수강료 수납 브리핑 드립니다. (" + basisText + ")");
       lines.push("");
       lines.push("1) 총 수납: " + formatWon(daily.totalReceived));
       lines.push("2) 환불/차감: " + formatWon(daily.totalRefund));
       lines.push("3) 순수납: " + formatWon(daily.netAmount));
       lines.push("4) 결제 건수: " + daily.count + "건");
+      lines.push("5) 안내 인원: " + toNumber(daily.guideCount, 0) + "명");
       lines.push("");
       lines.push("[사업자/결제루트]");
       if (!daily.count) {
@@ -24523,8 +24736,6 @@
           lines.push("- " + biz + ": 총 " + formatWon(total) + " (" + routeTexts.join(", ") + ")");
         });
       }
-      lines.push("");
-      lines.push("확인 부탁드립니다.");
       return lines.join("\n");
     }
 
@@ -24553,6 +24764,9 @@
 
     function openTuitionBriefPopup_() {
       tuitionBriefCopyMsgEl.textContent = "";
+      if (!state.tuition.briefFilters || !state.tuition.briefFilters.startDate) {
+        setTuitionBriefSingleDate_(state.tuition.dailyCursorDateKey || (state.tuition.dailyDateKeys || [])[0] || getTodayDateKey_());
+      }
       renderTuitionBriefPopup_();
       tuitionBriefPopupEl.style.display = "flex";
     }
@@ -24567,19 +24781,63 @@
       var currentKey = state.tuition.dailyCursorDateKey || "";
       if (keys.length && keys.indexOf(currentKey) === -1) currentKey = keys[keys.length - 1];
       state.tuition.dailyCursorDateKey = currentKey;
+      var filters = normalizeTuitionBriefFilters_();
+      state.tuition.briefFilters = filters;
+      syncTuitionBriefFilterControls_(filters);
 
       var idx = keys.indexOf(currentKey);
       tuitionBriefPrevBtnEl.disabled = idx <= 0;
       tuitionBriefNextBtnEl.disabled = idx < 0 || idx >= keys.length - 1;
-      tuitionBriefDateTextEl.textContent = currentKey ? formatTuitionDateLabel_(currentKey) : "데이터 없음";
+      tuitionBriefDateTextEl.textContent = filters.startDate && filters.endDate && filters.startDate !== filters.endDate
+        ? (formatTuitionDateLabel_(filters.startDate) + " ~ " + formatTuitionDateLabel_(filters.endDate))
+        : (filters.startDate ? formatTuitionDateLabel_(filters.startDate) : "데이터 없음");
 
-      var daily = buildTuitionDailyBreakdown_(currentKey);
+      var daily = buildTuitionDailyBreakdown_(filters.startDate || currentKey, filters);
       tuitionBriefTotalEl.textContent = formatWon(daily.totalReceived);
       tuitionBriefRefundEl.textContent = formatWon(daily.totalRefund);
       tuitionBriefNetEl.textContent = formatWon(daily.netAmount);
       tuitionBriefCountEl.textContent = daily.count + "건";
+      if (tuitionBriefGuideCountEl) tuitionBriefGuideCountEl.textContent = toNumber(daily.guideCount, 0) + "명";
+      if (tuitionBriefFootEl) {
+        tuitionBriefFootEl.textContent = "기준: " + (filters.basis === "input" ? "입력일자" : "납입일") + " · " +
+          (filters.startDate && filters.endDate ? (formatTuitionDateLabel_(filters.startDate) + (filters.startDate === filters.endDate ? "" : (" ~ " + formatTuitionDateLabel_(filters.endDate)))) : "날짜 미선택") +
+          " · 선택 요일 " + filters.weekdays.length + "개 · 사업자 미입력 시 `반포`로 집계";
+      }
       tuitionBriefRouteWrapEl.innerHTML = buildTuitionDailyBusinessesHtml_(daily);
       tuitionBriefTextEl.value = buildTuitionBriefMessage_(daily);
+    }
+
+    async function copyTuitionBriefImage_() {
+      var node = document.getElementById("tuitionBriefCapture");
+      if (!node) {
+        tuitionBriefCopyMsgEl.textContent = "복사할 이미지가 없습니다.";
+        return;
+      }
+      if (typeof window.html2canvas !== "function" || typeof ClipboardItem === "undefined") {
+        tuitionBriefCopyMsgEl.textContent = "이 브라우저에서는 이미지 복사가 지원되지 않습니다.";
+        return;
+      }
+      try {
+        tuitionBriefCopyMsgEl.textContent = "이미지를 만드는 중입니다...";
+        var canvas = await window.html2canvas(node, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          onclone: function(clonedDoc) {
+            Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-tuition-copy-hide='true']"), function(el) {
+              el.style.display = "none";
+            });
+          }
+        });
+        var blob = await new Promise(function(resolve) {
+          canvas.toBlob(resolve, "image/png");
+        });
+        if (!blob) throw new Error("이미지 생성 실패");
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        tuitionBriefCopyMsgEl.textContent = "이미지를 복사했습니다.";
+      } catch (err) {
+        tuitionBriefCopyMsgEl.textContent = "이미지 복사에 실패했습니다.";
+      }
     }
 
     function copyTuitionBriefMessage_() {
