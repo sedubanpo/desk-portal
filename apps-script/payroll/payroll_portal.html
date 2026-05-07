@@ -10165,9 +10165,8 @@
           <div class="mode-wrap">
             <button class="mode-btn active" type="button" id="modeRatioBtn">비율제</button>
             <button class="mode-btn" type="button" id="modeHourlyBtn">시급제</button>
-		                    </div>
-		                  </article>
-		                </div>
+          </div>
+        </div>
         <div class="field" id="ratioField">
           <label for="ratioInput">비율제 퍼센트</label>
           <input id="ratioInput" type="number" min="0" max="100" step="0.5" value="50">
@@ -10246,9 +10245,8 @@
           <div class="field">
             <label for="suspectOnlyCheck">단가 의심만 보기</label>
             <label class="check-inline"><input id="suspectOnlyCheck" type="checkbox">의심 행만 표시</label>
-		                    </div>
-		                  </article>
-		                </div>
+          </div>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -12389,7 +12387,9 @@
       selectedTeacher: "",
       payroll: {
         loaded: false,
-        loadingPromise: null
+        loadingPromise: null,
+        settingsLoaded: false,
+        settingsLoadingPromise: null
       },
       salaryMode: "ratio",
       ratioPercent: 50,
@@ -23181,7 +23181,7 @@
         state.freeIncludedRowKeys = {};
         state.recognitionOverrides = {};
         state.rateAdjustments = {};
-        refreshSummary(true);
+        refreshSummary(false, { forceRefresh: true });
       });
 
       monthSelectEl.addEventListener("change", function() {
@@ -23205,10 +23205,12 @@
 
       teacherSelectEl.addEventListener("change", function() {
         state.selectedTeacher = teacherSelectEl.value;
-        applyTeacherSettingPreset();
         state.selectedDateKey = "";
         state.rateAdjustments = {};
-        refreshSummary(false);
+        ensureTeacherSettingsLoaded_().finally(function() {
+          applyTeacherSettingPreset();
+          refreshSummary(false, { settingsReady: true });
+        });
       });
 
       attendanceFilterSelectEl.addEventListener("change", function() {
@@ -23459,12 +23461,13 @@
           renderMonthOptions();
           renderSubjectOptions();
           renderTeacherOptions();
-          if (state.privilegedAccessKey) loadSettings();
-          renderSummary(res.summary || res);
-          renderModeState();
-          setTimeout(function() {
-            loadTuitionBootstrap({ silent: true }).catch(function() {});
-          }, 0);
+          return ensureTeacherSettingsLoaded_().catch(function() {}).then(function() {
+            renderSummary(res.summary || res);
+            renderModeState();
+            setTimeout(function() {
+              loadTuitionBootstrap({ silent: true }).catch(function() {});
+            }, 0);
+          });
         })
         .catch(function(err) {
           showClientMessage(err.message || String(err));
@@ -25728,11 +25731,15 @@
         });
     }
 
-    function refreshSummary(isMonthRefresh) {
+    function refreshSummary(isMonthRefresh, options) {
+      options = options || {};
       var requestId = ++state.requestSeq;
       setLoading(true, "정산 데이터를 계산 중입니다...");
 
-      runServer("getPayrollMonthSummary", buildPayload())
+      var ready = options.settingsReady ? Promise.resolve() : ensureTeacherSettingsLoaded_().catch(function() {});
+      ready.then(function() {
+        return runServer("getPayrollMonthSummary", buildPayload(options));
+      })
         .then(function(res) {
           if (requestId !== state.requestSeq) return;
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "데이터 조회 실패");
@@ -25744,7 +25751,6 @@
             state.selectedTeacher = "";
           }
           applySummaryMeta(res);
-          applyTeacherSettingPreset();
           if (state.selectedTeacher && state.teachers.indexOf(state.selectedTeacher) === -1) {
             state.selectedTeacher = "";
           }
@@ -25770,14 +25776,26 @@
       }
     }
 
+    function ensureTeacherSettingsLoaded_() {
+      if (!state.privilegedAccessKey && !canUseGoogleScript()) return Promise.resolve();
+      if (state.payroll.settingsLoaded) return Promise.resolve();
+      if (state.payroll.settingsLoadingPromise) return state.payroll.settingsLoadingPromise;
+      return loadSettings();
+    }
+
     function loadSettings() {
-      runServer("getPayrollSettings")
+      state.payroll.settingsLoadingPromise = runServer("getPayrollSettings")
         .then(function(res) {
           if (!res || !res.success) return;
           state.teacherSettings = res.settings || {};
+          state.payroll.settingsLoaded = true;
           applyTeacherSettingPreset();
         })
-        .catch(function() {});
+        .catch(function() {})
+        .finally(function() {
+          state.payroll.settingsLoadingPromise = null;
+        });
+      return state.payroll.settingsLoadingPromise;
     }
 
     function applyTeacherSettingPreset() {
@@ -26187,7 +26205,8 @@
       });
     }
 
-    function buildPayload() {
+    function buildPayload(options) {
+      options = options || {};
       return {
         monthName: state.selectedMonth,
         subjectFilter: state.selectedSubject,
@@ -26202,7 +26221,8 @@
         }),
         rateAdjustments: Object.keys(state.rateAdjustments).map(function(rowKey) {
           return { rowKey: rowKey, rate: toNumber(state.rateAdjustments[rowKey], 0) };
-        })
+        }),
+        forceRefresh: !!options.forceRefresh
       };
     }
 
@@ -26388,9 +26408,11 @@
           oneToOneGuide = " + 1:1 비율 " + clampNumber(toNumber(cfg.oneToOneRatioPercent, 50), 0, 100) + "%";
         }
       }
-      document.getElementById("salaryGuide").textContent = ratioActive
-        ? "비율제: 인정 순매출 x " + toNumber(state.ratioPercent, 50) + "%"
-        : "시급제: 일자별 순수 수업시간(중복 제외) x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide;
+	      document.getElementById("salaryGuide").textContent = ratioActive
+	        ? "비율제: 인정 순매출 x " + toNumber(state.ratioPercent, 50) + "%"
+	        : (state.selectedTeacher
+	          ? "시급제: 일자별 순수 수업시간(중복 제외) x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide
+	          : "시급제 전체 강사 조회는 참고용입니다. 강사별 선택 후 정산액을 확인해 주세요.");
       document.getElementById("ratioField").style.opacity = ratioActive ? "1" : "0.55";
       document.getElementById("hourlyField").style.opacity = ratioActive ? "0.55" : "1";
     }
