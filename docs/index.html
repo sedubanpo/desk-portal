@@ -6954,7 +6954,7 @@
       font-size: 12px;
       font-weight: 800;
       line-height: 1.45;
-      white-space: normal;
+      white-space: pre-line;
       pointer-events: none;
     }
 
@@ -7273,6 +7273,27 @@
       color: #64748b;
       font-weight: 700;
       margin-top: 4px;
+    }
+    .settings-suspicion-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: end;
+    }
+    .settings-suspicion-table .modal-input {
+      min-width: 90px;
+      font-weight: 800;
+    }
+    .settings-suspicion-table th,
+    .settings-suspicion-table td {
+      text-align: right;
+    }
+    .settings-suspicion-table th:first-child,
+    .settings-suspicion-table td:first-child {
+      text-align: left;
+      font-weight: 900;
+      color: #173042;
     }
 
     .modal-input, .modal-select {
@@ -10251,7 +10272,7 @@
           <div class="meta-bar">
             <span class="pill" id="detailCountPill">0 rows</span>
             <span class="pill" id="freeCountPill">수동 인정/제외 0건</span>
-            <span class="pill" id="suspectCountPill">단가 의심 0건</span>
+            <span class="pill" id="suspectCountPill">의심 0건</span>
           </div>
         </header>
         <div class="table-tabs">
@@ -10282,7 +10303,7 @@
             <input id="detailStudentSearchInput" type="search" placeholder="학생명 입력">
           </div>
           <div class="field">
-            <label for="suspectOnlyCheck">단가 의심만 보기</label>
+            <label for="suspectOnlyCheck">의심 행만 보기</label>
             <label class="check-inline"><input id="suspectOnlyCheck" type="checkbox">의심 행만 표시</label>
           </div>
         </div>
@@ -10305,7 +10326,7 @@
                 <th data-col="amount">금액</th>
                 <th data-col="discount">할인</th>
                 <th data-col="netAmount">순금액</th>
-                <th data-col="suspect">단가의심</th>
+                <th data-col="suspect">의심</th>
                 <th data-col="note">참고</th>
               </tr>
             </thead>
@@ -12169,6 +12190,7 @@
       </div>
       <div class="modal-tabbar">
         <button class="modal-tab-btn active" type="button" data-settings-tab="profile">강사 급여/계좌</button>
+        <button class="modal-tab-btn" type="button" data-settings-tab="suspicion">의심 기준</button>
         <button class="modal-tab-btn" type="button" data-settings-tab="monthly">년도-월 급여/시수</button>
         <button class="modal-tab-btn" type="button" data-settings-tab="weekly">주차별 수강 요일</button>
       </div>
@@ -12189,6 +12211,45 @@
               </tr>
             </thead>
             <tbody id="settingsProfileBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="modal-section" id="settingsSectionSuspicion">
+        <div class="settings-suspicion-grid">
+          <div class="field">
+            <label for="suspicionRateTolerancePercentInput">금액 허용 오차(%)</label>
+            <input id="suspicionRateTolerancePercentInput" class="modal-input" type="number" min="0" max="100" step="0.5">
+          </div>
+          <div class="field">
+            <label for="suspicionRateToleranceWonInput">금액 허용 오차(원)</label>
+            <input id="suspicionRateToleranceWonInput" class="modal-input" type="number" min="0" step="500">
+          </div>
+          <div class="field">
+            <label for="suspicionEarliestHourInput">가장 이른 수업 시각</label>
+            <input id="suspicionEarliestHourInput" class="modal-input" type="number" min="0" max="23" step="0.5">
+          </div>
+          <div class="field">
+            <label for="suspicionLatestHourInput">가장 늦은 종료 시각</label>
+            <input id="suspicionLatestHourInput" class="modal-input" type="number" min="1" max="24" step="0.5">
+          </div>
+          <div class="field">
+            <label for="suspicionMaxLessonHoursInput">1회 최대 수업시간</label>
+            <input id="suspicionMaxLessonHoursInput" class="modal-input" type="number" min="1" max="12" step="0.5">
+          </div>
+        </div>
+        <div class="message" style="margin-bottom:10px;">시간당 기준 금액은 비워두면 기존 데이터 패턴으로 판정합니다. 입력된 기준은 과목별 값이 우선이고, 과목별 값이 비어 있으면 전체 기준을 사용합니다.</div>
+        <div class="modal-table-wrap">
+          <table class="modal-table settings-suspicion-table">
+            <thead>
+              <tr>
+                <th>과목</th>
+                <th>개별정규/개별</th>
+                <th>1:1</th>
+                <th>2:1</th>
+              </tr>
+            </thead>
+            <tbody id="settingsSuspicionBody"></tbody>
           </table>
         </div>
       </section>
@@ -12368,6 +12429,12 @@
     var DESK_DAILY_CARRYOVER_QUICK_SCAN_DAYS = 1;
     var DESK_DAILY_CARRYOVER_SCAN_BATCH_SIZE = 5;
     var DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS = 7000;
+    var PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
+    var PAYROLL_SUSPICION_CLASS_TYPES = [
+      { key: "개별", label: "개별정규/개별" },
+      { key: "1:1", label: "1:1" },
+      { key: "2:1", label: "2:1" }
+    ];
     var DESK_DAILY_SERVER_POLL_MS = 3500;
     var DESK_LIVE_FEED_HISTORY_DAYS = 14;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
@@ -12656,6 +12723,12 @@
     var settingsTeacherFilterEl = document.getElementById("settingsTeacherFilter");
     var settingsWeeklyTeacherFilterEl = document.getElementById("settingsWeeklyTeacherFilter");
     var settingsTabBtnEls = document.querySelectorAll("[data-settings-tab]");
+    var suspicionRateTolerancePercentInputEl = document.getElementById("suspicionRateTolerancePercentInput");
+    var suspicionRateToleranceWonInputEl = document.getElementById("suspicionRateToleranceWonInput");
+    var suspicionEarliestHourInputEl = document.getElementById("suspicionEarliestHourInput");
+    var suspicionLatestHourInputEl = document.getElementById("suspicionLatestHourInput");
+    var suspicionMaxLessonHoursInputEl = document.getElementById("suspicionMaxLessonHoursInput");
+    var settingsSuspicionBodyEl = document.getElementById("settingsSuspicionBody");
     var columnToggleWrapEl = document.getElementById("columnToggleWrap");
     var moduleTabEls = document.querySelectorAll(".module-tab");
     var moduleTeacherEl = document.getElementById("moduleTeacher");
@@ -25892,6 +25965,7 @@
       }
       renderSettingsMonthFilterOptions();
       renderSettingsTeacherFilterOptions();
+      renderSettingsSuspicionRules();
       renderSettingsReports();
       renderSettingsWeekdayReport();
     }
@@ -25961,6 +26035,86 @@
       });
     }
 
+    function getPayrollSuspicionSettings_() {
+      var stored = ((state.teacherSettings || {})[PAYROLL_SUSPICION_SETTINGS_KEY]) || {};
+      var rules = Array.isArray(stored.rules) ? stored.rules : [];
+      return {
+        enabled: stored.enabled === false ? false : true,
+        rateTolerancePercent: clampNumber(toNumber(stored.rateTolerancePercent, 8), 0, 100),
+        rateToleranceWon: Math.max(0, Math.round(toNumber(stored.rateToleranceWon, 3000))),
+        earliestHour: clampNumber(toNumber(stored.earliestHour, 8), 0, 23),
+        latestHour: clampNumber(toNumber(stored.latestHour, 23), 1, 24),
+        maxLessonHours: clampNumber(toNumber(stored.maxLessonHours, 5), 1, 12),
+        rules: rules
+      };
+    }
+
+    function renderSettingsSuspicionRules() {
+      var settings = getPayrollSuspicionSettings_();
+      suspicionRateTolerancePercentInputEl.value = String(settings.rateTolerancePercent);
+      suspicionRateToleranceWonInputEl.value = String(settings.rateToleranceWon);
+      suspicionEarliestHourInputEl.value = String(settings.earliestHour);
+      suspicionLatestHourInputEl.value = String(settings.latestHour);
+      suspicionMaxLessonHoursInputEl.value = String(settings.maxLessonHours);
+
+      var subjects = getPayrollSuspicionSubjects_();
+      var rateMap = {};
+      (settings.rules || []).forEach(function(rule) {
+        var subject = String(rule.subject || "전체").trim() || "전체";
+        var classType = normalizePayrollSuspicionClassType_(rule.classType || "");
+        if (!classType) return;
+        rateMap[subject + "|" + classType] = toNumber(rule.rate, 0);
+      });
+
+      settingsSuspicionBodyEl.innerHTML = subjects.map(function(subject) {
+        var cells = PAYROLL_SUSPICION_CLASS_TYPES.map(function(type) {
+          var key = subject + "|" + type.key;
+          var value = rateMap[key] > 0 ? String(Math.round(rateMap[key])) : "";
+          return '<td><input class="modal-input" data-suspicion-subject="' + escapeHtml(subject) + '" data-suspicion-class-type="' + escapeHtml(type.key) + '" type="number" min="0" step="500" value="' + escapeHtml(value) + '" placeholder="미설정"></td>';
+        }).join("");
+        return '<tr><td>' + escapeHtml(subject) + '</td>' + cells + '</tr>';
+      }).join("");
+    }
+
+    function getPayrollSuspicionSubjects_() {
+      var base = ["전체", "수학", "영어", "국어", "과학", "사회", "기타"];
+      (state.subjects || []).forEach(function(subject) {
+        if (subject && base.indexOf(subject) === -1) base.push(subject);
+      });
+      return base;
+    }
+
+    function normalizePayrollSuspicionClassType_(value) {
+      var text = String(value || "").replace(/\s+/g, "");
+      if (!text) return "";
+      if (/개별정규|개별/.test(text)) return "개별";
+      if (/1:1|1대1|일대일/.test(text)) return "1:1";
+      if (/2:1|2대1/.test(text)) return "2:1";
+      return text;
+    }
+
+    function collectSettingsSuspicionRules() {
+      var rules = [];
+      Array.prototype.forEach.call(settingsSuspicionBodyEl.querySelectorAll("[data-suspicion-subject]"), function(input) {
+        var rate = Math.max(0, Math.round(toNumber(input.value, 0)));
+        if (rate <= 0) return;
+        rules.push({
+          subject: input.getAttribute("data-suspicion-subject") || "전체",
+          classType: input.getAttribute("data-suspicion-class-type") || "",
+          rate: rate
+        });
+      });
+      return {
+        enabled: true,
+        rateTolerancePercent: clampNumber(toNumber(suspicionRateTolerancePercentInputEl.value, 8), 0, 100),
+        rateToleranceWon: Math.max(0, Math.round(toNumber(suspicionRateToleranceWonInputEl.value, 3000))),
+        earliestHour: clampNumber(toNumber(suspicionEarliestHourInputEl.value, 8), 0, 23),
+        latestHour: clampNumber(toNumber(suspicionLatestHourInputEl.value, 23), 1, 24),
+        maxLessonHours: clampNumber(toNumber(suspicionMaxLessonHoursInputEl.value, 5), 1, 12),
+        rules: rules
+      };
+    }
+
     function setSettingsTab(tab) {
       state.settingsTab = tab || "profile";
       Array.prototype.forEach.call(settingsTabBtnEls, function(btn) {
@@ -25968,6 +26122,7 @@
         btn.classList.toggle("active", on);
       });
       document.getElementById("settingsSectionProfile").classList.toggle("active", state.settingsTab === "profile");
+      document.getElementById("settingsSectionSuspicion").classList.toggle("active", state.settingsTab === "suspicion");
       document.getElementById("settingsSectionMonthly").classList.toggle("active", state.settingsTab === "monthly");
       document.getElementById("settingsSectionWeekly").classList.toggle("active", state.settingsTab === "weekly");
     }
@@ -26215,8 +26370,9 @@
           paid: paidEl ? !!paidEl.checked : false
         });
       });
+      var suspicionRules = collectSettingsSuspicionRules();
 
-      savePayrollSettingsRequest_(updates)
+      savePayrollSettingsRequest_(updates, suspicionRules)
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
           state.teacherSettings = res.settings || {};
@@ -26229,10 +26385,11 @@
         });
     }
 
-    function savePayrollSettingsRequest_(updates) {
+    function savePayrollSettingsRequest_(updates, suspicionRules) {
       var payload = {
         monthName: state.selectedMonth,
-        updates: updates
+        updates: updates,
+        suspicionRules: suspicionRules
       };
       if (canUseGoogleScript()) {
         return runServer("savePayrollSettings", payload);
@@ -26250,7 +26407,11 @@
           latestSettings = res.settings || latestSettings;
         });
       }, Promise.resolve()).then(function() {
-        return { success: true, settings: latestSettings || {} };
+        return runServer("savePayrollSettings", {
+          monthName: state.selectedMonth,
+          updates: [],
+          suspicionRules: suspicionRules
+        });
       });
     }
 
@@ -26351,7 +26512,7 @@
       document.getElementById("kpiPureHours").textContent = formatHours(kpi.pureTeachingHours || 0) + "h";
       document.getElementById("kpiOverride").textContent = "수동 인정/제외 " + countOverrides(data.rows || []) + "건";
       document.getElementById("freeCountPill").textContent = "수동 인정/제외 " + countOverrides(data.rows || []) + "건";
-      document.getElementById("suspectCountPill").textContent = "단가 의심 " + countSuspects(data.rows || []) + "건";
+      document.getElementById("suspectCountPill").textContent = "의심 " + countSuspects(data.rows || []) + "건";
       renderModeState();
       renderCalendar(data.calendar || { weeks: [] });
       renderClassTypeSummary(data.classTypeSummary || []);

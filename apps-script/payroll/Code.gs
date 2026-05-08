@@ -3,8 +3,9 @@ const TEACHER_SS_ID = '1ByPeH0bZZrZDvW_yPkCpQCIuk724_Gt7uudUj_Ue8Ho';
 const ATTENDANCE_SS_ID = '1LukDneQLlU_F4s12V33z7gyhfIpZa47JVawKPY8xCfY'; 
 const PAYROLL_SS_ID = '1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E';
 const SEDU_LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%25%22 stop-color=%2216a34a%22/%3E%3Cstop offset=%22100%25%22 stop-color=%220f766e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z%22 fill=%22%23ffffff%22/%3E%3C/svg%3E';
-const PAYROLL_CACHE_SCHEMA_VERSION = "v7";
+const PAYROLL_CACHE_SCHEMA_VERSION = "v8";
 const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
+const PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
 const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
@@ -254,6 +255,10 @@ function savePayrollSettings(payload) {
     var updates = Array.isArray(req.updates) ? req.updates : [];
     var current = loadPayrollTeacherSettings_();
 
+    if (req.hasOwnProperty("suspicionRules")) {
+      current[PAYROLL_SUSPICION_SETTINGS_KEY] = normalizePayrollSuspicionSettings_(req.suspicionRules);
+    }
+
     updates.forEach(function(item) {
       var teacher = String((item && item.teacher) || "").trim();
       if (!teacher) return;
@@ -301,6 +306,42 @@ function loadPayrollTeacherSettings_() {
 function storePayrollTeacherSettings_(settings) {
   var data = settings && typeof settings === "object" ? settings : {};
   PropertiesService.getScriptProperties().setProperty(PAYROLL_TEACHER_SETTINGS_PROP, JSON.stringify(data));
+}
+
+function normalizePayrollSuspicionSettings_(input) {
+  var src = input && typeof input === "object" ? input : {};
+  var rules = Array.isArray(src.rules) ? src.rules : [];
+  var normalizedRules = [];
+  rules.forEach(function(rule) {
+    var subject = String((rule && rule.subject) || "전체").trim() || "전체";
+    var classType = normalizePayrollSuspicionClassType_((rule && rule.classType) || "");
+    var rate = Math.max(0, Math.round(toPayrollNumber_(rule && rule.rate)));
+    if (!classType) return;
+    normalizedRules.push({
+      subject: subject,
+      classType: classType,
+      rate: rate
+    });
+  });
+  var rateToleranceWon = src.hasOwnProperty("rateToleranceWon") ? toPayrollNumber_(src.rateToleranceWon) : 3000;
+  return {
+    enabled: src.enabled === false ? false : true,
+    rateTolerancePercent: clampPayrollNumber_(toPayrollNumber_(src.rateTolerancePercent), 0, 100, 8),
+    rateToleranceWon: Math.max(0, Math.round(rateToleranceWon)),
+    earliestHour: clampPayrollNumber_(toPayrollNumber_(src.earliestHour), 0, 23, 8),
+    latestHour: clampPayrollNumber_(toPayrollNumber_(src.latestHour), 1, 24, 23),
+    maxLessonHours: clampPayrollNumber_(toPayrollNumber_(src.maxLessonHours), 1, 12, 5),
+    rules: normalizedRules
+  };
+}
+
+function normalizePayrollSuspicionClassType_(value) {
+  var text = String(value || "").replace(/\s+/g, "");
+  if (!text) return "";
+  if (/개별정규|개별/.test(text)) return "개별";
+  if (/1:1|1대1|일대일/.test(text)) return "1:1";
+  if (/2:1|2대1/.test(text)) return "2:1";
+  return text;
 }
 
 function getDeskScheduleMonthData(payload) {
@@ -3289,7 +3330,9 @@ function bytesToHex_(bytes) {
 
 function buildPayrollTeacherSettingsSignature_(settings, teacherName) {
   var source = settings && typeof settings === "object" ? settings : {};
-  var payload = {};
+  var payload = {
+    suspicionRules: normalizePayrollSuspicionSettings_(source[PAYROLL_SUSPICION_SETTINGS_KEY] || {})
+  };
   if (teacherName) {
     var cfg = source[teacherName] || {};
     payload[teacherName] = {
@@ -3301,6 +3344,7 @@ function buildPayrollTeacherSettingsSignature_(settings, teacherName) {
   } else {
     var keys = Object.keys(source).sort();
     keys.forEach(function(name) {
+      if (name === PAYROLL_SUSPICION_SETTINGS_KEY) return;
       var cfg = source[name] || {};
       payload[name] = {
         salaryMode: normalizePayrollSalaryMode_(cfg.salaryMode),
@@ -4021,7 +4065,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
   var totalCanceledAmount = 0;
   var recognizedLessonCount = 0;
   var totalOneToOneRatioSettlement = 0;
-  var rateSuspicionMap = detectPayrollRateSuspicionMap_(rows);
+  var rateSuspicionMap = detectPayrollRateSuspicionMap_(rows, teacherSettings[PAYROLL_SUSPICION_SETTINGS_KEY]);
 
   for (var i = 0; i < filteredRows.length; i++) {
     var row = filteredRows[i];
@@ -4517,17 +4561,31 @@ function mergePayrollIntervalsToHours_(intervals) {
   return roundPayrollNumber_(total / 60, 2);
 }
 
-function detectPayrollRateSuspicionMap_(rows) {
+function detectPayrollRateSuspicionMap_(rows, suspicionSettings) {
+  var settings = normalizePayrollSuspicionSettings_(suspicionSettings || {});
+  if (settings.enabled === false) return {};
   var signatureMap = {};
   var studentMap = {};
+  var studentSummaryMap = {};
+  var configuredRuleMap = buildPayrollConfiguredRateRuleMap_(settings);
   rows.forEach(function(row) {
-    if (row.rate <= 0) return;
-    var key = row.teacher + "|" + row.rateSignature;
-    if (!signatureMap[key]) signatureMap[key] = [];
-    signatureMap[key].push(row.rate);
-    var studentKey = [row.teacher, row.name, row.classType, row.subject].join("|");
-    if (!studentMap[studentKey]) studentMap[studentKey] = [];
-    studentMap[studentKey].push(row.rate);
+    if (row.rate > 0) {
+      var key = row.teacher + "|" + row.rateSignature;
+      if (!signatureMap[key]) signatureMap[key] = [];
+      signatureMap[key].push(row.rate);
+      var studentKey = [row.teacher, row.name, row.classType, row.subject].join("|");
+      if (!studentMap[studentKey]) studentMap[studentKey] = [];
+      studentMap[studentKey].push(row.rate);
+    }
+    if (!row.name) return;
+    if (!studentSummaryMap[row.name]) {
+      studentSummaryMap[row.name] = { total: 0, combo: {}, teacher: {} };
+    }
+    var summary = studentSummaryMap[row.name];
+    summary.total += 1;
+    var comboKey = [row.subject || "-", normalizePayrollSuspicionClassType_(row.classType || "-") || row.classType || "-"].join("|");
+    summary.combo[comboKey] = (summary.combo[comboKey] || 0) + 1;
+    if (row.teacher) summary.teacher[row.teacher] = (summary.teacher[row.teacher] || 0) + 1;
   });
 
   var baselineMap = {};
@@ -4574,26 +4632,173 @@ function detectPayrollRateSuspicionMap_(rows) {
 
   var suspicionMap = {};
   rows.forEach(function(row) {
-    if (row.rate <= 0) return;
-    var studentKey = [row.teacher, row.name, row.classType, row.subject].join("|");
-    var studentBaseline = studentBaselineMap[studentKey];
-    if (studentBaseline > 0) {
-      var studentGap = Math.abs(row.rate - studentBaseline) / studentBaseline;
-      var studentAbs = Math.abs(row.rate - studentBaseline);
-      if (studentGap >= 0.07 && studentAbs >= 3000) {
-        suspicionMap[row.rowKey] = "학생 기준 " + Math.round(studentBaseline).toLocaleString("ko-KR") + "원 대비 이탈";
+    var reasons = [];
+    appendPayrollConfiguredRateSuspicion_(reasons, row, configuredRuleMap, settings);
+    appendPayrollTimeSuspicion_(reasons, row, settings);
+    appendPayrollClassTeacherSuspicion_(reasons, row);
+    appendPayrollStudentPatternSuspicion_(reasons, row, studentSummaryMap);
+    appendPayrollAmountSuspicion_(reasons, row);
+
+    if (row.rate > 0) {
+      var studentKey = [row.teacher, row.name, row.classType, row.subject].join("|");
+      var studentBaseline = studentBaselineMap[studentKey];
+      if (studentBaseline > 0) {
+        var studentGap = Math.abs(row.rate - studentBaseline) / studentBaseline;
+        var studentAbs = Math.abs(row.rate - studentBaseline);
+        if (studentGap >= 0.07 && studentAbs >= 3000) {
+          reasons.push("학생 기준 " + Math.round(studentBaseline).toLocaleString("ko-KR") + "원 대비 이탈");
+        }
+      } else {
+        var baseline = baselineMap[row.teacher + "|" + row.rateSignature];
+        if (baseline) {
+          var gap = Math.abs(row.rate - baseline.rate) / baseline.rate;
+          var absGap = Math.abs(row.rate - baseline.rate);
+          if (gap >= 0.15 && absGap >= 7000) {
+            reasons.push("통계 기준 " + Math.round(baseline.rate).toLocaleString("ko-KR") + "원 대비 이탈");
+          }
+        }
       }
-      return;
     }
 
-    var baseline = baselineMap[row.teacher + "|" + row.rateSignature];
-    if (!baseline) return;
-    var gap = Math.abs(row.rate - baseline.rate) / baseline.rate;
-    var absGap = Math.abs(row.rate - baseline.rate);
-    if (gap < 0.15 || absGap < 7000) return;
-    suspicionMap[row.rowKey] = "기준 " + Math.round(baseline.rate).toLocaleString("ko-KR") + "원 대비 이탈";
+    if (reasons.length) suspicionMap[row.rowKey] = uniquePayrollReasons_(reasons).join("\n");
   });
   return suspicionMap;
+}
+
+function buildPayrollConfiguredRateRuleMap_(settings) {
+  var map = {};
+  (settings.rules || []).forEach(function(rule) {
+    var rate = Math.max(0, toPayrollNumber_(rule.rate));
+    if (rate <= 0) return;
+    var subject = String(rule.subject || "전체").trim() || "전체";
+    var classType = normalizePayrollSuspicionClassType_(rule.classType || "");
+    if (!classType) return;
+    map[subject + "|" + classType] = rate;
+  });
+  return map;
+}
+
+function appendPayrollConfiguredRateSuspicion_(reasons, row, ruleMap, settings) {
+  if (!row || row.rate <= 0) return;
+  var classType = normalizePayrollSuspicionClassType_(row.classType || "");
+  if (!classType) return;
+  var exactKey = String(row.subject || "기타") + "|" + classType;
+  var fallbackKey = "전체|" + classType;
+  var expectedRate = toPayrollNumber_(ruleMap[exactKey] || ruleMap[fallbackKey]);
+  if (expectedRate <= 0) return;
+  var gap = Math.abs(row.rate - expectedRate) / expectedRate;
+  var absGap = Math.abs(row.rate - expectedRate);
+  var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
+  var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
+  if (gap <= tolerancePercent && absGap <= toleranceWon) return;
+  reasons.push("설정 기준 " + (row.subject || "기타") + "/" + classType + " " + Math.round(expectedRate).toLocaleString("ko-KR") + "원 대비 이탈");
+}
+
+function appendPayrollTimeSuspicion_(reasons, row, settings) {
+  var start = row.startMinutes;
+  var end = row.endMinutes;
+  if (start === null || end === null) {
+    reasons.push("수업 시작/종료 시간 파싱 불가");
+    return;
+  }
+  if (end <= start) {
+    reasons.push("종료 시간이 시작 시간보다 빠르거나 같습니다");
+    return;
+  }
+  var earliest = Math.round(toPayrollNumber_(settings.earliestHour, 8) * 60);
+  var latest = Math.round(toPayrollNumber_(settings.latestHour, 23) * 60);
+  if (start < earliest || end > latest) {
+    reasons.push("설정 운영시간(" + formatPayrollHourLabel_(earliest) + "~" + formatPayrollHourLabel_(latest) + ") 밖 수업");
+  }
+  var durationHours = (end - start) / 60;
+  var maxLessonHours = Math.max(1, toPayrollNumber_(settings.maxLessonHours, 5));
+  if (durationHours > maxLessonHours + 0.001 || toPayrollNumber_(row.hours, 0) > maxLessonHours + 0.001) {
+    reasons.push("1회 수업 시간이 " + formatPayrollPlainHours_(maxLessonHours) + "시간 초과");
+  }
+  if (Math.abs(durationHours - toPayrollNumber_(row.hours, 0)) >= 0.25) {
+    reasons.push("시작-종료 시간과 입력 시수가 불일치");
+  }
+}
+
+function appendPayrollClassTeacherSuspicion_(reasons, row) {
+  var hinted = extractPayrollClassTeacherHint_(row.className || "");
+  if (!hinted || !row.teacher) return;
+  if (normalizePayrollCompareText_(hinted) !== normalizePayrollCompareText_(row.teacher)) {
+    reasons.push("반명 표기 강사(" + hinted + ")와 TR(" + row.teacher + ") 불일치");
+  }
+}
+
+function appendPayrollStudentPatternSuspicion_(reasons, row, summaryMap) {
+  var summary = summaryMap[row.name || ""];
+  if (!summary || summary.total < 4) return;
+  var comboKey = [row.subject || "-", normalizePayrollSuspicionClassType_(row.classType || "-") || row.classType || "-"].join("|");
+  var comboCount = summary.combo[comboKey] || 0;
+  var maxComboCount = getPayrollMaxCount_(summary.combo);
+  if (comboCount === 1 && maxComboCount >= 3) {
+    reasons.push("학생이 평소 듣던 과목/유형 조합과 다른 수업");
+  }
+  var teacherCount = summary.teacher[row.teacher || ""] || 0;
+  var maxTeacherCount = getPayrollMaxCount_(summary.teacher);
+  if (teacherCount === 1 && maxTeacherCount >= 3) {
+    reasons.push("학생 기준 평소 담당 강사와 다른 수업");
+  }
+}
+
+function appendPayrollAmountSuspicion_(reasons, row) {
+  var rate = toPayrollNumber_(row.rate, 0);
+  var hours = toPayrollNumber_(row.hours, 0);
+  var amount = toPayrollNumber_(row.amount, 0);
+  if (rate > 0 && hours > 0 && amount > 0) {
+    var expected = Math.round(rate * hours);
+    var diff = Math.abs(amount - expected);
+    if (diff >= Math.max(1000, expected * 0.03)) {
+      reasons.push("금액과 시간당 금액 x 시수 불일치");
+    }
+  }
+  var discount = normalizePayrollDiscountPercent_(row.discount);
+  if (discount > 70) reasons.push("할인율이 70%를 초과합니다");
+}
+
+function extractPayrollClassTeacherHint_(className) {
+  var text = String(className || "");
+  var matches = text.match(/\(([^)]+)\)/g);
+  if (!matches || !matches.length) return "";
+  var hint = matches[matches.length - 1].replace(/[()]/g, "").trim();
+  if (!hint || /\d|h|H|시간|분|초|중|고|N수/.test(hint)) return "";
+  return hint;
+}
+
+function normalizePayrollCompareText_(text) {
+  return String(text || "").replace(/\s+/g, "").toLowerCase();
+}
+
+function getPayrollMaxCount_(map) {
+  var max = 0;
+  Object.keys(map || {}).forEach(function(key) {
+    max = Math.max(max, toPayrollNumber_(map[key], 0));
+  });
+  return max;
+}
+
+function uniquePayrollReasons_(reasons) {
+  var seen = {};
+  return (reasons || []).filter(function(reason) {
+    var text = String(reason || "").trim();
+    if (!text || seen[text]) return false;
+    seen[text] = true;
+    return true;
+  });
+}
+
+function formatPayrollHourLabel_(minutes) {
+  var hour = Math.floor(minutes / 60);
+  var minute = Math.round(minutes % 60);
+  return hour + ":" + (minute < 10 ? "0" + minute : minute);
+}
+
+function formatPayrollPlainHours_(hours) {
+  var value = Math.round(toPayrollNumber_(hours, 0) * 10) / 10;
+  return String(value).replace(/\.0$/, "");
 }
 
 function toPayrollKeySet_(list) {
