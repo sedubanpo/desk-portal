@@ -7285,6 +7285,26 @@
       min-width: 90px;
       font-weight: 800;
     }
+    .settlement-percent-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .settlement-percent-input {
+      width: 70px;
+      border: 1px solid #c8d6cc;
+      border-radius: 8px;
+      padding: 4px 6px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #1f2937;
+      background: #fff;
+    }
+    .settlement-percent-input:focus {
+      outline: none;
+      border-color: #2c9871;
+      box-shadow: 0 0 0 2px rgba(44, 152, 113, 0.16);
+    }
     .settings-suspicion-table th,
     .settings-suspicion-table td {
       text-align: right;
@@ -10323,6 +10343,7 @@
                 <th data-col="timeRange">시작-종료</th>
                 <th data-col="hours">시간</th>
                 <th data-col="rate">시간당</th>
+                <th data-col="settlementPercent">정산%</th>
                 <th data-col="amount">금액</th>
                 <th data-col="discount">할인</th>
                 <th data-col="netAmount">순금액</th>
@@ -12238,15 +12259,16 @@
             <input id="suspicionMaxLessonHoursInput" class="modal-input" type="number" min="1" max="12" step="0.5">
           </div>
         </div>
-        <div class="message" style="margin-bottom:10px;">시간당 기준 금액은 비워두면 기존 데이터 패턴으로 판정합니다. 입력된 기준은 과목별 값이 우선이고, 과목별 값이 비어 있으면 전체 기준을 사용합니다.</div>
+        <div class="message" style="margin-bottom:10px;">시간당 기준 금액은 비워두면 기존 데이터 패턴으로 판정합니다. 개별정규/개별 2~4시간 수업은 전과목 수강 학생 기준 28,125원도 정상 범위로 허용합니다.</div>
         <div class="modal-table-wrap">
           <table class="modal-table settings-suspicion-table">
             <thead>
               <tr>
-                <th>과목</th>
-                <th>개별정규/개별</th>
-                <th>1:1</th>
-                <th>2:1</th>
+                <th>수업유형</th>
+                <th>1시간</th>
+                <th>2시간</th>
+                <th>3시간</th>
+                <th>4시간</th>
               </tr>
             </thead>
             <tbody id="settingsSuspicionBody"></tbody>
@@ -12435,6 +12457,7 @@
       { key: "1:1", label: "1:1" },
       { key: "2:1", label: "2:1" }
     ];
+    var PAYROLL_SUSPICION_HOUR_BUCKETS = [1, 2, 3, 4];
     var DESK_DAILY_SERVER_POLL_MS = 3500;
     var DESK_LIVE_FEED_HISTORY_DAYS = 14;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
@@ -12502,6 +12525,7 @@
       hourlyRate: 30000,
       freeIncludedRowKeys: {},
       recognitionOverrides: {},
+      settlementPercentOverrides: {},
       selectedDateKey: "",
       attendanceFilter: "",
       recognizedFilter: "",
@@ -12682,6 +12706,7 @@
         timeRange: true,
         hours: true,
         rate: false,
+        settlementPercent: true,
         amount: true,
         discount: false,
         netAmount: true,
@@ -23296,6 +23321,7 @@
         state.freeIncludedRowKeys = {};
         state.recognitionOverrides = {};
         state.rateAdjustments = {};
+        state.settlementPercentOverrides = {};
         refreshSummary(false, { forceRefresh: true });
       });
 
@@ -23307,6 +23333,7 @@
         state.freeIncludedRowKeys = {};
         state.recognitionOverrides = {};
         state.rateAdjustments = {};
+        state.settlementPercentOverrides = {};
         refreshSummary(true);
       });
 
@@ -23315,6 +23342,7 @@
         state.selectedTeacher = "";
         state.selectedDateKey = "";
         state.rateAdjustments = {};
+        state.settlementPercentOverrides = {};
         refreshSummary(false);
       });
 
@@ -23322,6 +23350,7 @@
         state.selectedTeacher = teacherSelectEl.value;
         state.selectedDateKey = "";
         state.rateAdjustments = {};
+        state.settlementPercentOverrides = {};
         ensureTeacherSettingsLoaded_().finally(function() {
           applyTeacherSettingPreset();
           refreshSummary(false, { settingsReady: true });
@@ -26057,31 +26086,22 @@
       suspicionLatestHourInputEl.value = String(settings.latestHour);
       suspicionMaxLessonHoursInputEl.value = String(settings.maxLessonHours);
 
-      var subjects = getPayrollSuspicionSubjects_();
       var rateMap = {};
       (settings.rules || []).forEach(function(rule) {
-        var subject = String(rule.subject || "전체").trim() || "전체";
         var classType = normalizePayrollSuspicionClassType_(rule.classType || "");
+        var hours = normalizePayrollSuspicionRuleHours_(rule.hours);
         if (!classType) return;
-        rateMap[subject + "|" + classType] = toNumber(rule.rate, 0);
+        rateMap[classType + "|" + hours] = toNumber(rule.rate, 0);
       });
 
-      settingsSuspicionBodyEl.innerHTML = subjects.map(function(subject) {
-        var cells = PAYROLL_SUSPICION_CLASS_TYPES.map(function(type) {
-          var key = subject + "|" + type.key;
+      settingsSuspicionBodyEl.innerHTML = PAYROLL_SUSPICION_CLASS_TYPES.map(function(type) {
+        var cells = PAYROLL_SUSPICION_HOUR_BUCKETS.map(function(hours) {
+          var key = type.key + "|" + hours;
           var value = rateMap[key] > 0 ? String(Math.round(rateMap[key])) : "";
-          return '<td><input class="modal-input" data-suspicion-subject="' + escapeHtml(subject) + '" data-suspicion-class-type="' + escapeHtml(type.key) + '" type="number" min="0" step="500" value="' + escapeHtml(value) + '" placeholder="미설정"></td>';
+          return '<td><input class="modal-input" data-suspicion-class-type="' + escapeHtml(type.key) + '" data-suspicion-hours="' + hours + '" type="number" min="0" step="500" value="' + escapeHtml(value) + '" placeholder="미설정"></td>';
         }).join("");
-        return '<tr><td>' + escapeHtml(subject) + '</td>' + cells + '</tr>';
+        return '<tr><td>' + escapeHtml(type.label) + '</td>' + cells + '</tr>';
       }).join("");
-    }
-
-    function getPayrollSuspicionSubjects_() {
-      var base = ["전체", "수학", "영어", "국어", "과학", "사회", "기타"];
-      (state.subjects || []).forEach(function(subject) {
-        if (subject && base.indexOf(subject) === -1) base.push(subject);
-      });
-      return base;
     }
 
     function normalizePayrollSuspicionClassType_(value) {
@@ -26093,14 +26113,20 @@
       return text;
     }
 
+    function normalizePayrollSuspicionRuleHours_(value) {
+      var hours = toNumber(value, 0);
+      if (hours <= 0) return 0;
+      return Math.round(hours * 10) / 10;
+    }
+
     function collectSettingsSuspicionRules() {
       var rules = [];
-      Array.prototype.forEach.call(settingsSuspicionBodyEl.querySelectorAll("[data-suspicion-subject]"), function(input) {
+      Array.prototype.forEach.call(settingsSuspicionBodyEl.querySelectorAll("[data-suspicion-class-type]"), function(input) {
         var rate = Math.max(0, Math.round(toNumber(input.value, 0)));
         if (rate <= 0) return;
         rules.push({
-          subject: input.getAttribute("data-suspicion-subject") || "전체",
           classType: input.getAttribute("data-suspicion-class-type") || "",
+          hours: normalizePayrollSuspicionRuleHours_(input.getAttribute("data-suspicion-hours") || ""),
           rate: rate
         });
       });
@@ -26432,6 +26458,9 @@
         rateAdjustments: Object.keys(state.rateAdjustments).map(function(rowKey) {
           return { rowKey: rowKey, rate: toNumber(state.rateAdjustments[rowKey], 0) };
         }),
+        settlementPercentOverrides: Object.keys(state.settlementPercentOverrides).map(function(rowKey) {
+          return { rowKey: rowKey, percent: toNumber(state.settlementPercentOverrides[rowKey], 0) };
+        }),
         forceRefresh: !!options.forceRefresh
       };
     }
@@ -26567,6 +26596,7 @@
         timeRange: "시간대",
         hours: "시간",
         rate: "시간당",
+        settlementPercent: "정산%",
         amount: "금액",
         discount: "할인",
         netAmount: "순금액",
@@ -27287,6 +27317,17 @@
       return formatWon(amount);
     }
 
+    function buildSettlementPercentCell(row) {
+      var value = state.settlementPercentOverrides[row.rowKey];
+      if (value == null || value === "") value = row.settlementPercentApplied;
+      var badge = row.settlementPercentOverridden ? '<span class="rate-adjust-badge">수동</span>' : "";
+      return '<span class="settlement-percent-wrap">' +
+        '<input class="settlement-percent-input" type="number" min="0" max="200" step="0.5" data-settlement-row-key="' + escapeHtml(row.rowKey) + '" data-base-percent="' + escapeHtml(String(row.settlementPercentApplied || 0)) + '" value="' + escapeHtml(String(formatPayrollPercent(value || 0))) + '">' +
+        '<span>%</span>' +
+        badge +
+      '</span>';
+    }
+
     function showPayrollTooltip(target) {
       var text = target ? (target.getAttribute("data-tooltip") || "") : "";
       if (!text) return;
@@ -27330,6 +27371,7 @@
           ? '<span class="rate-suspect" tabindex="0" data-tooltip="' + escapeHtml(row.suspectedRateReason || "") + '">의심</span>'
           : "-";
         var discountCell = buildPayrollDiscountCell(row);
+        var settlementPercentCell = buildSettlementPercentCell(row);
         var rateCell = formatWon(row.rate);
         if (row.autoRepriceEligible) {
           var inputVal = state.rateAdjustments[row.rowKey] || row.rate || row.suggestedRate || "";
@@ -27358,6 +27400,7 @@
             '<td data-col="timeRange">' + escapeHtml(row.start + " ~ " + row.end) + "</td>" +
             '<td data-col="hours">' + formatHours(row.hours) + "</td>" +
             '<td data-col="rate">' + rateCell + "</td>" +
+            '<td data-col="settlementPercent">' + settlementPercentCell + "</td>" +
             '<td data-col="amount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.amount) + "</span>") : formatWon(row.amount)) + "</td>" +
             '<td data-col="discount">' + discountCell + "</td>" +
             '<td data-col="netAmount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
@@ -27385,6 +27428,18 @@
           var value = toNumber(event.target.value, 0);
           if (value > 0) state.rateAdjustments[key] = value;
           else delete state.rateAdjustments[key];
+          refreshSummary(false);
+        }, 320));
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll(".settlement-percent-input"), function(input) {
+        input.addEventListener("input", debounce(function(event) {
+          var key = String(event.target.dataset.settlementRowKey || "");
+          if (!key) return;
+          var value = clampNumber(toNumber(event.target.value, 0), 0, 200);
+          var base = clampNumber(toNumber(event.target.dataset.basePercent, 0), 0, 200);
+          if (event.target.value === "" || Math.abs(value - base) < 0.0001) delete state.settlementPercentOverrides[key];
+          else state.settlementPercentOverrides[key] = value;
           refreshSummary(false);
         }, 320));
       });

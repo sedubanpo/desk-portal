@@ -3,7 +3,7 @@ const TEACHER_SS_ID = '1ByPeH0bZZrZDvW_yPkCpQCIuk724_Gt7uudUj_Ue8Ho';
 const ATTENDANCE_SS_ID = '1LukDneQLlU_F4s12V33z7gyhfIpZa47JVawKPY8xCfY'; 
 const PAYROLL_SS_ID = '1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E';
 const SEDU_LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%25%22 stop-color=%2216a34a%22/%3E%3Cstop offset=%22100%25%22 stop-color=%220f766e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z%22 fill=%22%23ffffff%22/%3E%3C/svg%3E';
-const PAYROLL_CACHE_SCHEMA_VERSION = "v8";
+const PAYROLL_CACHE_SCHEMA_VERSION = "v9";
 const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
 const PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
@@ -313,13 +313,13 @@ function normalizePayrollSuspicionSettings_(input) {
   var rules = Array.isArray(src.rules) ? src.rules : [];
   var normalizedRules = [];
   rules.forEach(function(rule) {
-    var subject = String((rule && rule.subject) || "전체").trim() || "전체";
     var classType = normalizePayrollSuspicionClassType_((rule && rule.classType) || "");
+    var hours = normalizePayrollSuspicionRuleHours_(rule && rule.hours);
     var rate = Math.max(0, Math.round(toPayrollNumber_(rule && rule.rate)));
-    if (!classType) return;
+    if (!classType || hours <= 0) return;
     normalizedRules.push({
-      subject: subject,
       classType: classType,
+      hours: hours,
       rate: rate
     });
   });
@@ -342,6 +342,12 @@ function normalizePayrollSuspicionClassType_(value) {
   if (/1:1|1대1|일대일/.test(text)) return "1:1";
   if (/2:1|2대1/.test(text)) return "2:1";
   return text;
+}
+
+function normalizePayrollSuspicionRuleHours_(value) {
+  var hours = toPayrollNumber_(value);
+  if (hours <= 0) return 0;
+  return Math.round(hours * 10) / 10;
 }
 
 function getDeskScheduleMonthData(payload) {
@@ -3161,7 +3167,8 @@ function getPayrollMonthSummary(payload) {
       hourlyRate: Math.max(0, toPayrollNumber_(req.hourlyRate)),
       freeIncludedRowKeySet: toPayrollKeySet_(req.freeIncludedRowKeys),
       recognitionOverrideMap: toPayrollRecognitionOverrideMap_(req.recognitionOverrides),
-      rateAdjustmentMap: toPayrollRateAdjustmentMap_(req.rateAdjustments)
+      rateAdjustmentMap: toPayrollRateAdjustmentMap_(req.rateAdjustments),
+      settlementPercentOverrideMap: toPayrollSettlementPercentOverrideMap_(req.settlementPercentOverrides)
     };
     options.teacherSettings = loadPayrollTeacherSettings_();
     options.teacherSettingsSignature = buildPayrollTeacherSettingsSignature_(options.teacherSettings, options.teacherName);
@@ -3284,6 +3291,15 @@ function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
     })
     .filter(function(item) { return !!item.rowKey && item.rate > 0; })
     .sort(function(a, b) { return a.rowKey < b.rowKey ? -1 : (a.rowKey > b.rowKey ? 1 : 0); });
+  var settlementPercentOverrides = (Array.isArray(req.settlementPercentOverrides) ? req.settlementPercentOverrides : [])
+    .map(function(item) {
+      return {
+        rowKey: String((item && item.rowKey) || "").trim(),
+        percent: roundPayrollNumber_(clampPayrollNumber_(toPayrollNumber_(item && item.percent), 0, 200, 0), 2)
+      };
+    })
+    .filter(function(item) { return !!item.rowKey; })
+    .sort(function(a, b) { return a.rowKey < b.rowKey ? -1 : (a.rowKey > b.rowKey ? 1 : 0); });
 
   var signature = {
     cacheSchemaVersion: PAYROLL_CACHE_SCHEMA_VERSION,
@@ -3298,7 +3314,8 @@ function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
     teacherSettingsSignature: options.teacherSettingsSignature || "",
     freeIncludedRowKeys: freeRows,
     recognitionOverrides: overrides,
-    rateAdjustments: rateAdjustments
+    rateAdjustments: rateAdjustments,
+    settlementPercentOverrides: settlementPercentOverrides
   };
   var text = JSON.stringify(signature);
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text);
@@ -4064,6 +4081,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
   var totalRecognizedNet = 0;
   var totalCanceledAmount = 0;
   var recognizedLessonCount = 0;
+  var totalRatioPay = 0;
   var totalOneToOneRatioSettlement = 0;
   var rateSuspicionMap = detectPayrollRateSuspicionMap_(rows, teacherSettings[PAYROLL_SUSPICION_SETTINGS_KEY]);
 
@@ -4100,6 +4118,8 @@ function buildPayrollSummary_(rows, monthMeta, options) {
     var recognizedGross = attendanceInfo.recognized ? effectiveAmount : 0;
     var recognizedDiscount = attendanceInfo.recognized ? discountAmount : 0;
     var recognizedNet = attendanceInfo.recognized ? netAmount : 0;
+    var hasSettlementPercentOverride = Object.prototype.hasOwnProperty.call(options.settlementPercentOverrideMap || {}, row.rowKey);
+    var settlementPercentApplied = options.salaryMode === "ratio" ? options.ratioPercent : 0;
 
     if (!dayMap[row.classDateKey]) {
       dayMap[row.classDateKey] = {
@@ -4113,6 +4133,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
         discount: 0,
         netSales: 0,
         settlementAmount: 0,
+        ratioSettlement: 0,
         oneToOneRatioSettlement: 0,
         canceledAmount: 0,
         classTypeMap: {},
@@ -4124,7 +4145,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       dayMap[row.classDateKey].canceledAmount += Math.round(row.amount);
       totalCanceledAmount += Math.round(row.amount);
       if (!typeFinanceMap[row.classType]) {
-        typeFinanceMap[row.classType] = { type: row.classType, count: 0, hours: 0, hourlyHoursEligible: 0, gross: 0, net: 0, settlement: 0, oneToOneRatioSettlement: 0, canceled: 0, canceledCount: 0 };
+        typeFinanceMap[row.classType] = { type: row.classType, count: 0, hours: 0, hourlyHoursEligible: 0, gross: 0, net: 0, settlement: 0, ratioSettlement: 0, oneToOneRatioSettlement: 0, canceled: 0, canceledCount: 0 };
       }
       typeFinanceMap[row.classType].canceled += Math.round(row.amount);
       typeFinanceMap[row.classType].canceledCount += 1;
@@ -4141,7 +4162,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       workingDayMap[row.classDateKey] = true;
       typeTotals[row.classType] = (typeTotals[row.classType] || 0) + 1;
       if (!typeFinanceMap[row.classType]) {
-        typeFinanceMap[row.classType] = { type: row.classType, count: 0, hours: 0, hourlyHoursEligible: 0, gross: 0, net: 0, settlement: 0, oneToOneRatioSettlement: 0, canceled: 0, canceledCount: 0 };
+        typeFinanceMap[row.classType] = { type: row.classType, count: 0, hours: 0, hourlyHoursEligible: 0, gross: 0, net: 0, settlement: 0, ratioSettlement: 0, oneToOneRatioSettlement: 0, canceled: 0, canceledCount: 0 };
       }
       typeFinanceMap[row.classType].count += 1;
       typeFinanceMap[row.classType].hours += recognizedHours;
@@ -4154,10 +4175,16 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       totalRecognizedNet += recognizedNet;
       var oneToOneRule = resolvePayrollOneToOneRule_(teacherSettings, row.teacher, options.ratioPercent);
       var useOneToOneRatio = options.salaryMode === "hourly" && oneToOneRule.useRatio && isPayrollOneToOneClassType_(row.classType);
+      var baseSettlementPercent = options.salaryMode === "ratio"
+        ? options.ratioPercent
+        : (useOneToOneRatio ? oneToOneRule.ratioPercent : 0);
+      settlementPercentApplied = hasSettlementPercentOverride
+        ? clampPayrollNumber_(toPayrollNumber_(options.settlementPercentOverrideMap[row.rowKey]), 0, 200, baseSettlementPercent)
+        : baseSettlementPercent;
       var rowSettlement = 0;
       if (options.salaryMode === "hourly") {
-        if (useOneToOneRatio) {
-          rowSettlement = recognizedNet * (oneToOneRule.ratioPercent / 100);
+        if (hasSettlementPercentOverride || useOneToOneRatio) {
+          rowSettlement = recognizedNet * (settlementPercentApplied / 100);
           dayMap[row.classDateKey].oneToOneRatioSettlement += rowSettlement;
           typeFinanceMap[row.classType].oneToOneRatioSettlement += rowSettlement;
           totalOneToOneRatioSettlement += rowSettlement;
@@ -4166,10 +4193,13 @@ function buildPayrollSummary_(rows, monthMeta, options) {
           typeFinanceMap[row.classType].hourlyHoursEligible += recognizedHours;
         }
       } else {
-        rowSettlement = recognizedNet * (options.ratioPercent / 100);
+        rowSettlement = recognizedNet * (settlementPercentApplied / 100);
+        dayMap[row.classDateKey].ratioSettlement += rowSettlement;
+        typeFinanceMap[row.classType].ratioSettlement += rowSettlement;
+        totalRatioPay += rowSettlement;
       }
       typeFinanceMap[row.classType].settlement += rowSettlement;
-      if (!useOneToOneRatio && row.startMinutes !== null && row.endMinutes !== null && row.endMinutes > row.startMinutes) {
+      if (!useOneToOneRatio && !hasSettlementPercentOverride && row.startMinutes !== null && row.endMinutes !== null && row.endMinutes > row.startMinutes) {
         if (!recognizedIntervalsByDay[row.classDateKey]) recognizedIntervalsByDay[row.classDateKey] = [];
         recognizedIntervalsByDay[row.classDateKey].push([row.startMinutes, row.endMinutes]);
       }
@@ -4213,6 +4243,8 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       oneToOneRatioRuleApplied: options.salaryMode === "hourly" && isPayrollOneToOneClassType_(row.classType)
         ? resolvePayrollOneToOneRule_(teacherSettings, row.teacher, options.ratioPercent).useRatio
         : false,
+      settlementPercentApplied: roundPayrollNumber_(settlementPercentApplied, 2),
+      settlementPercentOverridden: hasSettlementPercentOverride,
       suspectedRateMismatch: !!rateSuspicionMap[row.rowKey],
       suspectedRateReason: rateSuspicionMap[row.rowKey] || "",
       autoRepriceEligible: isMakeupZeroEligible,
@@ -4229,7 +4261,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
     pureTeachingHours += mergedHours;
   });
 
-  var ratioPay = totalRecognizedNet * (options.ratioPercent / 100);
+  var ratioPay = totalRatioPay;
   var hourlyPay = (pureTeachingHours * options.hourlyRate) + totalOneToOneRatioSettlement;
   var estimatedPay = options.salaryMode === "hourly" ? hourlyPay : ratioPay;
 
@@ -4237,8 +4269,9 @@ function buildPayrollSummary_(rows, monthMeta, options) {
     var day = dayMap[dateKey];
     var daySettlement = options.salaryMode === "hourly"
       ? ((day.pureTeachingHours * options.hourlyRate) + (day.oneToOneRatioSettlement || 0))
-      : (day.netSales * (options.ratioPercent / 100));
+      : (day.ratioSettlement || 0);
     day.settlementAmount = Math.round(daySettlement);
+    day.ratioSettlement = Math.round(day.ratioSettlement || 0);
     day.oneToOneRatioSettlement = Math.round(day.oneToOneRatioSettlement || 0);
   });
 
@@ -4250,11 +4283,12 @@ function buildPayrollSummary_(rows, monthMeta, options) {
     bucket.net = Math.round(bucket.net);
     bucket.canceled = Math.round(bucket.canceled || 0);
     bucket.canceledCount = Math.round(bucket.canceledCount || 0);
+    bucket.ratioSettlement = Math.round(bucket.ratioSettlement || 0);
     bucket.oneToOneRatioSettlement = Math.round(bucket.oneToOneRatioSettlement || 0);
     if (options.salaryMode === "hourly") {
       bucket.settlement = Math.round((bucket.hourlyHoursEligible * options.hourlyRate) + bucket.oneToOneRatioSettlement);
     } else {
-      bucket.settlement = Math.round(bucket.net * (options.ratioPercent / 100));
+      bucket.settlement = Math.round(bucket.ratioSettlement || 0);
     }
   });
 
@@ -4476,6 +4510,19 @@ function toPayrollRateAdjustmentMap_(list) {
   return map;
 }
 
+function toPayrollSettlementPercentOverrideMap_(list) {
+  var map = {};
+  var arr = Array.isArray(list) ? list : [];
+  for (var i = 0; i < arr.length; i++) {
+    var item = arr[i] || {};
+    var key = String(item.rowKey || "").trim();
+    if (!key) continue;
+    var percent = clampPayrollNumber_(toPayrollNumber_(item.percent), 0, 200, 0);
+    map[key] = percent;
+  }
+  return map;
+}
+
 function isPayrollMakeupZeroAmountEligible_(row) {
   if (!row) return false;
   if (row.attendanceCode !== "보강") return false;
@@ -4569,7 +4616,7 @@ function detectPayrollRateSuspicionMap_(rows, suspicionSettings) {
   var studentSummaryMap = {};
   var configuredRuleMap = buildPayrollConfiguredRateRuleMap_(settings);
   rows.forEach(function(row) {
-    if (row.rate > 0) {
+    if (row.rate > 0 && !isPayrollAllowedAlternativeRate_(row, settings)) {
       var key = row.teacher + "|" + row.rateSignature;
       if (!signatureMap[key]) signatureMap[key] = [];
       signatureMap[key].push(row.rate);
@@ -4670,10 +4717,10 @@ function buildPayrollConfiguredRateRuleMap_(settings) {
   (settings.rules || []).forEach(function(rule) {
     var rate = Math.max(0, toPayrollNumber_(rule.rate));
     if (rate <= 0) return;
-    var subject = String(rule.subject || "전체").trim() || "전체";
     var classType = normalizePayrollSuspicionClassType_(rule.classType || "");
-    if (!classType) return;
-    map[subject + "|" + classType] = rate;
+    var hours = normalizePayrollSuspicionRuleHours_(rule.hours);
+    if (!classType || hours <= 0) return;
+    map[classType + "|" + hours] = rate;
   });
   return map;
 }
@@ -4682,16 +4729,28 @@ function appendPayrollConfiguredRateSuspicion_(reasons, row, ruleMap, settings) 
   if (!row || row.rate <= 0) return;
   var classType = normalizePayrollSuspicionClassType_(row.classType || "");
   if (!classType) return;
-  var exactKey = String(row.subject || "기타") + "|" + classType;
-  var fallbackKey = "전체|" + classType;
-  var expectedRate = toPayrollNumber_(ruleMap[exactKey] || ruleMap[fallbackKey]);
+  var hours = normalizePayrollSuspicionRuleHours_(row.hours);
+  var expectedRate = toPayrollNumber_(ruleMap[classType + "|" + hours]);
   if (expectedRate <= 0) return;
+  if (isPayrollAllowedAlternativeRate_(row, settings)) return;
   var gap = Math.abs(row.rate - expectedRate) / expectedRate;
   var absGap = Math.abs(row.rate - expectedRate);
   var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
   var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
   if (gap <= tolerancePercent && absGap <= toleranceWon) return;
-  reasons.push("설정 기준 " + (row.subject || "기타") + "/" + classType + " " + Math.round(expectedRate).toLocaleString("ko-KR") + "원 대비 이탈");
+  reasons.push("설정 기준 " + classType + " " + formatPayrollPlainHours_(hours) + "시간 " + Math.round(expectedRate).toLocaleString("ko-KR") + "원 대비 이탈");
+}
+
+function isPayrollAllowedAlternativeRate_(row, settings) {
+  var classType = normalizePayrollSuspicionClassType_(row.classType || "");
+  var hours = normalizePayrollSuspicionRuleHours_(row.hours);
+  if (classType !== "개별" || [2, 3, 4].indexOf(hours) === -1) return false;
+  var allowedRate = 28125;
+  var gap = Math.abs(toPayrollNumber_(row.rate, 0) - allowedRate) / allowedRate;
+  var absGap = Math.abs(toPayrollNumber_(row.rate, 0) - allowedRate);
+  var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
+  var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
+  return gap <= tolerancePercent || absGap <= toleranceWon;
 }
 
 function appendPayrollTimeSuspicion_(reasons, row, settings) {
