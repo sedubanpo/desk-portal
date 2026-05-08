@@ -3,7 +3,7 @@ const TEACHER_SS_ID = '1ByPeH0bZZrZDvW_yPkCpQCIuk724_Gt7uudUj_Ue8Ho';
 const ATTENDANCE_SS_ID = '1LukDneQLlU_F4s12V33z7gyhfIpZa47JVawKPY8xCfY'; 
 const PAYROLL_SS_ID = '1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E';
 const SEDU_LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%25%22 stop-color=%2216a34a%22/%3E%3Cstop offset=%22100%25%22 stop-color=%220f766e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z%22 fill=%22%23ffffff%22/%3E%3C/svg%3E';
-const PAYROLL_CACHE_SCHEMA_VERSION = "v9";
+const PAYROLL_CACHE_SCHEMA_VERSION = "v10";
 const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
 const PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
@@ -4726,31 +4726,102 @@ function buildPayrollConfiguredRateRuleMap_(settings) {
 }
 
 function appendPayrollConfiguredRateSuspicion_(reasons, row, ruleMap, settings) {
-  if (!row || row.rate <= 0) return;
+  if (!row) return;
   var classType = normalizePayrollSuspicionClassType_(row.classType || "");
   if (!classType) return;
   var hours = normalizePayrollSuspicionRuleHours_(row.hours);
   var expectedRate = toPayrollNumber_(ruleMap[classType + "|" + hours]);
   if (expectedRate <= 0) return;
-  if (isPayrollAllowedAlternativeRate_(row, settings)) return;
-  var gap = Math.abs(row.rate - expectedRate) / expectedRate;
-  var absGap = Math.abs(row.rate - expectedRate);
+  if (isPayrollAllowedAlternativeConfiguredAmount_(row, settings)) return;
+  var candidates = getPayrollSuspicionAmountCandidates_(row);
+  if (isPayrollAmountCandidateWithinTolerance_(candidates, expectedRate, settings)) return;
+  var representativeAmount = candidates.length ? candidates[0] : 0;
+  var gap = representativeAmount > 0 ? Math.abs(representativeAmount - expectedRate) / expectedRate : 1;
+  var absGap = representativeAmount > 0 ? Math.abs(representativeAmount - expectedRate) : expectedRate;
   var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
   var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
-  if (gap <= tolerancePercent && absGap <= toleranceWon) return;
+  if (gap <= tolerancePercent || absGap <= toleranceWon) return;
   reasons.push("설정 기준 " + classType + " " + formatPayrollPlainHours_(hours) + "시간 " + Math.round(expectedRate).toLocaleString("ko-KR") + "원 대비 이탈");
 }
 
 function isPayrollAllowedAlternativeRate_(row, settings) {
   var classType = normalizePayrollSuspicionClassType_(row.classType || "");
   var hours = normalizePayrollSuspicionRuleHours_(row.hours);
-  if (classType !== "개별" || [2, 3, 4].indexOf(hours) === -1) return false;
-  var allowedRate = 28125;
-  var gap = Math.abs(toPayrollNumber_(row.rate, 0) - allowedRate) / allowedRate;
-  var absGap = Math.abs(toPayrollNumber_(row.rate, 0) - allowedRate);
+  if (classType !== "개별") return false;
+  var allowedRates = [];
+  if ([2, 3, 4].indexOf(hours) !== -1) allowedRates.push(28125);
+  if (isPayrollElementaryOrMiddle_(row)) allowedRates.push(25000);
+  return isPayrollRateInAllowedList_(row.rate, allowedRates, settings);
+}
+
+function isPayrollAllowedAlternativeConfiguredAmount_(row, settings) {
+  var classType = normalizePayrollSuspicionClassType_(row.classType || "");
+  var hours = normalizePayrollSuspicionRuleHours_(row.hours);
+  if (classType !== "개별" || hours <= 0) return false;
+  var allowedAmounts = [];
+  if ([2, 3, 4].indexOf(hours) !== -1) allowedAmounts.push(28125 * hours);
+  if (isPayrollElementaryOrMiddle_(row)) allowedAmounts.push(25000 * hours);
+  if (!allowedAmounts.length) return false;
+  var candidates = getPayrollSuspicionAmountCandidates_(row);
+  for (var i = 0; i < allowedAmounts.length; i++) {
+    if (isPayrollAmountCandidateWithinTolerance_(candidates, allowedAmounts[i], settings)) return true;
+  }
+  return false;
+}
+
+function isPayrollElementaryOrMiddle_(row) {
+  var schoolType = String((row && row.schoolType) || "").trim();
+  if (schoolType === "초등" || schoolType === "중등") return true;
+  return /초등|중등|초[1-6]|중[1-3]/.test(String((row && row.className) || ""));
+}
+
+function isPayrollRateInAllowedList_(rateValue, allowedRates, settings) {
+  var rate = toPayrollNumber_(rateValue, 0);
+  if (rate <= 0 || !allowedRates || !allowedRates.length) return false;
   var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
   var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
-  return gap <= tolerancePercent || absGap <= toleranceWon;
+  for (var i = 0; i < allowedRates.length; i++) {
+    var allowedRate = toPayrollNumber_(allowedRates[i], 0);
+    if (allowedRate <= 0) continue;
+    var gap = Math.abs(rate - allowedRate) / allowedRate;
+    var absGap = Math.abs(rate - allowedRate);
+    if (gap <= tolerancePercent || absGap <= toleranceWon) return true;
+  }
+  return false;
+}
+
+function getPayrollSuspicionAmountCandidates_(row) {
+  var candidates = [];
+  function addCandidate(value) {
+    var amount = Math.round(toPayrollNumber_(value, 0));
+    if (amount <= 0) return;
+    if (candidates.indexOf(amount) === -1) candidates.push(amount);
+  }
+  var amount = toPayrollNumber_(row && row.amount, 0);
+  var rate = toPayrollNumber_(row && row.rate, 0);
+  var hours = toPayrollNumber_(row && row.hours, 0);
+  var discount = normalizePayrollDiscountPercent_(row && row.discount);
+  addCandidate(amount);
+  if (rate > 0 && hours > 0) addCandidate(rate * hours);
+  if (amount > 0 && discount > 0 && discount < 100) {
+    addCandidate(amount / (1 - (discount / 100)));
+  }
+  return candidates;
+}
+
+function isPayrollAmountCandidateWithinTolerance_(candidates, expectedAmount, settings) {
+  var expected = toPayrollNumber_(expectedAmount, 0);
+  if (expected <= 0 || !candidates || !candidates.length) return false;
+  var tolerancePercent = Math.max(0, toPayrollNumber_(settings.rateTolerancePercent, 8)) / 100;
+  var toleranceWon = Math.max(0, toPayrollNumber_(settings.rateToleranceWon, 3000));
+  for (var i = 0; i < candidates.length; i++) {
+    var amount = toPayrollNumber_(candidates[i], 0);
+    if (amount <= 0) continue;
+    var gap = Math.abs(amount - expected) / expected;
+    var absGap = Math.abs(amount - expected);
+    if (gap <= tolerancePercent || absGap <= toleranceWon) return true;
+  }
+  return false;
 }
 
 function appendPayrollTimeSuspicion_(reasons, row, settings) {
@@ -4809,8 +4880,12 @@ function appendPayrollAmountSuspicion_(reasons, row) {
   var amount = toPayrollNumber_(row.amount, 0);
   if (rate > 0 && hours > 0 && amount > 0) {
     var expected = Math.round(rate * hours);
-    var diff = Math.abs(amount - expected);
-    if (diff >= Math.max(1000, expected * 0.03)) {
+    var candidates = getPayrollSuspicionAmountCandidates_(row);
+    var tolerance = Math.max(1000, expected * 0.03);
+    var matched = candidates.some(function(candidate) {
+      return Math.abs(toPayrollNumber_(candidate, 0) - expected) < tolerance;
+    });
+    if (!matched) {
       reasons.push("금액과 시간당 금액 x 시수 불일치");
     }
   }
