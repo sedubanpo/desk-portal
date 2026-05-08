@@ -6708,7 +6708,7 @@
 
     .table-filter-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
       padding: 10px 12px;
       border-bottom: 1px solid #e6ede8;
@@ -6937,6 +6937,41 @@
       font-weight: 800;
       background: #fff7ed;
       color: #c2410c;
+      cursor: help;
+    }
+
+    .payroll-tooltip {
+      position: fixed;
+      z-index: 1600;
+      display: none;
+      max-width: 320px;
+      padding: 9px 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(146, 64, 14, 0.28);
+      background: #fff7ed;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+      color: #7c2d12;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+      white-space: normal;
+      pointer-events: none;
+    }
+
+    .discount-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .discount-percent {
+      font-weight: 900;
+      color: #0f6d4a;
+    }
+
+    .discount-amount {
+      color: #64748b;
+      font-size: 11px;
     }
 
     .cancel-line {
@@ -10243,6 +10278,10 @@
             <select id="classTypeFilterSelect"></select>
           </div>
           <div class="field">
+            <label for="detailStudentSearchInput">학생명 검색</label>
+            <input id="detailStudentSearchInput" type="search" placeholder="학생명 입력">
+          </div>
+          <div class="field">
             <label for="suspectOnlyCheck">단가 의심만 보기</label>
             <label class="check-inline"><input id="suspectOnlyCheck" type="checkbox">의심 행만 표시</label>
           </div>
@@ -12400,6 +12439,7 @@
       attendanceFilter: "",
       recognizedFilter: "",
       classTypeFilter: "",
+      detailStudentKeyword: "",
       suspectOnly: false,
       rateAdjustments: {},
       tableCollapsed: true,
@@ -12593,6 +12633,7 @@
     var attendanceFilterSelectEl = document.getElementById("attendanceFilterSelect");
     var recognizedFilterSelectEl = document.getElementById("recognizedFilterSelect");
     var classTypeFilterSelectEl = document.getElementById("classTypeFilterSelect");
+    var detailStudentSearchInputEl = document.getElementById("detailStudentSearchInput");
     var suspectOnlyCheckEl = document.getElementById("suspectOnlyCheck");
     var ratioInputEl = document.getElementById("ratioInput");
     var hourlyInputEl = document.getElementById("hourlyInput");
@@ -12618,6 +12659,7 @@
     var columnToggleWrapEl = document.getElementById("columnToggleWrap");
     var moduleTabEls = document.querySelectorAll(".module-tab");
     var moduleTeacherEl = document.getElementById("moduleTeacher");
+    var payrollTooltipEl = null;
     var moduleTuitionEl = document.getElementById("moduleTuition");
     var moduleExpenseEl = document.getElementById("moduleExpense");
     var mainShellEl = document.getElementById("mainShell");
@@ -23228,10 +23270,17 @@
         renderDerivedViews();
       });
 
+      detailStudentSearchInputEl.addEventListener("input", debounce(function() {
+        state.detailStudentKeyword = detailStudentSearchInputEl.value || "";
+        renderDerivedViews();
+      }, 180));
+
       suspectOnlyCheckEl.addEventListener("change", function() {
         state.suspectOnly = !!suspectOnlyCheckEl.checked;
         renderDerivedViews();
       });
+
+      window.addEventListener("scroll", hidePayrollTooltip, true);
 
       modeRatioBtnEl.addEventListener("click", function() {
         if (state.salaryMode === "ratio") return;
@@ -26387,14 +26436,20 @@
     }
 
     function applyTableFilters(rows) {
+      var studentKeyword = normalizeDetailSearchText(state.detailStudentKeyword);
       return rows.filter(function(row) {
         if (state.attendanceFilter && row.attendanceCode !== state.attendanceFilter) return false;
         if (state.recognizedFilter === "recognized" && !row.recognized) return false;
         if (state.recognizedFilter === "excluded" && row.recognized) return false;
         if (state.classTypeFilter && row.classType !== state.classTypeFilter) return false;
+        if (studentKeyword && normalizeDetailSearchText(formatStudentName(row.name || "")).indexOf(studentKeyword) === -1) return false;
         if (state.suspectOnly && !row.suspectedRateMismatch) return false;
         return true;
       });
+    }
+
+    function normalizeDetailSearchText(text) {
+      return String(text || "").replace(/\s+/g, "").toLowerCase();
     }
 
     function renderModeState() {
@@ -27053,6 +27108,51 @@
       return Math.round(toNumber(num, 0) * 100) / 100;
     }
 
+    function formatPayrollPercent(value) {
+      var num = Math.round(toNumber(value, 0) * 10) / 10;
+      return num.toLocaleString("ko-KR").replace(/\.0$/, "");
+    }
+
+    function buildPayrollDiscountCell(row) {
+      var percent = toNumber(row.discountPercent, 0);
+      var amount = toNumber(row.discount, 0);
+      if (percent <= 0 && amount <= 0) return "0%";
+      if (percent > 0) {
+        return '<span class="discount-cell" title="' + escapeHtml(formatWon(amount)) + ' 차감">' +
+          '<span class="discount-percent">' + escapeHtml(formatPayrollPercent(percent)) + '%</span>' +
+          '<span class="discount-amount">' + escapeHtml(formatWon(amount)) + '</span>' +
+        '</span>';
+      }
+      return formatWon(amount);
+    }
+
+    function showPayrollTooltip(target) {
+      var text = target ? (target.getAttribute("data-tooltip") || "") : "";
+      if (!text) return;
+      if (!payrollTooltipEl) {
+        payrollTooltipEl = document.createElement("div");
+        payrollTooltipEl.className = "payroll-tooltip";
+        document.body.appendChild(payrollTooltipEl);
+      }
+      payrollTooltipEl.textContent = text;
+      payrollTooltipEl.style.display = "block";
+      payrollTooltipEl.style.left = "12px";
+      payrollTooltipEl.style.top = "12px";
+
+      var rect = target.getBoundingClientRect();
+      var tipRect = payrollTooltipEl.getBoundingClientRect();
+      var left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+      left = Math.max(12, Math.min(left, window.innerWidth - tipRect.width - 12));
+      var top = rect.top - tipRect.height - 8;
+      if (top < 12) top = rect.bottom + 8;
+      payrollTooltipEl.style.left = left + "px";
+      payrollTooltipEl.style.top = top + "px";
+    }
+
+    function hidePayrollTooltip() {
+      if (payrollTooltipEl) payrollTooltipEl.style.display = "none";
+    }
+
     function renderTable(rows) {
       var body = document.getElementById("detailBody");
       if (!rows.length) {
@@ -27066,8 +27166,9 @@
         var checked = row.recognized ? "checked" : "";
         var attendanceClass = getAttendanceBadgeClass(row.attendanceCode);
         var suspectLabel = row.suspectedRateMismatch
-          ? '<span class="rate-suspect" title="' + escapeHtml(row.suspectedRateReason || "") + '">의심</span>'
+          ? '<span class="rate-suspect" tabindex="0" data-tooltip="' + escapeHtml(row.suspectedRateReason || "") + '">의심</span>'
           : "-";
+        var discountCell = buildPayrollDiscountCell(row);
         var rateCell = formatWon(row.rate);
         if (row.autoRepriceEligible) {
           var inputVal = state.rateAdjustments[row.rowKey] || row.rate || row.suggestedRate || "";
@@ -27097,7 +27198,7 @@
             '<td data-col="hours">' + formatHours(row.hours) + "</td>" +
             '<td data-col="rate">' + rateCell + "</td>" +
             '<td data-col="amount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.amount) + "</span>") : formatWon(row.amount)) + "</td>" +
-            '<td data-col="discount">' + formatWon(row.discount) + "</td>" +
+            '<td data-col="discount">' + discountCell + "</td>" +
             '<td data-col="netAmount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
             '<td data-col="suspect">' + suspectLabel + "</td>" +
             '<td data-col="note"><span class="note">' + escapeHtml(row.note || "") + "</span></td>" +
@@ -27125,6 +27226,13 @@
           else delete state.rateAdjustments[key];
           refreshSummary(false);
         }, 320));
+      });
+
+      Array.prototype.forEach.call(body.querySelectorAll(".rate-suspect"), function(el) {
+        el.addEventListener("mouseenter", function() { showPayrollTooltip(el); });
+        el.addEventListener("mouseleave", hidePayrollTooltip);
+        el.addEventListener("focus", function() { showPayrollTooltip(el); });
+        el.addEventListener("blur", hidePayrollTooltip);
       });
     }
 

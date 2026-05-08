@@ -3,7 +3,7 @@ const TEACHER_SS_ID = '1ByPeH0bZZrZDvW_yPkCpQCIuk724_Gt7uudUj_Ue8Ho';
 const ATTENDANCE_SS_ID = '1LukDneQLlU_F4s12V33z7gyhfIpZa47JVawKPY8xCfY'; 
 const PAYROLL_SS_ID = '1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E';
 const SEDU_LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%25%22 stop-color=%2216a34a%22/%3E%3Cstop offset=%22100%25%22 stop-color=%220f766e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z%22 fill=%22%23ffffff%22/%3E%3C/svg%3E';
-const PAYROLL_CACHE_SCHEMA_VERSION = "v6";
+const PAYROLL_CACHE_SCHEMA_VERSION = "v7";
 const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
 const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
@@ -3982,6 +3982,19 @@ function resolvePayrollOneToOneRule_(teacherSettings, teacherName, defaultRatioP
   };
 }
 
+function normalizePayrollDiscountPercent_(value) {
+  var raw = toPayrollNumber_(value);
+  if (raw <= 0) return 0;
+  if (raw <= 1) raw = raw * 100;
+  return clampPayrollNumber_(raw, 0, 100, 0);
+}
+
+function computePayrollDiscountAmount_(amount, discountPercent) {
+  var percent = normalizePayrollDiscountPercent_(discountPercent);
+  if (percent <= 0) return 0;
+  return Math.round(Math.max(0, toPayrollNumber_(amount)) * (percent / 100));
+}
+
 function buildPayrollSummary_(rows, monthMeta, options) {
   var subjectFilter = String(options.subjectFilter || "").trim();
   var teacherName = options.teacherName;
@@ -4036,10 +4049,12 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       rateAdjusted = true;
     }
 
-    var netAmount = effectiveAmount - row.discount;
+    var discountPercent = normalizePayrollDiscountPercent_(row.discount);
+    var discountAmount = computePayrollDiscountAmount_(effectiveAmount, discountPercent);
+    var netAmount = effectiveAmount - discountAmount;
     var recognizedHours = attendanceInfo.recognized ? row.hours : 0;
     var recognizedGross = attendanceInfo.recognized ? effectiveAmount : 0;
-    var recognizedDiscount = attendanceInfo.recognized ? row.discount : 0;
+    var recognizedDiscount = attendanceInfo.recognized ? discountAmount : 0;
     var recognizedNet = attendanceInfo.recognized ? netAmount : 0;
 
     if (!dayMap[row.classDateKey]) {
@@ -4138,7 +4153,9 @@ function buildPayrollSummary_(rows, monthMeta, options) {
       baseRate: row.rate,
       amount: Math.round(effectiveAmount),
       originalAmount: row.amount,
-      discount: row.discount,
+      discount: Math.round(discountAmount),
+      discountPercent: discountPercent,
+      discountRaw: row.discount,
       netAmount: netAmount,
       note: row.note,
       isFreeEligible: attendanceInfo.freeEligible,
