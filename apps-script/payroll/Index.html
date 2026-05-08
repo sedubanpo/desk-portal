@@ -27567,6 +27567,82 @@
       return count;
     }
 
+    function buildPayslipStudentMatrixHtml(rows) {
+      var list = (rows || []).filter(function(row) {
+        return row && row.recognized && toNumber(row.hours, 0) > 0;
+      });
+      if (!list.length) {
+        return '<div class="card"><strong>학생별 일자 시수표</strong><div class="empty-note">표시할 인정 수업이 없습니다.</div></div>';
+      }
+      var dayCount = getPayslipMonthDayCount(list);
+      var groups = {};
+      list.forEach(function(row) {
+        var student = formatStudentName(row.name || "-");
+        var className = row.className || "-";
+        var key = student + "||" + className;
+        if (!groups[key]) {
+          groups[key] = {
+            student: student,
+            className: className,
+            total: 0,
+            days: {}
+          };
+        }
+        var day = parseInt(String(row.classDateLabel || "").split("/").pop(), 10);
+        if (isNaN(day) || day < 1 || day > 31) {
+          var dateMatch = String(row.classDateKey || "").match(/-(\d{2})$/);
+          day = dateMatch ? parseInt(dateMatch[1], 10) : 0;
+        }
+        if (!day) return;
+        var hours = toNumber(row.hours, 0);
+        groups[key].days[day] = (groups[key].days[day] || 0) + hours;
+        groups[key].total += hours;
+      });
+      var groupList = Object.keys(groups).map(function(key) { return groups[key]; }).sort(function(a, b) {
+        var byStudent = a.student.localeCompare(b.student, "ko");
+        if (byStudent !== 0) return byStudent;
+        return a.className.localeCompare(b.className, "ko");
+      });
+      var dayHeaders = "";
+      for (var d = 1; d <= dayCount; d++) {
+        dayHeaders += '<th class="matrix-day">' + d + '</th>';
+      }
+      var bodyHtml = groupList.map(function(item) {
+        var cells = "";
+        for (var d = 1; d <= dayCount; d++) {
+          var value = item.days[d] || 0;
+          cells += '<td class="matrix-day">' + (value ? escapeHtml(formatHours(value)) : "") + '</td>';
+        }
+        return '<tr>' +
+          '<td class="matrix-student">' + escapeHtml(item.student) + '</td>' +
+          '<td class="matrix-class">' + escapeHtml(item.className) + '</td>' +
+          '<td class="matrix-total">' + escapeHtml(formatHours(item.total)) + '</td>' +
+          cells +
+        '</tr>';
+      }).join("");
+      return '<div class="card"><strong>학생별 일자 시수표</strong>' +
+        '<div class="matrix-wrap"><table class="matrix-table">' +
+          '<thead><tr><th class="matrix-student">학생</th><th class="matrix-class">반명</th><th class="matrix-total">합계</th>' + dayHeaders + '</tr></thead>' +
+          '<tbody>' + bodyHtml + '</tbody>' +
+        '</table></div>' +
+      '</div>';
+    }
+
+    function getPayslipMonthDayCount(rows) {
+      var parsed = String(state.selectedMonth || "").match(/^(\d{2})-(\d{2})$/);
+      if (parsed) {
+        var year = 2000 + parseInt(parsed[1], 10);
+        var month = parseInt(parsed[2], 10);
+        if (!isNaN(year) && !isNaN(month)) return new Date(year, month, 0).getDate();
+      }
+      var maxDay = 0;
+      (rows || []).forEach(function(row) {
+        var day = parseInt(String(row.classDateLabel || "").split("/").pop(), 10);
+        if (!isNaN(day)) maxDay = Math.max(maxDay, day);
+      });
+      return Math.max(1, maxDay || 31);
+    }
+
     function printPayslip() {
       var summary = state.currentSummary;
       if (!summary || !summary.kpi) {
@@ -27597,9 +27673,17 @@
           '.kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}' +
           '.kpi div{border:1px solid #e2e8f0;border-radius:8px;padding:8px}' +
           '.card{border:1px solid #d8e3dc;border-radius:10px;padding:12px;margin-bottom:10px}' +
+          '.empty-note{margin-top:10px;color:#64748b;font-size:12px}' +
           'table{width:100%;border-collapse:collapse;margin-top:10px}' +
           'th,td{border:1px solid #e5e7eb;padding:6px 8px;font-size:12px;text-align:left}' +
           'th{background:#f8fafc}.right{text-align:right}' +
+          '.matrix-wrap{overflow:auto;margin-top:10px}' +
+          '.matrix-table{min-width:980px;margin-top:0;font-size:10px}' +
+          '.matrix-table th,.matrix-table td{padding:4px 5px;font-size:10px;text-align:center}' +
+          '.matrix-table .matrix-student{min-width:92px;text-align:left;font-weight:700}' +
+          '.matrix-table .matrix-class{min-width:180px;text-align:left}' +
+          '.matrix-table .matrix-total{min-width:48px;text-align:right;font-weight:700}' +
+          '.matrix-table .matrix-day{width:28px;min-width:28px}' +
         '</style></head><body>' +
         '<h1>SEDU 급여 내역서</h1>' +
         '<div class="meta">월: ' + escapeHtml(state.selectedMonth) + ' / 강사: ' + escapeHtml(teacherText) + ' / 방식: ' + escapeHtml(modeText) + '</div>' +
@@ -27620,6 +27704,7 @@
           }).join("") || '<tr><td colspan="4">-</td></tr>') +
           '</tbody></table>' +
         '</div>' +
+        buildPayslipStudentMatrixHtml(rows) +
         '<div class="card"><strong>일자별 인정 내역</strong>' +
           '<table><thead><tr><th>일자</th><th class="right">매출</th><th class="right">정산</th><th class="right">인정시수</th><th class="right">순수시수</th></tr></thead><tbody>' +
           (dayList.map(function(day) {
