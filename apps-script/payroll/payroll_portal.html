@@ -27794,12 +27794,13 @@
           reject(new Error("API 호출 실패"));
         };
 
+        var timeoutMs = /^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(fnName) ? 45000 : 25000;
         timer = setTimeout(function() {
           if (settled) return;
           settled = true;
           cleanup();
           reject(new Error("API 호출 시간 초과"));
-        }, 25000);
+        }, timeoutMs);
 
         script.src = url.toString();
         document.head.appendChild(script);

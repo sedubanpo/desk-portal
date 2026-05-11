@@ -3140,7 +3140,8 @@ function payrollPad2_(num) {
 function getPayrollMonthSummary(payload) {
   try {
     var req = payload || {};
-    var monthSheets = getPayrollMonthSheetNames_();
+    var ss = getPayrollSpreadsheet_();
+    var monthSheets = getPayrollMonthSheetNames_(ss);
     if (!monthSheets.length) {
       return { success: false, message: "급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다." };
     }
@@ -3151,7 +3152,7 @@ function getPayrollMonthSummary(payload) {
       return { success: false, message: "월 탭 이름 형식이 올바르지 않습니다: " + monthName };
     }
 
-    var sheet = getPayrollSpreadsheet_().getSheetByName(monthName);
+    var sheet = ss.getSheetByName(monthName);
     if (!sheet) {
       return { success: false, message: "선택한 월 탭을 찾을 수 없습니다: " + monthName };
     }
@@ -3378,8 +3379,8 @@ function getPayrollSpreadsheet_() {
   return SpreadsheetApp.openById(PAYROLL_SS_ID);
 }
 
-function getPayrollMonthSheetNames_() {
-  var ss = getPayrollSpreadsheet_();
+function getPayrollMonthSheetNames_(ss) {
+  ss = ss || getPayrollSpreadsheet_();
   var names = ss.getSheets().map(function(sheet) { return sheet.getName(); });
   var valid = names.filter(function(name) { return !!parsePayrollMonthName_(name); });
   valid.sort(function(a, b) {
@@ -3825,14 +3826,17 @@ function parsePayrollMonthName_(name) {
 }
 
 function parsePayrollRows_(sheet, monthMeta) {
-  var values = sheet.getDataRange().getDisplayValues();
-  if (!values || values.length < 2) return [];
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
 
-  var headers = values[0].map(function(h) { return normalizePayrollHeader_(h); });
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function(h) { return normalizePayrollHeader_(h); });
   var indexMap = getPayrollColumnIndexMap_(headers);
+  var dataColCount = Math.max(1, Math.min(lastCol, getPayrollMaxColumnIndex_(indexMap) + 1));
+  var values = sheet.getRange(2, 1, lastRow - 1, dataColCount).getDisplayValues();
   var rows = [];
 
-  for (var r = 1; r < values.length; r++) {
+  for (var r = 0; r < values.length; r++) {
     var row = values[r] || [];
     var teacherName = String(row[indexMap.tr] || "").trim();
     var studentName = normalizePayrollStudentName_(row[indexMap.name]);
@@ -3855,8 +3859,8 @@ function parsePayrollRows_(sheet, monthMeta) {
     var rateSignature = [subject, schoolType, gradeBand, classType].join("|");
 
     rows.push({
-      rowNumber: r + 1,
-      rowKey: monthMeta.sheetName + ":" + (r + 1),
+      rowNumber: r + 2,
+      rowKey: monthMeta.sheetName + ":" + (r + 2),
       name: studentName,
       classDateRaw: String(row[indexMap.classDate] || "").trim(),
       classDateKey: dateInfo.dateKey,
@@ -3913,6 +3917,15 @@ function getPayrollColumnIndexMap_(headers) {
     note: findPayrollHeaderIndex_(headers, ["참고"], 11),
     discount: findPayrollHeaderIndex_(headers, ["할인"], 12)
   };
+}
+
+function getPayrollMaxColumnIndex_(indexMap) {
+  var maxIndex = 0;
+  Object.keys(indexMap || {}).forEach(function(key) {
+    var index = parseInt(indexMap[key], 10);
+    if (!isNaN(index) && index > maxIndex) maxIndex = index;
+  });
+  return maxIndex;
 }
 
 function normalizePayrollHeader_(text) {
