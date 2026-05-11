@@ -23605,16 +23605,15 @@
       state.payroll.loadingPromise = runServer("getPayrollBootstrapData")
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "초기 로드 실패");
-          state.payroll.loaded = true;
           state.months = res.months || [];
           state.selectedMonth = res.selectedMonth || (state.months[0] || "");
-          applySummaryMeta(res.summary || res);
           renderMonthOptions();
-          renderSubjectOptions();
-          renderTeacherOptions();
           return ensureTeacherSettingsLoaded_().catch(function() {}).then(function() {
-            renderSummary(res.summary || res);
             renderModeState();
+            return refreshSummary(false, { settingsReady: true });
+          }).then(function(summaryRes) {
+            if (!summaryRes) return;
+            state.payroll.loaded = true;
             setTimeout(function() {
               loadTuitionBootstrap({ silent: true }).catch(function() {});
             }, 0);
@@ -25888,7 +25887,7 @@
       setLoading(true, "정산 데이터를 계산 중입니다...");
 
       var ready = options.settingsReady ? Promise.resolve() : ensureTeacherSettingsLoaded_().catch(function() {});
-      ready.then(function() {
+      return ready.then(function() {
         return runServer("getPayrollMonthSummary", buildPayload(options));
       })
         .then(function(res) {
@@ -25909,9 +25908,11 @@
           renderSubjectOptions();
           renderTeacherOptions();
           renderSummary(res);
+          return res;
         })
         .catch(function(err) {
           showClientMessage(err.message || String(err));
+          return null;
         })
         .finally(function() {
           if (requestId === state.requestSeq) setLoading(false);

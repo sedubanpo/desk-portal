@@ -2199,22 +2199,10 @@ function getPayrollBootstrapData() {
     }
 
     var selectedMonth = monthSheets[0];
-    var summary = getPayrollMonthSummary({
-      monthName: selectedMonth,
-      teacherName: "",
-      salaryMode: "ratio",
-      ratioPercent: 50,
-      hourlyRate: 0,
-      freeIncludedRowKeys: []
-    });
-    if (!summary || !summary.success) return summary;
-
     return {
       success: true,
       months: monthSheets,
-      selectedMonth: selectedMonth,
-      teachers: summary.teachers || [],
-      summary: summary
+      selectedMonth: selectedMonth
     };
   } catch (e) {
     return { success: false, message: "초기 데이터 로드 오류: " + e.message };
