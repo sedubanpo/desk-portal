@@ -12518,7 +12518,10 @@
         loaded: false,
         loadingPromise: null,
         settingsLoaded: false,
-        settingsLoadingPromise: null
+        settingsLoadingPromise: null,
+        overrideSavingPromise: null,
+        overrideSaveTail: null,
+        overrideSaveSeq: 0
       },
       salaryMode: "ratio",
       ratioPercent: 50,
@@ -25896,6 +25899,7 @@
 
           state.months = res.months || state.months;
           state.selectedMonth = res.selectedMonth || state.selectedMonth;
+          applyPayrollSavedOverrides_(res.savedOverrides || {});
           if (isMonthRefresh) {
             state.selectedSubject = "";
             state.selectedTeacher = "";
@@ -26444,7 +26448,7 @@
 
     function buildPayload(options) {
       options = options || {};
-      return {
+      var payload = {
         monthName: state.selectedMonth,
         subjectFilter: state.selectedSubject,
         teacherName: state.selectedTeacher,
@@ -26452,6 +26456,16 @@
         ratioPercent: state.ratioPercent,
         hourlyRate: state.hourlyRate,
         classTypeFilter: state.classTypeFilter,
+        forceRefresh: !!options.forceRefresh
+      };
+      if (options.includeLocalOverrides) {
+        Object.assign(payload, buildPayrollOverridesPayload_());
+      }
+      return payload;
+    }
+
+    function buildPayrollOverridesPayload_() {
+      return {
         freeIncludedRowKeys: Object.keys(state.freeIncludedRowKeys),
         recognitionOverrides: Object.keys(state.recognitionOverrides).map(function(rowKey) {
           return { rowKey: rowKey, recognized: !!state.recognitionOverrides[rowKey] };
@@ -26461,9 +26475,68 @@
         }),
         settlementPercentOverrides: Object.keys(state.settlementPercentOverrides).map(function(rowKey) {
           return { rowKey: rowKey, percent: toNumber(state.settlementPercentOverrides[rowKey], 0) };
-        }),
-        forceRefresh: !!options.forceRefresh
+        })
       };
+    }
+
+    function applyPayrollSavedOverrides_(overrides) {
+      var src = overrides || {};
+      state.freeIncludedRowKeys = {};
+      (src.freeIncludedRowKeys || []).forEach(function(rowKey) {
+        rowKey = String(rowKey || "").trim();
+        if (rowKey) state.freeIncludedRowKeys[rowKey] = true;
+      });
+      state.recognitionOverrides = {};
+      (src.recognitionOverrides || []).forEach(function(item) {
+        var rowKey = String((item && item.rowKey) || "").trim();
+        if (rowKey && typeof item.recognized === "boolean") state.recognitionOverrides[rowKey] = !!item.recognized;
+      });
+      state.rateAdjustments = {};
+      (src.rateAdjustments || []).forEach(function(item) {
+        var rowKey = String((item && item.rowKey) || "").trim();
+        var rate = toNumber(item && item.rate, 0);
+        if (rowKey && rate > 0) state.rateAdjustments[rowKey] = rate;
+      });
+      state.settlementPercentOverrides = {};
+      (src.settlementPercentOverrides || []).forEach(function(item) {
+        var rowKey = String((item && item.rowKey) || "").trim();
+        if (rowKey) state.settlementPercentOverrides[rowKey] = clampNumber(toNumber(item && item.percent, 0), 0, 200);
+      });
+    }
+
+    function savePayrollOverrides_() {
+      var seq = ++state.payroll.overrideSaveSeq;
+      var tail = state.payroll.overrideSaveTail || Promise.resolve();
+      var job = tail.catch(function() {}).then(function() {
+        var payload = Object.assign({ monthName: state.selectedMonth }, buildPayrollOverridesPayload_());
+        return runServer("savePayrollOverrides", payload);
+      })
+        .then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "수동 보정 저장 실패");
+          if (seq === state.payroll.overrideSaveSeq) {
+            applyPayrollSavedOverrides_(res.overrides || {});
+            return res;
+          }
+          return { success: true, stale: true };
+        });
+      state.payroll.overrideSaveTail = job;
+      state.payroll.overrideSavingPromise = job.finally(function() {
+        if (state.payroll.overrideSavingPromise === job) state.payroll.overrideSavingPromise = null;
+      });
+      return state.payroll.overrideSavingPromise;
+    }
+
+    function savePayrollOverridesAndRefresh_() {
+      setLoading(true, "수동 보정을 저장 중입니다...");
+      return savePayrollOverrides_()
+        .then(function(res) {
+          if (res && res.stale) return null;
+          return refreshSummary(false, { overridesSaved: true });
+        })
+        .catch(function(err) {
+          showClientMessage("수동 보정 저장 오류: " + (err.message || String(err)));
+          return refreshSummary(false, { includeLocalOverrides: true });
+        });
     }
 
     function renderMonthOptions() {
@@ -27418,7 +27491,7 @@
           var baseRecognized = event.target.dataset.baseRecognized === "1";
           if (checked === baseRecognized) delete state.recognitionOverrides[key];
           else state.recognitionOverrides[key] = checked;
-          refreshSummary(false);
+          savePayrollOverridesAndRefresh_();
         });
       });
 
@@ -27429,7 +27502,7 @@
           var value = toNumber(event.target.value, 0);
           if (value > 0) state.rateAdjustments[key] = value;
           else delete state.rateAdjustments[key];
-          refreshSummary(false);
+          savePayrollOverridesAndRefresh_();
         }, 320));
       });
 
@@ -27441,7 +27514,7 @@
           var base = clampNumber(toNumber(event.target.dataset.basePercent, 0), 0, 200);
           if (event.target.value === "" || Math.abs(value - base) < 0.0001) delete state.settlementPercentOverrides[key];
           else state.settlementPercentOverrides[key] = value;
-          refreshSummary(false);
+          savePayrollOverridesAndRefresh_();
         }, 320));
       });
 

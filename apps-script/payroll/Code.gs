@@ -3,7 +3,7 @@ const TEACHER_SS_ID = '1ByPeH0bZZrZDvW_yPkCpQCIuk724_Gt7uudUj_Ue8Ho';
 const ATTENDANCE_SS_ID = '1LukDneQLlU_F4s12V33z7gyhfIpZa47JVawKPY8xCfY'; 
 const PAYROLL_SS_ID = '1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E';
 const SEDU_LOGO_URL = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%25%22 stop-color=%2216a34a%22/%3E%3Cstop offset=%22100%25%22 stop-color=%220f766e%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x=%224%22 y=%224%22 width=%2256%22 height=%2256%22 rx=%2214%22 fill=%22url(%23g)%22/%3E%3Cpath d=%22M43 18h-9.3c-7.9 0-14.3 5.6-14.3 12.5 0 6 4.8 10.6 12.5 12.2l5.8 1.2c2.9.6 4.5 2.1 4.5 4.1 0 2.6-2.7 4.5-6.4 4.5H20.5v-6.6h14.6c1.9 0 3.2-.8 3.2-2.1 0-1-.8-1.8-2.3-2.1L30 40.4c-8.6-1.9-13.7-7-13.7-13.8C16.3 16.9 24 10.5 33.6 10.5H43V18z%22 fill=%22%23ffffff%22/%3E%3C/svg%3E';
-const PAYROLL_CACHE_SCHEMA_VERSION = "v10";
+const PAYROLL_CACHE_SCHEMA_VERSION = "v12";
 const PAYROLL_TEACHER_SETTINGS_PROP = "PAYROLL_TEACHER_SETTINGS_V1";
 const PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
@@ -69,13 +69,15 @@ const PAYROLL_API_ALLOWED_METHODS = {
   deleteDeskRecruitingApplicant: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
-  savePayrollSettings: true
+  savePayrollSettings: true,
+  savePayrollOverrides: true
 };
 const PAYROLL_API_PRIVILEGED_METHODS = {
   getPayrollBootstrapData: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
-  savePayrollSettings: true
+  savePayrollSettings: true,
+  savePayrollOverrides: true
 };
 
 function doGet(e) {
@@ -151,7 +153,8 @@ function handlePayrollApiRequest_(params) {
       deleteDeskRecruitingApplicant: deleteDeskRecruitingApplicant,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
-      savePayrollSettings: savePayrollSettings
+      savePayrollSettings: savePayrollSettings,
+      savePayrollOverrides: savePayrollOverrides
     };
     var handler = handlers[fnName];
     if (typeof handler !== "function") {
@@ -295,6 +298,27 @@ function savePayrollSettings(payload) {
   }
 }
 
+function savePayrollOverrides(payload) {
+  try {
+    var req = payload || {};
+    var monthName = String(req.monthName || "").trim();
+    if (!parsePayrollMonthName_(monthName)) {
+      return { success: false, message: "월 탭 이름 형식이 올바르지 않습니다: " + monthName };
+    }
+    var overrides = normalizePayrollOverrideBundle_(req);
+    overrides.updatedAt = new Date().toISOString();
+    firebaseRequestWithServiceAccount_("put", getPayrollOverridesPath_(monthName), overrides);
+    return {
+      success: true,
+      monthName: monthName,
+      overrides: overrides,
+      overrideSignature: buildPayrollOverrideSignature_(overrides)
+    };
+  } catch (e) {
+    return { success: false, message: "수동 보정 저장 오류: " + e.message };
+  }
+}
+
 function loadPayrollTeacherSettings_() {
   var raw = String(PropertiesService.getScriptProperties().getProperty(PAYROLL_TEACHER_SETTINGS_PROP) || "").trim();
   if (!raw) return {};
@@ -306,6 +330,103 @@ function loadPayrollTeacherSettings_() {
 function storePayrollTeacherSettings_(settings) {
   var data = settings && typeof settings === "object" ? settings : {};
   PropertiesService.getScriptProperties().setProperty(PAYROLL_TEACHER_SETTINGS_PROP, JSON.stringify(data));
+}
+
+function getPayrollOverridesPath_(monthName) {
+  return "payroll/months/" + encodeURIComponent(String(monthName || "").trim()) + "/overrides/current";
+}
+
+function loadPayrollOverrides_(monthName) {
+  var normalizedMonth = String(monthName || "").trim();
+  if (!normalizedMonth) return normalizePayrollOverrideBundle_({});
+  var loaded = firebaseRequestWithServiceAccount_("get", getPayrollOverridesPath_(normalizedMonth));
+  return normalizePayrollOverrideBundle_(loaded || {});
+}
+
+function normalizePayrollOverrideBundle_(input) {
+  var src = input && typeof input === "object" ? input : {};
+  var freeMap = {};
+  (Array.isArray(src.freeIncludedRowKeys) ? src.freeIncludedRowKeys : []).forEach(function(rowKey) {
+    rowKey = String(rowKey || "").trim();
+    if (rowKey) freeMap[rowKey] = true;
+  });
+
+  var recognitionMap = {};
+  (Array.isArray(src.recognitionOverrides) ? src.recognitionOverrides : []).forEach(function(item) {
+    var rowKey = String((item && item.rowKey) || "").trim();
+    if (!rowKey || typeof (item && item.recognized) !== "boolean") return;
+    recognitionMap[rowKey] = !!item.recognized;
+  });
+
+  var rateMap = {};
+  (Array.isArray(src.rateAdjustments) ? src.rateAdjustments : []).forEach(function(item) {
+    var rowKey = String((item && item.rowKey) || "").trim();
+    var rate = roundPayrollNumber_(toPayrollNumber_(item && item.rate), 2);
+    if (!rowKey || rate <= 0) return;
+    rateMap[rowKey] = rate;
+  });
+
+  var settlementMap = {};
+  (Array.isArray(src.settlementPercentOverrides) ? src.settlementPercentOverrides : []).forEach(function(item) {
+    var rowKey = String((item && item.rowKey) || "").trim();
+    if (!rowKey) return;
+    settlementMap[rowKey] = roundPayrollNumber_(clampPayrollNumber_(toPayrollNumber_(item && item.percent), 0, 200, 0), 2);
+  });
+
+  var freeIncludedRowKeys = Object.keys(freeMap).sort();
+  var recognitionOverrides = Object.keys(recognitionMap).sort().map(function(rowKey) {
+    return { rowKey: rowKey, recognized: !!recognitionMap[rowKey] };
+  });
+  var rateAdjustments = Object.keys(rateMap).sort().map(function(rowKey) {
+    return { rowKey: rowKey, rate: rateMap[rowKey] };
+  });
+  var settlementPercentOverrides = Object.keys(settlementMap).sort().map(function(rowKey) {
+    return { rowKey: rowKey, percent: settlementMap[rowKey] };
+  });
+
+  var normalized = {
+    freeIncludedRowKeys: freeIncludedRowKeys,
+    recognitionOverrides: recognitionOverrides,
+    rateAdjustments: rateAdjustments,
+    settlementPercentOverrides: settlementPercentOverrides
+  };
+  if (src.updatedAt) normalized.updatedAt = String(src.updatedAt || "");
+  return normalized;
+}
+
+function mergePayrollOverrideBundles_(base, overlay) {
+  var merged = normalizePayrollOverrideBundle_(base || {});
+  var patch = normalizePayrollOverrideBundle_(overlay || {});
+  var freeMap = toPayrollKeySet_(merged.freeIncludedRowKeys);
+  patch.freeIncludedRowKeys.forEach(function(rowKey) { freeMap[rowKey] = true; });
+
+  var recognitionMap = toPayrollRecognitionOverrideMap_(merged.recognitionOverrides);
+  patch.recognitionOverrides.forEach(function(item) { recognitionMap[item.rowKey] = !!item.recognized; });
+
+  var rateMap = toPayrollRateAdjustmentMap_(merged.rateAdjustments);
+  patch.rateAdjustments.forEach(function(item) { rateMap[item.rowKey] = toPayrollNumber_(item.rate); });
+
+  var settlementMap = toPayrollSettlementPercentOverrideMap_(merged.settlementPercentOverrides);
+  patch.settlementPercentOverrides.forEach(function(item) { settlementMap[item.rowKey] = toPayrollNumber_(item.percent); });
+
+  return normalizePayrollOverrideBundle_({
+    freeIncludedRowKeys: Object.keys(freeMap),
+    recognitionOverrides: Object.keys(recognitionMap).map(function(rowKey) {
+      return { rowKey: rowKey, recognized: !!recognitionMap[rowKey] };
+    }),
+    rateAdjustments: Object.keys(rateMap).map(function(rowKey) {
+      return { rowKey: rowKey, rate: rateMap[rowKey] };
+    }),
+    settlementPercentOverrides: Object.keys(settlementMap).map(function(rowKey) {
+      return { rowKey: rowKey, percent: settlementMap[rowKey] };
+    })
+  });
+}
+
+function buildPayrollOverrideSignature_(overrides) {
+  var text = JSON.stringify(normalizePayrollOverrideBundle_(overrides || {}));
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text);
+  return bytesToHex_(digest);
 }
 
 function normalizePayrollSuspicionSettings_(input) {
@@ -3145,8 +3266,12 @@ function getPayrollMonthSummary(payload) {
       return { success: false, message: "선택한 월 탭을 찾을 수 없습니다: " + monthName };
     }
 
-    var rows = parsePayrollRows_(sheet, monthMeta);
-    var teacherBundle = buildPayrollTeacherOptions_(rows);
+    var forceRefresh = !!req.forceRefresh;
+    var source = readPayrollMonthSource_(sheet);
+    var sheetVersion = buildPayrollSourceVersion_(source);
+    var savedOverrides = loadPayrollOverrides_(monthName);
+    var requestOverrides = normalizePayrollOverrideBundle_(req);
+    var effectiveOverrides = mergePayrollOverrideBundles_(savedOverrides, requestOverrides);
     var options = {
       subjectFilter: String(req.subjectFilter || "").trim(),
       teacherName: String(req.teacherName || "").trim(),
@@ -3154,19 +3279,19 @@ function getPayrollMonthSummary(payload) {
       salaryMode: normalizePayrollSalaryMode_(req.salaryMode),
       ratioPercent: clampPayrollNumber_(toPayrollNumber_(req.ratioPercent), 0, 100, 50),
       hourlyRate: Math.max(0, toPayrollNumber_(req.hourlyRate)),
-      freeIncludedRowKeySet: toPayrollKeySet_(req.freeIncludedRowKeys),
-      recognitionOverrideMap: toPayrollRecognitionOverrideMap_(req.recognitionOverrides),
-      rateAdjustmentMap: toPayrollRateAdjustmentMap_(req.rateAdjustments),
-      settlementPercentOverrideMap: toPayrollSettlementPercentOverrideMap_(req.settlementPercentOverrides)
+      freeIncludedRowKeySet: toPayrollKeySet_(effectiveOverrides.freeIncludedRowKeys),
+      recognitionOverrideMap: toPayrollRecognitionOverrideMap_(effectiveOverrides.recognitionOverrides),
+      rateAdjustmentMap: toPayrollRateAdjustmentMap_(effectiveOverrides.rateAdjustments),
+      settlementPercentOverrideMap: toPayrollSettlementPercentOverrideMap_(effectiveOverrides.settlementPercentOverrides),
+      effectiveOverrides: effectiveOverrides,
+      overrideSignature: buildPayrollOverrideSignature_(effectiveOverrides)
     };
     options.teacherSettings = loadPayrollTeacherSettings_();
     options.teacherSettingsSignature = buildPayrollTeacherSettingsSignature_(options.teacherSettings, options.teacherName);
-    var sheetVersion = getPayrollSheetVersion_(sheet, rows);
     var cacheKey = buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options);
     var cachePath = "payroll/months/" + monthName + "/summary_cache/" + cacheKey;
     var cachedSummary = null;
     var cacheError = "";
-    var forceRefresh = !!req.forceRefresh;
 
     if (!forceRefresh) {
       try {
@@ -3188,6 +3313,10 @@ function getPayrollMonthSummary(payload) {
         sheetVersion: sheetVersion
       };
     } else {
+      var rowBundle = getPayrollMonthRowsBundle_(sheet, monthMeta, forceRefresh, source, sheetVersion);
+      var rows = rowBundle.rows || [];
+      var teacherBundle = rowBundle.teacherBundle || buildPayrollTeacherOptions_(rows);
+      options.rateSuspicionMap = getPayrollRateSuspicionMapCached_(rows, monthName, sheetVersion, options.teacherSettings[PAYROLL_SUSPICION_SETTINGS_KEY], forceRefresh);
       summary = buildPayrollSummary_(rows, monthMeta, options);
       summary.cache = {
         source: "firebase",
@@ -3198,6 +3327,24 @@ function getPayrollMonthSummary(payload) {
         invalidated: !!cachedSummary,
         forceRefresh: forceRefresh
       };
+      summary.subjects = teacherBundle.subjects;
+      summary.teachers = teacherBundle.teachers;
+      summary.teacherGroups = teacherBundle.groups;
+    }
+
+    summary.success = true;
+    summary.selectedMonth = monthName;
+    summary.monthLabel = monthMeta.year + "년 " + monthMeta.month + "월";
+    summary.salaryMode = options.salaryMode;
+    summary.ratioPercent = options.ratioPercent;
+    summary.hourlyRate = options.hourlyRate;
+    summary.subjects = summary.subjects || [];
+    summary.teachers = summary.teachers || [];
+    summary.teacherGroups = summary.teacherGroups || [];
+    summary.months = monthSheets;
+    summary.savedOverrides = effectiveOverrides;
+    summary.overrideSignature = options.overrideSignature;
+    if (!cachedValid) {
       try {
         firebaseRequestWithServiceAccount_("put", cachePath, {
           storedAt: new Date().toISOString(),
@@ -3211,17 +3358,6 @@ function getPayrollMonthSummary(payload) {
           : "write:" + cacheWriteErr.message;
       }
     }
-
-    summary.success = true;
-    summary.selectedMonth = monthName;
-    summary.monthLabel = monthMeta.year + "년 " + monthMeta.month + "월";
-    summary.salaryMode = options.salaryMode;
-    summary.ratioPercent = options.ratioPercent;
-    summary.hourlyRate = options.hourlyRate;
-    summary.subjects = teacherBundle.subjects;
-    summary.teachers = teacherBundle.teachers;
-    summary.teacherGroups = teacherBundle.groups;
-    summary.months = monthSheets;
     return summary;
   } catch (e) {
     return { success: false, message: "정산 데이터 계산 오류: " + e.message };
@@ -3258,11 +3394,12 @@ function getPayrollSheetVersion_(sheet, rows) {
 }
 
 function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
-  var freeRows = (Array.isArray(req.freeIncludedRowKeys) ? req.freeIncludedRowKeys : [])
+  var effectiveOverrides = (options && options.effectiveOverrides) || {};
+  var freeRows = (Array.isArray(effectiveOverrides.freeIncludedRowKeys) ? effectiveOverrides.freeIncludedRowKeys : [])
     .map(function(v) { return String(v || "").trim(); })
     .filter(function(v) { return !!v; })
     .sort();
-  var overrides = (Array.isArray(req.recognitionOverrides) ? req.recognitionOverrides : [])
+  var overrides = (Array.isArray(effectiveOverrides.recognitionOverrides) ? effectiveOverrides.recognitionOverrides : [])
     .map(function(item) {
       return {
         rowKey: String((item && item.rowKey) || "").trim(),
@@ -3271,7 +3408,7 @@ function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
     })
     .filter(function(item) { return !!item.rowKey; })
     .sort(function(a, b) { return a.rowKey < b.rowKey ? -1 : (a.rowKey > b.rowKey ? 1 : 0); });
-  var rateAdjustments = (Array.isArray(req.rateAdjustments) ? req.rateAdjustments : [])
+  var rateAdjustments = (Array.isArray(effectiveOverrides.rateAdjustments) ? effectiveOverrides.rateAdjustments : [])
     .map(function(item) {
       return {
         rowKey: String((item && item.rowKey) || "").trim(),
@@ -3280,7 +3417,7 @@ function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
     })
     .filter(function(item) { return !!item.rowKey && item.rate > 0; })
     .sort(function(a, b) { return a.rowKey < b.rowKey ? -1 : (a.rowKey > b.rowKey ? 1 : 0); });
-  var settlementPercentOverrides = (Array.isArray(req.settlementPercentOverrides) ? req.settlementPercentOverrides : [])
+  var settlementPercentOverrides = (Array.isArray(effectiveOverrides.settlementPercentOverrides) ? effectiveOverrides.settlementPercentOverrides : [])
     .map(function(item) {
       return {
         rowKey: String((item && item.rowKey) || "").trim(),
@@ -3301,6 +3438,7 @@ function buildPayrollSummaryCacheKey_(monthName, sheetVersion, req, options) {
     ratioPercent: options.ratioPercent,
     hourlyRate: options.hourlyRate,
     teacherSettingsSignature: options.teacherSettingsSignature || "",
+    overrideSignature: options.overrideSignature || "",
     freeIncludedRowKeys: freeRows,
     recognitionOverrides: overrides,
     rateAdjustments: rateAdjustments,
@@ -3378,6 +3516,83 @@ function getPayrollMonthSheetNames_(ss) {
     return mb.month - ma.month;
   });
   return valid;
+}
+
+function getPayrollMonthRowsBundle_(sheet, monthMeta, forceRefresh, source, sheetVersion) {
+  source = source || readPayrollMonthSource_(sheet);
+  sheetVersion = sheetVersion || buildPayrollSourceVersion_(source);
+  var cachePath = "payroll/months/" + monthMeta.sheetName + "/row_snapshot/" + PAYROLL_CACHE_SCHEMA_VERSION + "/" + sheetVersion;
+  if (!forceRefresh) {
+    try {
+      var cached = firebaseRequestWithServiceAccount_("get", cachePath);
+      if (cached && Array.isArray(cached.rows) && cached.teacherBundle) {
+        return {
+          rows: cached.rows,
+          teacherBundle: cached.teacherBundle,
+          sheetVersion: sheetVersion,
+          source: "firebase"
+        };
+      }
+    } catch (cacheReadErr) {
+      // Row snapshot cache is an optimization only; fall through to local parsing.
+    }
+  }
+
+  var rows = parsePayrollRowsFromSource_(source, monthMeta);
+  var teacherBundle = buildPayrollTeacherOptions_(rows);
+  var bundle = {
+    rows: rows,
+    teacherBundle: teacherBundle,
+    sheetVersion: sheetVersion,
+    source: "sheet"
+  };
+  try {
+    firebaseRequestWithServiceAccount_("put", cachePath, {
+      storedAt: new Date().toISOString(),
+      sheetVersion: sheetVersion,
+      rows: rows,
+      teacherBundle: teacherBundle
+    });
+  } catch (cacheWriteErr) {
+    bundle.cacheError = cacheWriteErr.message;
+  }
+  return bundle;
+}
+
+function readPayrollMonthSource_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) {
+    return { lastRow: lastRow, lastCol: lastCol, headers: [], values: [] };
+  }
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function(h) {
+    return normalizePayrollHeader_(h);
+  });
+  if (lastRow < 2) {
+    return { lastRow: lastRow, lastCol: lastCol, headers: headers, values: [] };
+  }
+  var indexMap = getPayrollColumnIndexMap_(headers);
+  var dataColCount = Math.max(1, Math.min(lastCol, getPayrollMaxColumnIndex_(indexMap) + 1));
+  var values = sheet.getRange(2, 1, lastRow - 1, dataColCount).getDisplayValues();
+  return {
+    lastRow: lastRow,
+    lastCol: lastCol,
+    dataColCount: dataColCount,
+    headers: headers,
+    values: values
+  };
+}
+
+function buildPayrollSourceVersion_(source) {
+  var payload = {
+    lastRow: toPayrollNumber_(source && source.lastRow, 0),
+    lastCol: toPayrollNumber_(source && source.lastCol, 0),
+    dataColCount: toPayrollNumber_(source && source.dataColCount, 0),
+    headers: (source && source.headers) || [],
+    values: (source && source.values) || []
+  };
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(payload));
+  return [payload.lastRow, payload.lastCol, bytesToHex_(digest)].join("_");
 }
 
 function getTuitionMonthSheetNames_() {
@@ -3814,14 +4029,14 @@ function parsePayrollMonthName_(name) {
 }
 
 function parsePayrollRows_(sheet, monthMeta) {
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastRow < 2 || lastCol < 1) return [];
+  return parsePayrollRowsFromSource_(readPayrollMonthSource_(sheet), monthMeta);
+}
 
-  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function(h) { return normalizePayrollHeader_(h); });
+function parsePayrollRowsFromSource_(source, monthMeta) {
+  var values = (source && source.values) || [];
+  if (!values.length) return [];
+  var headers = (source && source.headers) || [];
   var indexMap = getPayrollColumnIndexMap_(headers);
-  var dataColCount = Math.max(1, Math.min(lastCol, getPayrollMaxColumnIndex_(indexMap) + 1));
-  var values = sheet.getRange(2, 1, lastRow - 1, dataColCount).getDisplayValues();
   var rows = [];
 
   for (var r = 0; r < values.length; r++) {
@@ -3845,10 +4060,24 @@ function parsePayrollRows_(sheet, monthMeta) {
     var gradeBand = detectPayrollGradeBand_(className);
     var subject = detectPayrollSubject_(className);
     var rateSignature = [subject, schoolType, gradeBand, classType].join("|");
+    var rowNumber = r + 2;
+    var rowKey = buildPayrollRowKey_(monthMeta.sheetName, rowNumber, [
+      studentName,
+      dateInfo.dateKey,
+      className,
+      String(row[indexMap.attendance] || "").trim(),
+      teacherName,
+      startText,
+      endText,
+      hours,
+      toPayrollNumber_(row[indexMap.hourlyRate]),
+      toPayrollNumber_(row[indexMap.amount]),
+      toPayrollNumber_(row[indexMap.discount])
+    ]);
 
     rows.push({
-      rowNumber: r + 2,
-      rowKey: monthMeta.sheetName + ":" + (r + 2),
+      rowNumber: rowNumber,
+      rowKey: rowKey,
       name: studentName,
       classDateRaw: String(row[indexMap.classDate] || "").trim(),
       classDateKey: dateInfo.dateKey,
@@ -3914,6 +4143,21 @@ function getPayrollMaxColumnIndex_(indexMap) {
     if (!isNaN(index) && index > maxIndex) maxIndex = index;
   });
   return maxIndex;
+}
+
+function buildPayrollRowKey_(monthName, rowNumber, parts) {
+  var text = JSON.stringify(parts || []);
+  return String(monthName || "") + ":" + String(rowNumber || "") + ":" + payrollSimpleHash_(text);
+}
+
+function payrollSimpleHash_(text) {
+  var source = String(text || "");
+  var hash = 2166136261;
+  for (var i = 0; i < source.length; i++) {
+    hash ^= source.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 function normalizePayrollHeader_(text) {
@@ -4084,7 +4328,7 @@ function buildPayrollSummary_(rows, monthMeta, options) {
   var recognizedLessonCount = 0;
   var totalRatioPay = 0;
   var totalOneToOneRatioSettlement = 0;
-  var rateSuspicionMap = detectPayrollRateSuspicionMap_(rows, teacherSettings[PAYROLL_SUSPICION_SETTINGS_KEY]);
+  var rateSuspicionMap = options.rateSuspicionMap || detectPayrollRateSuspicionMap_(rows, teacherSettings[PAYROLL_SUSPICION_SETTINGS_KEY]);
 
   for (var i = 0; i < filteredRows.length; i++) {
     var row = filteredRows[i];
@@ -4710,6 +4954,39 @@ function detectPayrollRateSuspicionMap_(rows, suspicionSettings) {
 
     if (reasons.length) suspicionMap[row.rowKey] = uniquePayrollReasons_(reasons).join("\n");
   });
+  return suspicionMap;
+}
+
+function getPayrollRateSuspicionMapCached_(rows, monthName, sheetVersion, suspicionSettings, forceRefresh) {
+  var settings = normalizePayrollSuspicionSettings_(suspicionSettings || {});
+  if (settings.enabled === false) return {};
+  var keyPayload = {
+    cacheSchemaVersion: PAYROLL_CACHE_SCHEMA_VERSION,
+    monthName: String(monthName || ""),
+    sheetVersion: String(sheetVersion || ""),
+    suspicionSettings: settings
+  };
+  var keyDigest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(keyPayload));
+  var key = bytesToHex_(keyDigest);
+  var cachePath = "payroll/months/" + monthName + "/suspicion_cache/" + key;
+  if (!forceRefresh) {
+    try {
+      var cached = firebaseRequestWithServiceAccount_("get", cachePath);
+      if (cached && cached.map && typeof cached.map === "object") return cached.map;
+    } catch (cacheReadErr) {
+      // Suspicion cache is an optimization only; fall through to recompute.
+    }
+  }
+  var suspicionMap = detectPayrollRateSuspicionMap_(rows, settings);
+  try {
+    firebaseRequestWithServiceAccount_("put", cachePath, {
+      storedAt: new Date().toISOString(),
+      sheetVersion: sheetVersion,
+      map: suspicionMap
+    });
+  } catch (cacheWriteErr) {
+    // Non-fatal: summary still uses freshly computed suspicion reasons.
+  }
   return suspicionMap;
 }
 
