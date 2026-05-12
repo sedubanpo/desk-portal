@@ -2509,9 +2509,63 @@ function ensureTuitionPortalPaymentSheet_(ss) {
   var sheet = ss.getSheetByName(TUITION_PORTAL_PAYMENT_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(TUITION_PORTAL_PAYMENT_SHEET_NAME);
-    sheet.getRange(1, 1, 1, 11).setValues([["납입기한", "이름", "항목", "금액", "납부", "사업자", "결재구분", "승인번호", "입력일시", "이슈메모", "원본월"]]);
+    sheet.getRange(1, 1, 1, 12).setValues([["납입기한", "이름", "항목", "금액", "납부", "사업자", "결재구분", "승인번호", "입력일시", "이슈메모", "원본월", "요청ID"]]);
   }
+  ensureSheetHeaderColumn_(sheet, "요청ID");
   return sheet;
+}
+
+function ensureSheetHeaderColumn_(sheet, headerName) {
+  if (!sheet) return -1;
+  var name = String(headerName || "").trim();
+  if (!name) return -1;
+  var lastCol = Math.max(1, sheet.getLastColumn());
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0] || [];
+  var target = normalizeTuitionHeaderText_(name);
+  for (var i = 0; i < headers.length; i++) {
+    if (normalizeTuitionHeaderText_(headers[i]) === target) return i;
+  }
+  var nextCol = lastCol + 1;
+  if (sheet.getMaxColumns() < nextCol) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), nextCol - sheet.getMaxColumns());
+  }
+  sheet.getRange(1, nextCol).setValue(name);
+  return nextCol - 1;
+}
+
+function normalizeTuitionClientRequestId_(value) {
+  return String(value || "")
+    .replace(/[^\w:.-]/g, "")
+    .slice(0, 120)
+    .trim();
+}
+
+function findTuitionRequestRow_(sheet, requestId, requestIndex) {
+  var id = normalizeTuitionClientRequestId_(requestId);
+  if (!sheet || !id || requestIndex < 0 || sheet.getLastRow() < 2) return -1;
+  var values = sheet.getRange(2, requestIndex + 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+  for (var i = 0; i < values.length; i++) {
+    if (normalizeTuitionClientRequestId_(values[i][0]) === id) return i + 2;
+  }
+  return -1;
+}
+
+function withTuitionWriteLock_(workFn) {
+  var lock = LockService.getScriptLock();
+  var locked = false;
+  try {
+    lock.waitLock(20000);
+    locked = true;
+    return workFn();
+  } catch (e) {
+    return { success: false, message: "저장 대기 오류: " + e.message };
+  } finally {
+    if (locked) {
+      try {
+        lock.releaseLock();
+      } catch (err) {}
+    }
+  }
 }
 
 function getAllTuitionPaymentRows_(months) {
@@ -2550,6 +2604,7 @@ function getAllTuitionPaymentRows_(months) {
 }
 
 function saveTuitionFollowup(payload) {
+  return withTuitionWriteLock_(function() {
   try {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
@@ -2560,10 +2615,17 @@ function saveTuitionFollowup(payload) {
     var guideAmount = Math.max(0, Math.round(toPayrollNumber_(req.guideAmount)));
     var unpaidStatus = normalizeTuitionUnpaidStatus_(req.unpaidStatus);
     var memo = String(req.memo || "").trim();
+    var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     var now = new Date();
     var nowIso = now.toISOString();
 
     var ss = getPayrollSpreadsheet_();
+    var logSheet = ensureTuitionContactLogSheet_(ss);
+    var logRequestIndex = ensureSheetHeaderColumn_(logSheet, "요청ID");
+    if (requestId && findTuitionRequestRow_(logSheet, requestId, logRequestIndex) > 0) {
+      return { success: true, duplicate: true };
+    }
+
     var sheet = ensureTuitionFollowupSheet_(ss);
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
     var index = buildTuitionHeaderIndex_(headers, {
@@ -2614,16 +2676,29 @@ function saveTuitionFollowup(payload) {
     }
     sheet.getRange(rowNo, 1, 1, sheet.getLastColumn()).setValues([write]);
 
-    var logSheet = ensureTuitionContactLogSheet_(ss);
-    logSheet.appendRow([monthName, studentName, guideAmount, unpaidStatus, memo, nowIso]);
+    var logWrite = [];
+    logWrite[0] = monthName;
+    logWrite[1] = studentName;
+    logWrite[2] = guideAmount;
+    logWrite[3] = unpaidStatus;
+    logWrite[4] = memo;
+    logWrite[5] = nowIso;
+    logWrite[logRequestIndex] = requestId;
+    for (var lc = 0; lc < logSheet.getLastColumn(); lc++) {
+      if (typeof logWrite[lc] === "undefined") logWrite[lc] = "";
+    }
+    logSheet.getRange(logSheet.getLastRow() + 1, 1, 1, logSheet.getLastColumn()).setValues([logWrite]);
+    SpreadsheetApp.flush();
 
     return { success: true, contactAt: nowIso, contactCount: contactCount };
   } catch (e) {
     return { success: false, message: "연락기록 저장 오류: " + e.message };
   }
+  });
 }
 
 function saveTuitionStatusOnly(payload) {
+  return withTuitionWriteLock_(function() {
   try {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
@@ -2685,13 +2760,16 @@ function saveTuitionStatusOnly(payload) {
       if (typeof write[c] === "undefined") write[c] = "";
     }
     sheet.getRange(rowNo, 1, 1, sheet.getLastColumn()).setValues([write]);
+    SpreadsheetApp.flush();
     return { success: true, status: unpaidStatus };
   } catch (e) {
     return { success: false, message: "상태 저장 오류: " + e.message };
   }
+  });
 }
 
 function appendTuitionPaymentEntry(payload) {
+  return withTuitionWriteLock_(function() {
   try {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
@@ -2708,28 +2786,39 @@ function appendTuitionPaymentEntry(payload) {
     var approvalNo = String(req.approvalNo || "").trim();
     var issueMemo = String(req.issueMemo || "").trim();
     var itemName = String(req.itemName || "납부금액").trim();
+    var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     var nowText = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "M/d HH:mm");
 
     var ss = getPayrollSpreadsheet_();
     var sheet = ensureTuitionPortalPaymentSheet_(ss);
+    var requestIndex = ensureSheetHeaderColumn_(sheet, "요청ID");
+    if (requestId && findTuitionRequestRow_(sheet, requestId, requestIndex) > 0) {
+      return { success: true, duplicate: true };
+    }
 
-    sheet.appendRow([
-      dueDate,
-      studentName,
-      itemName || "납부금액",
-      amount,
-      paidAt,
-      business,
-      paymentType,
-      approvalNo,
-      nowText,
-      issueMemo,
-      monthName
-    ]);
+    var write = [];
+    write[0] = dueDate;
+    write[1] = studentName;
+    write[2] = itemName || "납부금액";
+    write[3] = amount;
+    write[4] = paidAt;
+    write[5] = business;
+    write[6] = paymentType;
+    write[7] = approvalNo;
+    write[8] = nowText;
+    write[9] = issueMemo;
+    write[10] = monthName;
+    write[requestIndex] = requestId;
+    for (var c = 0; c < sheet.getLastColumn(); c++) {
+      if (typeof write[c] === "undefined") write[c] = "";
+    }
+    sheet.getRange(sheet.getLastRow() + 1, 1, 1, sheet.getLastColumn()).setValues([write]);
+    SpreadsheetApp.flush();
     return { success: true };
   } catch (e) {
     return { success: false, message: "수납 입력 오류: " + e.message };
   }
+  });
 }
 
 function getTuitionMonthlySalesOverview(payload) {
@@ -3966,15 +4055,17 @@ function ensureTuitionContactLogSheet_(ss) {
   var sheet = ss.getSheetByName(TUITION_CONTACT_LOG_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(TUITION_CONTACT_LOG_SHEET_NAME);
-    sheet.getRange(1, 1, 1, 6).setValues([[
+    sheet.getRange(1, 1, 1, 7).setValues([[
       "월",
       "학생명",
       "안내금액",
       "미납상태",
       "메모",
-      "기록일시"
+      "기록일시",
+      "요청ID"
     ]]);
   }
+  ensureSheetHeaderColumn_(sheet, "요청ID");
   return sheet;
 }
 

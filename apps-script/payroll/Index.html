@@ -21540,6 +21540,61 @@
 
     var deskMemoSaveStatusTimer_ = null;
     var deskDailyMemoSaveQueue_ = Promise.resolve();
+    var deskDailyMutationQueue_ = Promise.resolve();
+
+    function delay_(ms) {
+      return new Promise(function(resolve) {
+        setTimeout(resolve, Math.max(0, Number(ms) || 0));
+      });
+    }
+
+    function withRetry_(workFn, options) {
+      var config = options || {};
+      var maxAttempts = Math.max(1, Number(config.attempts || 4));
+      var label = String(config.label || "operation");
+      function attempt(count) {
+        return Promise.resolve()
+          .then(workFn)
+          .catch(function(err) {
+            var message = err && err.message ? err.message : String(err);
+            if (count >= maxAttempts || err && err.nonRetryable) throw err;
+            console.warn(label + " retry", count, message);
+            if (typeof config.onRetry === "function") config.onRetry(err, count);
+            return delay_(Math.min(8000, Number(config.baseDelay || 850) * count)).then(function() {
+              return attempt(count + 1);
+            });
+          });
+      }
+      return attempt(1);
+    }
+
+    function enqueueDeskDailyMutation_(workFn, options) {
+      deskDailyMutationQueue_ = deskDailyMutationQueue_.catch(function() {
+        return null;
+      }).then(function() {
+        return delay_(Number(options && options.delay) || 180);
+      }).then(function() {
+        return withRetry_(workFn, {
+          attempts: Number(options && options.attempts) || 4,
+          baseDelay: 900,
+          label: options && options.label || "desk daily save",
+          onRetry: function() {
+            setDeskDailySyncStatus_("error");
+            showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장 재시도 중", "saving");
+          }
+        });
+      }).then(function(res) {
+        setDeskDailySyncStatus_("idle");
+        return res;
+      }).catch(function(err) {
+        var message = err && err.message ? err.message : String(err);
+        console.warn("desk daily mutation failed", message);
+        setDeskDailySyncStatus_("error");
+        showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장은 자동 재시도 후에도 확인이 필요합니다.", "error");
+        return null;
+      });
+      return deskDailyMutationQueue_;
+    }
 
     function saveDeskDailyMemoRemoteWithRetry_(item, attempt) {
       var safeItem = normalizeDeskDailyMemo_(item);
@@ -21559,14 +21614,12 @@
 
     function enqueueDeskDailyMemoRemoteSave_(item) {
       var safeItem = normalizeDeskDailyMemo_(item);
-      deskDailyMemoSaveQueue_ = deskDailyMemoSaveQueue_.catch(function() {
-        return null;
-      }).then(function() {
-        return new Promise(function(resolve) {
-          setTimeout(resolve, 260);
-        });
-      }).then(function() {
+      deskDailyMemoSaveQueue_ = enqueueDeskDailyMutation_(function() {
         return saveDeskDailyMemoRemoteWithRetry_(safeItem, 0);
+      }, {
+        delay: 260,
+        label: "desk daily memo save",
+        attempts: 1
       }).then(function() {
         setDeskDailySyncStatus_("idle");
         showDeskMemoSaveStatus_("서버 저장을 완료했습니다.", "saved");
@@ -21875,14 +21928,13 @@
         : item.dateKey;
       if (typeof done === "function") done();
       renderDeskDailyJournal_();
-      Promise.resolve(saveDeskDailyTaskRemote_(item))
+      enqueueDeskDailyMutation_(function() {
+        return saveDeskDailyTaskRemote_(item);
+      }, {
+        label: "desk daily task save"
+      })
         .then(function() {
           setDeskDailySyncStatus_("idle");
-          return syncDeskDailyJournalAfterMutation_(item.dateKey);
-        })
-        .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("업무 저장 오류: " + ((err && err.message) || String(err)));
           return syncDeskDailyJournalAfterMutation_(item.dateKey);
         });
     }
@@ -21894,14 +21946,13 @@
       mergeDeskDailyJournalData_(dateKey, tasks, getDeskDailyJournalMemos_(dateKey));
       refreshDeskDailyJournalSnapshotForDate_(dateKey);
       renderDeskDailyJournal_();
-      Promise.resolve(deleteDeskDailyTaskRemote_(dateKey, taskId))
+      enqueueDeskDailyMutation_(function() {
+        return deleteDeskDailyTaskRemote_(dateKey, taskId);
+      }, {
+        label: "desk daily task delete"
+      })
         .then(function() {
           setDeskDailySyncStatus_("idle");
-          return syncDeskDailyJournalAfterMutation_(dateKey);
-        })
-        .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("업무 삭제 오류: " + ((err && err.message) || String(err)));
           return syncDeskDailyJournalAfterMutation_(dateKey);
         });
     }
@@ -22010,14 +22061,13 @@
       }
       state.desk.daily.memoPage = 1;
       renderDeskDailyJournal_();
-      Promise.resolve(deleteDeskDailyMemoRemote_(dateKey, memoId))
+      enqueueDeskDailyMutation_(function() {
+        return deleteDeskDailyMemoRemote_(dateKey, memoId);
+      }, {
+        label: "desk daily memo delete"
+      })
         .then(function() {
           setDeskDailySyncStatus_("idle");
-          return syncDeskDailyJournalAfterMutation_(dateKey);
-        })
-        .catch(function(err) {
-          setDeskDailySyncStatus_("error");
-          alert("기록 삭제 오류: " + ((err && err.message) || String(err)));
           return syncDeskDailyJournalAfterMutation_(dateKey);
         });
     }
@@ -25611,21 +25661,57 @@
       "</div>";
     }
 
+    function buildClientRequestId_(prefix) {
+      return [
+        String(prefix || "write"),
+        Date.now(),
+        Math.random().toString(36).slice(2),
+        Math.random().toString(36).slice(2)
+      ].join("-");
+    }
+
+    function runServerWriteWithRetry_(fnName, payload, options) {
+      var requestPayload = Object.assign({}, payload || {});
+      if (/^(saveTuitionFollowup|appendTuitionPaymentEntry)$/.test(fnName) && !requestPayload.clientRequestId) {
+        requestPayload.clientRequestId = buildClientRequestId_(fnName);
+      }
+      return withRetry_(function() {
+        return runServer(fnName, requestPayload).then(function(res) {
+          if (!res || res.success === false) {
+            var err = new Error(res && res.message ? res.message : "저장 실패");
+            if (res && res.message && /월 정보|학생명|금액이 0원/.test(res.message)) err.nonRetryable = true;
+            throw err;
+          }
+          return res;
+        });
+      }, {
+        attempts: Number(options && options.attempts) || 4,
+        baseDelay: Number(options && options.baseDelay) || 1000,
+        label: fnName,
+        onRetry: options && options.onRetry
+      });
+    }
+
     function saveTuitionStatusSelection_(studentName, statusValue) {
       var row = findTuitionRowByStudent(studentName);
       if (!row) return;
-      runServer("saveTuitionStatusOnly", {
+      runServerWriteWithRetry_("saveTuitionStatusOnly", {
         monthName: state.tuition.selectedMonth,
         studentName: row.studentName,
         guideAmount: toNumber(row.guideAmount, 0),
         unpaidStatus: statusValue
+      }, {
+        onRetry: function() {
+          setLoading(true, "상태 저장을 재시도하는 중입니다...");
+        }
       })
         .then(function(res) {
-          if (!res || !res.success) throw new Error(res && res.message ? res.message : "상태 저장 실패");
+          setLoading(false);
           state.tuition.guideDashboard = null;
-          refreshTuitionSummary(false);
+          refreshTuitionSummary(true);
         })
         .catch(function(err) {
+          setLoading(false);
           alert("상태 저장 오류: " + (err.message || String(err)));
         });
     }
@@ -25679,19 +25765,22 @@
         saveTuitionContactBtnEl.disabled = false;
         setLoading(false);
       }
-      runServer("saveTuitionFollowup", {
+      runServerWriteWithRetry_("saveTuitionFollowup", {
         monthName: state.tuition.selectedMonth,
         studentName: target.studentName,
         guideAmount: toNumber(tuitionContactGuideAmountEl.value, 0),
         unpaidStatus: "안내완료",
         memo: tuitionContactMemoEl.value || ""
+      }, {
+        onRetry: function() {
+          setLoading(true, "연락 기록 저장을 재시도하는 중입니다...");
+        }
       })
         .then(function(res) {
           cleanup();
-          if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
           tuitionContactModalEl.style.display = "none";
           state.tuition.guideDashboard = null;
-          refreshTuitionSummary(false);
+          refreshTuitionSummary(true);
         })
         .catch(function(err) {
           cleanup();
@@ -25713,7 +25802,7 @@
         saveTuitionPaymentBtnEl.disabled = false;
         setLoading(false);
       }
-      runServer("appendTuitionPaymentEntry", {
+      runServerWriteWithRetry_("appendTuitionPaymentEntry", {
         monthName: state.tuition.selectedMonth,
         studentName: target.studentName,
         dueDate: tuitionPaymentDueDateEl.value,
@@ -25724,10 +25813,13 @@
         paymentType: tuitionPaymentTypeEl.value,
         approvalNo: tuitionPaymentApprovalNoEl.value,
         issueMemo: tuitionPaymentIssueMemoEl.value || ""
+      }, {
+        onRetry: function() {
+          setLoading(true, "수납 내역 저장을 재시도하는 중입니다...");
+        }
       })
         .then(function(res) {
           cleanup();
-          if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
           tuitionPaymentModalEl.style.display = "none";
           refreshTuitionSummary(true);
         })
@@ -27868,7 +27960,8 @@
           reject(new Error("API 호출 실패"));
         };
 
-        var timeoutMs = /^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(fnName) ? 45000 : 25000;
+        var isWriteApi = /^(save|delete|append|update)/.test(String(fnName || ""));
+        var timeoutMs = /^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(fnName) ? 45000 : (isWriteApi ? 75000 : 25000);
         timer = setTimeout(function() {
           if (settled) return;
           settled = true;
