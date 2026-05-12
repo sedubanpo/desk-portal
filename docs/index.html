@@ -8718,7 +8718,7 @@
       border-radius: 8px;
       background: linear-gradient(180deg, #f0faf5 0%, #f8fbf9 100%);
       padding: 12px 14px;
-      box-shadow: inset 4px 0 0 #0d684d;
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.05);
     }
     .desk-journal-shared-strip .desk-shared-summary-head { margin-bottom: 8px; align-items: center; }
     .desk-journal-shared-strip .desk-shared-summary-title { font-size: 14px; }
@@ -9701,8 +9701,8 @@
     .desk-daily-journal-mode .desk-journal-shared-strip {
       border-color: #efd089;
       background:
-        linear-gradient(180deg, rgba(255, 251, 235, 0.98) 0%, rgba(255, 253, 244, 0.98) 100%);
-      box-shadow: inset 5px 0 0 #d97706, 0 12px 24px rgba(146, 64, 14, 0.07);
+        linear-gradient(180deg, rgba(255, 249, 230, 0.98) 0%, rgba(255, 253, 244, 0.98) 100%);
+      box-shadow: 0 12px 24px rgba(146, 64, 14, 0.07);
     }
     .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-title {
       display: inline-flex;
@@ -9723,12 +9723,13 @@
       color: #0d684d;
     }
     .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-list {
-      max-height: 250px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      max-height: none;
+      overflow: visible;
     }
     .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item {
       border-color: #f1d99b;
-      background: #fffef9;
-      border-left: 4px solid #d97706;
+      background: #fffaf0;
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-shared-summary-trigger {
@@ -9783,9 +9784,9 @@
       padding: 14px;
       border-color: var(--desk-composer-border, #dfe7e1);
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(255,255,255,0.94) 100%),
-        linear-gradient(135deg, var(--desk-composer-bg, #fffdfa) 0%, #ffffff 100%);
-      box-shadow: inset 5px 0 0 var(--desk-composer-accent, #0d684d);
+        linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.94) 100%),
+        var(--desk-composer-bg, #fffdfa);
+      box-shadow: 0 10px 24px rgba(15,23,42,0.035);
     }
     .desk-daily-journal-mode .desk-composer-row {
       grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
@@ -9927,14 +9928,21 @@
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-row {
       display: grid;
-      grid-template-columns: 50px auto minmax(0, 1fr) auto;
+      grid-template-columns: 58px minmax(0, 1fr);
       align-items: flex-start;
-      gap: 8px 10px;
-      padding: 12px 0;
+      gap: 8px 12px;
+      padding: 10px 0;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-meta-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      min-width: 0;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-time-input {
-      width: 50px;
-      min-width: 50px;
+      width: 58px;
+      min-width: 58px;
       min-height: 30px;
       border: 1px solid #dfe7e1;
       background: #fff;
@@ -9943,13 +9951,22 @@
       font-weight: 900;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-time-static {
-      width: 50px;
+      width: 58px;
       min-height: 28px;
       display: inline-flex;
       align-items: center;
       color: #64748b;
       font-size: 12px;
       font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-dot {
+      display: none;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-body {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-main {
       min-width: 0;
@@ -9971,6 +9988,7 @@
     .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions {
       justify-content: flex-end;
       white-space: nowrap;
+      margin-top: 1px;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button {
       min-width: 32px;
@@ -9999,7 +10017,8 @@
       gap: 5px;
       border: 0;
       min-height: 26px;
-      padding: 0 9px 0 6px;
+      padding: 0 8px 0 5px;
+      font-size: 11px;
     }
     .desk-daily-journal-mode .desk-memo-type-badge svg {
       width: 14px;
@@ -20566,10 +20585,9 @@
         .filter(function(item) { return !item.hiddenFromWorkerBand; })
         .sort(compareDeskSharedTask_);
       var ackCandidates = getDeskSharedAckCandidates_(dateKey);
-      var expanded = !!state.desk.daily.sharedSummaryExpanded;
-      var visibleTasks = expanded ? sharedTasks : sharedTasks.slice(0, 2);
+      var visibleTasks = sharedTasks;
       var carryoverLoading = String(state.desk.daily.carryoverLoadingDateKey || "").indexOf(dateKey + "::") === 0;
-      deskJournalSharedSummaryListEl.classList.toggle("expanded", expanded);
+      deskJournalSharedSummaryListEl.classList.remove("expanded");
       if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = sharedTasks.length + "건";
       if (!sharedTasks.length) {
         deskJournalSharedSummaryListEl.innerHTML = carryoverLoading
@@ -20604,12 +20622,7 @@
           '</div>' +
         '</details>';
       }).join("");
-      var moreHtml = sharedTasks.length > 2
-        ? '<button type="button" class="desk-shared-more-btn" data-desk-shared-summary-toggle="1">' +
-            (expanded ? '접기' : ('+' + escapeHtml(String(sharedTasks.length - 2)) + '개 더 보기')) +
-          '</button>'
-        : '';
-      deskJournalSharedSummaryListEl.innerHTML = listHtml + moreHtml;
+      deskJournalSharedSummaryListEl.innerHTML = listHtml;
     }
 
     function getDeskLiveFeedDateKey_() {
@@ -21287,23 +21300,26 @@
         var timeText = formatDeskJournalTimeOnly_(display.createdAt || item.createdAt);
         return '<article class="desk-note-card desk-note-row-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
           '<div class="desk-note-row">' +
-            (isEditing
-              ? '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(timeText) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">'
-              : '<span class="desk-note-time-static">' + escapeHtml(timeText || "-") + '</span>') +
-            '<span class="desk-note-dot" aria-hidden="true"></span>' +
-            '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>' +
-            '<div class="desk-note-main">' +
-              '<span class="desk-note-worker-inline">' + escapeHtml(item.worker || "-") + '</span>' +
+            '<div class="desk-note-meta-stack">' +
               (isEditing
-                ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
-                : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
+                ? '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(timeText) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">'
+                : '<span class="desk-note-time-static">' + escapeHtml(timeText || "-") + '</span>') +
+              '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>' +
             '</div>' +
-            '<div class="desk-note-icon-actions">' +
-              (isEditing
-                ? '<button type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '" aria-label="취소" title="취소"><i data-lucide="x"></i><span>취소</span></button>' +
-                  '<button type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '" aria-label="저장" title="저장"><i data-lucide="check"></i><span>저장</span></button>'
-                : '<button type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '" aria-label="수정" title="수정"><i data-lucide="pencil"></i><span>수정</span></button>') +
-              '<button class="danger" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '" aria-label="삭제" title="삭제"><i data-lucide="trash-2"></i><span>삭제</span></button>' +
+            '<div class="desk-note-body">' +
+              '<div class="desk-note-main">' +
+                '<span class="desk-note-worker-inline">' + escapeHtml(item.worker || "-") + '</span>' +
+                (isEditing
+                  ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
+                  : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
+              '</div>' +
+              '<div class="desk-note-icon-actions">' +
+                (isEditing
+                  ? '<button type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '" aria-label="취소" title="취소"><i data-lucide="x"></i><span>취소</span></button>' +
+                    '<button type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '" aria-label="저장" title="저장"><i data-lucide="check"></i><span>저장</span></button>'
+                  : '<button type="button" data-desk-journal-memo-edit="' + escapeHtml(item.id) + '" aria-label="수정" title="수정"><i data-lucide="pencil"></i><span>수정</span></button>') +
+                '<button class="danger" type="button" data-desk-journal-memo-delete="' + escapeHtml(item.id) + '" aria-label="삭제" title="삭제"><i data-lucide="trash-2"></i><span>삭제</span></button>' +
+              '</div>' +
             '</div>' +
           '</div>' +
         '</article>';
