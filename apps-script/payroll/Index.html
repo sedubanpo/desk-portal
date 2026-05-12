@@ -9699,9 +9699,21 @@
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-journal-shared-strip {
-      border-color: #dfe7e1;
-      background: #fffdfa;
-      box-shadow: inset 3px 0 0 #0d684d;
+      border-color: #efd089;
+      background:
+        linear-gradient(180deg, rgba(255, 251, 235, 0.98) 0%, rgba(255, 253, 244, 0.98) 100%);
+      box-shadow: inset 5px 0 0 #d97706, 0 12px 24px rgba(146, 64, 14, 0.07);
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #713f12;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-title svg {
+      width: 16px;
+      height: 16px;
+      color: #d97706;
     }
     .desk-daily-journal-mode .desk-shared-summary-count,
     .desk-daily-journal-mode .desk-count-pill,
@@ -9714,8 +9726,9 @@
       max-height: 250px;
     }
     .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item {
-      border-color: #e1e8e2;
-      background: #ffffff;
+      border-color: #f1d99b;
+      background: #fffef9;
+      border-left: 4px solid #d97706;
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-shared-summary-trigger {
@@ -9768,6 +9781,11 @@
     }
     .desk-daily-journal-mode .desk-journal-composer {
       padding: 14px;
+      border-color: var(--desk-composer-border, #dfe7e1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.84) 0%, rgba(255,255,255,0.94) 100%),
+        linear-gradient(135deg, var(--desk-composer-bg, #fffdfa) 0%, #ffffff 100%);
+      box-shadow: inset 5px 0 0 var(--desk-composer-accent, #0d684d);
     }
     .desk-daily-journal-mode .desk-composer-row {
       grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
@@ -9846,8 +9864,10 @@
     .desk-daily-journal-mode .desk-memo-compose-input {
       min-height: 48px;
       border-radius: 8px;
-      border-color: #dfe7e1;
-      background: #fff;
+      border-color: var(--desk-composer-border, #dfe7e1);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.98)),
+        var(--desk-composer-bg, #fff);
       box-shadow: none;
     }
     .desk-daily-journal-mode .desk-memo-submit-btn {
@@ -9899,32 +9919,75 @@
       background: #ffffff;
       border-color: #dfe7e1;
       min-height: 340px;
+      max-height: none !important;
     }
     .desk-daily-journal-mode .desk-worker-detail-tabs {
       border-color: #dfe7e1;
       background: #f7fbf8;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 50px auto minmax(0, 1fr) auto;
       align-items: flex-start;
       gap: 8px 10px;
       padding: 12px 0;
     }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-time-input {
+      width: 50px;
+      min-width: 50px;
+      min-height: 30px;
+      border: 1px solid #dfe7e1;
+      background: #fff;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-time-static {
+      width: 50px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 900;
+    }
     .desk-daily-journal-mode .desk-journal-side .desk-note-main {
-      flex: 1 1 100%;
       min-width: 0;
       width: 100%;
+      display: block;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-text {
+      display: block;
       font-size: 14px;
       line-height: 1.55;
       word-break: keep-all;
       overflow-wrap: break-word;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      -webkit-line-clamp: initial;
+      -webkit-box-orient: initial;
     }
     .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions {
-      flex: 1 1 100%;
       justify-content: flex-end;
+      white-space: nowrap;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button {
+      min-width: 32px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid transparent;
+      background: #f8fbf9;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button span {
+      display: none;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button:hover {
+      border-color: #cfe4d9;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-journal-memo-foot {
+      display: none;
     }
     .desk-daily-journal-mode .desk-journal-note-list::before {
       background: #d7e2dc;
@@ -11611,7 +11674,7 @@
               <section class="desk-journal-shared-strip">
                 <div class="desk-shared-summary-head">
                   <div>
-                    <div class="desk-shared-summary-title">공동 업무</div>
+                    <div class="desk-shared-summary-title"><i data-lucide="megaphone"></i>공동 업무</div>
                     <div class="desk-shared-summary-sub">해당 날짜 모든 근무자가 확인해야 하는 공지입니다.</div>
                   </div>
                   <div class="desk-shared-summary-count" id="deskJournalSharedSummaryCount">0건</div>
@@ -20691,7 +20754,13 @@
     function syncDeskMemoComposerState_() {
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
       var canWrite = selectedWorker !== "전체" && selectedWorker !== DESK_ROUTINE_TAB_KEY;
-      if (deskJournalMemoEditorCardEl) deskJournalMemoEditorCardEl.classList.toggle("disabled", !canWrite);
+      if (deskJournalMemoEditorCardEl) {
+        var palette = canWrite ? getDeskWorkerPalette_(selectedWorker) : null;
+        deskJournalMemoEditorCardEl.classList.toggle("disabled", !canWrite);
+        deskJournalMemoEditorCardEl.style.setProperty("--desk-composer-bg", palette ? palette.bg : "#fffdfa");
+        deskJournalMemoEditorCardEl.style.setProperty("--desk-composer-border", palette ? palette.border : "#dfe7e1");
+        deskJournalMemoEditorCardEl.style.setProperty("--desk-composer-accent", palette ? (palette.accent || palette.fg) : "#0d684d");
+      }
       if (deskJournalComposerTitleEl) {
         deskJournalComposerTitleEl.textContent = canWrite ? (selectedWorker + "님의 빠른 입력") : "근무자를 선택하세요";
       }
@@ -21197,19 +21266,13 @@
 	          ? "입력 기록을 수정하거나 보고용 복사를 준비합니다."
 	          : "근무자 탭을 선택하면 입력 기록과 보고 복사를 확인할 수 있습니다.";
 	      }
-      var pageSize = state.desk.daily.memoPageSize || 7;
       var total = visible.length;
-      var totalPages = Math.max(1, Math.ceil(total / pageSize));
-      state.desk.daily.memoPage = Math.min(Math.max(state.desk.daily.memoPage || 1, 1), totalPages);
-      var startIndex = (state.desk.daily.memoPage - 1) * pageSize;
-      var pageItems = visible.slice(startIndex, startIndex + pageSize);
+      var pageItems = visible;
       if (deskJournalMemoMetaEl) {
         deskJournalMemoMetaEl.textContent = total ? (total + "건") : "0건";
       }
       if (deskJournalMemoPaginationEl) {
-        deskJournalMemoPaginationEl.innerHTML = total > pageSize
-          ? buildDeskMemoPaginationHtml_(state.desk.daily.memoPage, totalPages)
-          : "";
+        deskJournalMemoPaginationEl.innerHTML = "";
       }
 	      if (!pageItems.length) {
 	        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
@@ -21221,9 +21284,12 @@
         var type = getDeskMemoType_(item);
         var display = getDeskMemoDisplayParts_(item);
         var typeIcon = getDeskMemoTypeIcon_(type);
+        var timeText = formatDeskJournalTimeOnly_(display.createdAt || item.createdAt);
         return '<article class="desk-note-card desk-note-row-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
           '<div class="desk-note-row">' +
-            '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(formatDeskJournalTimeOnly_(display.createdAt || item.createdAt)) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">' +
+            (isEditing
+              ? '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(timeText) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">'
+              : '<span class="desk-note-time-static">' + escapeHtml(timeText || "-") + '</span>') +
             '<span class="desk-note-dot" aria-hidden="true"></span>' +
             '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>' +
             '<div class="desk-note-main">' +
@@ -21233,7 +21299,6 @@
                 : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
             '</div>' +
             '<div class="desk-note-icon-actions">' +
-              '<button type="button" data-desk-journal-memo-time-save="' + escapeHtml(item.id) + '" aria-label="시간 저장" title="시간 저장"><i data-lucide="clock-3"></i><span>시간</span></button>' +
               (isEditing
                 ? '<button type="button" data-desk-journal-memo-cancel="' + escapeHtml(item.id) + '" aria-label="취소" title="취소"><i data-lucide="x"></i><span>취소</span></button>' +
                   '<button type="button" data-desk-journal-memo-save="' + escapeHtml(item.id) + '" aria-label="저장" title="저장"><i data-lucide="check"></i><span>저장</span></button>'
@@ -22015,7 +22080,7 @@
       renderDeskDailyJournal_();
     }
 
-    function saveDeskDailyMemoText_(memoId, textValue) {
+    function saveDeskDailyMemoText_(memoId, textValue, timeValue) {
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var current = getDeskDailyJournalMemos_(dateKey).find(function(item) {
         return item.id === memoId;
@@ -22026,10 +22091,19 @@
         alert("기록 내용을 입력해 주세요.");
         return;
       }
-      upsertDeskDailyMemo_(Object.assign({}, current, {
+      var next = Object.assign({}, current, {
         text: nextText,
         updatedAt: buildDeskCurrentDateTimeForKey_(dateKey)
-      }), function() {
+      });
+      if (typeof timeValue !== "undefined") {
+        var createdAt = buildDeskJournalDateTime_(dateKey, timeValue, current.createdAt);
+        if (!createdAt) {
+          alert("시간 형식을 확인해 주세요.");
+          return;
+        }
+        next.createdAt = createdAt;
+      }
+      upsertDeskDailyMemo_(next, function() {
         state.desk.daily.editingMemoId = "";
         showDeskMemoSaveStatus_("기록 내용을 수정했습니다.", "saved");
       });
@@ -23310,8 +23384,10 @@
           var saveBtn = event.target.closest("[data-desk-journal-memo-save]");
           if (saveBtn) {
             var memoId = saveBtn.getAttribute("data-desk-journal-memo-save") || "";
-            var input = saveBtn.closest("[data-desk-journal-memo-card]") && saveBtn.closest("[data-desk-journal-memo-card]").querySelector('[data-desk-journal-memo-edit-input="' + memoId + '"]');
-            saveDeskDailyMemoText_(memoId, input && input.value || "");
+            var card = saveBtn.closest("[data-desk-journal-memo-card]");
+            var input = card && card.querySelector('[data-desk-journal-memo-edit-input="' + memoId + '"]');
+            var timeInput = card && card.querySelector('[data-desk-journal-memo-time="' + memoId + '"]');
+            saveDeskDailyMemoText_(memoId, input && input.value || "", timeInput && timeInput.value);
             return;
           }
           var saveTimeBtn = event.target.closest("[data-desk-journal-memo-time-save]");
