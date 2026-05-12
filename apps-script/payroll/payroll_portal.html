@@ -10045,6 +10045,365 @@
     .desk-daily-journal-mode .desk-journal-side .desk-report-preview-card .desk-report-preview {
       max-height: 430px;
     }
+    .desk-daily-journal-mode .desk-journal-statusbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .desk-daily-journal-mode .desk-journal-date-nav {
+      grid-column: 2 / 3;
+      justify-self: end;
+      gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-journal-status-cards {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .desk-daily-journal-mode .desk-journal-status-card,
+    .desk-daily-journal-mode .desk-journal-sync-card {
+      min-height: 70px;
+      border-radius: 8px;
+      padding: 14px 16px;
+      justify-content: flex-start;
+      gap: 12px;
+      box-shadow: 0 10px 22px rgba(15,23,42,0.035);
+    }
+    .desk-daily-journal-mode .desk-journal-status-card {
+      display: grid;
+      grid-template-columns: 36px minmax(0, 1fr);
+    }
+    .desk-daily-journal-mode .desk-status-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ecfdf5;
+      color: #0d684d;
+    }
+    .desk-daily-journal-mode .desk-status-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.3;
+    }
+    .desk-daily-journal-mode .desk-journal-status-card.danger .desk-status-icon {
+      background: #fff7ed;
+      color: #ea580c;
+    }
+    .desk-daily-journal-mode .desk-journal-status-card.purple .desk-status-icon {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+    .desk-daily-journal-mode .desk-status-copy {
+      display: grid;
+      gap: 3px;
+      align-content: center;
+    }
+    .desk-daily-journal-mode .desk-status-copy > span {
+      color: #667789;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-status-copy strong {
+      font-size: 21px;
+      line-height: 1;
+    }
+    .desk-daily-journal-mode .desk-journal-sync-card {
+      min-width: 190px;
+      align-items: center;
+    }
+    .desk-daily-journal-mode #deskJournalReloadBtn {
+      min-height: 70px;
+      min-width: 112px;
+      border-radius: 8px;
+      background: #fff;
+      border-color: #dfe7e1;
+      justify-content: center;
+      font-size: 13px;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip {
+      padding: 14px;
+      border-radius: 8px;
+      background: #fffaf0;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-head {
+      margin-bottom: 12px;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-list {
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item {
+      background: #fffdf8;
+      border-radius: 8px;
+      min-height: 88px;
+    }
+    .desk-daily-journal-mode .desk-shared-summary-trigger {
+      padding: 12px 12px 10px;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item-title {
+      min-height: 40px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .desk-daily-journal-mode .desk-shared-summary-meta {
+      margin-top: 9px;
+      gap: 8px;
+    }
+    .desk-daily-journal-mode .desk-journal-worker-tabs {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0;
+      padding: 0;
+      overflow-x: auto;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    .desk-daily-journal-mode .desk-journal-worker-tabs::before {
+      min-height: 44px;
+      border-radius: 8px 0 0 8px;
+      gap: 7px;
+      content: "근무자 탭";
+      flex: 0 0 auto;
+    }
+    .desk-daily-journal-mode .desk-worker-tab {
+      flex: 1 0 110px;
+      min-height: 44px;
+      border-radius: 0;
+      border-left: 0;
+      justify-content: center;
+      background: #ffffff;
+    }
+    .desk-daily-journal-mode .desk-worker-tab.active {
+      background: var(--desk-tab-bg, #f8f5ff) !important;
+      color: var(--desk-tab-fg, #173a2e) !important;
+      box-shadow: inset 0 -3px 0 var(--desk-tab-active-bg, #0d684d);
+    }
+    .desk-daily-journal-mode .desk-journal-composer {
+      padding: 16px;
+      gap: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0.94)),
+        var(--desk-composer-bg, #fffdfa);
+    }
+    .desk-daily-journal-mode .desk-composer-row {
+      grid-template-columns: 162px minmax(0, 1fr);
+      gap: 12px 16px;
+      align-items: end;
+    }
+    .desk-daily-journal-mode .desk-template-panel {
+      grid-column: 2 / 3;
+      grid-template-columns: auto minmax(0, 1fr);
+      min-height: 42px;
+    }
+    .desk-daily-journal-mode .desk-template-panel .desk-chip-row {
+      grid-template-columns: repeat(6, minmax(90px, 1fr));
+    }
+    .desk-daily-journal-mode .desk-template-chip {
+      min-height: 38px;
+      flex-direction: row;
+      gap: 7px;
+    }
+    .desk-daily-journal-mode .desk-template-chip svg {
+      width: 13px;
+      height: 13px;
+      padding: 4px;
+    }
+    .desk-daily-journal-mode .desk-memo-compose-row {
+      grid-template-columns: minmax(0, 1fr) 118px;
+      grid-column: 2 / 3;
+    }
+    .desk-daily-journal-mode .desk-memo-action-stack {
+      display: grid;
+      gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-memo-submit-btn,
+    .desk-daily-journal-mode .desk-journal-report-shortcut {
+      width: 100%;
+      min-height: 44px;
+      justify-content: center;
+    }
+    .desk-daily-journal-mode .desk-journal-layout,
+    .desk-daily-journal-mode .desk-journal-layout.worker-focus,
+    .desk-daily-journal-mode .desk-journal-layout.manager-mode,
+    .desk-daily-journal-mode .desk-journal-layout.manager-mode.worker-focus {
+      grid-template-columns: minmax(360px, 0.86fr) minmax(460px, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .desk-daily-journal-mode .desk-task-queue-card,
+    .desk-daily-journal-mode .desk-journal-side .desk-journal-timeline-card {
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.035);
+    }
+    .desk-daily-journal-mode .desk-task-queue-head-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .desk-daily-journal-mode .desk-task-filter-row {
+      display: inline-flex;
+      gap: 4px;
+      padding: 3px;
+      border-radius: 8px;
+      background: #f6faf7;
+      border: 1px solid #dfe7e1;
+    }
+    .desk-daily-journal-mode .desk-task-filter-row button {
+      border: 0;
+      border-radius: 7px;
+      min-height: 30px;
+      padding: 0 10px;
+      background: transparent;
+      color: #667789;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-task-filter-row button.active {
+      background: #0d684d;
+      color: #ffffff;
+    }
+    .desk-daily-journal-mode .desk-task-queue-card .desk-task-card {
+      border: 1px solid #edf1ed;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 0;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .desk-daily-journal-mode .desk-task-queue-card .desk-task-card:first-child {
+      margin-top: 0;
+    }
+    .desk-daily-journal-mode .desk-task-queue-card .desk-journal-task-board {
+      gap: 0;
+      margin-top: 12px;
+    }
+    .desk-daily-journal-mode .desk-queue-top {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 54px;
+      padding: 12px;
+    }
+    .desk-daily-journal-mode .desk-queue-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #0d684d;
+    }
+    .desk-daily-journal-mode .desk-queue-summary {
+      min-width: 0;
+    }
+    .desk-daily-journal-mode .desk-queue-summary .desk-task-title {
+      font-size: 14px;
+      line-height: 1.45;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .desk-daily-journal-mode .desk-task-status {
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+    }
+    .desk-daily-journal-mode .desk-queue-expand-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid #dfe7e1;
+      border-radius: 999px;
+      background: #fbfdfc;
+      color: #42576a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .desk-daily-journal-mode .desk-queue-expand-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .desk-daily-journal-mode .desk-queue-detail {
+      padding: 0 12px 12px 38px;
+      display: grid;
+      gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-queue-note {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fbf9;
+    }
+    .desk-daily-journal-mode .desk-queue-reason {
+      margin: 0;
+    }
+    .desk-daily-journal-mode .desk-task-actions {
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .desk-daily-journal-mode .desk-task-actions .modal-action {
+      min-height: 34px;
+      border-radius: 8px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-journal-timeline-card {
+      display: flex;
+      max-height: none;
+      min-height: 360px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-journal-note-list {
+      margin-top: 12px;
+      border-top: 1px solid #edf1ed;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-row {
+      grid-template-columns: 58px minmax(0, 1fr);
+      padding: 9px 0;
+      min-height: 42px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-meta-stack {
+      gap: 4px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-time-static {
+      min-height: 20px;
+      font-size: 12px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-memo-type-badge {
+      min-height: 22px;
+      padding: 0 8px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-memo-type-badge svg {
+      display: none;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-body {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-main {
+      display: block;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-text {
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions {
+      margin-top: 0;
+      justify-content: flex-end;
+    }
+    .desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button {
+      width: 28px;
+      min-width: 28px;
+      height: 28px;
+      border-radius: 8px;
+    }
     .desk-daily-journal-mode .desk-notice {
       border-color: #d9e7df;
       background: #f7fbf8;
@@ -11666,16 +12025,16 @@
                 </div>
                 <div class="desk-journal-status-cards">
                   <article class="desk-journal-status-card">
-                    <span>오늘 기록 수</span>
-                    <strong id="deskJournalMemoSummary">0건</strong>
+                    <span class="desk-status-icon"><i data-lucide="clipboard-list"></i></span>
+                    <span class="desk-status-copy"><span>오늘 기록 수</span><strong id="deskJournalMemoSummary">0건</strong></span>
                   </article>
                   <article class="desk-journal-status-card danger">
-                    <span>미해결 업무 수</span>
-                    <strong id="deskJournalPendingSummary">0건</strong>
+                    <span class="desk-status-icon"><i data-lucide="clock-3"></i></span>
+                    <span class="desk-status-copy"><span>미해결 업무 수</span><strong id="deskJournalPendingSummary">0건</strong></span>
                   </article>
                   <article class="desk-journal-status-card purple">
-                    <span>보고 준비 근무자 수</span>
-                    <strong id="deskJournalWorkerSummary">0명</strong>
+                    <span class="desk-status-icon"><i data-lucide="users-round"></i></span>
+                    <span class="desk-status-copy"><span>보고 준비 근무자 수</span><strong id="deskJournalWorkerSummary">0명</strong></span>
                   </article>
                   <section class="desk-daily-sync-status desk-journal-sync-card" id="deskDailySyncStatus" aria-live="polite">
                     <span class="desk-daily-sync-ring" aria-hidden="true"></span>
@@ -11712,7 +12071,6 @@
                     <div class="desk-side-sub">선택 근무자 기준으로 3초 안에 기록을 남깁니다.</div>
                   </div>
                   <div class="desk-journal-composer-actions">
-                    <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
                     <span class="desk-journal-shift-pill" id="deskJournalComposerTime">근무 시간 확인 중</span>
                   </div>
                 </div>
@@ -11741,7 +12099,10 @@
                     </div>
                     <div class="desk-memo-compose-row">
                       <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
-                      <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
+                      <div class="desk-memo-action-stack">
+                        <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
+                        <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
+                      </div>
                     </div>
                   </div>
                   <div class="desk-memo-submit-hint">Enter로 저장 · Shift+Enter로 줄바꿈 · 기록은 오른쪽 입력 기록에 바로 반영됩니다.</div>
@@ -11757,7 +12118,14 @@
                         <div class="desk-side-title">미해결 업무 / 작업 큐</div>
                         <div class="desk-side-sub">선택 근무자에게 필요한 처리 대기 목록입니다.</div>
                       </div>
-                      <span class="desk-count-pill danger" id="deskTaskQueueCount">0건</span>
+                      <div class="desk-task-queue-head-tools">
+                        <span class="desk-count-pill danger" id="deskTaskQueueCount">0건</span>
+                        <div class="desk-task-filter-row" aria-label="작업 큐 빠른 필터">
+                          <button class="active" type="button" data-desk-task-filter="전체">전체</button>
+                          <button type="button" data-desk-task-filter="진행 중">진행 중</button>
+                          <button type="button" data-desk-task-filter="대기">대기</button>
+                        </div>
+                      </div>
                     </div>
                     <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
                   </article>
@@ -12696,6 +13064,8 @@
           routineLabelFilter: "전체",
           sharedSummaryExpanded: false,
           taskQueueExpanded: false,
+          taskQueueFilter: "전체",
+          expandedTaskIds: {},
           completedTasksExpanded: false,
           workerDetailTab: "memos",
           liveFeedDateKey: "",
@@ -13412,6 +13782,8 @@
       state.desk.daily.realtimeEnabled = true;
       state.desk.daily.sharedSummaryExpanded = false;
       state.desk.daily.taskQueueExpanded = false;
+      state.desk.daily.taskQueueFilter = "전체";
+      state.desk.daily.expandedTaskIds = {};
       state.desk.daily.completedTasksExpanded = false;
       state.desk.daily.liveFeedDateKey = "";
       state.desk.daily.liveFeedPage = 1;
@@ -21080,20 +21452,32 @@
         renderDeskDailyOverviewBoard_(tasks);
         return;
       }
-      var visible = (tasks || []).filter(function(item) {
+      var allVisibleTasks = (tasks || []).filter(function(item) {
         if (isDeskSharedTask_(item)) return false;
         if (item.completed) return false;
         return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, selectedWorker));
+      });
+      var activeFilter = state.desk.daily.taskQueueFilter || "전체";
+      if (["전체", "진행 중", "대기"].indexOf(activeFilter) === -1) activeFilter = "전체";
+      state.desk.daily.taskQueueFilter = activeFilter;
+      var visible = allVisibleTasks.filter(function(item) {
+        var isWaiting = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
+        if (activeFilter === "대기") return isWaiting;
+        if (activeFilter === "진행 중") return !isWaiting;
+        return true;
       });
       var completedItems = (tasks || []).filter(function(item) {
         if (isDeskSharedTask_(item) || !item.completed) return false;
         return selectedWorker === "전체" || isManagerTab || isSameDeskWorkerName_(item.worker, selectedWorker) || (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, selectedWorker));
       });
-      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = visible.length + "건";
+      Array.prototype.forEach.call(document.querySelectorAll("[data-desk-task-filter]"), function(btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-desk-task-filter") === activeFilter);
+      });
+      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = allVisibleTasks.length + "건";
       if (!visible.length) {
         var loadingCarryover = state.desk.daily.carryoverLoadingDateKey &&
           state.desk.daily.carryoverLoadingDateKey.indexOf(String(state.desk.daily.dateKey || "")) === 0;
-        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : '선택 근무자에게 배정된 미해결 업무가 없습니다.') + '</div>' +
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : (activeFilter === "전체" ? '선택 근무자에게 배정된 미해결 업무가 없습니다.' : activeFilter + ' 상태의 미해결 업무가 없습니다.')) + '</div>' +
           renderDeskCompletedTasksHtml_(completedItems);
         refreshLucideIcons_();
         return;
@@ -21115,31 +21499,39 @@
         var isCarryover = item.dateKey && item.dateKey !== (state.desk.daily.dateKey || getDeskDateKey_(new Date()));
         var isHighlighted = isDeskTaskAssignmentHighlighted_(item.id);
         var deadlineText = isCarryover ? ("이월 " + item.dateKey) : "오늘 23:59";
-        return '<article class="desk-task-card desk-queue-item' + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + (isShared ? ' shared' : '') + '"' +
+        var expandedMap = state.desk.daily.expandedTaskIds || {};
+        var isExpanded = !!expandedMap[item.id];
+        var statusText = isShared ? "공지" : (item.completed ? "완료" : (isCarryover ? "대기" : "진행 중"));
+        return '<article class="desk-task-card desk-queue-item' + (isExpanded ? ' expanded' : ' collapsed') + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + (isShared ? ' shared' : '') + '"' +
           (item.worker ? ' style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker)) + '"' : '') + '>' +
           '<div class="desk-task-top desk-queue-top">' +
             (!isShared ? '<input class="desk-queue-check" type="checkbox" data-desk-journal-task-toggle="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + '>' : '') +
-            '<div>' +
+            '<div class="desk-queue-summary">' +
               '<div class="desk-task-title">' + escapeHtml(item.title) + '</div>' +
               '<div class="desk-task-meta">' +
-                '<span>담당자 ' + escapeHtml(item.worker || "-") + '</span>' +
-                '<span>마감 ' + escapeHtml(deadlineText) + '</span>' +
+                '<span>' + escapeHtml(item.worker || "담당자 없음") + '</span>' +
+                '<span>' + escapeHtml(deadlineText) + '</span>' +
                 (isHighlighted ? '<span class="desk-important-badge">새 배정</span>' : '') +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
                 (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
               '</div>' +
             '</div>' +
-            '<span class="desk-task-status ' + (isShared ? 'pending' : (item.completed ? 'done' : 'pending')) + '">' + (isShared ? '공지' : (item.completed ? '완료' : '진행 중')) + '</span>' +
+            '<span class="desk-task-status ' + (isShared ? 'pending' : (item.completed ? 'done' : 'pending')) + '">' + escapeHtml(statusText) + '</span>' +
+            '<button class="desk-queue-expand-btn" type="button" data-desk-journal-task-expand="' + escapeHtml(item.id) + '" aria-label="' + (isExpanded ? '업무 접기' : '업무 펼치기') + '">' +
+              '<i data-lucide="' + (isExpanded ? 'chevron-down' : 'chevron-right') + '"></i>' +
+            '</button>' +
           '</div>' +
-          (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
-          (!item.completed && !isShared
-            ? '<div class="field desk-queue-reason"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 어려운 사유를 입력해주세요"></div>'
-            : '') +
-          '<div class="desk-task-actions">' +
-            (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '"><i data-lucide="check-square"></i>사유 저장</button>' : '') +
-            (!item.completed && !isShared ? '<button class="modal-action primary" type="button" data-desk-journal-task-complete="' + escapeHtml(item.id) + '"><i data-lucide="check"></i>업무 완료</button>' : '') +
-            '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i>' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
-          '</div>' +
+          (isExpanded ? '<div class="desk-queue-detail">' +
+            (item.note ? '<div class="desk-muted desk-queue-note">' + escapeHtml(item.note) + '</div>' : '<div class="desk-muted desk-queue-note">상세 메모가 없습니다.</div>') +
+            (!item.completed && !isShared
+              ? '<div class="field desk-queue-reason"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 어려운 사유를 입력해주세요"></div>'
+              : '') +
+            '<div class="desk-task-actions">' +
+              (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '"><i data-lucide="check-square"></i>사유 저장</button>' : '') +
+              (!item.completed && !isShared ? '<button class="modal-action primary" type="button" data-desk-journal-task-complete="' + escapeHtml(item.id) + '"><i data-lucide="check"></i>업무 완료</button>' : '') +
+              '<button class="modal-action ghost" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i>' + (isShared ? '공동 업무 삭제' : '업무 삭제') + '</button>' +
+            '</div>' +
+          '</div>' : '') +
         '</article>';
       }).join("") + paginationHtml + renderDeskCompletedTasksHtml_(completedItems);
       refreshLucideIcons_();
@@ -22169,6 +22561,8 @@
       state.desk.daily.memoPage = 1;
       state.desk.daily.liveFeedPage = 1;
       state.desk.daily.taskQueuePage = 1;
+      state.desk.daily.taskQueueFilter = "전체";
+      state.desk.daily.expandedTaskIds = {};
       showDeskCopyStatus_("");
       renderDeskDailyJournal_();
     }
@@ -23056,6 +23450,8 @@
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
           state.desk.daily.taskQueuePage = 1;
+          state.desk.daily.taskQueueFilter = "전체";
+          state.desk.daily.expandedTaskIds = {};
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
         });
@@ -23072,6 +23468,8 @@
           state.desk.daily.memoPage = 1;
           state.desk.daily.liveFeedPage = 1;
           state.desk.daily.taskQueuePage = 1;
+          state.desk.daily.taskQueueFilter = "전체";
+          state.desk.daily.expandedTaskIds = {};
           showDeskCopyStatus_("");
           renderDeskDailyJournal_();
         });
@@ -23087,6 +23485,8 @@
           state.desk.daily.memoPage = 1;
           state.desk.daily.taskQueuePage = 1;
           state.desk.daily.taskQueueExpanded = false;
+          state.desk.daily.taskQueueFilter = "전체";
+          state.desk.daily.expandedTaskIds = {};
           state.desk.daily.completedTasksExpanded = false;
           if (state.desk.daily.selectedWorker !== "전체" && state.desk.daily.selectedWorker !== DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.reportWorker = state.desk.daily.selectedWorker;
@@ -23212,9 +23612,25 @@
             renderDeskDailyJournal_();
             return;
           }
+          var taskFilterBtn = event.target.closest("[data-desk-task-filter]");
+          if (taskFilterBtn) {
+            state.desk.daily.taskQueueFilter = taskFilterBtn.getAttribute("data-desk-task-filter") || "전체";
+            state.desk.daily.taskQueuePage = 1;
+            state.desk.daily.expandedTaskIds = {};
+            renderDeskDailyJournal_();
+            return;
+          }
           var taskQueueToggleBtn = event.target.closest("[data-desk-task-queue-toggle]");
           if (taskQueueToggleBtn) {
             state.desk.daily.taskQueueExpanded = !state.desk.daily.taskQueueExpanded;
+            renderDeskDailyJournal_();
+            return;
+          }
+          var taskExpandBtn = event.target.closest("[data-desk-journal-task-expand]");
+          if (taskExpandBtn) {
+            var expandId = taskExpandBtn.getAttribute("data-desk-journal-task-expand") || "";
+            state.desk.daily.expandedTaskIds = state.desk.daily.expandedTaskIds || {};
+            state.desk.daily.expandedTaskIds[expandId] = !state.desk.daily.expandedTaskIds[expandId];
             renderDeskDailyJournal_();
             return;
           }
