@@ -4290,73 +4290,194 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      background: #fbfdfa;
+      border: 1px solid #dbe8df;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 16px 36px rgba(15, 60, 46, 0.08);
+    }
+    .tuition-page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .tuition-page-title {
+      margin: 0;
+      color: #102133;
+      font-size: 25px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+    .tuition-page-sub {
+      margin-top: 5px;
+      color: #607082;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .tuition-sync-note {
+      color: #557084;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: right;
+      line-height: 1.45;
     }
     .tuition-topbar {
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: #fff;
-      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #dbe7df;
+      background: #ffffff;
+      padding: 12px;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
-      gap: 8px;
+      grid-template-columns: 1fr 1fr minmax(260px, 1.2fr) auto;
+      gap: 10px;
       align-items: end;
     }
     .tuition-cards {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
+      grid-template-columns: 1.1fr 1.1fr 1.2fr 1.4fr 1.4fr;
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid #dbe7df;
+      border-radius: 12px;
+      background: #ffffff;
+    }
+    .tuition-metric-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 20px;
+      border-right: 1px solid #e5eee8;
+      min-height: 96px;
+    }
+    .tuition-metric-card:last-child {
+      border-right: 0;
+    }
+    .tuition-metric-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ecfdf5;
+      color: #0f7a4f;
+      flex: 0 0 auto;
+    }
+    .tuition-metric-icon.warn {
+      background: #fff7ed;
+      color: #ea580c;
+    }
+    .tuition-metric-icon.blue {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .tuition-metric-icon.green {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .tuition-metric-icon i {
+      width: 22px;
+      height: 22px;
+    }
+    .tuition-metric-card .label {
+      color: #4a5c70;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 2px;
+    }
+    .tuition-metric-card .value {
+      color: #102133;
+      font-size: 25px;
+      line-height: 1.15;
+      font-weight: 950;
+    }
+    .tuition-metric-card .meta {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 3px;
     }
     .tuition-action-frame {
-      margin-top: 10px;
       display: grid;
-      grid-template-columns: 1.15fr repeat(4, minmax(0, 1fr));
-      gap: 8px;
-      padding: 8px;
-      border: 1px solid #d7e5dd;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #f7fcf9 0%, #eef7f2 100%);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      border: 1px solid #dbe7df;
+      border-radius: 12px;
+      background: #ffffff;
+      padding: 0;
+      overflow: hidden;
     }
     .tuition-action-btn {
-      border: 1px solid #b7cfbf;
+      border: 0;
+      border-right: 1px solid #e5eee8;
       background: #ffffff;
-      color: #134e4a;
-      border-radius: 12px;
-      padding: 11px 12px;
+      color: #334155;
+      border-radius: 0;
+      padding: 14px 12px;
       font-size: 13px;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(15, 60, 46, 0.08);
+      box-shadow: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .tuition-action-btn:last-child { border-right: 0; }
+    .tuition-action-btn .step {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 950;
     }
     .tuition-action-btn:hover {
-      transform: translateY(-1px);
+      background: #f7fbf9;
     }
     .tuition-action-btn.primary {
-      background: linear-gradient(135deg, #0f766e 0%, #10b981 100%);
-      border-color: #0f766e;
+      background: #0d684d;
       color: #f0fdfa;
-      font-size: 15px;
-      letter-spacing: 0.01em;
+      font-size: 14px;
+    }
+    .tuition-action-btn.primary .step {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #0d684d;
     }
     .tuition-layout {
       display: grid;
-      grid-template-columns: 0.95fr 1.35fr;
+      grid-template-columns: 1.05fr 1fr 1.45fr;
       gap: 10px;
+      align-items: start;
+    }
+    .tuition-panel-soft {
+      border: 1px solid #dbe7df;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      min-width: 0;
     }
     .tuition-chart-wrap {
-      height: 290px;
+      height: 280px;
       position: relative;
     }
     .tuition-status-summary {
-      margin-top: 8px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
+      grid-template-columns: 1fr;
+      gap: 8px;
     }
     .tuition-status-item {
-      border: 1px solid #d7e7df;
+      border: 1px solid #e4eee8;
       border-radius: 12px;
-      background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-      padding: 7px 9px;
+      background: #ffffff;
+      padding: 10px 12px;
       width: 100%;
       text-align: left;
       cursor: pointer;
@@ -4383,7 +4504,7 @@
       margin-bottom: 6px;
     }
     .tuition-status-item .name {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
       color: #1f2f46;
       display: inline-flex;
@@ -4416,6 +4537,37 @@
       font-weight: 800;
       color: #6a7f93;
       margin-bottom: 4px;
+    }
+    .tuition-recent-table-wrap {
+      overflow: auto;
+      max-height: 292px;
+      border: 1px solid #e5eee8;
+      border-radius: 10px;
+    }
+    .tuition-shell .refresh-btn {
+      min-height: 46px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+    .tuition-shell .refresh-btn i {
+      width: 17px;
+      height: 17px;
+    }
+    .tuition-shell .table-panel {
+      border-radius: 12px;
+      border-color: #dbe7df;
+      background: #ffffff;
+    }
+    .tuition-shell .table-head {
+      align-items: flex-start;
+      padding-bottom: 10px;
+    }
+    .tuition-shell .table-title {
+      font-size: 18px;
     }
     .tuition-status-item .bar {
       height: 7px;
@@ -10540,10 +10692,11 @@
       .teacher-bar { grid-template-columns: 1fr 1fr; }
       .day-detail-summary { grid-template-columns: 1fr 1fr; }
       .tracker-summary { grid-template-columns: 1fr 1fr; }
-      .tuition-topbar { grid-template-columns: 1fr; }
-      .tuition-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .tuition-action-frame { grid-template-columns: 1fr 1fr; }
-      .tuition-layout { grid-template-columns: 1fr; }
+      .tuition-topbar { grid-template-columns: 0.8fr 0.8fr minmax(220px, 1fr) auto; }
+      .tuition-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .tuition-action-frame { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .tuition-layout { grid-template-columns: 1fr 1fr; }
+      .tuition-layout .tuition-panel-soft:last-child { grid-column: 1 / -1; }
       .tuition-history-kpis { grid-template-columns: 1fr 1fr; }
       .tuition-guide-layout { grid-template-columns: 1fr; }
       .tuition-guide-metrics { grid-template-columns: 1fr 1fr; }
@@ -10557,6 +10710,28 @@
       .tuition-cal-detail-sub { font-size: 12px; }
       .tuition-cal-detail-chip { font-size: 11px; }
       .desk-panel-title { font-size: 20px; }
+    }
+    @media (max-width: 960px) {
+      .tuition-shell { padding: 12px; }
+      .tuition-page-head { flex-direction: column; }
+      .tuition-sync-note { text-align: left; }
+      .tuition-topbar,
+      .tuition-layout,
+      .tuition-layout .tuition-panel-soft:last-child {
+        grid-template-columns: 1fr;
+        grid-column: auto;
+      }
+      .tuition-cards,
+      .tuition-action-frame {
+        grid-template-columns: 1fr;
+      }
+      .tuition-metric-card {
+        border-right: 0;
+        border-bottom: 1px solid #e5eee8;
+      }
+      .tuition-metric-card:last-child {
+        border-bottom: 0;
+      }
     }
   </style>
 </head>
@@ -10886,6 +11061,16 @@
 
       <section id="moduleTuition" style="display:none;">
         <div class="tuition-shell">
+          <header class="tuition-page-head">
+            <div>
+              <h1 class="tuition-page-title">수강료 정산</h1>
+              <div class="tuition-page-sub">월별 안내금액, 납부 대조, 미납 연락까지 한 화면에서 정리합니다.</div>
+            </div>
+            <div class="tuition-sync-note">
+              마지막 동기화는 새로고침 시점 기준입니다.<br>
+              student 탭 기준
+            </div>
+          </header>
           <section class="tuition-topbar">
             <div class="field">
               <label for="tuitionMonthSelect">수강료 월</label>
@@ -10906,74 +11091,93 @@
             </div>
             <div class="field">
               <label for="tuitionKeywordInput">학생 검색</label>
-              <input id="tuitionKeywordInput" type="text" placeholder="학생명/학교/학년">
+              <input id="tuitionKeywordInput" type="text" placeholder="학생명 / 학교 / 학년 검색">
             </div>
-            <button class="refresh-btn" id="tuitionRefreshBtn" type="button">수강료 데이터 새로고침</button>
+            <button class="refresh-btn" id="tuitionRefreshBtn" type="button"><i data-lucide="database"></i> 수강료 데이터 새로고침</button>
           </section>
 
           <section class="tuition-cards">
-            <article class="card">
-              <div class="label">전체 재원생</div>
-              <div class="value" id="tuitionTotalStudents">0명</div>
-              <div class="meta">student 탭 기준</div>
+            <article class="tuition-metric-card">
+              <span class="tuition-metric-icon blue"><i data-lucide="users"></i></span>
+              <div>
+                <div class="label">전체 재원생</div>
+                <div class="value" id="tuitionTotalStudents">0명</div>
+                <div class="meta">student 탭 기준</div>
+              </div>
             </article>
-            <article class="card">
-              <div class="label">납부완료</div>
-              <div class="value" id="tuitionPaidStudents">0명</div>
-              <div class="meta">이번 달 수납 완료</div>
+            <article class="tuition-metric-card">
+              <span class="tuition-metric-icon green"><i data-lucide="check-circle-2"></i></span>
+              <div>
+                <div class="label">납부완료</div>
+                <div class="value" id="tuitionPaidStudents">0명</div>
+                <div class="meta">이번 달 수납 완료</div>
+              </div>
             </article>
-            <article class="card">
-              <div class="label">미납 학생</div>
-              <div class="value" id="tuitionUnpaidStudents">0명</div>
-              <div class="meta">안내/추적 필요</div>
-              <button class="tuition-unpaid-btn" id="openTuitionUnpaidListBtn" type="button">미납 학생 리스트</button>
+            <article class="tuition-metric-card">
+              <span class="tuition-metric-icon warn"><i data-lucide="triangle-alert"></i></span>
+              <div>
+                <div class="label">미납 학생</div>
+                <div class="value" id="tuitionUnpaidStudents">0명</div>
+                <div class="meta">안내/조치 필요</div>
+                <button class="tuition-unpaid-btn" id="openTuitionUnpaidListBtn" type="button">미납 학생 리스트</button>
+              </div>
             </article>
-            <article class="card">
-              <div class="label">안내 금액 합계</div>
-              <div class="value" id="tuitionExpectedAmount">0원</div>
-              <div class="meta">실무자 입력 기준</div>
+            <article class="tuition-metric-card">
+              <span class="tuition-metric-icon blue"><i data-lucide="wallet-cards"></i></span>
+              <div>
+                <div class="label">안내 금액 합계</div>
+                <div class="value" id="tuitionExpectedAmount">0원</div>
+                <div class="meta">실무자 입력 기준</div>
+              </div>
             </article>
-            <article class="card">
-              <div class="label">순수 수납액</div>
-              <div class="value" id="tuitionCollectedAmount">0원</div>
-              <div class="meta" id="tuitionOutstandingMeta">미납 0원</div>
+            <article class="tuition-metric-card">
+              <span class="tuition-metric-icon"><i data-lucide="coins"></i></span>
+              <div>
+                <div class="label">순수 수납액</div>
+                <div class="value" id="tuitionCollectedAmount">0원</div>
+                <div class="meta" id="tuitionOutstandingMeta">미납 0원</div>
+              </div>
             </article>
           </section>
           <section class="tuition-action-frame">
-            <button class="tuition-action-btn primary" data-open-tuition-brief type="button">일일 수납 브리핑</button>
-            <button class="tuition-action-btn" id="openTuitionCalendarBtn" type="button">일자별 학생 납부 시기</button>
-            <button class="tuition-action-btn" id="openTuitionRecallBtn" type="button">수강료 재연락 대상자</button>
-            <button class="tuition-action-btn" id="openTuitionGuideDashboardBtn" type="button">월별 안내 대시보드</button>
-            <button class="tuition-action-btn" id="openTuitionMonthlyBtn" type="button">월별 매출 현황</button>
+            <button class="tuition-action-btn primary" data-open-tuition-brief type="button"><span class="step">1</span>월별 수납 브리핑</button>
+            <button class="tuition-action-btn" id="openTuitionCalendarBtn" type="button"><span class="step">2</span>일자별 학생 납부 시기</button>
+            <button class="tuition-action-btn" id="openTuitionRecallBtn" type="button"><span class="step">3</span>수강료 재연락 대상자</button>
+            <button class="tuition-action-btn" id="openTuitionGuideDashboardBtn" type="button"><span class="step">4</span>월별 안내 대시보드</button>
+            <button class="tuition-action-btn" id="openTuitionMonthlyBtn" type="button"><span class="step">5</span>월별 매출 현황</button>
           </section>
 
           <section class="tuition-layout">
-            <article class="panel">
+            <article class="tuition-panel-soft">
               <header class="panel-head">
-                <h2 class="panel-title">납부/미납 분류</h2>
-                <span class="panel-sub">원형 그래프</span>
+                <h2 class="panel-title">이 달 수납 현황</h2>
+                <span class="panel-sub">상태별 분류</span>
               </header>
               <div class="tuition-chart-wrap">
                 <canvas id="tuitionStatusChart"></canvas>
               </div>
+            </article>
+            <article class="tuition-panel-soft">
+              <header class="panel-head">
+                <h2 class="panel-title">미납 처리 우선순위</h2>
+                <span class="panel-sub">상태 카드를 눌러 대상 확인</span>
+              </header>
               <div class="tuition-status-summary" id="tuitionStatusSummary"></div>
             </article>
-            <article class="panel">
+            <article class="tuition-panel-soft">
               <header class="panel-head">
                 <h2 class="panel-title">최근 수납 내역</h2>
                 <span class="panel-sub" id="tuitionPaymentPanelSub">입력일시 기준 최근 0건</span>
               </header>
-              <div class="table-wrap">
+              <div class="tuition-recent-table-wrap">
                 <table class="tuition-log-table">
                   <thead>
                     <tr>
                       <th>학생</th>
                       <th>금액</th>
                       <th>납부</th>
-                      <th>사업자</th>
                       <th>결재구분</th>
                       <th>승인번호</th>
-                      <th>입력일시</th>
                       <th>이슈메모</th>
                     </tr>
                   </thead>
@@ -11021,7 +11225,10 @@
 
           <section class="table-panel" style="min-height:320px;">
             <header class="table-head">
-              <h2 class="table-title">재원생 수강료 정산 상세</h2>
+              <div>
+                <h2 class="table-title">수강료 정산 상세</h2>
+                <div class="desk-muted">금액은 읽기 전용입니다. 상태/안내/수납 입력은 우측 버튼을 사용하세요.</div>
+              </div>
               <div class="meta-bar"><span class="pill" id="tuitionRowsPill">0 rows</span></div>
             </header>
             <div class="tuition-table-wrap">
@@ -24760,7 +24967,7 @@
         var base = colorMap[label] || "#94a3b8";
         return '<button type="button" class="tuition-status-item" style="--st-color:' + base + ';" data-status-card="' + escapeHtml(label) + '">' +
           '<div class="row">' +
-            '<span class="name">' + escapeHtml(label) + '</span>' +
+            '<span class="name">' + (i + 1) + '. ' + escapeHtml(label) + '</span>' +
             '<span class="meta"><span class="arrow">↗</span>' + pct + '%</span>' +
           '</div>' +
           '<div class="sub">' + value + '명 · 리스트 보기</div>' +
@@ -25002,7 +25209,7 @@
         tuitionPaymentPanelSubEl.textContent = "납부일 기준 최근 " + totalCount + "건 · " + page + "/" + totalPages + " 페이지";
       }
       if (!totalCount) {
-        tuitionPaymentBodyEl.innerHTML = '<tr><td colspan="8">최근 수납 내역이 없습니다.</td></tr>';
+        tuitionPaymentBodyEl.innerHTML = '<tr><td colspan="6">최근 수납 내역이 없습니다.</td></tr>';
         if (tuitionPaymentPaginationEl) tuitionPaymentPaginationEl.innerHTML = "";
         return;
       }
@@ -25011,10 +25218,8 @@
           '<td>' + escapeHtml(formatStudentName(row.studentName)) + '</td>' +
           '<td>' + formatWon(row.amount || 0) + '</td>' +
           '<td>' + escapeHtml(row.paidAt || "-") + '</td>' +
-          '<td>' + escapeHtml(row.business || "-") + '</td>' +
           '<td>' + escapeHtml(row.paymentType || "-") + '</td>' +
           '<td>' + escapeHtml(row.approvalNo || "-") + '</td>' +
-          '<td>' + escapeHtml(row.inputAt || "-") + '</td>' +
           '<td class="memo-col">' + escapeHtml(row.issueMemo || "-") + '</td>' +
         '</tr>';
       }).join("");
