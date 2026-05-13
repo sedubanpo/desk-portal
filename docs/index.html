@@ -10305,19 +10305,48 @@
     }
     .desk-daily-journal-mode .desk-queue-top {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto auto;
-      gap: 10px;
+      grid-template-columns: 30px minmax(0, 1fr) auto auto;
+      gap: 12px;
+      align-items: start;
+      min-height: 58px;
+      padding: 14px 14px 12px;
+    }
+    .desk-daily-journal-mode .desk-queue-check-wrap {
+      width: 30px;
+      min-height: 30px;
+      display: inline-flex;
       align-items: center;
-      min-height: 54px;
-      padding: 12px;
+      justify-content: center;
+      padding-top: 2px;
     }
     .desk-daily-journal-mode .desk-queue-check {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       accent-color: #0d684d;
     }
     .desk-daily-journal-mode .desk-queue-summary {
       min-width: 0;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+    .desk-daily-journal-mode .desk-queue-summary .desk-task-title {
+      line-height: 1.35;
+    }
+    .desk-daily-journal-mode .desk-queue-summary .desk-task-meta {
+      align-items: center;
+      gap: 7px;
+    }
+    .desk-daily-journal-mode .desk-queue-due-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 11px;
+      font-weight: 900;
     }
     .desk-daily-journal-mode .desk-queue-summary .desk-task-title {
       font-size: 14px;
@@ -12923,6 +12952,7 @@
     var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_dismissed_v1";
     var DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY = "desk_portal_task_assign_alert_active_v1";
     var DESK_MEMO_TEMPLATES_STORAGE_KEY = "desk_portal_daily_memo_templates_v1";
+    var DESK_DAILY_PENDING_MEMO_WRITES_KEY = "desk_portal_daily_pending_memo_writes_v1";
     var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
@@ -13682,6 +13712,7 @@
     var deskDailyJournalPollTimer_ = null;
     var deskDailyJournalPollInFlight_ = false;
     var deskDailyJournalRoutinePollTick_ = 0;
+    var deskDailyMemoLocalSeq_ = 0;
     var entryGateEl = document.getElementById("entryGate");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
     var entrySubmitBtnEl = document.getElementById("entrySubmitBtn");
@@ -19132,8 +19163,17 @@
         category: category,
         mode: mode === "record" ? "record" : "report",
         createdAt: createdAt,
-        updatedAt: updatedAt
+        updatedAt: updatedAt,
+        clientOrder: normalizeDeskDailyMemoClientOrder_(item && item.clientOrder, createdAt || updatedAt)
       };
+    }
+
+    function normalizeDeskDailyMemoClientOrder_(value, stamp) {
+      var num = Number(value);
+      if (isFinite(num) && num > 0) return num;
+      var parsed = Date.parse(String(stamp || ""));
+      if (isFinite(parsed)) return parsed * 1000;
+      return 0;
     }
 
     function normalizeDeskWorkerKey_(name) {
@@ -19161,6 +19201,9 @@
       var left = getDeskMemoSortStamp_(a);
       var right = getDeskMemoSortStamp_(b);
       if (left !== right) return left.localeCompare(right);
+      var leftOrder = normalizeDeskDailyMemoClientOrder_(a && a.clientOrder, left);
+      var rightOrder = normalizeDeskDailyMemoClientOrder_(b && b.clientOrder, right);
+      if (leftOrder !== rightOrder) return leftOrder - rightOrder;
       return String(a.id || "").localeCompare(String(b.id || ""));
     }
 
@@ -19268,7 +19311,14 @@
 
     function buildDeskCurrentDateTimeForKey_(dateKey) {
       var now = new Date();
-      return buildDeskJournalDateTime_(dateKey, pad2_(now.getHours()) + ":" + pad2_(now.getMinutes()), "");
+      var safeDate = String(dateKey || "").trim() || getDeskDateKey_(now);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate)) safeDate = getDeskDateKey_(now);
+      return safeDate + "T" + pad2_(now.getHours()) + ":" + pad2_(now.getMinutes()) + ":" + pad2_(now.getSeconds()) + "." + String(now.getMilliseconds()).padStart(3, "0");
+    }
+
+    function nextDeskDailyMemoClientOrder_() {
+      deskDailyMemoLocalSeq_ = (deskDailyMemoLocalSeq_ + 1) % 1000;
+      return Date.now() * 1000 + deskDailyMemoLocalSeq_;
     }
 
     function parseDeskMemoTimeText_(text, requireLeading) {
@@ -19558,6 +19608,7 @@
         return normalizeDeskDailyMemo_(normalized.memos[id]);
       });
       mergeDeskDailyJournalData_(safeDateKey, tasks, memos);
+      mergeDeskDailyPendingMemosForDate_(safeDateKey);
       state.desk.daily.loadedDates[safeDateKey] = true;
       if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
         renderDeskDailyJournal_();
@@ -20250,8 +20301,10 @@
             throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
           }
           mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
+          mergeDeskDailyPendingMemosForDate_(key);
           refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
+          flushDeskDailyPendingMemoWrites_();
           startDeskDailyJournalRealtime_(key);
           setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
           if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === key) {
@@ -21066,8 +21119,9 @@
             mode: getDeskMemoMode_(item),
             worker: item.worker || "-",
             content: display.text || "",
-            stamp: item.updatedAt || item.createdAt || "",
+            stamp: display.createdAt || item.createdAt || item.updatedAt || "",
             displayStamp: display.createdAt || item.createdAt || "",
+            clientOrder: normalizeDeskDailyMemoClientOrder_(item.clientOrder, display.createdAt || item.createdAt || item.updatedAt),
             style: getDeskLiveFeedCardStyle_(item.worker || "-", "memo")
           });
         });
@@ -21087,7 +21141,16 @@
         });
       });
       var combined = memoItems.concat(taskItems).sort(function(a, b) {
-        return String(b.stamp || "").localeCompare(String(a.stamp || ""));
+        var aDate = String((a.displayStamp || a.stamp || "")).slice(0, 10);
+        var bDate = String((b.displayStamp || b.stamp || "")).slice(0, 10);
+        if (aDate !== bDate) return bDate.localeCompare(aDate);
+        var aStamp = String(a.displayStamp || a.stamp || "");
+        var bStamp = String(b.displayStamp || b.stamp || "");
+        if (aStamp !== bStamp) return aStamp.localeCompare(bStamp);
+        var aOrder = normalizeDeskDailyMemoClientOrder_(a.clientOrder, aStamp);
+        var bOrder = normalizeDeskDailyMemoClientOrder_(b.clientOrder, bStamp);
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return String(a.id || "").localeCompare(String(b.id || ""));
       });
       var runWorker = "";
       var runCount = 0;
@@ -21534,12 +21597,12 @@
         return '<article class="desk-task-card desk-queue-item' + (isExpanded ? ' expanded' : ' collapsed') + (item.completed ? ' done' : '') + (meta.important ? ' important' : '') + (isHighlighted ? ' assignment-alert' : '') + (isShared ? ' shared' : '') + '"' +
           (item.worker ? ' style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker)) + '"' : '') + '>' +
           '<div class="desk-task-top desk-queue-top">' +
-            (!isShared ? '<input class="desk-queue-check" type="checkbox" data-desk-journal-task-toggle="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + '>' : '') +
+            (!isShared ? '<label class="desk-queue-check-wrap" title="업무 완료 체크"><input class="desk-queue-check" type="checkbox" data-desk-journal-task-toggle="' + escapeHtml(item.id) + '"' + (item.completed ? ' checked' : '') + '></label>' : '<span class="desk-queue-check-wrap" aria-hidden="true"></span>') +
             '<div class="desk-queue-summary">' +
               '<div class="desk-task-title">' + escapeHtml(item.title) + '</div>' +
               '<div class="desk-task-meta">' +
                 '<span>' + escapeHtml(item.worker || "담당자 없음") + '</span>' +
-                '<span>' + escapeHtml(deadlineText) + '</span>' +
+                '<span class="desk-queue-due-pill">' + escapeHtml(deadlineText) + '</span>' +
                 (isHighlighted ? '<span class="desk-important-badge">새 배정</span>' : '') +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
                 (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
@@ -22050,6 +22113,88 @@
       });
     }
 
+    function loadDeskDailyPendingMemoWrites_() {
+      try {
+        var raw = localStorage.getItem(DESK_DAILY_PENDING_MEMO_WRITES_KEY);
+        var parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function saveDeskDailyPendingMemoWrites_(map) {
+      try {
+        localStorage.setItem(DESK_DAILY_PENDING_MEMO_WRITES_KEY, JSON.stringify(map || {}));
+      } catch (err) {}
+    }
+
+    function rememberDeskDailyPendingMemoWrite_(item) {
+      var memo = normalizeDeskDailyMemo_(item);
+      if (!memo.id) return memo;
+      var pending = loadDeskDailyPendingMemoWrites_();
+      pending[memo.id] = memo;
+      saveDeskDailyPendingMemoWrites_(pending);
+      return memo;
+    }
+
+    function forgetDeskDailyPendingMemoWrite_(memoId) {
+      var id = String(memoId || "").trim();
+      if (!id) return;
+      var pending = loadDeskDailyPendingMemoWrites_();
+      if (!pending[id]) return;
+      delete pending[id];
+      saveDeskDailyPendingMemoWrites_(pending);
+    }
+
+    function getDeskDailyPendingMemosForDate_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      var pending = loadDeskDailyPendingMemoWrites_();
+      return Object.keys(pending).map(function(id) {
+        return normalizeDeskDailyMemo_(Object.assign({}, pending[id], { id: id }));
+      }).filter(function(item) {
+        return item.dateKey === safeDateKey;
+      }).sort(compareDeskDailyMemo_);
+    }
+
+    function mergeDeskDailyPendingMemosForDate_(dateKey) {
+      var pending = getDeskDailyPendingMemosForDate_(dateKey);
+      if (!pending.length) return;
+      var byId = {};
+      getDeskDailyJournalMemos_(dateKey).concat(pending).forEach(function(item) {
+        if (!item || !item.id) return;
+        byId[item.id] = item;
+      });
+      mergeDeskDailyJournalData_(dateKey, getDeskDailyJournalTasks_(dateKey), Object.keys(byId).map(function(id) { return byId[id]; }));
+    }
+
+    function flushDeskDailyPendingMemoWrites_() {
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      var pending = loadDeskDailyPendingMemoWrites_();
+      var items = Object.keys(pending).map(function(id) {
+        return normalizeDeskDailyMemo_(Object.assign({}, pending[id], { id: id }));
+      }).filter(function(item) {
+        return item.id && item.dateKey && item.worker && item.text;
+      }).sort(compareDeskDailyMemo_);
+      if (!items.length) return Promise.resolve();
+      setDeskDailySyncStatus_("pending");
+      showDeskMemoSaveStatus_("미전송 기록 " + items.length + "건을 서버에 저장 중", "saving");
+      return items.reduce(function(chain, item) {
+        return chain.then(function() {
+          return saveDeskDailyMemoRemoteWithRetry_(item, 0).then(function() {
+            forgetDeskDailyPendingMemoWrite_(item.id);
+          });
+        });
+      }, deskDailyMemoSaveQueue_.catch(function() { return null; })).then(function() {
+        setDeskDailySyncStatus_("idle");
+        showDeskMemoSaveStatus_("미전송 기록 저장을 완료했습니다.", "saved");
+      }).catch(function(err) {
+        console.warn("desk daily pending memo flush failed", err && err.message ? err.message : err);
+        setDeskDailySyncStatus_("error");
+        showDeskMemoSaveStatus_("미전송 기록은 보관됨 · 서버 저장을 계속 재시도합니다.", "error");
+      });
+    }
+
     function withRetry_(workFn, options) {
       var config = options || {};
       var maxAttempts = Math.max(1, Number(config.attempts || 4));
@@ -22115,21 +22260,24 @@
     }
 
     function enqueueDeskDailyMemoRemoteSave_(item) {
-      var safeItem = normalizeDeskDailyMemo_(item);
-      deskDailyMemoSaveQueue_ = enqueueDeskDailyMutation_(function() {
-        return saveDeskDailyMemoRemoteWithRetry_(safeItem, 0);
-      }, {
-        delay: 260,
-        label: "desk daily memo save",
-        attempts: 1
+      var safeItem = rememberDeskDailyPendingMemoWrite_(item);
+      deskDailyMemoSaveQueue_ = deskDailyMemoSaveQueue_.catch(function() {
+        return null;
       }).then(function() {
+        return delay_(80);
+      }).then(function() {
+        setDeskDailySyncStatus_("pending");
+        return saveDeskDailyMemoRemoteWithRetry_(safeItem, 0);
+      }).then(function() {
+        forgetDeskDailyPendingMemoWrite_(safeItem.id);
         setDeskDailySyncStatus_("idle");
         showDeskMemoSaveStatus_("서버 저장을 완료했습니다.", "saved");
+        return syncDeskDailyJournalAfterMutation_(safeItem.dateKey);
       }).catch(function(err) {
         var message = err && err.message ? err.message : String(err);
         console.warn("desk daily memo save failed", message);
         setDeskDailySyncStatus_("error");
-        showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장은 잠시 후 새로고침으로 확인해 주세요.", "error");
+        showDeskMemoSaveStatus_("화면에는 반영됨 · 서버 저장 대기열에 보관했습니다.", "error");
         return null;
       });
       return deskDailyMemoSaveQueue_;
@@ -22469,15 +22617,23 @@
         return;
       }
       if (!text) return;
-      showDeskMemoSaveStatus_("저장 중...", "saving");
+      var clientOrder = nextDeskDailyMemoClientOrder_();
+      var createdAt = buildDeskCurrentDateTimeForKey_(dateKey);
+      if (deskJournalMemoInputEl) {
+        deskJournalMemoInputEl.value = "";
+        deskJournalMemoInputEl.focus();
+      }
+      showDeskMemoSaveStatus_("입력됨 · 서버 저장 대기열 처리 중", "saving");
       upsertDeskDailyMemo_({
-        id: buildDeskShiftId_("memo", Date.now(), Math.random().toString(36).slice(2)),
+        id: buildDeskShiftId_("memo", clientOrder, Math.random().toString(36).slice(2)),
         dateKey: dateKey,
         worker: worker,
         text: text,
         category: state.desk.daily.memoType || "일반",
         mode: state.desk.daily.memoMode || "report",
-        createdAt: buildDeskCurrentDateTimeForKey_(dateKey)
+        createdAt: createdAt,
+        updatedAt: createdAt,
+        clientOrder: clientOrder
       }, function() {
         state.desk.daily.editingMemoId = "";
         state.desk.daily.selectedWorker = worker;
@@ -22485,12 +22641,6 @@
         state.desk.daily.memoPage = 1;
         state.desk.daily.memoType = "일반";
         syncDeskMemoComposerState_();
-        showDeskMemoSaveStatus_("저장되었습니다.", "saved");
-        setTimeout(function() {
-          if (deskJournalMemoInputEl && String(deskJournalMemoInputEl.value || "").trim() === text) {
-            deskJournalMemoInputEl.value = "";
-          }
-        }, 900);
       });
     }
 

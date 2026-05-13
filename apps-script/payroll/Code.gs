@@ -1350,8 +1350,17 @@ function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
     category: String((item && (item.category || item.type || item.memoType)) || "일반").trim() || "일반",
     mode: mode === "record" ? "record" : "report",
     createdAt: String((item && item.createdAt) || now).trim(),
-    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim()
+    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim(),
+    clientOrder: normalizeDeskDailyMemoClientOrder_(item && item.clientOrder, (item && (item.createdAt || item.updatedAt)) || now)
   };
+}
+
+function normalizeDeskDailyMemoClientOrder_(value, stamp) {
+  var num = Number(value);
+  if (isFinite(num) && num > 0) return num;
+  var parsed = Date.parse(String(stamp || ""));
+  if (isFinite(parsed)) return parsed * 1000;
+  return 0;
 }
 
 function normalizeDeskWorkerNameKey_(name) {
@@ -1373,7 +1382,13 @@ function compareDeskDailyJournalTasks_(a, b) {
 }
 
 function compareDeskDailyJournalMemos_(a, b) {
-  return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  var left = String(a.createdAt || a.updatedAt || "");
+  var right = String(b.createdAt || b.updatedAt || "");
+  if (left !== right) return left.localeCompare(right);
+  var leftOrder = normalizeDeskDailyMemoClientOrder_(a && a.clientOrder, left);
+  var rightOrder = normalizeDeskDailyMemoClientOrder_(b && b.clientOrder, right);
+  if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+  return String(a.id || "").localeCompare(String(b.id || ""));
 }
 
 function buildDefaultDeskScheduleMonthSeed_(monthKey) {
