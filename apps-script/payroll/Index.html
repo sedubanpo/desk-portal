@@ -5003,6 +5003,388 @@
       text-decoration: underline;
       text-underline-offset: 2px;
     }
+    .tuition-shell {
+      gap: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdfa 100%);
+      border-color: #d7e5dc;
+    }
+    .tuition-page-head {
+      margin-bottom: -2px;
+    }
+    .tuition-topbar {
+      grid-template-columns: 0.9fr 0.9fr minmax(300px, 1.35fr) auto;
+      align-items: center;
+      padding: 11px 12px;
+    }
+    .tuition-topbar .field {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .tuition-topbar .field label {
+      margin: 0;
+      color: #284056;
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .tuition-topbar .field select,
+    .tuition-topbar .field input {
+      height: 46px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 850;
+    }
+    .tuition-cards {
+      grid-template-columns: 0.92fr 0.92fr 1.72fr;
+      min-height: 126px;
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.04);
+    }
+    .tuition-metric-group-title {
+      padding: 15px 18px 2px;
+      font-size: 14px;
+      color: #1d334b;
+    }
+    .tuition-metric-card {
+      min-height: 100px;
+      padding: 16px 18px 18px;
+      gap: 14px;
+    }
+    .tuition-metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 18px;
+    }
+    .tuition-metric-icon i {
+      width: 24px;
+      height: 24px;
+      stroke-width: 2.4;
+    }
+    .tuition-metric-card .label {
+      font-size: 12px;
+      color: #31445c;
+      white-space: nowrap;
+    }
+    .tuition-metric-card .value {
+      font-size: 29px;
+      letter-spacing: 0;
+    }
+    .tuition-money-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      width: 100%;
+    }
+    .tuition-money-row > div:first-child {
+      min-width: 0;
+    }
+    .tuition-outstanding-side {
+      margin-top: 24px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #ea580c;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .tuition-metric-group:last-child .tuition-metric-pair {
+      grid-template-columns: 0.88fr 1.32fr;
+    }
+    .tuition-metric-group:last-child .tuition-metric-card {
+      padding-right: 14px;
+    }
+    .tuition-metric-group:last-child .tuition-metric-card .value {
+      font-size: 26px;
+      white-space: nowrap;
+    }
+    .tuition-money-card {
+      position: relative;
+      padding-right: 118px;
+    }
+    .tuition-money-card .tuition-money-row {
+      display: block;
+    }
+    .tuition-money-card .tuition-money-row .meta {
+      display: none;
+    }
+    .tuition-money-card .tuition-outstanding-side {
+      position: absolute;
+      top: 48px;
+      right: 12px;
+      max-width: 104px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+    }
+    .tuition-layout {
+      grid-template-columns: 1.05fr 1fr 1.45fr;
+      gap: 12px;
+    }
+    .tuition-panel-soft {
+      min-height: 336px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.035);
+    }
+    .tuition-chart-wrap {
+      height: 258px;
+      margin-top: 2px;
+    }
+    .tuition-chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 12px;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      color: #52657b;
+      font-size: 11px;
+      font-weight: 850;
+    }
+    .tuition-chart-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .tuition-chart-legend i {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .tuition-status-summary {
+      gap: 10px;
+    }
+    .tuition-status-item,
+    .tuition-priority-item {
+      border: 1px solid #e4eee8;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+      padding: 11px 12px;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 28px 44px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+    .tuition-priority-item:hover {
+      transform: translateY(-1px);
+      border-color: var(--st-color, #94a3b8);
+      box-shadow: 0 12px 22px rgba(15, 40, 31, 0.08);
+    }
+    .tuition-priority-rank {
+      width: 25px;
+      height: 25px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 950;
+      background: var(--st-color, #94a3b8);
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.12);
+    }
+    .tuition-priority-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--st-bg, #f1f5f9);
+      color: var(--st-color, #475569);
+    }
+    .tuition-priority-icon i {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2.25;
+    }
+    .tuition-priority-main {
+      min-width: 0;
+    }
+    .tuition-priority-title {
+      display: block;
+      color: #1e3046;
+      font-size: 14px;
+      font-weight: 950;
+      line-height: 1.2;
+    }
+    .tuition-priority-count {
+      display: block;
+      margin-top: 2px;
+      color: #102133;
+      font-size: 18px;
+      font-weight: 950;
+      line-height: 1.1;
+    }
+    .tuition-priority-desc {
+      display: block;
+      margin-top: 2px;
+      color: #6b7d90;
+      font-size: 11px;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tuition-priority-action {
+      border: 1px solid #b8d9cc;
+      background: #ffffff;
+      color: #0d684d;
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .tuition-status-item.is-active,
+    .tuition-priority-item.is-active {
+      border-color: var(--st-color, #94a3b8);
+      box-shadow: inset 0 0 0 1px var(--st-color, #94a3b8), 0 10px 20px rgba(15, 40, 31, 0.09);
+    }
+    .tuition-recent-table-wrap {
+      max-height: 270px;
+      border-color: #e0e8e2;
+    }
+    .tuition-log-table {
+      min-width: 780px;
+      font-size: 12px;
+    }
+    .tuition-log-table th {
+      background: #f2f6f4;
+      color: #284056;
+      font-weight: 950;
+    }
+    .tuition-log-table td {
+      color: #1f2f46;
+      font-weight: 850;
+    }
+    .tuition-payment-amount {
+      font-weight: 950;
+    }
+    .tuition-payment-amount.negative {
+      color: #dc2626;
+    }
+    .tuition-payment-amount.positive {
+      color: #2563eb;
+    }
+    .tuition-issue-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .tuition-issue-chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+    }
+    .tuition-issue-chip.has {
+      color: #ea580c;
+    }
+    .tuition-issue-chip.has::before {
+      background: #f97316;
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.13);
+    }
+    .tuition-table th {
+      font-size: 12px;
+      font-weight: 950;
+      color: #263c55;
+    }
+    .tuition-school-chip,
+    .tuition-grade-chip {
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 950;
+      border: 1px solid transparent;
+    }
+    .tuition-school-chip {
+      background: #eaf3ff;
+      border-color: #cfe3ff;
+      color: #1752a3;
+    }
+    .tuition-grade-chip {
+      background: #dcfce7;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+    .tuition-amount-cell {
+      min-width: 106px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border-width: 1.5px;
+      background: #f8fbff;
+    }
+    .tuition-amount-cell .k {
+      font-size: 11px;
+      color: #486177;
+    }
+    .tuition-amount-cell .v {
+      font-size: 14px;
+      font-weight: 950;
+    }
+    .tuition-amount-cell.guide {
+      background: #eff6ff;
+      border-color: #c7ddff;
+    }
+    .tuition-amount-cell.collected {
+      background: #effaf5;
+      border-color: #bcebd1;
+    }
+    .tuition-amount-cell.outstanding {
+      background: #fff4e6;
+      border-color: #fdba74;
+    }
+    .tuition-contact-last {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: #125d52;
+      font-size: 12px;
+      font-weight: 950;
+    }
+    .tuition-contact-last i {
+      width: 14px;
+      height: 14px;
+    }
+    .act-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      min-height: 31px;
+      border-radius: 9px;
+      font-weight: 950;
+    }
+    .act-btn i {
+      width: 14px;
+      height: 14px;
+    }
+    .act-btn[data-pay-student] {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #ffffff;
+      box-shadow: 0 7px 14px rgba(13, 104, 77, 0.16);
+    }
+    .act-btn[data-contact-student] {
+      background: #ffffff;
+      border-color: #a9c9bd;
+      color: #0f3f36;
+    }
     .tuition-history-list {
       max-height: 58vh;
       overflow: auto;
@@ -11181,12 +11563,15 @@
                     <div class="meta">실무자 입력 기준</div>
                   </div>
                 </article>
-                <article class="tuition-metric-card">
+                <article class="tuition-metric-card tuition-money-card">
                   <span class="tuition-metric-icon"><i data-lucide="coins"></i></span>
-                  <div>
-                    <div class="label">순수 수납액</div>
-                    <div class="value" id="tuitionCollectedAmount">0원</div>
-                    <div class="meta" id="tuitionOutstandingMeta">미납 0원</div>
+                  <div class="tuition-money-row">
+                    <div>
+                      <div class="label">순수 수납액</div>
+                      <div class="value" id="tuitionCollectedAmount">0원</div>
+                      <div class="meta">이번 달 실수납</div>
+                    </div>
+                    <div class="tuition-outstanding-side" id="tuitionOutstandingMeta">미납 0원</div>
                   </div>
                 </article>
               </div>
@@ -11209,6 +11594,7 @@
               <div class="tuition-chart-wrap">
                 <canvas id="tuitionStatusChart"></canvas>
               </div>
+              <div class="tuition-chart-legend" id="tuitionChartLegend"></div>
             </article>
             <article class="tuition-panel-soft">
               <header class="panel-head">
@@ -11231,7 +11617,7 @@
                       <th>납부</th>
                       <th>결재구분</th>
                       <th>승인번호</th>
-                      <th>이슈메모</th>
+                      <th>이슈</th>
                     </tr>
                   </thead>
                   <tbody id="tuitionPaymentBody"></tbody>
@@ -13860,6 +14246,7 @@
     var openTuitionUnpaidListBtnEl = document.getElementById("openTuitionUnpaidListBtn");
     var tuitionRowsPillEl = document.getElementById("tuitionRowsPill");
     var tuitionStatusChartEl = document.getElementById("tuitionStatusChart");
+    var tuitionChartLegendEl = document.getElementById("tuitionChartLegend");
     var tuitionStatusSummaryEl = document.getElementById("tuitionStatusSummary");
     var tuitionContactModalEl = document.getElementById("tuitionContactModal");
     var tuitionPaymentModalEl = document.getElementById("tuitionPaymentModal");
@@ -24994,45 +25381,88 @@
             data: values,
             backgroundColor: backgrounds,
             borderColor: "#f8fafc",
-            borderWidth: 4,
-            borderRadius: 18,
-            spacing: 4,
-            hoverOffset: 8
+            borderWidth: 6,
+            borderRadius: 24,
+            spacing: 8,
+            hoverOffset: 12
           }]
         },
         plugins: [centerPlugin],
         options: {
           maintainAspectRatio: false,
-          cutout: "70%",
+          cutout: "64%",
           plugins: {
             legend: {
               display: false
+            },
+            tooltip: {
+              backgroundColor: "#ffffff",
+              titleColor: "#102133",
+              bodyColor: "#24364f",
+              borderColor: "#d9e6df",
+              borderWidth: 1,
+              padding: 12,
+              displayColors: true,
+              titleFont: { weight: "900" },
+              bodyFont: { weight: "850" },
+              callbacks: {
+                label: function(context) {
+                  var value = toNumber(context.raw, 0);
+                  var pct = total ? Math.round((value / total) * 1000) / 10 : 0;
+                  return " " + context.label + " " + value + "명 · " + pct + "%";
+                }
+              }
             }
           }
         }
       });
+      renderTuitionChartLegend_(labels, values, colorMap);
       renderTuitionStatusSummary_(labels, values, maxValue, colorMap, total);
+    }
+
+    function renderTuitionChartLegend_(labels, values, colorMap) {
+      if (!tuitionChartLegendEl) return;
+      if (!labels || !labels.length) {
+        tuitionChartLegendEl.innerHTML = "";
+        return;
+      }
+      tuitionChartLegendEl.innerHTML = labels.map(function(label, index) {
+        var value = toNumber(values[index], 0);
+        return '<span><i style="background:' + (colorMap[label] || "#94a3b8") + ';"></i>' +
+          escapeHtml(label) + ' ' + value + '명</span>';
+      }).join("");
     }
 
     function renderTuitionStatusSummary_(labels, values, maxValue, colorMap, total) {
       if (!tuitionStatusSummaryEl) return;
+      var rows = Array.isArray(state.tuition.rows) ? state.tuition.rows : [];
       if (!labels || !labels.length) {
         tuitionStatusSummaryEl.innerHTML = '<div class="tuition-daily-empty" style="grid-column:1/-1;">상태 분류 데이터가 없습니다.</div>';
         return;
       }
-      var sum = total || values.reduce(function(acc, v) { return acc + toNumber(v, 0); }, 0) || 1;
-      tuitionStatusSummaryEl.innerHTML = labels.map(function(label, i) {
-        var value = toNumber(values[i], 0);
-        var pct = Math.round((value / sum) * 1000) / 10;
-        var width = Math.max(6, Math.round((value / maxValue) * 100));
-        var base = colorMap[label] || "#94a3b8";
-        return '<button type="button" class="tuition-status-item" style="--st-color:' + base + ';" data-status-card="' + escapeHtml(label) + '">' +
-          '<div class="row">' +
-            '<span class="name">' + (i + 1) + '. ' + escapeHtml(label) + '</span>' +
-            '<span class="meta"><span class="arrow">↗</span>' + pct + '%</span>' +
-          '</div>' +
-          '<div class="sub">' + value + '명 · 리스트 보기</div>' +
-          '<div class="bar"><div class="fill" style="width:' + width + '%;"></div></div>' +
+      var byStatus = {};
+      labels.forEach(function(label, i) {
+        byStatus[label] = toNumber(values[i], 0);
+      });
+      var highUnpaid = rows.filter(function(row) {
+        return !isTuitionPaidStatus_(row.unpaidStatus) && toNumber(row.outstandingAmount, 0) >= 100000;
+      }).length;
+      var items = [
+        { status: "안내이전", title: "안내이전", desc: "오늘 안내 필요", action: "대상 보기", icon: "megaphone", color: "#f97316", bg: "#fff7ed", value: byStatus["안내이전"] || 0 },
+        { status: "안내완료", title: "안내완료 미납", desc: "재연락 후보", action: "연락 기록", icon: "phone-call", color: "#f59e0b", bg: "#fffbeb", value: byStatus["안내완료"] || 0 },
+        { status: "납부예정", title: "납부예정", desc: "예정일 확인", action: "확인", icon: "calendar-days", color: "#4f46e5", bg: "#eef2ff", value: byStatus["납부예정"] || 0 },
+        { status: "확인필요", title: "고액 미납", desc: "금액 우선 확인", action: "필터 적용", icon: "circle-dollar-sign", color: "#ef4444", bg: "#fef2f2", value: highUnpaid }
+      ];
+      tuitionStatusSummaryEl.innerHTML = items.map(function(item, i) {
+        return '<button type="button" class="tuition-priority-item" style="--st-color:' + item.color + ';--st-bg:' + item.bg + ';" data-status-card="' + escapeHtml(item.status) + '">' +
+          '<span class="tuition-priority-rank">' + (i + 1) + '</span>' +
+          '<span class="tuition-priority-icon"><i data-lucide="' + escapeHtml(item.icon) + '"></i></span>' +
+          '<span class="tuition-priority-main">' +
+            '<span class="tuition-priority-title">' + escapeHtml(item.title) + '</span>' +
+            '<span class="tuition-priority-count">' + item.value + '명</span>' +
+            '<span class="tuition-priority-desc">' + escapeHtml(item.desc) + '</span>' +
+          '</span>' +
+          '<span class="tuition-priority-action">' + escapeHtml(item.action) + '</span>' +
         '</button>';
       }).join("");
       Array.prototype.forEach.call(tuitionStatusSummaryEl.querySelectorAll("[data-status-card]"), function(btn) {
@@ -25040,6 +25470,7 @@
           openTuitionStatusListModal_(btn.getAttribute("data-status-card") || "");
         });
       });
+      refreshLucideIcons_();
       syncTuitionStatusCardSelection_();
     }
 
@@ -25217,14 +25648,14 @@
           '<td>' + buildTuitionAmountCell("outstanding", row.outstandingAmount || 0) + '</td>' +
           '<td>' + buildTuitionStatusControl(row) + '</td>' +
           '<td class="tuition-col-contact">' +
-            '<div class="tuition-contact-last">' + escapeHtml(row.lastContactAt || "-") + '</div>' +
+            '<div class="tuition-contact-last"><i data-lucide="phone"></i><span>' + escapeHtml(row.lastContactAt || "-") + '</span></div>' +
             (row.lastContactMemo
               ? ('<div class="tuition-contact-memo">' + escapeHtml(row.lastContactMemo) + '</div>')
               : '<div class="tuition-contact-memo muted">메모 없음</div>') +
           '</td>' +
           '<td>' + buildTuitionContactGauge(row.contactCount || 0) + '</td>' +
-          '<td><button class="act-btn" data-contact-student="' + escapeHtml(row.studentName) + '">안내/연락 기록</button></td>' +
-          '<td><button class="act-btn" data-pay-student="' + escapeHtml(row.studentName) + '">수납 입력</button></td>' +
+          '<td><button class="act-btn" data-contact-student="' + escapeHtml(row.studentName) + '"><i data-lucide="list"></i>안내/연락 기록</button></td>' +
+          '<td><button class="act-btn" data-pay-student="' + escapeHtml(row.studentName) + '"><i data-lucide="circle-plus"></i>수납 입력</button></td>' +
         '</tr>';
       }).join("");
 
@@ -25255,6 +25686,7 @@
           openTuitionStudentHistoryModal_(studentName);
         });
       });
+      refreshLucideIcons_();
     }
 
     function renderTuitionPaymentRows() {
@@ -25275,13 +25707,17 @@
         return;
       }
       tuitionPaymentBodyEl.innerHTML = list.map(function(row) {
+        var amount = toNumber(row.amount, 0);
+        var amountClass = amount < 0 ? " negative" : (amount > 0 ? " positive" : "");
+        var issueMemo = String(row.issueMemo || "").trim();
+        var hasIssue = issueMemo && issueMemo !== "-";
         return '<tr>' +
           '<td>' + escapeHtml(formatStudentName(row.studentName)) + '</td>' +
-          '<td>' + formatWon(row.amount || 0) + '</td>' +
+          '<td><span class="tuition-payment-amount' + amountClass + '">' + formatWon(amount) + '</span></td>' +
           '<td>' + escapeHtml(row.paidAt || "-") + '</td>' +
           '<td>' + escapeHtml(row.paymentType || "-") + '</td>' +
           '<td>' + escapeHtml(row.approvalNo || "-") + '</td>' +
-          '<td class="memo-col">' + escapeHtml(row.issueMemo || "-") + '</td>' +
+          '<td class="memo-col"><span class="tuition-issue-chip' + (hasIssue ? " has" : "") + '" title="' + escapeHtml(issueMemo || "이슈 없음") + '">' + (hasIssue ? "이슈있음" : "이슈없음") + '</span></td>' +
         '</tr>';
       }).join("");
       renderTuitionPaymentPagination_(totalPages, page);
