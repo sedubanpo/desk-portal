@@ -4642,6 +4642,7 @@
     }
     .tuition-row-unguided td { background: #f3f4f6; }
     .tuition-row-guided td { background: #fff8d9; }
+    .tuition-row-check td { background: #ecfeff; }
     .tuition-row-paid td { background: #ecf9df; }
     .status-chip {
       display: inline-flex;
@@ -25635,6 +25636,7 @@
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
         else if (row.unpaidStatus === "안내완료") rowClass = "tuition-row-guided";
+        else if (row.unpaidStatus === "확인필요") rowClass = "tuition-row-check";
         else if (row.unpaidStatus === "납부완료" || row.unpaidStatus === "이월금") rowClass = "tuition-row-paid";
         if (carryInfo) rowClass += " tuition-row-carryover";
         return '<tr class="' + rowClass + '">' +
@@ -27127,7 +27129,7 @@
     function buildTuitionStatusControl(row) {
       var s = String(row && row.unpaidStatus || "안내이전");
       var studentName = String(row && row.studentName || "");
-      var options = ["안내이전", "안내완료", "납부예정", "연락두절", "이월금", "납부완료"].map(function(v) {
+      var options = ["안내이전", "안내완료", "확인필요", "납부예정", "연락두절", "이월금", "납부완료"].map(function(v) {
         return '<option value="' + escapeHtml(v) + '"' + (v === s ? " selected" : "") + ">" + v + "</option>";
       }).join("");
       return '<div class="status-edit-wrap">' +
