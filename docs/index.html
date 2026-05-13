@@ -9654,9 +9654,11 @@
       border: 1px solid #d9e2dc;
       background: #fbfaf5;
       box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055);
+      gap: 10px;
     }
     .desk-daily-journal-mode .desk-panel-head {
       padding: 2px 4px 4px;
+      margin-bottom: 0;
     }
     .desk-daily-journal-mode .desk-panel-title,
     .desk-daily-journal-mode .desk-shared-summary-title,
@@ -10046,17 +10048,15 @@
       max-height: 430px;
     }
     .desk-daily-journal-mode .desk-journal-statusbar {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 14px;
+      display: block;
       padding: 0;
       border: 0;
       background: transparent;
     }
     .desk-daily-journal-mode .desk-journal-date-nav {
-      grid-column: 2 / 3;
-      justify-self: end;
       gap: 10px;
+      justify-content: flex-end;
+      flex: 0 0 auto;
     }
     .desk-daily-journal-mode .desk-journal-status-cards {
       grid-column: 1 / -1;
@@ -10194,17 +10194,27 @@
         var(--desk-composer-bg, #fffdfa);
     }
     .desk-daily-journal-mode .desk-composer-row {
-      grid-template-columns: 162px minmax(0, 1fr);
-      gap: 12px 16px;
-      align-items: end;
+      grid-template-columns: 150px minmax(320px, 1fr) minmax(330px, 0.78fr) 118px;
+      grid-template-areas: "types input templates actions";
+      gap: 12px;
+      align-items: stretch;
+    }
+    .desk-daily-journal-mode .desk-composer-group {
+      grid-area: types;
     }
     .desk-daily-journal-mode .desk-template-panel {
-      grid-column: 2 / 3;
-      grid-template-columns: auto minmax(0, 1fr);
-      min-height: 42px;
+      grid-area: templates;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      min-height: 0;
+      gap: 8px;
+    }
+    .desk-daily-journal-mode .desk-template-panel-head {
+      justify-content: space-between;
     }
     .desk-daily-journal-mode .desk-template-panel .desk-chip-row {
-      grid-template-columns: repeat(6, minmax(90px, 1fr));
+      grid-template-columns: repeat(3, minmax(92px, 1fr));
+      align-content: start;
     }
     .desk-daily-journal-mode .desk-template-chip {
       min-height: 38px;
@@ -10220,7 +10230,12 @@
       grid-template-columns: minmax(0, 1fr) 118px;
       grid-column: 2 / 3;
     }
+    .desk-daily-journal-mode .desk-memo-compose-input {
+      grid-area: input;
+      min-height: 86px;
+    }
     .desk-daily-journal-mode .desk-memo-action-stack {
+      grid-area: actions;
       display: grid;
       gap: 10px;
     }
@@ -10447,12 +10462,28 @@
       .desk-journal-status-cards { justify-content: flex-start; }
       .desk-memo-compose-row { max-width: none; grid-column: auto; }
       .desk-memo-submit-btn { width: 100%; }
+      .desk-daily-journal-mode .desk-journal-status-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .desk-daily-journal-mode #deskJournalReloadBtn {
+        min-height: 48px;
+      }
+      .desk-daily-journal-mode .desk-composer-row {
+        grid-template-areas:
+          "types"
+          "templates"
+          "input"
+          "actions";
+      }
       .desk-daily-journal-mode .desk-template-panel {
         grid-column: auto;
         grid-template-columns: 1fr;
       }
       .desk-daily-journal-mode .desk-template-panel .desk-chip-row {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .desk-daily-journal-mode .desk-memo-action-stack {
+        grid-template-columns: 1fr 1fr;
       }
       .desk-daily-journal-mode .desk-journal-layout,
       .desk-daily-journal-mode .desk-journal-layout.worker-focus,
@@ -12014,15 +12045,15 @@
                 <h2 class="desk-panel-title">일일 업무일지</h2>
                 <p class="desk-panel-sub">빠른 기록, 미해결 업무 처리, 보고용 복사를 한 화면에서 처리합니다.</p>
               </div>
+              <div class="desk-journal-date-nav">
+                <button class="desk-nav-btn" id="deskJournalPrevDateBtn" type="button"><i data-lucide="chevron-left"></i><span>전날</span></button>
+                <input id="deskJournalDateInput" class="desk-month-input" type="date">
+                <button class="desk-nav-btn" id="deskJournalNextDateBtn" type="button"><span>다음날</span><i data-lucide="chevron-right"></i></button>
+                <button class="desk-nav-btn accent" id="deskJournalTodayBtn" type="button">오늘</button>
+              </div>
             </header>
             <div class="desk-journal-shell">
               <section class="desk-journal-statusbar">
-                <div class="desk-journal-date-nav">
-                  <button class="desk-nav-btn" id="deskJournalPrevDateBtn" type="button"><i data-lucide="chevron-left"></i><span>전날</span></button>
-                  <input id="deskJournalDateInput" class="desk-month-input" type="date">
-                  <button class="desk-nav-btn" id="deskJournalNextDateBtn" type="button"><span>다음날</span><i data-lucide="chevron-right"></i></button>
-                  <button class="desk-nav-btn accent" id="deskJournalTodayBtn" type="button">오늘</button>
-                </div>
                 <div class="desk-journal-status-cards">
                   <article class="desk-journal-status-card">
                     <span class="desk-status-icon"><i data-lucide="clipboard-list"></i></span>
@@ -12097,12 +12128,10 @@
                       </div>
                       <div class="desk-chip-row" id="deskMemoTemplateChips"></div>
                     </div>
-                    <div class="desk-memo-compose-row">
-                      <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
-                      <div class="desk-memo-action-stack">
-                        <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
-                        <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
-                      </div>
+                    <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
+                    <div class="desk-memo-action-stack">
+                      <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
+                      <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
                     </div>
                   </div>
                   <div class="desk-memo-submit-hint">Enter로 저장 · Shift+Enter로 줄바꿈 · 기록은 오른쪽 입력 기록에 바로 반영됩니다.</div>
