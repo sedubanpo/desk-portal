@@ -4334,19 +4334,39 @@
     }
     .tuition-cards {
       display: grid;
-      grid-template-columns: 1.1fr 1.1fr 1.2fr 1.4fr 1.4fr;
+      grid-template-columns: 1.05fr 1.05fr 1.35fr;
       gap: 0;
       overflow: hidden;
       border: 1px solid #dbe7df;
       border-radius: 12px;
       background: #ffffff;
     }
+    .tuition-metric-group {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      border-right: 1px solid #e5eee8;
+      min-width: 0;
+    }
+    .tuition-metric-group:last-child {
+      border-right: 0;
+    }
+    .tuition-metric-group-title {
+      padding: 13px 18px 0;
+      color: #203247;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .tuition-metric-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      min-width: 0;
+    }
     .tuition-metric-card {
       display: grid;
       grid-template-columns: auto 1fr;
       align-items: center;
       gap: 12px;
-      padding: 18px 20px;
+      padding: 18px;
       border-right: 1px solid #e5eee8;
       min-height: 96px;
     }
@@ -10693,7 +10713,7 @@
       .day-detail-summary { grid-template-columns: 1fr 1fr; }
       .tracker-summary { grid-template-columns: 1fr 1fr; }
       .tuition-topbar { grid-template-columns: 0.8fr 0.8fr minmax(220px, 1fr) auto; }
-      .tuition-cards { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .tuition-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .tuition-action-frame { grid-template-columns: repeat(5, minmax(0, 1fr)); }
       .tuition-layout { grid-template-columns: 1fr 1fr; }
       .tuition-layout .tuition-panel-soft:last-child { grid-column: 1 / -1; }
@@ -10723,6 +10743,16 @@
       }
       .tuition-cards,
       .tuition-action-frame {
+        grid-template-columns: 1fr;
+      }
+      .tuition-metric-group {
+        border-right: 0;
+        border-bottom: 1px solid #e5eee8;
+      }
+      .tuition-metric-group:last-child {
+        border-bottom: 0;
+      }
+      .tuition-metric-pair {
         grid-template-columns: 1fr;
       }
       .tuition-metric-card {
@@ -10829,7 +10859,7 @@
       <section class="global-topbar"></section>
       <section class="module-tabs">
         <button class="module-tab active" type="button" data-module="expense">데스크 관리</button>
-        <button class="module-tab" type="button" data-module="tuition">재원생 수강료 정산</button>
+        <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
         <button class="module-tab" type="button" data-module="teacher">강사 시수 정산</button>
         <div class="desk-global-tools" aria-label="데스크 포털 상태 도구">
           <label class="desk-global-search">
@@ -11097,47 +11127,70 @@
           </section>
 
           <section class="tuition-cards">
-            <article class="tuition-metric-card">
-              <span class="tuition-metric-icon blue"><i data-lucide="users"></i></span>
-              <div>
-                <div class="label">전체 재원생</div>
-                <div class="value" id="tuitionTotalStudents">0명</div>
-                <div class="meta">student 탭 기준</div>
+            <div class="tuition-metric-group">
+              <div class="tuition-metric-group-title">재원생 기준</div>
+              <div class="tuition-metric-pair">
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon blue"><i data-lucide="users"></i></span>
+                  <div>
+                    <div class="label">전체 재원생</div>
+                    <div class="value" id="tuitionTotalStudents">0명</div>
+                    <div class="meta">student 탭 기준</div>
+                  </div>
+                </article>
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon green"><i data-lucide="check-circle-2"></i></span>
+                  <div>
+                    <div class="label">납부완료</div>
+                    <div class="value" id="tuitionPaidStudents">0명</div>
+                    <div class="meta">이번 달 수납 완료</div>
+                  </div>
+                </article>
               </div>
-            </article>
-            <article class="tuition-metric-card">
-              <span class="tuition-metric-icon green"><i data-lucide="check-circle-2"></i></span>
-              <div>
-                <div class="label">납부완료</div>
-                <div class="value" id="tuitionPaidStudents">0명</div>
-                <div class="meta">이번 달 수납 완료</div>
+            </div>
+            <div class="tuition-metric-group">
+              <div class="tuition-metric-group-title">미납 관리</div>
+              <div class="tuition-metric-pair">
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon warn"><i data-lucide="triangle-alert"></i></span>
+                  <div>
+                    <div class="label">미납 학생</div>
+                    <div class="value" id="tuitionUnpaidStudents">0명</div>
+                    <div class="meta">안내/조치 필요</div>
+                    <button class="tuition-unpaid-btn" id="openTuitionUnpaidListBtn" type="button">미납 학생 리스트</button>
+                  </div>
+                </article>
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon warn"><i data-lucide="phone-call"></i></span>
+                  <div>
+                    <div class="label">연락 필요</div>
+                    <div class="value" id="tuitionContactNeededStudents">0명</div>
+                    <div class="meta">안내/재연락 후보</div>
+                  </div>
+                </article>
               </div>
-            </article>
-            <article class="tuition-metric-card">
-              <span class="tuition-metric-icon warn"><i data-lucide="triangle-alert"></i></span>
-              <div>
-                <div class="label">미납 학생</div>
-                <div class="value" id="tuitionUnpaidStudents">0명</div>
-                <div class="meta">안내/조치 필요</div>
-                <button class="tuition-unpaid-btn" id="openTuitionUnpaidListBtn" type="button">미납 학생 리스트</button>
+            </div>
+            <div class="tuition-metric-group">
+              <div class="tuition-metric-group-title">금액 대조</div>
+              <div class="tuition-metric-pair">
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon blue"><i data-lucide="wallet-cards"></i></span>
+                  <div>
+                    <div class="label">안내 금액 합계</div>
+                    <div class="value" id="tuitionExpectedAmount">0원</div>
+                    <div class="meta">실무자 입력 기준</div>
+                  </div>
+                </article>
+                <article class="tuition-metric-card">
+                  <span class="tuition-metric-icon"><i data-lucide="coins"></i></span>
+                  <div>
+                    <div class="label">순수 수납액</div>
+                    <div class="value" id="tuitionCollectedAmount">0원</div>
+                    <div class="meta" id="tuitionOutstandingMeta">미납 0원</div>
+                  </div>
+                </article>
               </div>
-            </article>
-            <article class="tuition-metric-card">
-              <span class="tuition-metric-icon blue"><i data-lucide="wallet-cards"></i></span>
-              <div>
-                <div class="label">안내 금액 합계</div>
-                <div class="value" id="tuitionExpectedAmount">0원</div>
-                <div class="meta">실무자 입력 기준</div>
-              </div>
-            </article>
-            <article class="tuition-metric-card">
-              <span class="tuition-metric-icon"><i data-lucide="coins"></i></span>
-              <div>
-                <div class="label">순수 수납액</div>
-                <div class="value" id="tuitionCollectedAmount">0원</div>
-                <div class="meta" id="tuitionOutstandingMeta">미납 0원</div>
-              </div>
-            </article>
+            </div>
           </section>
           <section class="tuition-action-frame">
             <button class="tuition-action-btn primary" data-open-tuition-brief type="button"><span class="step">1</span>월별 수납 브리핑</button>
@@ -13975,7 +14028,7 @@
           sub: "근무표와 데스크 운영 기록을 한 화면에서 관리"
         },
         tuition: {
-          title: "재원생 수강료 정산",
+          title: "수강료 정산",
           sub: "학생 수강료 현황, 수납 기록, 안내 대상을 한 화면에서 관리합니다."
         },
         teacher: {
@@ -24718,7 +24771,7 @@
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
       }
-      setLoading(true, "재원생 수강료 정산 데이터를 계산 중입니다...");
+      setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
       runServer("getTuitionMonthSummary", {
         monthName: state.tuition.selectedMonth,
         statusFilter: "",
@@ -24823,6 +24876,14 @@
       document.getElementById("tuitionTotalStudents").textContent = (kpi.totalStudents || 0) + "명";
       document.getElementById("tuitionPaidStudents").textContent = (kpi.paidStudents || 0) + "명";
       document.getElementById("tuitionUnpaidStudents").textContent = (kpi.unpaidStudents || 0) + "명";
+      var contactNeededEl = document.getElementById("tuitionContactNeededStudents");
+      if (contactNeededEl) {
+        var contactNeeded = rows.filter(function(row) {
+          return !isTuitionPaidStatus_(row.unpaidStatus) &&
+            (row.unpaidStatus === "안내이전" || row.unpaidStatus === "연락두절" || row.unpaidStatus === "확인필요");
+        }).length;
+        contactNeededEl.textContent = contactNeeded + "명";
+      }
       document.getElementById("tuitionExpectedAmount").textContent = formatWon(kpi.expectedAmount || 0);
       document.getElementById("tuitionCollectedAmount").textContent = formatWon(kpi.collectedAmount || 0);
       document.getElementById("tuitionOutstandingMeta").textContent = "미납 " + formatWon(kpi.outstandingAmount || 0);
