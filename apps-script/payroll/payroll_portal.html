@@ -14471,10 +14471,11 @@
                 <div class="desk-response-summary-head">
                   <span class="desk-response-summary-icon"><i data-lucide="clipboard-check"></i></span>
                   <div>
-                    <strong>추천 대응 요약</strong>
+                    <strong id="deskResponseSummaryTitle">추천 대응 요약</strong>
                     <div class="desk-response-summary-meta">
-                      <span>예상 상황: 시간표 미등록 등원</span>
-                      <span class="warn">긴급도: 보통</span>
+                      <span id="deskResponseMatchedTitle">예상 상황: 시간표 미등록 등원</span>
+                      <span class="warn" id="deskResponseUrgency">긴급도: 보통</span>
+                      <span id="deskResponseConfidence">매칭 100%</span>
                     </div>
                   </div>
                 </div>
@@ -15723,7 +15724,10 @@
         },
         responseCenter: {
           situationText: "학생이 시간표에 없는데 등원했습니다",
-          lastStatus: "가이드 동기화 정상"
+          lastStatus: "가이드 동기화 정상",
+          matchedGuideId: "schedule-missing",
+          matchConfidence: 1,
+          matchCandidates: []
         },
         messageTemplates: {
           tags: [],
@@ -16064,6 +16068,10 @@
     var deskResponseSituationInputEl = document.getElementById("deskResponseSituationInput");
     var deskResponseResetBtnEl = document.getElementById("deskResponseResetBtn");
     var deskResponseFindBtnEl = document.getElementById("deskResponseFindBtn");
+    var deskResponseSummaryTitleEl = document.getElementById("deskResponseSummaryTitle");
+    var deskResponseMatchedTitleEl = document.getElementById("deskResponseMatchedTitle");
+    var deskResponseUrgencyEl = document.getElementById("deskResponseUrgency");
+    var deskResponseConfidenceEl = document.getElementById("deskResponseConfidence");
     var deskResponseStepsEl = document.getElementById("deskResponseSteps");
     var deskResponseMessageGridEl = document.getElementById("deskResponseMessageGrid");
     var deskTemplateTagCountEl = document.getElementById("deskTemplateTagCount");
@@ -19759,6 +19767,315 @@
       ];
     }
 
+    function getDefaultDeskResponseGuides_() {
+      return [
+        {
+          id: "schedule-missing",
+          tagId: "schedule-check",
+          title: "시간표 미등록 등원",
+          urgency: "보통",
+          keywords: ["시간표에 없음", "시간표에 없는데", "시간표 없음", "미등록 등원", "등록 안 됨", "등록 안된 학생", "수업표 없음", "등원했는데 없음", "등원했습니다", "갑자기 등원", "수업 배정 없음"],
+          steps: [
+            "학생을 빈 강의실 또는 안전한 대기 공간으로 안내",
+            "강사 포털에서 기존 수강 과목과 담당 강사 확인",
+            "담당 강사와 실제 등원 가능 여부 확인",
+            "실무자 단톡방에 상황 공유",
+            "확정 전에는 학부모에게 단정 안내 금지"
+          ],
+          cards: [
+            { target: "학부모", title: "확인 중 안내", body: "안녕하세요. 데스크입니다. 학생이 시간표에 등록되지 않은 상태로 등원하여, 먼저 안전한 대기 공간에서 확인 중입니다. 담당 강사와 수강 기록 확인 후 다시 안내드리겠습니다." },
+            { target: "강사", title: "담당 강사 확인 요청", body: "학생이 시간표에 없는 상태로 등원했습니다. 기존 수강 과목과 오늘 수업 가능 여부 확인 부탁드립니다." },
+            { target: "내부 업무", title: "실무자 단톡방 공유", body: "[확인 요청] 시간표 미등록 학생 등원. 학생은 대기 공간에 안내했고, 강사 포털/담당 강사 확인 중입니다." },
+            { target: "학생", title: "대기 안내", body: "잠시만 안전한 공간에서 기다려 주세요. 오늘 수업 시간표를 확인한 뒤 바로 안내해드릴게요." }
+          ]
+        },
+        {
+          id: "parent-schedule-change",
+          tagId: "parent-schedule",
+          title: "학부모 일정 변경 요청",
+          urgency: "보통",
+          keywords: ["일정 변경", "스케줄 변경", "시간 변경", "수업 시간 바꾸", "요일 변경", "보강 요청", "수업 이동", "학부모 일정"],
+          steps: [
+            "요청 날짜, 과목, 학생명, 변경 희망 시간을 먼저 확인",
+            "담당 강사와 같은 반 학생 영향 여부 확인",
+            "가능한 대안 시간을 1~2개로 정리",
+            "확정 전에는 임시 가능으로 안내하고 확정 후 기록",
+            "변경 완료 후 일일 업무일지와 필요 시 단톡방에 공유"
+          ],
+          cards: [
+            { target: "학부모", title: "일정 변경 접수", body: "안녕하세요. 요청주신 일정 변경 건 확인했습니다. 담당 강사 일정과 가능 시간을 확인한 뒤 확정 가능한 시간으로 다시 안내드리겠습니다." },
+            { target: "강사", title: "변경 가능 시간 확인", body: "학부모님께서 수업 일정 변경을 요청하셨습니다. 해당 학생의 변경 가능 시간과 수업 영향 여부 확인 부탁드립니다." },
+            { target: "내부 업무", title: "변경 요청 공유", body: "[일정 변경 요청] 학생/과목/희망 시간 확인 필요. 담당 강사 가능 여부 확인 후 학부모에게 재안내 예정입니다." },
+            { target: "학생", title: "일정 확인 안내", body: "수업 시간이 변경될 수 있어요. 확정되면 데스크에서 다시 안내해드릴게요." }
+          ]
+        },
+        {
+          id: "applicant-interview",
+          tagId: "interview-schedule",
+          title: "지원자 면접 시간 조율",
+          urgency: "보통",
+          keywords: ["지원자", "면접", "채용", "강사 지원", "조교 지원", "데스크 지원", "면접 일정", "인터뷰", "이력서"],
+          steps: [
+            "지원 직무와 가능 요일/시간대를 확인",
+            "면접 담당자 일정과 겹치지 않는 후보 시간을 선정",
+            "지원자에게 확정 전 후보 시간으로 안내",
+            "확정 후 면접 일정과 연락처를 인사 관리에 기록",
+            "당일 리마인드가 필요하면 업무 큐에 등록"
+          ],
+          cards: [
+            { target: "지원자", title: "면접 시간 조율", body: "안녕하세요. S-LMS 채용 담당자입니다. 지원해주신 포지션 관련하여 면접 가능 시간을 확인하고자 연락드립니다. 가능하신 날짜와 시간대를 알려주시면 조율 후 안내드리겠습니다." },
+            { target: "내부 업무", title: "면접 조율 공유", body: "[지원자 면접 조율] 지원 직무와 가능 시간을 확인 중입니다. 면접 담당자 일정 확인 후 확정 예정입니다." },
+            { target: "강사", title: "면접 참여 가능 확인", body: "지원자 면접 일정 조율 중입니다. 해당 포지션 검토에 참여 가능하신 시간대가 있으면 공유 부탁드립니다." },
+            { target: "학부모", title: "외부 안내 없음", body: "해당 상황은 학부모 안내 대상이 아닙니다. 내부 기록과 지원자 안내만 진행하세요." }
+          ]
+        },
+        {
+          id: "student-schedule-check",
+          tagId: "schedule-check",
+          title: "학생 시간표 확인",
+          urgency: "낮음",
+          keywords: ["시간표 확인", "수업 몇시", "오늘 수업", "수업 시간", "학생 시간표", "등원 시간", "몇 시 수업"],
+          steps: [
+            "학생명과 상담번호 또는 학교/학년을 확인",
+            "강사 포털 또는 시간표에서 오늘 수업 여부 확인",
+            "동명이인이 있으면 학부모 연락처 또는 학교로 재확인",
+            "학생에게 강의실과 대기 위치를 안내",
+            "시간표에 이상이 있으면 실무자에게 공유"
+          ],
+          cards: [
+            { target: "학생", title: "시간표 안내", body: "오늘 수업 시간을 확인해드릴게요. 잠시만 기다려 주세요." },
+            { target: "학부모", title: "시간표 확인 안내", body: "안녕하세요. 문의주신 수업 시간표를 확인 중입니다. 정확한 수업 시간과 담당 강사를 확인한 뒤 안내드리겠습니다." },
+            { target: "내부 업무", title: "시간표 확인 기록", body: "[시간표 확인] 학생명/학교/학년 기준으로 오늘 수업 여부 확인 필요. 동명이인 여부도 함께 확인하세요." },
+            { target: "강사", title: "수업 여부 확인", body: "학생이 오늘 수업 시간을 확인 요청했습니다. 담당 수업 여부 확인 부탁드립니다." }
+          ]
+        },
+        {
+          id: "teacher-consult-material",
+          tagId: "consult-material",
+          title: "강사 상담 자료 요청",
+          urgency: "낮음",
+          keywords: ["상담 자료", "학생 상담", "상담 준비", "자료 요청", "학습 상황", "숙제 이행", "보완 단원", "상담 메모"],
+          steps: [
+            "상담 예정 학생과 상담 일정을 확인",
+            "담당 강사에게 최근 수업 내용과 보완점을 요청",
+            "숙제 이행, 태도, 성취도 등 필요한 항목을 정리",
+            "학부모에게 전달 가능한 표현으로 문구를 다듬기",
+            "상담 완료 후 기록을 남기고 후속 조치 확인"
+          ],
+          cards: [
+            { target: "강사", title: "상담 자료 요청", body: "학생 상담 예정입니다. 최근 수업 내용, 숙제 이행, 보완이 필요한 단원을 간단히 공유 부탁드립니다." },
+            { target: "내부 업무", title: "상담 준비 기록", body: "[상담 자료 요청] 담당 강사에게 최근 수업 내용/숙제/보완 단원 확인 요청. 학부모 전달 전 표현 점검 필요." },
+            { target: "학부모", title: "상담 준비 안내", body: "안녕하세요. 상담 전 담당 강사 확인 자료를 정리하고 있습니다. 확인 후 안내드리겠습니다." },
+            { target: "학생", title: "상담 자료 확인", body: "최근 수업 내용과 숙제 진행 상황을 확인하고 있어요. 필요한 내용이 있으면 데스크에 알려주세요." }
+          ]
+        },
+        {
+          id: "tuition-notice",
+          tagId: "tuition-notice",
+          title: "수강료 안내",
+          urgency: "보통",
+          keywords: ["수강료", "미납", "납부", "결제", "입금", "수납", "납입", "금액", "현금영수증", "카드"],
+          steps: [
+            "학생별 안내 금액과 순수납액을 먼저 확인",
+            "이미 납부한 기록이나 중복 입력 여부를 확인",
+            "미납액이 맞으면 학부모에게 정중히 안내",
+            "결제 또는 입금 확인 후 수납 기록을 남기기",
+            "금액 이슈가 있으면 확인필요 상태로 표시"
+          ],
+          cards: [
+            { target: "학부모", title: "수강료 확인 안내", body: "안녕하세요. 이번 달 수강료 확인차 안내드립니다. 결제 또는 입금 내역이 있으시면 확인 후 반영하겠습니다." },
+            { target: "내부 업무", title: "수납 확인 요청", body: "[수강료 확인] 안내 금액/수납액/미납액 확인 필요. 중복 납부 또는 결제 누락 여부를 먼저 확인하세요." },
+            { target: "학생", title: "보호자 확인 안내", body: "수강료 관련 내용은 보호자님께 확인 후 안내드릴게요." },
+            { target: "강사", title: "수강료 문의 전달 금지", body: "수강료 금액 문의는 데스크에서 확인 후 안내하겠습니다. 강사님께서는 금액을 단정 안내하지 않도록 부탁드립니다." }
+          ]
+        },
+        {
+          id: "teacher-absence",
+          tagId: "teacher-absence",
+          title: "강사 결근 대체",
+          urgency: "높음",
+          keywords: ["강사 결근", "결근", "대체 수업", "대체 강사", "휴강", "강사 아픔", "수업 대체", "보강"],
+          steps: [
+            "결근 강사의 수업 시간과 대상 학생을 확인",
+            "대체 가능한 강사와 강의실을 우선 확인",
+            "대체가 불가하면 보강 또는 일정 변경 후보를 정리",
+            "학부모에게 확정된 대체/보강안만 안내",
+            "변경 사항을 시간표와 업무일지에 기록"
+          ],
+          cards: [
+            { target: "강사", title: "대체 가능 확인", body: "결근으로 인해 대체 수업 가능 여부 확인이 필요합니다. 가능 시간과 담당 가능한 학생 범위를 알려주시면 조정하겠습니다." },
+            { target: "학부모", title: "수업 조정 안내", body: "안녕하세요. 담당 강사 사정으로 수업 조정이 필요하여 확인 중입니다. 확정된 대체 수업 또는 보강 일정으로 다시 안내드리겠습니다." },
+            { target: "내부 업무", title: "결근 대체 공유", body: "[강사 결근] 대체 강사/강의실/보강 후보 확인 필요. 확정 전 학부모에게 단정 안내 금지." },
+            { target: "학생", title: "수업 대기 안내", body: "오늘 수업 담당 선생님 확인 중이에요. 안내 전까지 지정된 공간에서 기다려 주세요." }
+          ]
+        },
+        {
+          id: "new-parent-inquiry",
+          tagId: "new-parent-inquiry",
+          title: "신규문의 최초 연락",
+          urgency: "보통",
+          keywords: ["신규 문의", "처음 연락", "상담 문의", "입학 문의", "등록 문의", "테스트 문의", "체험 문의", "학원 문의"],
+          steps: [
+            "학생 학년, 희망 과목, 현재 학습 상황을 확인",
+            "상담 가능 시간과 연락 가능한 번호를 확인",
+            "담당 상담자 또는 원장님 일정과 연결",
+            "상담 전 필요한 자료와 안내 문구를 준비",
+            "상담 예약 내용을 업무일지에 기록"
+          ],
+          cards: [
+            { target: "학부모", title: "신규 문의 응대", body: "안녕하세요. 문의주셔서 감사합니다. 학생 학년과 희망 과목, 상담 가능 시간을 알려주시면 확인 후 안내드리겠습니다." },
+            { target: "내부 업무", title: "신규 문의 공유", body: "[신규 문의] 학년/과목/연락처/상담 희망 시간 확인 필요. 상담 담당자 연결 후 기록하세요." },
+            { target: "강사", title: "상담 전 확인 요청", body: "신규 상담 예정 학생 관련하여 과목 수준 확인이 필요할 수 있습니다. 배정 시 확인 부탁드립니다." },
+            { target: "학생", title: "상담 대기 안내", body: "상담 준비 중입니다. 보호자님과 함께 잠시만 기다려 주세요." }
+          ]
+        },
+        {
+          id: "subject-teacher-change",
+          tagId: "subject-change",
+          title: "과목/강사 변경",
+          urgency: "보통",
+          keywords: ["과목 추가", "과목 변경", "강사 변경", "선생님 변경", "담당 변경", "수업 변경", "반 변경"],
+          steps: [
+            "변경 요청 사유와 희망 과목/강사를 확인",
+            "현재 담당 강사와 변경 가능성을 먼저 확인",
+            "시간표, 수강료, 반 편성 영향을 함께 검토",
+            "학부모에게 가능한 선택지를 정리해 안내",
+            "확정 후 강사 포털과 업무일지에 반영"
+          ],
+          cards: [
+            { target: "학부모", title: "변경 요청 접수", body: "요청주신 과목/강사 변경 건 확인했습니다. 현재 시간표와 담당 강사 가능 여부를 검토한 뒤 선택 가능한 안으로 안내드리겠습니다." },
+            { target: "강사", title: "담당 변경 확인", body: "과목/강사 변경 요청이 있어 현재 수업 상황과 변경 가능 여부 확인 부탁드립니다." },
+            { target: "내부 업무", title: "변경 검토 공유", body: "[과목/강사 변경] 시간표/수강료/반 편성 영향 확인 필요. 확정 후 관련 기록 반영." },
+            { target: "학생", title: "수업 변경 안내", body: "수업 또는 담당 선생님 변경 여부를 확인 중이에요. 확정되면 다시 알려드릴게요." }
+          ]
+        },
+        {
+          id: "late-absence",
+          tagId: "late-arrival",
+          title: "지각/결석 확인",
+          urgency: "보통",
+          keywords: ["지각", "결석", "당일취소", "늦게", "안 왔", "안옴", "보강", "출결", "결석보강"],
+          steps: [
+            "학생의 오늘 수업 시간과 출결 상태를 확인",
+            "학부모 연락 또는 학생 확인이 필요한지 판단",
+            "당일취소/결석보강 인정 기준을 확인",
+            "담당 강사에게 출결 상황을 공유",
+            "최종 처리 상태를 업무일지와 출결에 기록"
+          ],
+          cards: [
+            { target: "학부모", title: "출결 확인 안내", body: "안녕하세요. 오늘 수업 출결 확인차 연락드립니다. 등원 예정 여부를 확인해주시면 담당 강사에게 전달하겠습니다." },
+            { target: "강사", title: "출결 상황 공유", body: "해당 학생의 지각/결석 여부 확인 중입니다. 등원 시각 또는 보강 처리 필요 여부 확인 부탁드립니다." },
+            { target: "내부 업무", title: "출결 확인 기록", body: "[출결 확인] 지각/결석/당일취소 여부 확인 후 담당 강사 공유. 보강 인정 기준 확인 필요." },
+            { target: "학생", title: "출결 안내", body: "오늘 수업 출결 확인 중입니다. 도착하면 데스크에 먼저 알려주세요." }
+          ]
+        }
+      ];
+    }
+
+    function normalizeDeskResponseText_(text) {
+      var value = String(text || "")
+        .toLowerCase()
+        .replace(/등원했습니다|등원했어요|등원하였습니다|등원하셨어요/g, "등원")
+        .replace(/없는데요|없는데|없습니다|없어요/g, "없음")
+        .replace(/왔습니다|왔어요|왔는데요|왔는데/g, "옴")
+        .replace(/요청했습니다|요청했어요|요청드립니다/g, "요청")
+        .replace(/바꿔주세요|바꿔 달라|변경해주세요|조율해주세요/g, "변경")
+        .replace(/해주세요|해 주세요|부탁드립니다/g, "")
+        .replace(/[^\w가-힣]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      return value;
+    }
+
+    function tokenizeDeskResponseText_(text) {
+      var stop = ["그리고", "그런데", "하지만", "합니다", "했어요", "있어요", "없어요", "주세요", "문의", "요청", "확인"];
+      return normalizeDeskResponseText_(text).split(" ").map(function(token) {
+        return token
+          .replace(/(님께서|님에게|님이|님은|께서)$/g, "")
+          .replace(/(에서|으로|에게|은|는|이|가|을|를|에|로|와|과|도|만)$/g, "");
+      }).filter(function(token) {
+        return token.length >= 2 && stop.indexOf(token) === -1;
+      });
+    }
+
+    function scoreDeskResponseGuide_(query, guide) {
+      var normalizedQuery = normalizeDeskResponseText_(query);
+      if (!normalizedQuery) return 0;
+      var phrases = [guide.title].concat(guide.keywords || []);
+      var guideText = normalizeDeskResponseText_(phrases.join(" "));
+      var score = 0;
+      phrases.forEach(function(phrase) {
+        var normalizedPhrase = normalizeDeskResponseText_(phrase);
+        if (!normalizedPhrase) return;
+        if (normalizedQuery === normalizedPhrase) {
+          score += 18;
+        } else if (normalizedQuery.indexOf(normalizedPhrase) >= 0 || normalizedPhrase.indexOf(normalizedQuery) >= 0) {
+          score += 9 + Math.min(6, normalizedPhrase.length / 4);
+        }
+      });
+      tokenizeDeskResponseText_(query).forEach(function(token) {
+        if (guideText.indexOf(token) >= 0) score += 2.2;
+      });
+      return score;
+    }
+
+    function matchDeskResponseGuide_(query) {
+      var guides = getDefaultDeskResponseGuides_();
+      var normalizedQuery = normalizeDeskResponseText_(query);
+      if (!normalizedQuery) {
+        return {
+          guide: guides[0],
+          confidence: 1,
+          candidates: guides.slice(0, 3).map(function(guide) { return { guide: guide, score: 0 }; })
+        };
+      }
+      var ranked = guides.map(function(guide) {
+        return { guide: guide, score: scoreDeskResponseGuide_(normalizedQuery, guide) };
+      }).sort(function(a, b) {
+        return b.score - a.score;
+      });
+      var best = ranked[0] || { guide: guides[0], score: 0 };
+      if (!best.score) best = { guide: guides[0], score: 0 };
+      var confidence = Math.max(0, Math.min(0.99, best.score / 24));
+      return {
+        guide: best.guide,
+        confidence: confidence,
+        candidates: ranked.slice(0, 3)
+      };
+    }
+
+    function getDeskResponseTargetIcon_(target) {
+      if (target === "강사") return "user-round-cog";
+      if (target === "내부 업무") return "settings-2";
+      if (target === "학생") return "user-round";
+      if (target === "지원자") return "user-round-check";
+      return "user-round";
+    }
+
+    function getDeskResponseActionsForTarget_(target) {
+      if (target === "강사") return [["copy", "문구 복사"], ["share", "단톡방 공유"]];
+      if (target === "내부 업무") return [["copy", "문구 복사"], ["save", "저장"]];
+      return [["copy", "문구 복사"], ["memo", "메모에 추가"]];
+    }
+
+    function buildDeskResponseCardsForGuide_(guide) {
+      ensureDeskMessageTemplatesLoaded_();
+      var templates = (state.desk.messageTemplates.templates || []).filter(function(template) {
+        return guide && guide.tagId && template.tagId === guide.tagId;
+      });
+      return (guide.cards || []).map(function(card) {
+        var template = templates.find(function(item) { return item.target === card.target; });
+        return {
+          type: getDeskMessageTargetClass_(card.target),
+          icon: getDeskResponseTargetIcon_(card.target),
+          target: card.target,
+          title: template ? template.title : card.title,
+          body: template ? template.message : card.body,
+          actions: getDeskResponseActionsForTarget_(card.target)
+        };
+      });
+    }
+
     function normalizeDeskMessageTag_(item, index) {
       item = item || {};
       var label = String(item.label || "").trim() || "새 유형 태그";
@@ -19968,24 +20285,22 @@
       if (deskResponseSituationInputEl && document.activeElement !== deskResponseSituationInputEl) {
         deskResponseSituationInputEl.value = state.desk.responseCenter.situationText || "";
       }
-      var steps = [
-        "학생을 빈 강의실 또는 안전한 대기 공간으로 안내",
-        "강사 포털에서 기존 수강 과목과 담당 강사 확인",
-        "담당 강사와 실제 등원 가능 여부 확인",
-        "실무자 단톡방에 상황 공유",
-        "확정 전에는 학부모에게 단정 안내 금지"
-      ];
+      var match = matchDeskResponseGuide_(state.desk.responseCenter.situationText || "");
+      var guide = match.guide || getDefaultDeskResponseGuides_()[0];
+      state.desk.responseCenter.matchedGuideId = guide.id;
+      state.desk.responseCenter.matchConfidence = match.confidence;
+      state.desk.responseCenter.matchCandidates = match.candidates || [];
+      if (deskResponseSummaryTitleEl) deskResponseSummaryTitleEl.textContent = (match.confidence < 0.28 ? "유사 대응 요약" : "추천 대응 요약");
+      if (deskResponseMatchedTitleEl) deskResponseMatchedTitleEl.textContent = (match.confidence < 0.28 ? "유사 상황: " : "예상 상황: ") + guide.title;
+      if (deskResponseUrgencyEl) deskResponseUrgencyEl.textContent = "긴급도: " + (guide.urgency || "보통");
+      if (deskResponseConfidenceEl) deskResponseConfidenceEl.textContent = "매칭 " + Math.round((match.confidence || 0) * 100) + "%";
+      var steps = guide.steps || [];
       if (deskResponseStepsEl) {
         deskResponseStepsEl.innerHTML = steps.map(function(text, index) {
           return '<div class="desk-response-step"><strong>' + (index + 1) + '</strong><span>' + escapeHtml(text) + '</span></div>';
         }).join("");
       }
-      var cards = [
-        { type: "parent", icon: "user-round", target: "학부모", title: "확인 중 안내", body: "안녕하세요. 데스크입니다. 학생이 시간표에 등록되지 않은 상태로 등원하여, 먼저 안전한 대기 공간에서 확인 중입니다. 담당 강사와 수강 기록 확인 후 다시 안내드리겠습니다.", actions: [["copy", "문구 복사"], ["memo", "메모에 추가"]] },
-        { type: "teacher", icon: "user-round-cog", target: "강사", title: "담당 강사 확인 요청", body: "학생이 시간표에 없는 상태로 등원했습니다. 기존 수강 과목과 오늘 수업 가능 여부 확인 부탁드립니다.", actions: [["copy", "문구 복사"], ["share", "단톡방 공유"]] },
-        { type: "internal", icon: "settings-2", target: "내부 업무", title: "실무자 단톡방 공유", body: "[확인 요청] 시간표 미등록 학생 등원. 학생은 대기 공간에 안내했고, 강사 포털/담당 강사 확인 중입니다.", actions: [["copy", "문구 복사"], ["save", "저장"]] },
-        { type: "student", icon: "user-round", target: "학생", title: "대기 안내", body: "잠시만 안전한 공간에서 기다려 주세요. 오늘 수업 시간표를 확인한 뒤 바로 안내해드릴게요.", actions: [["copy", "문구 복사"], ["memo", "메모에 추가"]] }
-      ];
+      var cards = buildDeskResponseCardsForGuide_(guide);
       if (deskResponseMessageGridEl) {
         deskResponseMessageGridEl.innerHTML = cards.map(function(card) {
           return '<article class="desk-response-message-card ' + card.type + '">' +
