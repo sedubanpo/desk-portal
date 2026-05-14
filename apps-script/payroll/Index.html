@@ -2601,13 +2601,21 @@
     .desk-helper-card::before {
       content: "";
       position: absolute;
-      left: -18px;
-      top: 32px;
-      width: 18px;
+      left: -22px;
+      top: 38px;
+      width: 24px;
       height: 28px;
-      background: inherit;
-      border-left: 1px solid #d8e6de;
-      border-bottom: 1px solid #d8e6de;
+      background: #d8e6de;
+      clip-path: polygon(100% 0, 0 50%, 100% 100%);
+    }
+    .desk-helper-card::after {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 39px;
+      width: 22px;
+      height: 26px;
+      background: rgba(255,255,255,0.96);
       clip-path: polygon(100% 0, 0 50%, 100% 100%);
     }
     .desk-helper-card strong {
@@ -2811,6 +2819,56 @@
       border-radius: 50%;
       background: rgba(17, 44, 73, 0.13);
     }
+    .desk-mascot .thought {
+      position: absolute;
+      display: none;
+      border-radius: 999px;
+      background: #fff;
+      border: 3px solid #15395d;
+      box-shadow: 0 8px 16px rgba(17, 44, 73, 0.12);
+      z-index: 7;
+    }
+    .desk-mascot .thought.one {
+      width: 12px;
+      height: 12px;
+      right: 2px;
+      top: 20px;
+    }
+    .desk-mascot .thought.two {
+      width: 19px;
+      height: 19px;
+      right: -16px;
+      top: 0;
+    }
+    .desk-response-shell.is-thinking .desk-mascot .thought {
+      display: block;
+      animation: deskThoughtFloat 1s ease-in-out infinite;
+    }
+    .desk-response-shell.is-thinking .desk-mascot .thought.two {
+      animation-delay: 0.18s;
+    }
+    .desk-response-shell.is-thinking .desk-mascot .face-dot {
+      height: 10px;
+      top: 82px;
+      transform: translateY(-2px);
+    }
+    .desk-response-shell.is-thinking .desk-mascot .mouth {
+      width: 13px;
+      height: 13px;
+      left: 78px;
+      top: 101px;
+      border-radius: 999px;
+      border-top: 3px solid #10233d;
+      background: #fff;
+    }
+    .desk-response-shell.is-thinking .desk-mascot .finger,
+    .desk-response-shell.is-thinking .desk-mascot .spark {
+      opacity: 0.22;
+    }
+    @keyframes deskThoughtFloat {
+      0%, 100% { transform: translateY(0); opacity: 0.72; }
+      50% { transform: translateY(-7px); opacity: 1; }
+    }
     .desk-response-bubble {
       position: relative;
       border: 4px solid transparent;
@@ -2826,19 +2884,31 @@
       align-items: center;
       box-shadow: 0 18px 34px rgba(45, 87, 130, 0.08);
     }
+    .desk-response-bubble > * {
+      position: relative;
+      z-index: 2;
+    }
     .desk-response-bubble::before {
       content: "";
       position: absolute;
-      left: -42px;
-      top: 86px;
-      width: 58px;
+      left: -28px;
+      top: 74px;
+      width: 38px;
       height: 48px;
-      background:
-        linear-gradient(#fff, #fff) padding-box,
-        linear-gradient(120deg, #22c17b 0%, #4aa3e5 100%) border-box;
-      border: 4px solid transparent;
-      border-right: 0;
-      clip-path: polygon(100% 0, 0 68%, 100% 100%);
+      background: linear-gradient(135deg, #22c17b 0%, #4aa3e5 100%);
+      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      z-index: 0;
+    }
+    .desk-response-bubble::after {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 82px;
+      width: 30px;
+      height: 32px;
+      background: #fff;
+      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      z-index: 1;
     }
     .desk-response-input {
       border: 0;
@@ -2872,10 +2942,14 @@
     .desk-response-actions > span {
       position: absolute;
       left: 42px;
+      right: 252px;
       bottom: 30px;
       color: #8190a3;
       font-size: 13px;
       font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .desk-response-actions > div {
       display: inline-flex;
@@ -2906,6 +2980,35 @@
       font-weight: 950;
       box-shadow: 0 12px 20px rgba(13, 104, 77, 0.24);
       cursor: pointer;
+    }
+    .desk-response-search-btn .desk-loading-dots {
+      display: none;
+      gap: 3px;
+      align-items: center;
+    }
+    .desk-response-search-btn .desk-loading-dots i {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.55;
+      animation: deskResponseDot 0.9s ease-in-out infinite;
+    }
+    .desk-response-search-btn .desk-loading-dots i:nth-child(2) { animation-delay: 0.15s; }
+    .desk-response-search-btn .desk-loading-dots i:nth-child(3) { animation-delay: 0.3s; }
+    .desk-response-shell.is-thinking .desk-response-search-btn {
+      pointer-events: none;
+      filter: saturate(0.96);
+    }
+    .desk-response-shell.is-thinking .desk-response-search-btn .desk-search-label {
+      display: none;
+    }
+    .desk-response-shell.is-thinking .desk-response-search-btn .desk-loading-dots {
+      display: inline-flex;
+    }
+    @keyframes deskResponseDot {
+      0%, 100% { transform: translateY(0); opacity: 0.45; }
+      50% { transform: translateY(-5px); opacity: 1; }
     }
     .desk-response-section-title {
       display: flex;
@@ -14338,6 +14441,8 @@
                     <span class="finger"></span>
                     <span class="spark one"></span>
                     <span class="spark two"></span>
+                    <span class="thought one"></span>
+                    <span class="thought two"></span>
                     <span class="shadow"></span>
                   </div>
                   <div class="desk-helper-card">
@@ -14351,7 +14456,7 @@
                     <span>예: 학부모 일정 변경 요청, 강사 상담 자료 요청, 지원자 면접 조율</span>
                     <div>
                       <button class="desk-response-reset" id="deskResponseResetBtn" type="button">초기화</button>
-                      <button class="desk-response-search-btn" id="deskResponseFindBtn" type="button"><i data-lucide="sparkles"></i>대응 찾기</button>
+                      <button class="desk-response-search-btn" id="deskResponseFindBtn" type="button"><i data-lucide="sparkles"></i><span class="desk-search-label">대응 찾기</span><span class="desk-loading-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>
                     </div>
                   </div>
                 </div>
@@ -19894,6 +19999,17 @@
         }).join("");
       }
       refreshLucideIcons_();
+    }
+
+    function runDeskResponseSearch_() {
+      var panel = document.querySelector('[data-desk-panel="responseCenter"] .desk-response-shell');
+      state.desk.responseCenter.situationText = deskResponseSituationInputEl ? String(deskResponseSituationInputEl.value || "") : "";
+      if (panel) panel.classList.add("is-thinking");
+      window.clearTimeout(state.desk.responseCenter.thinkingTimer);
+      state.desk.responseCenter.thinkingTimer = window.setTimeout(function() {
+        if (panel) panel.classList.remove("is-thinking");
+        renderDeskResponseCenter_();
+      }, 900);
     }
 
     function renderDeskMessageTemplates_() {
@@ -26308,6 +26424,11 @@
         deskResponseSituationInputEl.addEventListener("input", function() {
           state.desk.responseCenter.situationText = String(deskResponseSituationInputEl.value || "");
         });
+        deskResponseSituationInputEl.addEventListener("keydown", function(event) {
+          if (event.key !== "Enter" || event.shiftKey) return;
+          event.preventDefault();
+          runDeskResponseSearch_();
+        });
       }
       if (deskResponseResetBtnEl) {
         deskResponseResetBtnEl.addEventListener("click", function() {
@@ -26317,8 +26438,7 @@
       }
       if (deskResponseFindBtnEl) {
         deskResponseFindBtnEl.addEventListener("click", function() {
-          state.desk.responseCenter.situationText = deskResponseSituationInputEl ? String(deskResponseSituationInputEl.value || "") : "";
-          renderDeskResponseCenter_();
+          runDeskResponseSearch_();
         });
       }
       var deskResponsePanelEl = document.querySelector('[data-desk-panel="responseCenter"]');
