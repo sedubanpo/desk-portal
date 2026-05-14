@@ -2577,15 +2577,15 @@
       min-height: 232px;
       padding: 22px 28px 20px;
       display: grid;
-      grid-template-columns: minmax(390px, 420px) minmax(0, 1fr);
-      gap: 26px;
+      grid-template-columns: minmax(420px, 448px) minmax(0, 1fr);
+      gap: 24px;
       align-items: center;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 30px rgba(15, 60, 46, 0.05);
     }
     .desk-helper-zone {
       display: grid;
-      grid-template-columns: 184px minmax(176px, 1fr);
-      gap: 18px;
+      grid-template-columns: 198px minmax(176px, 1fr);
+      gap: 16px;
       align-items: center;
     }
     .desk-helper-card {
@@ -2636,7 +2636,7 @@
     }
     .desk-mascot {
       position: relative;
-      width: 178px;
+      width: 190px;
       height: 188px;
       margin: 0 auto;
     }
@@ -2715,7 +2715,7 @@
         linear-gradient(#fff, #fff) padding-box,
         linear-gradient(120deg, #22c17b 0%, #4aa3e5 52%, #8b5cf6 100%) border-box;
       min-height: 174px;
-      padding: 34px 34px 54px 46px;
+      padding: 34px 34px 54px 52px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 28px;
@@ -2729,10 +2729,10 @@
     .desk-response-bubble::before {
       content: "";
       position: absolute;
-      left: -38px;
-      top: 72px;
-      width: 46px;
-      height: 56px;
+      left: -42px;
+      top: 74px;
+      width: 42px;
+      height: 52px;
       background: linear-gradient(135deg, #22c17b 0%, #4aa3e5 100%);
       clip-path: polygon(0 50%, 100% 8%, 100% 92%);
       z-index: 0;
@@ -2740,10 +2740,10 @@
     .desk-response-bubble::after {
       content: "";
       position: absolute;
-      left: -27px;
-      top: 81px;
-      width: 36px;
-      height: 38px;
+      left: -34px;
+      top: 83px;
+      width: 31px;
+      height: 34px;
       background: #fff;
       clip-path: polygon(0 50%, 100% 9%, 100% 91%);
       z-index: 1;
@@ -2875,27 +2875,28 @@
     .desk-response-summary {
       border: 1px solid #c9ddd3;
       border-radius: 12px;
-      background: linear-gradient(180deg, #fff 0%, #fbfffd 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfffd 100%);
       padding: 0;
       display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
+      grid-template-columns: 258px minmax(0, 1fr);
       align-items: center;
-      min-height: 116px;
+      min-height: 112px;
       overflow: hidden;
+      box-shadow: 0 10px 28px rgba(15, 60, 46, 0.05);
     }
     .desk-response-summary-head {
       display: grid;
-      grid-template-columns: 56px minmax(0, 1fr);
-      gap: 14px;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 12px;
       align-items: center;
       border-right: 1px solid #d6e5de;
       align-self: stretch;
-      padding: 18px 20px;
-      background: linear-gradient(180deg, #fbfffd 0%, #f6fcf9 100%);
+      padding: 18px 18px;
+      background: linear-gradient(180deg, #f7fffb 0%, #effaf5 100%);
     }
     .desk-response-summary-icon {
-      width: 52px;
-      height: 52px;
+      width: 48px;
+      height: 48px;
       border-radius: 999px;
       background: #ddf7ed;
       color: #0d684d;
@@ -2909,7 +2910,7 @@
     .desk-response-summary-head strong {
       display: block;
       color: #0d684d;
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 950;
       margin-bottom: 8px;
     }
@@ -2923,7 +2924,7 @@
       background: #f5fffb;
       color: #0f684e;
       border-radius: 999px;
-      padding: 7px 12px;
+      padding: 7px 11px;
       font-size: 12px;
       font-weight: 900;
       line-height: 1;
@@ -2957,22 +2958,23 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 0;
       align-self: stretch;
+      background: #fff;
     }
     .desk-response-step {
       position: relative;
-      min-height: 114px;
-      padding: 22px 18px 18px;
+      min-height: 112px;
+      padding: 20px 20px;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 11px;
-      align-content: center;
-      justify-items: start;
+      grid-template-columns: 32px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
       color: #1f3144;
-      font-size: 13px;
-      font-weight: 850;
-      line-height: 1.45;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.5;
       background:
-        linear-gradient(90deg, rgba(13,104,77,0.08), rgba(13,104,77,0)) 0 0 / 100% 3px no-repeat;
+        linear-gradient(180deg, rgba(13,104,77,0.07), rgba(255,255,255,0) 72%),
+        linear-gradient(90deg, rgba(13,104,77,0.24), rgba(13,104,77,0.02)) 0 0 / 100% 4px no-repeat;
     }
     .desk-response-step:not(:last-child) {
       border-right: 1px solid #d8e5df;
@@ -2980,10 +2982,10 @@
     .desk-response-step::after {
       content: "";
       position: absolute;
-      top: 34px;
-      right: -7px;
-      width: 14px;
-      height: 14px;
+      top: 48px;
+      right: -8px;
+      width: 16px;
+      height: 16px;
       border-top: 1px solid #d8e5df;
       border-right: 1px solid #d8e5df;
       background: #fff;
@@ -2995,16 +2997,24 @@
     }
     .desk-response-step b,
     .desk-response-step strong {
-      width: 24px;
-      height: 24px;
+      width: 30px;
+      height: 30px;
       border-radius: 999px;
       background: #0d684d;
       color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 950;
+      box-shadow: 0 6px 14px rgba(13, 104, 77, 0.18);
+      flex: 0 0 auto;
+    }
+    .desk-response-step span {
+      display: block;
+      max-width: 210px;
+      word-break: keep-all;
+      letter-spacing: 0;
     }
     .desk-response-message-grid {
       display: grid;
@@ -14473,14 +14483,14 @@
               <section class="desk-response-hero">
                 <div class="desk-helper-zone">
                   <div class="desk-mascot" aria-hidden="true">
-                    <svg viewBox="0 0 178 188" role="img" focusable="false">
+                    <svg viewBox="0 0 190 188" role="img" focusable="false">
                       <defs>
-                        <linearGradient id="deskMascotBlue" x1="22" y1="16" x2="130" y2="144" gradientUnits="userSpaceOnUse">
-                          <stop offset="0" stop-color="#83c7f4"/>
-                          <stop offset="0.48" stop-color="#2d78bc"/>
+                        <linearGradient id="deskMascotBlue" x1="46" y1="28" x2="139" y2="137" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stop-color="#7ec9f7"/>
+                          <stop offset="0.5" stop-color="#337fbe"/>
                           <stop offset="1" stop-color="#173f70"/>
                         </linearGradient>
-                        <linearGradient id="deskMascotBadge" x1="76" y1="132" x2="108" y2="163" gradientUnits="userSpaceOnUse">
+                        <linearGradient id="deskMascotBadge" x1="80" y1="135" x2="111" y2="165" gradientUnits="userSpaceOnUse">
                           <stop offset="0" stop-color="#17b978"/>
                           <stop offset="1" stop-color="#2476bd"/>
                         </linearGradient>
@@ -14490,31 +14500,34 @@
                           <stop offset="1" stop-color="#14345d"/>
                         </radialGradient>
                       </defs>
-                      <ellipse cx="86" cy="174" rx="58" ry="10" fill="#122b4a" opacity="0.12"/>
-                      <path d="M102 33 L117 6" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <circle cx="122" cy="5" r="12" fill="url(#deskMascotAntenna)" stroke="#12345b" stroke-width="4"/>
-                      <path d="M36 78 C20 80 16 92 18 113 C20 133 32 138 42 128" fill="#245b93" stroke="#12345b" stroke-width="5"/>
-                      <path d="M138 78 C154 80 158 92 156 113 C154 133 142 138 132 128" fill="#245b93" stroke="#12345b" stroke-width="5"/>
-                      <path d="M29 77 C31 37 63 20 91 25 C123 30 143 52 142 85 C141 119 119 137 86 137 C52 137 28 114 29 77Z" fill="url(#deskMascotBlue)" stroke="#12345b" stroke-width="5" stroke-linejoin="round"/>
-                      <path d="M45 82 C46 57 64 47 88 48 C113 49 128 63 128 85 C128 112 110 125 86 125 C61 125 44 109 45 82Z" fill="#ffffff"/>
-                      <ellipse class="mascot-blink" cx="69" cy="82" rx="6" ry="11" fill="#122039"/>
-                      <ellipse class="mascot-blink" cx="103" cy="82" rx="6" ry="11" fill="#122039"/>
-                      <ellipse cx="52" cy="105" rx="11" ry="7" fill="#ffc8bc"/>
-                      <ellipse cx="120" cy="105" rx="11" ry="7" fill="#ffc8bc"/>
-                      <path class="mascot-smile" d="M78 101 C80 112 94 112 97 101" fill="#ec5457" stroke="#122039" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle class="mascot-thinking-mouth" cx="87" cy="105" r="6" fill="#fff" stroke="#122039" stroke-width="4" opacity="0"/>
-                      <path d="M25 117 C23 134 35 146 55 152" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <path d="M32 139 C44 147 56 151 69 153" fill="#fff" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <path d="M139 112 C142 126 139 141 127 151" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <path d="M135 116 L151 139" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <path d="M149 140 L158 153" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <rect x="57" y="126" width="59" height="48" rx="16" fill="#eaf2f8" stroke="#12345b" stroke-width="5"/>
-                      <rect x="76" y="139" width="28" height="28" rx="7" fill="url(#deskMascotBadge)"/>
-                      <text x="90" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#fff">S</text>
-                      <path d="M37 112 C24 111 18 106 14 96" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <path d="M18 97 C13 99 10 104 9 111" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
-                      <circle class="mascot-think-mark" cx="151" cy="37" r="5" fill="#25c383"/>
-                      <path class="mascot-think-mark" d="M144 58 L138 69 M158 58 L168 64 M160 43 L171 37" stroke="#25c383" stroke-width="4" stroke-linecap="round"/>
+                      <ellipse cx="95" cy="176" rx="63" ry="10" fill="#122b4a" opacity="0.12"/>
+                      <path d="M102 35 L117 12" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <circle cx="122" cy="10" r="12" fill="url(#deskMascotAntenna)" stroke="#12345b" stroke-width="4"/>
+                      <path d="M47 82 C31 83 24 94 25 111 C26 128 37 137 49 130 L49 82Z" fill="#2a669f" stroke="#12345b" stroke-width="5" stroke-linejoin="round"/>
+                      <path d="M142 82 C158 83 165 94 164 111 C163 128 152 137 140 130 L140 82Z" fill="#2a669f" stroke="#12345b" stroke-width="5" stroke-linejoin="round"/>
+                      <path d="M43 80 C43 49 65 28 96 28 C128 28 149 51 149 81 C149 117 128 137 95 137 C64 137 43 116 43 80Z" fill="url(#deskMascotBlue)" stroke="#12345b" stroke-width="5" stroke-linejoin="round"/>
+                      <path d="M60 84 C60 61 75 51 96 51 C117 51 130 64 130 85 C130 110 116 124 95 124 C74 124 60 110 60 84Z" fill="#fff"/>
+                      <ellipse class="mascot-blink" cx="80" cy="84" rx="5.5" ry="10" fill="#122039"/>
+                      <ellipse class="mascot-blink" cx="110" cy="84" rx="5.5" ry="10" fill="#122039"/>
+                      <ellipse cx="64" cy="106" rx="10" ry="7" fill="#ffc8bc"/>
+                      <ellipse cx="126" cy="106" rx="10" ry="7" fill="#ffc8bc"/>
+                      <path class="mascot-smile" d="M87 101 C89 111 101 111 103 101" fill="#ed565a" stroke="#122039" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle class="mascot-thinking-mouth" cx="95" cy="105" r="6" fill="#fff" stroke="#122039" stroke-width="4" opacity="0"/>
+                      <path d="M142 113 C151 113 156 107 158 99" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M156 99 C161 101 165 107 166 113" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M51 118 C43 130 43 143 56 153" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M57 151 C65 157 73 159 81 158" fill="#fff" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M132 119 C144 113 150 102 151 88" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M151 88 L158 81" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M143 104 C150 108 157 109 164 106" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <rect x="62" y="128" width="66" height="47" rx="16" fill="#eef6fb" stroke="#12345b" stroke-width="5"/>
+                      <rect x="80" y="140" width="31" height="29" rx="8" fill="url(#deskMascotBadge)"/>
+                      <text x="95.5" y="161" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#fff">S</text>
+                      <path d="M33 96 C30 112 34 126 47 135" fill="none" stroke="#12345b" stroke-width="4" stroke-linecap="round"/>
+                      <path d="M157 96 C160 112 156 126 143 135" fill="none" stroke="#12345b" stroke-width="4" stroke-linecap="round"/>
+                      <path d="M163 53 L174 47 M165 66 L178 69 M151 51 L149 39" stroke="#25c383" stroke-width="4" stroke-linecap="round"/>
+                      <circle class="mascot-think-mark" cx="155" cy="45" r="5" fill="#25c383"/>
+                      <path class="mascot-think-mark" d="M149 63 L143 73 M163 62 L173 67 M166 48 L177 42" stroke="#25c383" stroke-width="4" stroke-linecap="round"/>
                     </svg>
                     <span class="thought one"></span>
                     <span class="thought two"></span>
