@@ -15531,7 +15531,10 @@
           targetFilter: "전체",
           searchKeyword: "",
           sortOrder: "recent",
-          selectedTone: "부드럽게"
+          selectedTone: "부드럽게",
+          remoteLoaded: false,
+          remoteLoading: false,
+          remoteSaving: false
         },
         daily: {
           dateKey: "",
@@ -19582,6 +19585,18 @@
     }
 
     function ensureDeskMessageTemplatesLoaded_() {
+      if ((state.desk.messageTemplates.tags || []).length && (state.desk.messageTemplates.templates || []).length) {
+        if (!findDeskMessageTag_(state.desk.messageTemplates.selectedTagId)) {
+          state.desk.messageTemplates.selectedTagId = (state.desk.messageTemplates.tags[0] || {}).id || "";
+        }
+        if (!findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId)) {
+          var currentFirst = (state.desk.messageTemplates.templates || []).find(function(item) {
+            return item.tagId === state.desk.messageTemplates.selectedTagId;
+          }) || state.desk.messageTemplates.templates[0];
+          state.desk.messageTemplates.selectedTemplateId = currentFirst ? currentFirst.id : "";
+        }
+        return;
+      }
       var loaded = false;
       try {
         var raw = localStorage.getItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY);
@@ -19616,6 +19631,53 @@
           templates: state.desk.messageTemplates.templates || []
         }));
       } catch (err) {}
+      saveDeskMessageTemplatesRemote_();
+    }
+
+    function ensureDeskMessageTemplatesRemoteLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.messageTemplates.remoteLoaded || state.desk.messageTemplates.remoteLoading) return;
+      state.desk.messageTemplates.remoteLoading = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("messageTemplates"), null)
+        .then(function(snapshot) {
+          if (snapshot && Array.isArray(snapshot.tags) && Array.isArray(snapshot.templates) && snapshot.tags.length) {
+            state.desk.messageTemplates.tags = snapshot.tags.map(normalizeDeskMessageTag_);
+            state.desk.messageTemplates.templates = snapshot.templates.map(normalizeDeskMessageTemplate_);
+            try {
+              localStorage.setItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY, JSON.stringify({
+                tags: state.desk.messageTemplates.tags || [],
+                templates: state.desk.messageTemplates.templates || []
+              }));
+            } catch (err) {}
+            if (state.desk.activeTab === "responseCenter") renderDeskResponseCenter_();
+            if (state.desk.activeTab === "messageTemplates") renderDeskMessageTemplates_();
+          }
+          state.desk.messageTemplates.remoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk message templates remote load failed", err);
+        })
+        .finally(function() {
+          state.desk.messageTemplates.remoteLoading = false;
+        });
+    }
+
+    function saveDeskMessageTemplatesRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      state.desk.messageTemplates.remoteSaving = true;
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("messageTemplates"), {
+        tags: state.desk.messageTemplates.tags || [],
+        templates: state.desk.messageTemplates.templates || []
+      })
+        .then(function() {
+          state.desk.messageTemplates.remoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk message templates remote save failed", err);
+        })
+        .finally(function() {
+          state.desk.messageTemplates.remoteSaving = false;
+        });
     }
 
     function findDeskMessageTag_(id) {
@@ -19699,6 +19761,7 @@
 
     function renderDeskResponseCenter_() {
       ensureDeskMessageTemplatesLoaded_();
+      ensureDeskMessageTemplatesRemoteLoaded_();
       if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
       if (deskResponseSituationInputEl && document.activeElement !== deskResponseSituationInputEl) {
         deskResponseSituationInputEl.value = state.desk.responseCenter.situationText || "";
@@ -19738,6 +19801,7 @@
 
     function renderDeskMessageTemplates_() {
       ensureDeskMessageTemplatesLoaded_();
+      ensureDeskMessageTemplatesRemoteLoaded_();
       var current = state.desk.messageTemplates;
       var tags = current.tags || [];
       var templates = current.templates || [];
