@@ -2496,6 +2496,1381 @@
     .desk-view-panel.hidden {
       display: none;
     }
+    .desk-response-shell,
+    .desk-template-shell {
+      display: grid;
+      gap: 12px;
+    }
+    .desk-response-topbar,
+    .desk-template-topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .desk-response-title,
+    .desk-template-title {
+      margin: 0;
+      color: #102133;
+      font-size: 28px;
+      line-height: 1.1;
+      font-weight: 950;
+    }
+    .desk-response-sub,
+    .desk-template-sub {
+      margin: 6px 0 0;
+      color: #53677b;
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .desk-response-badges,
+    .desk-template-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .desk-response-status-pill,
+    .desk-template-status-pill {
+      min-height: 40px;
+      border: 1px solid #d6e4dd;
+      background: #fff;
+      color: #123044;
+      border-radius: 10px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.04);
+    }
+    .desk-response-status-pill .dot,
+    .desk-template-status-pill .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #20c786;
+      box-shadow: 0 0 0 4px rgba(32, 199, 134, 0.12);
+    }
+    .desk-response-hero {
+      border: 1px solid #c9ddd3;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #fbfefd 0%, #f5fbf8 56%, #fbf8ff 100%);
+      min-height: 246px;
+      padding: 22px 28px 20px;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+      gap: 32px;
+      align-items: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 30px rgba(15, 60, 46, 0.05);
+    }
+    .desk-helper-zone {
+      display: grid;
+      grid-template-columns: 170px minmax(0, 1fr);
+      gap: 16px;
+      align-items: center;
+    }
+    .desk-helper-card {
+      position: relative;
+      border: 1px solid #d8e6de;
+      background: rgba(255,255,255,0.92);
+      border-radius: 10px;
+      padding: 16px 18px;
+      box-shadow: 0 12px 24px rgba(15, 60, 46, 0.08);
+      min-height: 98px;
+    }
+    .desk-helper-card::before {
+      content: "";
+      position: absolute;
+      left: -18px;
+      top: 32px;
+      width: 18px;
+      height: 28px;
+      background: inherit;
+      border-left: 1px solid #d8e6de;
+      border-bottom: 1px solid #d8e6de;
+      clip-path: polygon(100% 0, 0 50%, 100% 100%);
+    }
+    .desk-helper-card strong {
+      display: block;
+      color: #0d684d;
+      font-size: 20px;
+      font-weight: 950;
+      margin-bottom: 8px;
+    }
+    .desk-helper-card span {
+      color: #314457;
+      font-size: 15px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+    .desk-mascot {
+      position: relative;
+      width: 154px;
+      height: 184px;
+      margin: 0 auto;
+    }
+    .desk-mascot .antenna {
+      position: absolute;
+      left: 92px;
+      top: 0;
+      width: 28px;
+      height: 38px;
+      border-left: 5px solid #214469;
+      transform: rotate(22deg);
+      transform-origin: bottom;
+      z-index: 2;
+    }
+    .desk-mascot .antenna::after {
+      content: "";
+      position: absolute;
+      right: -13px;
+      top: -7px;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #8fd5ff, #2b74b9 62%, #12335b);
+      border: 3px solid #102b4e;
+    }
+    .desk-mascot .head {
+      position: absolute;
+      left: 20px;
+      top: 28px;
+      width: 112px;
+      height: 104px;
+      border-radius: 48% 48% 46% 46%;
+      background: radial-gradient(circle at 50% 64%, #ffffff 0 54%, transparent 55%),
+                  linear-gradient(145deg, #2d75b8 0%, #71b8ef 48%, #1f4d87 100%);
+      border: 4px solid #15395d;
+      box-shadow: inset 0 5px 0 rgba(255,255,255,0.45), 0 14px 20px rgba(17, 44, 73, 0.16);
+      z-index: 3;
+    }
+    .desk-mascot .ear {
+      position: absolute;
+      top: 72px;
+      width: 24px;
+      height: 46px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #2f6da7, #1f426c);
+      border: 4px solid #15395d;
+      z-index: 2;
+    }
+    .desk-mascot .ear.left { left: 8px; }
+    .desk-mascot .ear.right { right: 7px; }
+    .desk-mascot .face-dot {
+      position: absolute;
+      top: 74px;
+      width: 11px;
+      height: 18px;
+      border-radius: 999px;
+      background: #10233d;
+      z-index: 5;
+    }
+    .desk-mascot .face-dot.left { left: 57px; }
+    .desk-mascot .face-dot.right { left: 94px; }
+    .desk-mascot .cheek {
+      position: absolute;
+      top: 101px;
+      width: 21px;
+      height: 12px;
+      border-radius: 999px;
+      background: #ffd0c4;
+      z-index: 5;
+    }
+    .desk-mascot .cheek.left { left: 37px; }
+    .desk-mascot .cheek.right { left: 106px; }
+    .desk-mascot .mouth {
+      position: absolute;
+      left: 74px;
+      top: 99px;
+      width: 20px;
+      height: 13px;
+      border-radius: 0 0 16px 16px;
+      background: #e45858;
+      border: 3px solid #10233d;
+      border-top: 0;
+      z-index: 6;
+    }
+    .desk-mascot .mic {
+      position: absolute;
+      left: 8px;
+      top: 106px;
+      width: 55px;
+      height: 25px;
+      border-left: 4px solid #15395d;
+      border-bottom: 4px solid #15395d;
+      border-radius: 0 0 0 22px;
+      z-index: 5;
+    }
+    .desk-mascot .mic::after {
+      content: "";
+      position: absolute;
+      right: -9px;
+      bottom: -7px;
+      width: 12px;
+      height: 8px;
+      border-radius: 999px;
+      background: #15395d;
+    }
+    .desk-mascot .body {
+      position: absolute;
+      left: 46px;
+      top: 122px;
+      width: 64px;
+      height: 50px;
+      border-radius: 18px 18px 12px 12px;
+      background: linear-gradient(180deg, #e8f1f8, #c8d9e8);
+      border: 4px solid #15395d;
+      z-index: 2;
+    }
+    .desk-mascot .body::before {
+      content: "S";
+      position: absolute;
+      left: 20px;
+      top: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #16a34a, #2878bc);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+    }
+    .desk-mascot .arm {
+      position: absolute;
+      width: 34px;
+      height: 14px;
+      background: #f9fbfd;
+      border: 4px solid #15395d;
+      border-radius: 999px;
+      z-index: 2;
+    }
+    .desk-mascot .arm.left { left: 24px; top: 136px; transform: rotate(28deg); }
+    .desk-mascot .arm.right { right: 20px; top: 120px; transform: rotate(-56deg); }
+    .desk-mascot .finger {
+      position: absolute;
+      right: 7px;
+      top: 91px;
+      width: 15px;
+      height: 34px;
+      background: #fff;
+      border: 4px solid #15395d;
+      border-radius: 999px;
+      transform: rotate(-24deg);
+      z-index: 4;
+    }
+    .desk-mascot .spark {
+      position: absolute;
+      right: 0;
+      top: 46px;
+      width: 32px;
+      height: 42px;
+      z-index: 1;
+    }
+    .desk-mascot .spark span {
+      position: absolute;
+      width: 5px;
+      height: 20px;
+      border-radius: 999px;
+      background: #20c786;
+    }
+    .desk-mascot .spark span:nth-child(1) { left: 5px; top: 12px; transform: rotate(16deg); }
+    .desk-mascot .spark span:nth-child(2) { left: 22px; top: 22px; transform: rotate(62deg); }
+    .desk-mascot .spark span:nth-child(3) { left: 20px; top: 0; transform: rotate(24deg); }
+    .desk-mascot .shadow {
+      position: absolute;
+      left: 18px;
+      bottom: 0;
+      width: 118px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(17, 44, 73, 0.13);
+    }
+    .desk-response-bubble {
+      position: relative;
+      border: 4px solid transparent;
+      border-radius: 28px;
+      background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(120deg, #22c17b 0%, #4aa3e5 52%, #8b5cf6 100%) border-box;
+      min-height: 168px;
+      padding: 34px 36px 54px 42px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: center;
+      box-shadow: 0 18px 34px rgba(45, 87, 130, 0.08);
+    }
+    .desk-response-bubble::before {
+      content: "";
+      position: absolute;
+      left: -42px;
+      top: 86px;
+      width: 58px;
+      height: 48px;
+      background:
+        linear-gradient(#fff, #fff) padding-box,
+        linear-gradient(120deg, #22c17b 0%, #4aa3e5 100%) border-box;
+      border: 4px solid transparent;
+      border-right: 0;
+      clip-path: polygon(100% 0, 0 68%, 100% 100%);
+    }
+    .desk-response-input {
+      border: 0;
+      outline: 0;
+      resize: none;
+      width: 100%;
+      min-height: 84px;
+      color: #111827;
+      font-size: 24px;
+      line-height: 1.45;
+      font-weight: 900;
+      font-family: inherit;
+      background: transparent;
+    }
+    .desk-response-input::placeholder {
+      color: #191f2c;
+      opacity: 0.95;
+    }
+    .desk-response-example {
+      color: #8190a3;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .desk-response-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 4px;
+      white-space: nowrap;
+    }
+    .desk-response-actions > span {
+      position: absolute;
+      left: 42px;
+      bottom: 30px;
+      color: #8190a3;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .desk-response-actions > div {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .desk-response-reset {
+      border: 0;
+      background: transparent;
+      color: #2f4056;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-search-btn {
+      border: 0;
+      background: linear-gradient(180deg, #0d7658 0%, #07573f 100%);
+      color: #fff;
+      border-radius: 10px;
+      height: 56px;
+      min-width: 168px;
+      padding: 0 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 950;
+      box-shadow: 0 12px 20px rgba(13, 104, 77, 0.24);
+      cursor: pointer;
+    }
+    .desk-response-section-title {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin: 3px 2px 0;
+    }
+    .desk-response-section-title h3 {
+      margin: 0;
+      color: #102133;
+      font-size: 22px;
+      font-weight: 950;
+    }
+    .desk-response-section-title span {
+      color: #596b7f;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .desk-response-summary {
+      border: 1px solid #c9ddd3;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff 0%, #fbfffd 100%);
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      align-items: center;
+      min-height: 104px;
+    }
+    .desk-response-summary-head {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      border-right: 1px solid #d6e5de;
+      padding-right: 20px;
+    }
+    .desk-response-summary-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      background: #ddf7ed;
+      color: #0d684d;
+      display: grid;
+      place-items: center;
+    }
+    .desk-response-summary-icon svg {
+      width: 27px;
+      height: 27px;
+    }
+    .desk-response-summary-head strong {
+      display: block;
+      color: #0d684d;
+      font-size: 18px;
+      font-weight: 950;
+      margin-bottom: 8px;
+    }
+    .desk-response-meta-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .desk-response-mini-pill {
+      border: 1px solid #b8e2d2;
+      background: #f5fffb;
+      color: #0f684e;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-response-mini-pill.warn {
+      border-color: #fed7aa;
+      background: #fff7ed;
+      color: #ea580c;
+    }
+    .desk-response-steps {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0;
+    }
+    .desk-response-step {
+      position: relative;
+      min-height: 66px;
+      padding: 0 18px;
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      color: #1f3144;
+      font-size: 13px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+    .desk-response-step:not(:last-child) {
+      border-right: 1px solid #d8e5df;
+    }
+    .desk-response-step b {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #0d684d;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .desk-response-message-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .desk-response-message-card {
+      border: 1px solid var(--response-border, #cfe0d8);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff 0%, var(--response-bg, #fbfffd) 100%);
+      min-height: 138px;
+      padding: 17px 18px 14px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 10px;
+    }
+    .desk-response-message-card.parent { --response-border: #bfdbfe; --response-bg: #f8fbff; --response-accent: #2563eb; }
+    .desk-response-message-card.teacher { --response-border: #bbf7d0; --response-bg: #f7fff9; --response-accent: #059669; }
+    .desk-response-message-card.internal { --response-border: #e9d5ff; --response-bg: #fcfaff; --response-accent: #7c3aed; }
+    .desk-response-message-card.student { --response-border: #fed7aa; --response-bg: #fffaf4; --response-accent: #ea580c; }
+    .desk-response-message-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .desk-response-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid color-mix(in srgb, var(--response-accent) 24%, #ffffff);
+      color: var(--response-accent);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .desk-response-target-pill svg {
+      width: 18px;
+      height: 18px;
+    }
+    .desk-response-message-card h4 {
+      margin: 0;
+      color: #102133;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .desk-response-message-card p {
+      margin: 0;
+      color: #18293c;
+      font-size: 15px;
+      line-height: 1.55;
+      font-weight: 750;
+      white-space: pre-line;
+    }
+    .desk-response-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-response-card-btn,
+    .desk-template-icon-btn,
+    .desk-template-small-btn {
+      border: 1px solid #d0ded7;
+      background: #fff;
+      color: #24394f;
+      border-radius: 9px;
+      min-height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-card-btn.accent {
+      border-color: color-mix(in srgb, var(--response-accent, #0d684d) 28%, #ffffff);
+      color: var(--response-accent, #0d684d);
+      background: #ffffff;
+    }
+    .desk-response-card-btn svg,
+    .desk-template-icon-btn svg,
+    .desk-template-small-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .desk-response-frequent {
+      border: 1px solid #d7e5de;
+      border-radius: 12px;
+      background: #fff;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 170px repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: center;
+    }
+    .desk-response-frequent-title {
+      color: #102133;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .desk-response-frequent-item {
+      border: 1px solid #dbe7e1;
+      background: linear-gradient(180deg, #fff 0%, #fbfdfc 100%);
+      border-radius: 10px;
+      min-height: 54px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #173044;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-frequent-item svg {
+      color: #0d684d;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+    .desk-response-frequent button {
+      border: 1px solid #dbe7e1;
+      background: linear-gradient(180deg, #fff 0%, #fbfdfc 100%);
+      border-radius: 10px;
+      min-height: 54px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #173044;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-frequent button svg {
+      color: #0d684d;
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+    .desk-template-toolbar {
+      border: 1px solid #d8e6de;
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto auto auto auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .desk-template-search {
+      height: 40px;
+      border: 1px solid #d2dfd8;
+      border-radius: 9px;
+      background: #fff;
+      padding: 0 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      color: #102133;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .desk-template-search svg {
+      width: 18px;
+      height: 18px;
+      color: #52677b;
+      flex: 0 0 auto;
+    }
+    .desk-template-search input {
+      border: 0;
+      outline: 0;
+      width: 100%;
+      min-width: 0;
+      font: inherit;
+      background: transparent;
+      color: #102133;
+    }
+    .desk-template-filter-group {
+      display: inline-flex;
+      border: 1px solid #d7e4de;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f8fbfa;
+    }
+    .desk-template-filter-group button {
+      border: 0;
+      border-right: 1px solid #d7e4de;
+      background: transparent;
+      color: #43566a;
+      min-height: 40px;
+      min-width: 70px;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-template-filter-group button:last-child {
+      border-right: 0;
+    }
+    .desk-template-filter-group button.active {
+      background: #0d684d;
+      color: #fff;
+    }
+    .desk-template-select {
+      height: 40px;
+      border: 1px solid #d2dfd8;
+      border-radius: 9px;
+      background: #fff;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 850;
+      color: #102133;
+      min-width: 160px;
+    }
+    .desk-template-primary-btn {
+      border: 0;
+      background: #0d684d;
+      color: #fff;
+      border-radius: 9px;
+      min-height: 42px;
+      padding: 0 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(13, 104, 77, 0.16);
+    }
+    .desk-template-primary-btn.secondary {
+      background: #fff;
+      color: #173044;
+      border: 1px solid #d2dfd8;
+      box-shadow: none;
+    }
+    .desk-template-primary-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .desk-template-layout {
+      display: grid;
+      grid-template-columns: 310px minmax(390px, 1fr) 420px;
+      gap: 12px;
+      align-items: start;
+    }
+    .desk-template-card {
+      border: 1px solid #d8e6de;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 12px 24px rgba(15, 60, 46, 0.04);
+      min-width: 0;
+    }
+    .desk-template-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid #edf3ef;
+    }
+    .desk-template-card-title {
+      margin: 0;
+      color: #102133;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .desk-template-tag-list,
+    .desk-template-message-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+    .desk-template-tag-item {
+      border: 1px solid #e2ebe6;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px 9px 10px 12px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto auto auto;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+    }
+    .desk-template-tag-item.active {
+      background: linear-gradient(180deg, #0f7658 0%, #0b6149 100%);
+      border-color: #0b6149;
+      color: #fff;
+      box-shadow: 0 12px 20px rgba(13, 104, 77, 0.16);
+    }
+    .desk-template-tag-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: #ecfdf5;
+      color: #0d684d;
+    }
+    .desk-template-tag-icon svg {
+      width: 17px;
+      height: 17px;
+    }
+    .desk-template-tag-main strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 950;
+      color: inherit;
+      line-height: 1.2;
+    }
+    .desk-template-tag-main span {
+      display: inline-flex;
+      margin-top: 5px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #eef7f3;
+      color: #0d684d;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .desk-template-tag-item.active .desk-template-tag-main span {
+      background: rgba(255,255,255,0.2);
+      color: #eafff6;
+    }
+    .desk-template-tag-count {
+      font-size: 12px;
+      color: #596c80;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-template-tag-item.active .desk-template-tag-count {
+      color: #fff;
+    }
+    .desk-template-tag-actions {
+      display: inline-flex;
+      gap: 5px;
+      margin-left: 6px;
+    }
+    .desk-template-tag-actions button {
+      border: 0;
+      background: transparent;
+      color: currentColor;
+      padding: 2px;
+      cursor: pointer;
+    }
+    .desk-template-selected-info {
+      padding: 10px 14px 16px;
+      color: #33485d;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.55;
+    }
+    .desk-template-message-item {
+      border: 1px solid #dfe9e4;
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+    }
+    .desk-template-message-item.active {
+      border-color: #a7d8c5;
+      background: linear-gradient(180deg, #fbfffd 0%, #f5fffb 100%);
+      box-shadow: inset 4px 0 0 #0d684d;
+    }
+    .desk-template-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid #c9d7d0;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: #fff;
+    }
+    .desk-template-message-item.active .desk-template-check {
+      background: #0d684d;
+      border-color: #0d684d;
+    }
+    .desk-template-message-copy strong {
+      display: block;
+      color: #102133;
+      font-size: 15px;
+      font-weight: 950;
+      margin-bottom: 7px;
+    }
+    .desk-template-message-copy p {
+      margin: 0;
+      color: #465b70;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 750;
+    }
+    .desk-template-chip-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .desk-template-chip {
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #eef7f3;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .desk-template-chip.blue { background: #eff6ff; color: #2563eb; }
+    .desk-template-chip.orange { background: #fff7ed; color: #ea580c; }
+    .desk-template-chip.purple { background: #f5f3ff; color: #7c3aed; }
+    .desk-template-message-actions {
+      display: inline-flex;
+      gap: 6px;
+    }
+    .desk-template-editor {
+      padding: 16px 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .desk-template-form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .desk-template-field {
+      display: grid;
+      gap: 6px;
+    }
+    .desk-template-field label {
+      color: #465a70;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-template-input,
+    .desk-template-textarea {
+      border: 1px solid #d2dfd8;
+      border-radius: 9px;
+      background: #fff;
+      color: #102133;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      width: 100%;
+      min-width: 0;
+    }
+    .desk-template-textarea {
+      min-height: 126px;
+      resize: vertical;
+      line-height: 1.55;
+      font-weight: 750;
+    }
+    .desk-template-tone-row,
+    .desk-template-variable-row {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .desk-template-tone-btn,
+    .desk-template-variable-chip {
+      border: 1px solid #d6e3dd;
+      background: #fff;
+      color: #31475d;
+      border-radius: 9px;
+      min-height: 32px;
+      padding: 0 11px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-template-tone-btn.active {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
+    }
+    .desk-template-variable-chip {
+      background: #f1fbf6;
+      color: #0d684d;
+    }
+    .desk-template-preview {
+      border: 1px solid #cfebe0;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #f6fffb 0%, #fafffd 100%);
+      min-height: 86px;
+      padding: 15px;
+      color: #152b3f;
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 800;
+      white-space: pre-line;
+      position: relative;
+    }
+    .desk-template-preview::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      bottom: 13px;
+      width: 18px;
+      height: 18px;
+      background: #0d684d;
+      clip-path: polygon(0 0, 100% 50%, 0 100%, 22% 55%);
+      opacity: 0.9;
+    }
+    .desk-template-editor-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .desk-template-editor-actions .danger {
+      border-color: #fecaca;
+      color: #dc2626;
+      background: #fffafa;
+    }
+    .desk-template-history {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .desk-template-history-card {
+      border: 1px solid #d8e6de;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+    }
+    .desk-template-history-card h3 {
+      margin: 0 0 10px;
+      color: #102133;
+      font-size: 15px;
+      font-weight: 950;
+    }
+    .desk-template-history-list {
+      display: grid;
+      gap: 8px;
+    }
+    .desk-template-history-row {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      color: #1f3144;
+      font-size: 12px;
+      font-weight: 850;
+      border-bottom: 1px solid #edf3ef;
+      padding-bottom: 8px;
+    }
+    .desk-template-history-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+    .desk-template-history-row svg {
+      width: 16px;
+      height: 16px;
+      color: #53677b;
+    }
+    .desk-template-history-row time {
+      color: #617487;
+      white-space: nowrap;
+    }
+    .desk-template-secondary-btn {
+      border: 1px solid #d2dfd8;
+      border-radius: 10px;
+      background: #fff;
+      color: #173044;
+      min-height: 42px;
+      padding: 0 16px;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .desk-template-secondary-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    .desk-template-card-head h3 {
+      margin: 0;
+      color: #102133;
+      font-size: 17px;
+      font-weight: 950;
+    }
+    .desk-template-card-head p {
+      margin: 4px 0 0;
+      color: #617487;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .desk-template-list-actions {
+      display: inline-flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .desk-template-list-actions button,
+    .desk-template-message-actions button,
+    .desk-template-tag-item > button {
+      border: 1px solid #d7e4dd;
+      border-radius: 8px;
+      background: #fff;
+      color: #34495e;
+      min-height: 30px;
+      padding: 0 9px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-template-list-actions button svg,
+    .desk-template-message-actions button svg,
+    .desk-template-tag-item > button svg {
+      width: 15px;
+      height: 15px;
+    }
+    .desk-template-list-actions .danger,
+    .desk-template-message-actions button[data-desk-template-delete-message],
+    .desk-template-tag-item > button[data-desk-template-delete-tag] {
+      border-color: #fecaca;
+      color: #dc2626;
+      background: #fffafa;
+    }
+    .desk-template-dashed-btn {
+      width: calc(100% - 24px);
+      margin: 0 12px 12px;
+      min-height: 38px;
+      border-radius: 8px;
+      border: 1px dashed #a7d8c5;
+      background: #fbfffd;
+      color: #0d684d;
+      font-size: 13px;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+    }
+    .desk-template-dashed-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .desk-template-selected-info dl {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 6px 8px;
+      margin: 8px 0 10px;
+    }
+    .desk-template-selected-info dt {
+      color: #617487;
+    }
+    .desk-template-selected-info dd {
+      margin: 0;
+      color: #173044;
+    }
+    .desk-template-selected-info button {
+      border: 1px solid #d2dfd8;
+      border-radius: 8px;
+      background: #fff;
+      min-height: 34px;
+      padding: 0 10px;
+      color: #0d684d;
+      font-weight: 950;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .desk-template-tag-main small {
+      display: inline-flex;
+      margin-top: 5px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: #eef7f3;
+      color: #0d684d;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .desk-template-tag-item.active .desk-template-tag-main small {
+      background: rgba(255,255,255,0.2);
+      color: #eafff6;
+    }
+    .desk-template-message-item {
+      grid-template-columns: 24px minmax(0, 1fr) auto auto;
+    }
+    .desk-template-message-item.selected,
+    .desk-template-message-item.active {
+      border-color: #a7d8c5;
+      background: linear-gradient(180deg, #fbfffd 0%, #f5fffb 100%);
+      box-shadow: inset 4px 0 0 #0d684d;
+    }
+    .desk-template-message-item.selected .desk-template-check,
+    .desk-template-message-item.active .desk-template-check {
+      background: #0d684d;
+      border-color: #0d684d;
+    }
+    .desk-template-message-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 96px;
+    }
+    .desk-template-message-meta span,
+    .desk-template-history-row span:not(.dot) {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #eef7f3;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .desk-template-message-meta .parent,
+    .desk-template-history-row .parent { background: #fff7ed; color: #ea580c; }
+    .desk-template-message-meta .student,
+    .desk-template-history-row .student { background: #eff6ff; color: #2563eb; }
+    .desk-template-message-meta .teacher,
+    .desk-template-history-row .teacher { background: #ecfdf5; color: #0d684d; }
+    .desk-template-message-meta .applicant,
+    .desk-template-history-row .applicant { background: #f5f3ff; color: #7c3aed; }
+    .desk-template-message-meta .internal,
+    .desk-template-history-row .internal { background: #f4f4f5; color: #52525b; }
+    .desk-template-message-item time {
+      color: #617487;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .desk-template-empty {
+      border: 1px dashed #cfe0d8;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      color: #617487;
+      font-weight: 850;
+    }
+    .desk-template-editor {
+      padding: 0;
+    }
+    .desk-template-editor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 14px 18px 0;
+    }
+    .desk-template-field.all,
+    .desk-template-preview.all {
+      grid-column: 1 / -1;
+    }
+    .desk-template-field span,
+    .desk-template-preview > span {
+      color: #465a70;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-template-field input,
+    .desk-template-field select,
+    .desk-template-field textarea {
+      border: 1px solid #d2dfd8;
+      border-radius: 9px;
+      background: #fff;
+      color: #102133;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      width: 100%;
+      min-width: 0;
+    }
+    .desk-template-field textarea {
+      min-height: 126px;
+      resize: vertical;
+      line-height: 1.55;
+      font-weight: 750;
+    }
+    .desk-template-tone-row button,
+    .desk-template-variable-row button {
+      border: 1px solid #d6e3dd;
+      background: #fff;
+      color: #31475d;
+      border-radius: 9px;
+      min-height: 32px;
+      padding: 0 11px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-template-tone-row button.active {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
+    }
+    .desk-template-variable-row button {
+      background: #f1fbf6;
+      color: #0d684d;
+    }
+    .desk-template-preview div {
+      margin-top: 8px;
+      padding-right: 24px;
+    }
+    .desk-template-editor-actions {
+      padding: 14px 18px 18px;
+    }
+    .desk-template-editor-actions button {
+      border: 1px solid #d6e3dd;
+      border-radius: 9px;
+      background: #fff;
+      color: #173044;
+      min-height: 38px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+    .desk-template-editor-actions .primary {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
+    }
+    .desk-template-history > article {
+      border: 1px solid #d8e6de;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px 16px;
+    }
+    .desk-template-history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: #102133;
+      font-size: 15px;
+      font-weight: 950;
+    }
+    .desk-template-history-head button {
+      border: 0;
+      background: transparent;
+      color: #0d684d;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .desk-template-history-row {
+      grid-template-columns: 20px minmax(0, 1fr) auto auto;
+    }
+    .desk-template-history-row em {
+      color: #617487;
+      font-style: normal;
+      white-space: nowrap;
+    }
+    .desk-template-history-row .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #0d684d;
+      justify-self: center;
+    }
     .desk-calendar-layout {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -11818,6 +13193,8 @@
             <button class="desk-subtab" type="button" data-desk-tab="supplies">물품 관리</button>
             <button class="desk-subtab" type="button" data-desk-tab="dailyJournal">일일 업무일지</button>
             <button class="desk-subtab" type="button" data-desk-tab="recruiting">인사 관리</button>
+            <button class="desk-subtab" type="button" data-desk-tab="responseCenter">응대 센터</button>
+            <button class="desk-subtab" type="button" data-desk-tab="messageTemplates">메세지 템플릿</button>
           </section>
 
           <section class="desk-panel" data-desk-panel="monthlySchedule">
@@ -12832,6 +14209,226 @@
             </div>
           </section>
 
+          <section class="desk-panel hidden" data-desk-panel="responseCenter">
+            <div class="desk-response-shell">
+              <header class="desk-response-topbar">
+                <div>
+                  <h2 class="desk-response-title">응대 센터</h2>
+                  <p class="desk-response-sub">상황을 입력하면 바로 쓸 수 있는 대응 절차와 안내 문구를 준비합니다.</p>
+                </div>
+                <div class="desk-response-badges">
+                  <span class="desk-response-status-pill"><i data-lucide="circle"></i>가이드 동기화 정상</span>
+                  <span class="desk-response-count-pill"><i data-lucide="clipboard-list"></i>저장 문구 <strong id="deskResponseSavedCount">128개</strong></span>
+                </div>
+              </header>
+
+              <section class="desk-response-hero">
+                <div class="desk-helper-zone">
+                  <div class="desk-mascot" aria-hidden="true">
+                    <span class="antenna"></span>
+                    <span class="ear left"></span>
+                    <span class="ear right"></span>
+                    <span class="head"></span>
+                    <span class="face-dot left"></span>
+                    <span class="face-dot right"></span>
+                    <span class="cheek left"></span>
+                    <span class="cheek right"></span>
+                    <span class="mouth"></span>
+                    <span class="mic"></span>
+                    <span class="body"></span>
+                    <span class="arm left"></span>
+                    <span class="arm right"></span>
+                    <span class="finger"></span>
+                    <span class="spark one"></span>
+                    <span class="spark two"></span>
+                    <span class="shadow"></span>
+                  </div>
+                  <div class="desk-helper-card">
+                    <strong>무슨 상황인가요?</strong>
+                    <span>짧게 적어도 제가 정리해볼게요.</span>
+                  </div>
+                </div>
+                <div class="desk-response-bubble">
+                  <textarea id="deskResponseSituationInput" class="desk-response-input" placeholder="학생이 시간표에 없는데 등원했습니다">학생이 시간표에 없는데 등원했습니다</textarea>
+                  <div class="desk-response-actions">
+                    <span>예: 학부모 일정 변경 요청, 강사 상담 자료 요청, 지원자 면접 조율</span>
+                    <div>
+                      <button class="desk-response-reset" id="deskResponseResetBtn" type="button">초기화</button>
+                      <button class="desk-response-search-btn" id="deskResponseFindBtn" type="button"><i data-lucide="sparkles"></i>대응 찾기</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="desk-response-section-title">
+                <h3>상황별 응대 문구</h3>
+                <p>필요한 문구를 바로 복사하거나 메모에 추가하세요.</p>
+              </div>
+
+              <section class="desk-response-summary">
+                <div class="desk-response-summary-head">
+                  <span class="desk-response-summary-icon"><i data-lucide="clipboard-check"></i></span>
+                  <div>
+                    <strong>추천 대응 요약</strong>
+                    <div class="desk-response-summary-meta">
+                      <span>예상 상황: 시간표 미등록 등원</span>
+                      <span class="warn">긴급도: 보통</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="desk-response-steps" id="deskResponseSteps"></div>
+              </section>
+
+              <section class="desk-response-message-grid" id="deskResponseMessageGrid"></section>
+
+              <section class="desk-response-frequent">
+                <div class="desk-response-frequent-title">자주 쓰는 상황</div>
+                <button type="button" data-desk-response-situation="학부모 일정 변경 요청"><i data-lucide="calendar-days"></i>학부모 일정 변경 요청<i data-lucide="chevron-right"></i></button>
+                <button type="button" data-desk-response-situation="지원자 면접 시간 조율"><i data-lucide="user-round"></i>지원자 면접 시간 조율<i data-lucide="chevron-right"></i></button>
+                <button type="button" data-desk-response-situation="학생 시간표 확인"><i data-lucide="book-open"></i>학생 시간표 확인<i data-lucide="chevron-right"></i></button>
+                <button type="button" data-desk-response-situation="강사 상담 자료 요청"><i data-lucide="clipboard-list"></i>강사 상담 자료 요청<i data-lucide="chevron-right"></i></button>
+              </section>
+            </div>
+          </section>
+
+          <section class="desk-panel hidden" data-desk-panel="messageTemplates">
+            <div class="desk-template-shell">
+              <header class="desk-template-topbar">
+                <div>
+                  <div class="desk-template-breadcrumb">데스크 관리 / 응대 센터 / <strong>메세지 템플릿</strong></div>
+                  <h2 class="desk-template-title">메세지 템플릿</h2>
+                  <p class="desk-template-sub">상황별 응대 문구를 유형 태그로 정리하고 대상별로 관리합니다.</p>
+                </div>
+                <div class="desk-template-badges">
+                  <span><i data-lucide="gem"></i>유형 태그 <strong id="deskTemplateTagCount">18개</strong></span>
+                  <span><i data-lucide="clipboard-list"></i>저장 문구 <strong id="deskTemplateMessageCount">128개</strong></span>
+                  <span><i data-lucide="clock-3"></i>최근 수정 5분 전</span>
+                </div>
+              </header>
+
+              <section class="desk-template-toolbar">
+                <label class="desk-template-search" for="deskTemplateSearchInput">
+                  <i data-lucide="search"></i>
+                  <input id="deskTemplateSearchInput" type="search" placeholder="태그명, 대상, 문구 내용 검색">
+                </label>
+                <div class="desk-template-filter-group" id="deskTemplateTargetFilter" aria-label="대상 필터">
+                  <button class="active" type="button" data-desk-template-target="전체">전체</button>
+                  <button type="button" data-desk-template-target="강사">강사</button>
+                  <button type="button" data-desk-template-target="학부모">학부모</button>
+                  <button type="button" data-desk-template-target="학생">학생</button>
+                  <button type="button" data-desk-template-target="지원자">지원자</button>
+                </div>
+                <div class="desk-template-sort">
+                  <span>정렬</span>
+                  <select id="deskTemplateSortSelect" class="desk-template-select">
+                    <option value="recent">최근 수정순</option>
+                    <option value="title">제목순</option>
+                    <option value="target">대상순</option>
+                  </select>
+                </div>
+                <button class="desk-template-primary-btn" id="deskTemplateAddTagBtn" type="button"><i data-lucide="plus"></i>유형 태그 추가</button>
+                <button class="desk-template-secondary-btn" id="deskTemplateAddMessageBtn" type="button"><i data-lucide="file-plus-2"></i>메시지 추가</button>
+              </section>
+
+              <section class="desk-template-layout">
+                <aside class="desk-template-card">
+                  <div class="desk-template-card-head">
+                    <h3>유형 태그</h3>
+                    <span id="deskTemplateTagPanelCount">18개</span>
+                  </div>
+                  <div class="desk-template-tag-list" id="deskTemplateTagList"></div>
+                  <button class="desk-template-dashed-btn" id="deskTemplateCreateTagBtn" type="button"><i data-lucide="plus"></i>새 태그 만들기</button>
+                  <div class="desk-template-selected-info" id="deskTemplateSelectedInfo"></div>
+                </aside>
+
+                <main class="desk-template-card">
+                  <div class="desk-template-card-head">
+                    <div>
+                      <h3 id="deskTemplateListTitle">시간표 확인 문구</h3>
+                      <p id="deskTemplateListSub">학생 대상 · 8개 문구</p>
+                    </div>
+                    <div class="desk-template-list-actions">
+                      <button type="button" id="deskTemplateCopyAllBtn"><i data-lucide="copy"></i>전체 복사</button>
+                      <button type="button" id="deskTemplateReorderBtn"><i data-lucide="arrow-up-down"></i>순서 변경</button>
+                      <button type="button" id="deskTemplateDeleteSelectedBtn" class="danger"><i data-lucide="trash-2"></i>선택 삭제</button>
+                    </div>
+                  </div>
+                  <div class="desk-template-message-list" id="deskTemplateMessageList"></div>
+                  <button class="desk-template-dashed-btn" id="deskTemplateAddMessageToTagBtn" type="button"><i data-lucide="plus"></i>이 태그에 메시지 추가</button>
+                </main>
+
+                <aside class="desk-template-card desk-template-editor">
+                  <div class="desk-template-card-head">
+                    <h3>메시지 편집</h3>
+                    <span id="deskTemplateEditorStatus">선택 문구</span>
+                  </div>
+                  <div class="desk-template-editor-grid">
+                    <label class="desk-template-field all">
+                      <span>문구 제목</span>
+                      <input id="deskTemplateTitleInput" type="text">
+                    </label>
+                    <label class="desk-template-field">
+                      <span>대상</span>
+                      <select id="deskTemplateTargetSelect">
+                        <option value="강사">강사</option>
+                        <option value="학부모">학부모</option>
+                        <option value="학생">학생</option>
+                        <option value="지원자">지원자</option>
+                      </select>
+                    </label>
+                    <label class="desk-template-field">
+                      <span>유형 태그</span>
+                      <select id="deskTemplateTagSelect"></select>
+                    </label>
+                    <div class="desk-template-field all">
+                      <span>문구 톤</span>
+                      <div class="desk-template-tone-row" id="deskTemplateToneRow">
+                        <button type="button" data-desk-template-tone="정중하게">정중하게</button>
+                        <button class="active" type="button" data-desk-template-tone="부드럽게">부드럽게</button>
+                        <button type="button" data-desk-template-tone="짧게">짧게</button>
+                        <button type="button" data-desk-template-tone="명확하게">명확하게</button>
+                      </div>
+                    </div>
+                    <div class="desk-template-field all">
+                      <span>변수</span>
+                      <div class="desk-template-variable-row" id="deskTemplateVariableRow">
+                        <button type="button" data-desk-template-variable="{학생명}">{학생명}</button>
+                        <button type="button" data-desk-template-variable="{담당강사}">{담당강사}</button>
+                        <button type="button" data-desk-template-variable="{수업일}">{수업일}</button>
+                        <button type="button" data-desk-template-variable="{상담번호}">{상담번호}</button>
+                      </div>
+                    </div>
+                    <label class="desk-template-field all">
+                      <span>메시지 내용</span>
+                      <textarea id="deskTemplateMessageInput"></textarea>
+                    </label>
+                    <div class="desk-template-preview all">
+                      <span>미리보기</span>
+                      <div id="deskTemplatePreview"></div>
+                    </div>
+                  </div>
+                  <div class="desk-template-editor-actions">
+                    <button class="primary" id="deskTemplateSaveBtn" type="button"><i data-lucide="save"></i>저장</button>
+                    <button id="deskTemplateCopyBtn" type="button"><i data-lucide="copy"></i>문구 복사</button>
+                    <button id="deskTemplateDuplicateBtn" type="button"><i data-lucide="copy-plus"></i>복제</button>
+                    <button class="danger" id="deskTemplateDeleteBtn" type="button"><i data-lucide="trash-2"></i>삭제</button>
+                  </div>
+                </aside>
+              </section>
+
+              <section class="desk-template-history">
+                <article>
+                  <div class="desk-template-history-head">최근 수정된 문구 <button type="button">더보기 <i data-lucide="chevron-right"></i></button></div>
+                  <div id="deskTemplateRecentList"></div>
+                </article>
+                <article>
+                  <div class="desk-template-history-head">관리 이력 <button type="button">더보기 <i data-lucide="chevron-right"></i></button></div>
+                  <div id="deskTemplateAuditList"></div>
+                </article>
+              </section>
+            </div>
+          </section>
+
           <section class="desk-panel hidden" data-desk-panel="dailyJournal">
             <header class="desk-panel-head">
               <div>
@@ -13762,6 +15359,7 @@
     var DESK_DAILY_DELETED_MEMOS_KEY = "desk_portal_daily_deleted_memos_v1";
     var DESK_DAILY_DELETE_TOMBSTONE_MS = 5 * 60 * 1000;
     var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
+    var DESK_MESSAGE_TEMPLATES_STORAGE_KEY = "desk_portal_message_templates_v1";
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -13920,6 +15518,20 @@
           roleFilter: "",
           platformFilter: "",
           keywordFilter: ""
+        },
+        responseCenter: {
+          situationText: "학생이 시간표에 없는데 등원했습니다",
+          lastStatus: "가이드 동기화 정상"
+        },
+        messageTemplates: {
+          tags: [],
+          templates: [],
+          selectedTagId: "schedule-check",
+          selectedTemplateId: "tpl_schedule_wait_student",
+          targetFilter: "전체",
+          searchKeyword: "",
+          sortOrder: "recent",
+          selectedTone: "부드럽게"
         },
         daily: {
           dateKey: "",
@@ -14243,6 +15855,44 @@
     var deskHrApplicantCountEl = document.getElementById("deskHrApplicantCount");
     var deskHrApplicantListSearchEl = document.getElementById("deskHrApplicantListSearch");
     var deskHrApplicantTableBodyEl = document.getElementById("deskHrApplicantTableBody");
+    var deskResponseSavedCountEl = document.getElementById("deskResponseSavedCount");
+    var deskResponseSituationInputEl = document.getElementById("deskResponseSituationInput");
+    var deskResponseResetBtnEl = document.getElementById("deskResponseResetBtn");
+    var deskResponseFindBtnEl = document.getElementById("deskResponseFindBtn");
+    var deskResponseStepsEl = document.getElementById("deskResponseSteps");
+    var deskResponseMessageGridEl = document.getElementById("deskResponseMessageGrid");
+    var deskTemplateTagCountEl = document.getElementById("deskTemplateTagCount");
+    var deskTemplateMessageCountEl = document.getElementById("deskTemplateMessageCount");
+    var deskTemplateSearchInputEl = document.getElementById("deskTemplateSearchInput");
+    var deskTemplateTargetFilterEl = document.getElementById("deskTemplateTargetFilter");
+    var deskTemplateSortSelectEl = document.getElementById("deskTemplateSortSelect");
+    var deskTemplateAddTagBtnEl = document.getElementById("deskTemplateAddTagBtn");
+    var deskTemplateAddMessageBtnEl = document.getElementById("deskTemplateAddMessageBtn");
+    var deskTemplateCreateTagBtnEl = document.getElementById("deskTemplateCreateTagBtn");
+    var deskTemplateTagPanelCountEl = document.getElementById("deskTemplateTagPanelCount");
+    var deskTemplateTagListEl = document.getElementById("deskTemplateTagList");
+    var deskTemplateSelectedInfoEl = document.getElementById("deskTemplateSelectedInfo");
+    var deskTemplateListTitleEl = document.getElementById("deskTemplateListTitle");
+    var deskTemplateListSubEl = document.getElementById("deskTemplateListSub");
+    var deskTemplateCopyAllBtnEl = document.getElementById("deskTemplateCopyAllBtn");
+    var deskTemplateReorderBtnEl = document.getElementById("deskTemplateReorderBtn");
+    var deskTemplateDeleteSelectedBtnEl = document.getElementById("deskTemplateDeleteSelectedBtn");
+    var deskTemplateMessageListEl = document.getElementById("deskTemplateMessageList");
+    var deskTemplateAddMessageToTagBtnEl = document.getElementById("deskTemplateAddMessageToTagBtn");
+    var deskTemplateEditorStatusEl = document.getElementById("deskTemplateEditorStatus");
+    var deskTemplateTitleInputEl = document.getElementById("deskTemplateTitleInput");
+    var deskTemplateTargetSelectEl = document.getElementById("deskTemplateTargetSelect");
+    var deskTemplateTagSelectEl = document.getElementById("deskTemplateTagSelect");
+    var deskTemplateToneRowEl = document.getElementById("deskTemplateToneRow");
+    var deskTemplateVariableRowEl = document.getElementById("deskTemplateVariableRow");
+    var deskTemplateMessageInputEl = document.getElementById("deskTemplateMessageInput");
+    var deskTemplatePreviewEl = document.getElementById("deskTemplatePreview");
+    var deskTemplateSaveBtnEl = document.getElementById("deskTemplateSaveBtn");
+    var deskTemplateCopyBtnEl = document.getElementById("deskTemplateCopyBtn");
+    var deskTemplateDuplicateBtnEl = document.getElementById("deskTemplateDuplicateBtn");
+    var deskTemplateDeleteBtnEl = document.getElementById("deskTemplateDeleteBtn");
+    var deskTemplateRecentListEl = document.getElementById("deskTemplateRecentList");
+    var deskTemplateAuditListEl = document.getElementById("deskTemplateAuditList");
     var deskMonthInputEl = document.getElementById("deskMonthInput");
     var deskPrevMonthBtnEl = document.getElementById("deskPrevMonthBtn");
     var deskNextMonthBtnEl = document.getElementById("deskNextMonthBtn");
@@ -17864,6 +19514,457 @@
       }
     }
 
+    function getDefaultDeskMessageTags_() {
+      return [
+        { id: "schedule-check", label: "시간표 확인", target: "학생", icon: "calendar-days", description: "등원 여부와 담당 강사 확인", procedure: "4개 연결" },
+        { id: "parent-schedule", label: "학부모 일정 변경", target: "학부모", icon: "calendar-clock", description: "수업 일정 변경 요청 응대", procedure: "3개 연결" },
+        { id: "consult-material", label: "상담 자료 요청", target: "강사", icon: "clipboard-list", description: "학생별 상담 자료 요청", procedure: "5개 연결" },
+        { id: "interview-schedule", label: "면접 일정 조율", target: "지원자", icon: "user-round-check", description: "강사/조교/데스크 지원자 일정 조율", procedure: "4개 연결" },
+        { id: "pass-notice", label: "합격 안내", target: "지원자", icon: "badge-check", description: "채용 합격 안내 문구", procedure: "2개 연결" },
+        { id: "fail-notice", label: "불합격 안내", target: "지원자", icon: "circle-x", description: "채용 불합격 안내 문구", procedure: "2개 연결" },
+        { id: "tuition-notice", label: "수강료 안내", target: "학부모", icon: "receipt-text", description: "수강료, 미납, 재확인 안내", procedure: "6개 연결" },
+        { id: "teacher-absence", label: "강사 결근 대체", target: "강사", icon: "megaphone", description: "강사 결근과 대체 수업 조율", procedure: "4개 연결" },
+        { id: "new-parent-inquiry", label: "신규문의 최초 연락", target: "학부모", icon: "phone-call", description: "신규 학부모 첫 응대", procedure: "3개 연결" },
+        { id: "subject-change", label: "과목/강사 변경", target: "학부모", icon: "shuffle", description: "과목 추가, 강사 변경 안내", procedure: "3개 연결" },
+        { id: "grade-check", label: "성적 확인", target: "학생", icon: "bar-chart-3", description: "성적 확인과 상담 연결", procedure: "3개 연결" },
+        { id: "teacher-consult", label: "학생 상담 자료", target: "강사", icon: "folder-open", description: "상담 전 확인 자료 전달", procedure: "5개 연결" },
+        { id: "late-arrival", label: "지각/결석 확인", target: "학부모", icon: "clock-alert", description: "지각, 결석, 당일취소 확인", procedure: "4개 연결" },
+        { id: "facility-help", label: "시설/분실 문의", target: "학생", icon: "package-search", description: "분실물, 강의실, 시설 문의", procedure: "2개 연결" },
+        { id: "payment-proof", label: "영수증/결제 확인", target: "학부모", icon: "wallet-cards", description: "현금영수증, 결제수단 확인", procedure: "3개 연결" },
+        { id: "internal-share", label: "내부 단톡 공유", target: "내부 업무", icon: "messages-square", description: "실무자 단톡방 공유용 요약", procedure: "4개 연결" },
+        { id: "trial-class", label: "체험/시범수업 안내", target: "학부모", icon: "book-open-check", description: "체험 수업과 첫 등원 안내", procedure: "4개 연결" },
+        { id: "applicant-docs", label: "지원자 서류 요청", target: "지원자", icon: "file-text", description: "이력서, 가능 시간, 증빙 요청", procedure: "3개 연결" }
+      ];
+    }
+
+    function getDefaultDeskMessageTemplates_() {
+      return [
+        { id: "tpl_schedule_wait_student", tagId: "schedule-check", target: "학생", title: "시간표 미등록 등원 - 학생 대기 안내", tone: "부드럽게", message: "{학생명} 학생, 잠시만 안전한 공간에서 기다려 주세요.\n오늘 수업 시간표를 확인한 뒤 바로 안내해드릴게요.", updatedBy: "안종성", updatedAt: "5분 전" },
+        { id: "tpl_schedule_parent_wait", tagId: "schedule-check", target: "학부모", title: "시간표 확인 후 학부모 재안내", tone: "정중하게", message: "안녕하세요. 데스크입니다. {학생명} 학생이 시간표에 등록되지 않은 상태로 등원하여 먼저 안전한 대기 공간에서 확인 중입니다.\n담당 강사와 수강 기록 확인 후 다시 안내드리겠습니다.", updatedBy: "김유민", updatedAt: "15분 전" },
+        { id: "tpl_schedule_internal_share", tagId: "schedule-check", target: "내부 업무", title: "실무자 단톡방 공유", tone: "명확하게", message: "[확인 요청] 시간표 미등록 학생 등원.\n학생은 대기 공간에 안내했고, 강사 포털/담당 강사 확인 중입니다.\n학생명: {학생명} / 상담번호: {상담번호}", updatedBy: "이창연", updatedAt: "2시간 전" },
+        { id: "tpl_schedule_teacher_confirm", tagId: "schedule-check", target: "강사", title: "강사 확인 요청", tone: "짧게", message: "학생이 시간표에 없는 상태로 등원했습니다.\n기존 수강 과목과 오늘 수업 가능 여부 확인 부탁드립니다.\n학생: {학생명} / 수업일: {수업일}", updatedBy: "이상연", updatedAt: "3시간 전" },
+        { id: "tpl_schedule_parent_done", tagId: "schedule-check", target: "학부모", title: "등원 사실 안내 - 학부모", tone: "정중하게", message: "{학생명} 학생이 등원하였으며, 현재 시간표 확인 및 담당 강사 확인 중입니다.\n확정된 내용으로 다시 안내드리겠습니다.", updatedBy: "홍성우", updatedAt: "어제 17:22" },
+        { id: "tpl_parent_schedule_change", tagId: "parent-schedule", target: "학부모", title: "학부모 일정 변경 요청 접수", tone: "정중하게", message: "안녕하세요. 요청주신 {수업일} 일정 변경 건 확인했습니다.\n담당 강사 일정과 가능 시간을 확인한 뒤 다시 안내드리겠습니다.", updatedBy: "안종성", updatedAt: "어제 14:32" },
+        { id: "tpl_consult_request", tagId: "consult-material", target: "강사", title: "학생별 상담 자료 요청", tone: "부드럽게", message: "{학생명} 학생 상담 예정입니다. 최근 수업 내용, 숙제 이행, 보완이 필요한 단원을 간단히 공유 부탁드립니다.", updatedBy: "김유민", updatedAt: "어제 09:18" },
+        { id: "tpl_interview_schedule", tagId: "interview-schedule", target: "지원자", title: "지원자 면접 시간 조율", tone: "정중하게", message: "안녕하세요. S-LMS 채용 담당자입니다.\n지원해주신 포지션 관련하여 면접 가능 시간을 확인하고자 연락드립니다. 가능하신 날짜와 시간대를 알려주시면 조율 후 안내드리겠습니다.", updatedBy: "이창연", updatedAt: "2일 전" },
+        { id: "tpl_pass_notice", tagId: "pass-notice", target: "지원자", title: "합격 안내", tone: "정중하게", message: "안녕하세요. S-LMS 채용 담당자입니다.\n면접 결과 합격 안내드립니다. 이후 출근 가능 일정과 필요 서류를 확인하기 위해 다시 연락드리겠습니다.", updatedBy: "홍성우", updatedAt: "2일 전" },
+        { id: "tpl_fail_notice", tagId: "fail-notice", target: "지원자", title: "불합격 안내", tone: "정중하게", message: "안녕하세요. S-LMS 채용 담당자입니다.\n지원해주신 건은 내부 검토 결과 이번 채용과는 함께하지 못하게 되었습니다. 귀한 시간 내주셔서 감사합니다.", updatedBy: "김유민", updatedAt: "3일 전" },
+        { id: "tpl_tuition_notice", tagId: "tuition-notice", target: "학부모", title: "수강료 안내", tone: "정중하게", message: "안녕하세요. 이번 달 수강료 안내드립니다.\n확인 후 납부 부탁드리며, 결제 관련 문의가 있으시면 데스크로 연락 주세요.", updatedBy: "안종성", updatedAt: "3일 전" },
+        { id: "tpl_teacher_absence", tagId: "teacher-absence", target: "강사", title: "결근 대체 확인", tone: "명확하게", message: "{수업일} 수업 대체 가능 여부 확인 부탁드립니다.\n가능 시간과 담당 가능한 학생 범위를 알려주시면 시간표를 조정하겠습니다.", updatedBy: "이상연", updatedAt: "4일 전" }
+      ];
+    }
+
+    function normalizeDeskMessageTag_(item, index) {
+      item = item || {};
+      var label = String(item.label || "").trim() || "새 유형 태그";
+      return {
+        id: String(item.id || buildDeskShiftId_("messageTag", Date.now(), index || 0, Math.random().toString(36).slice(2))).trim(),
+        label: label,
+        target: String(item.target || "학부모").trim(),
+        icon: String(item.icon || "tag").trim(),
+        description: String(item.description || "").trim(),
+        procedure: String(item.procedure || "절차 미설정").trim()
+      };
+    }
+
+    function normalizeDeskMessageTemplate_(item, index) {
+      item = item || {};
+      return {
+        id: String(item.id || buildDeskShiftId_("messageTemplate", Date.now(), index || 0, Math.random().toString(36).slice(2))).trim(),
+        tagId: String(item.tagId || "schedule-check").trim(),
+        target: String(item.target || "학부모").trim(),
+        title: String(item.title || "새 메시지 문구").trim(),
+        tone: String(item.tone || "부드럽게").trim(),
+        message: String(item.message || "").trim(),
+        updatedBy: String(item.updatedBy || "데스크").trim(),
+        updatedAt: String(item.updatedAt || "방금 전").trim()
+      };
+    }
+
+    function ensureDeskMessageTemplatesLoaded_() {
+      var loaded = false;
+      try {
+        var raw = localStorage.getItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.tags) && Array.isArray(parsed.templates)) {
+            state.desk.messageTemplates.tags = parsed.tags.map(normalizeDeskMessageTag_);
+            state.desk.messageTemplates.templates = parsed.templates.map(normalizeDeskMessageTemplate_);
+            loaded = true;
+          }
+        }
+      } catch (err) {}
+      if (!loaded) {
+        state.desk.messageTemplates.tags = getDefaultDeskMessageTags_().map(normalizeDeskMessageTag_);
+        state.desk.messageTemplates.templates = getDefaultDeskMessageTemplates_().map(normalizeDeskMessageTemplate_);
+      }
+      if (!findDeskMessageTag_(state.desk.messageTemplates.selectedTagId)) {
+        state.desk.messageTemplates.selectedTagId = (state.desk.messageTemplates.tags[0] || {}).id || "";
+      }
+      if (!findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId)) {
+        var first = (state.desk.messageTemplates.templates || []).find(function(item) {
+          return item.tagId === state.desk.messageTemplates.selectedTagId;
+        }) || state.desk.messageTemplates.templates[0];
+        state.desk.messageTemplates.selectedTemplateId = first ? first.id : "";
+      }
+    }
+
+    function saveDeskMessageTemplatesLocal_() {
+      try {
+        localStorage.setItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY, JSON.stringify({
+          tags: state.desk.messageTemplates.tags || [],
+          templates: state.desk.messageTemplates.templates || []
+        }));
+      } catch (err) {}
+    }
+
+    function findDeskMessageTag_(id) {
+      return (state.desk.messageTemplates.tags || []).find(function(item) { return item.id === id; }) || null;
+    }
+
+    function findDeskMessageTemplate_(id) {
+      return (state.desk.messageTemplates.templates || []).find(function(item) { return item.id === id; }) || null;
+    }
+
+    function getDeskMessageTargetClass_(target) {
+      var value = String(target || "");
+      if (value === "강사") return "teacher";
+      if (value === "학생") return "student";
+      if (value === "지원자") return "applicant";
+      if (value === "내부 업무") return "internal";
+      return "parent";
+    }
+
+    function getFilteredDeskMessageTemplates_() {
+      ensureDeskMessageTemplatesLoaded_();
+      var current = state.desk.messageTemplates;
+      var keyword = String(current.searchKeyword || "").trim().toLowerCase();
+      var selectedTagId = current.selectedTagId || "";
+      var targetFilter = current.targetFilter || "전체";
+      var list = (current.templates || []).filter(function(item) {
+        if (selectedTagId && item.tagId !== selectedTagId) return false;
+        if (targetFilter !== "전체" && item.target !== targetFilter) return false;
+        if (!keyword) return true;
+        var tag = findDeskMessageTag_(item.tagId);
+        return [item.title, item.target, item.tone, item.message, tag && tag.label].join(" ").toLowerCase().indexOf(keyword) >= 0;
+      });
+      if (current.sortOrder === "title") {
+        list.sort(function(a, b) { return a.title.localeCompare(b.title, "ko"); });
+      } else if (current.sortOrder === "target") {
+        list.sort(function(a, b) { return a.target.localeCompare(b.target, "ko") || a.title.localeCompare(b.title, "ko"); });
+      }
+      return list;
+    }
+
+    function copyDeskPlainText_(text, done) {
+      var safeText = String(text || "").trim();
+      if (!safeText) return;
+      var finish = typeof done === "function" ? done : function() {};
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(safeText).then(function() {
+          finish(true);
+        }).catch(function() {
+          try {
+            var tmp = document.createElement("textarea");
+            tmp.value = safeText;
+            tmp.style.position = "fixed";
+            tmp.style.opacity = "0";
+            document.body.appendChild(tmp);
+            tmp.focus();
+            tmp.select();
+            document.execCommand("copy");
+            tmp.remove();
+            finish(true);
+          } catch (err) {
+            finish(false);
+          }
+        });
+        return;
+      }
+      try {
+        var fallback = document.createElement("textarea");
+        fallback.value = safeText;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.appendChild(fallback);
+        fallback.focus();
+        fallback.select();
+        document.execCommand("copy");
+        fallback.remove();
+        finish(true);
+      } catch (err2) {
+        finish(false);
+      }
+    }
+
+    function renderDeskResponseCenter_() {
+      ensureDeskMessageTemplatesLoaded_();
+      if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
+      if (deskResponseSituationInputEl && document.activeElement !== deskResponseSituationInputEl) {
+        deskResponseSituationInputEl.value = state.desk.responseCenter.situationText || "";
+      }
+      var steps = [
+        "학생을 빈 강의실 또는 안전한 대기 공간으로 안내",
+        "강사 포털에서 기존 수강 과목과 담당 강사 확인",
+        "담당 강사와 실제 등원 가능 여부 확인",
+        "실무자 단톡방에 상황 공유",
+        "확정 전에는 학부모에게 단정 안내 금지"
+      ];
+      if (deskResponseStepsEl) {
+        deskResponseStepsEl.innerHTML = steps.map(function(text, index) {
+          return '<div class="desk-response-step"><strong>' + (index + 1) + '</strong><span>' + escapeHtml(text) + '</span></div>';
+        }).join("");
+      }
+      var cards = [
+        { type: "parent", icon: "user-round", target: "학부모", title: "확인 중 안내", body: "안녕하세요. 데스크입니다. 학생이 시간표에 등록되지 않은 상태로 등원하여, 먼저 안전한 대기 공간에서 확인 중입니다. 담당 강사와 수강 기록 확인 후 다시 안내드리겠습니다.", actions: [["copy", "문구 복사"], ["memo", "메모에 추가"]] },
+        { type: "teacher", icon: "user-round-cog", target: "강사", title: "담당 강사 확인 요청", body: "학생이 시간표에 없는 상태로 등원했습니다. 기존 수강 과목과 오늘 수업 가능 여부 확인 부탁드립니다.", actions: [["copy", "문구 복사"], ["share", "단톡방 공유"]] },
+        { type: "internal", icon: "settings-2", target: "내부 업무", title: "실무자 단톡방 공유", body: "[확인 요청] 시간표 미등록 학생 등원. 학생은 대기 공간에 안내했고, 강사 포털/담당 강사 확인 중입니다.", actions: [["copy", "문구 복사"], ["save", "저장"]] },
+        { type: "student", icon: "user-round", target: "학생", title: "대기 안내", body: "잠시만 안전한 공간에서 기다려 주세요. 오늘 수업 시간표를 확인한 뒤 바로 안내해드릴게요.", actions: [["copy", "문구 복사"], ["memo", "메모에 추가"]] }
+      ];
+      if (deskResponseMessageGridEl) {
+        deskResponseMessageGridEl.innerHTML = cards.map(function(card) {
+          return '<article class="desk-response-message-card ' + card.type + '">' +
+            '<div class="desk-response-card-head"><span><i data-lucide="' + card.icon + '"></i></span><em>' + escapeHtml(card.target) + '</em><strong>' + escapeHtml(card.title) + '</strong></div>' +
+            '<p>' + escapeHtml(card.body).replace(/\n/g, "<br>") + '</p>' +
+            '<div class="desk-response-card-actions">' + card.actions.map(function(action) {
+              var icon = action[0] === "copy" ? "copy" : (action[0] === "share" ? "users-round" : (action[0] === "save" ? "bookmark" : "square-pen"));
+              return '<button class="desk-response-card-btn" type="button" data-desk-response-action="' + action[0] + '" data-desk-response-text="' + escapeHtml(card.body) + '"><i data-lucide="' + icon + '"></i>' + escapeHtml(action[1]) + '</button>';
+            }).join("") + '</div>' +
+          '</article>';
+        }).join("");
+      }
+      refreshLucideIcons_();
+    }
+
+    function renderDeskMessageTemplates_() {
+      ensureDeskMessageTemplatesLoaded_();
+      var current = state.desk.messageTemplates;
+      var tags = current.tags || [];
+      var templates = current.templates || [];
+      var selectedTag = findDeskMessageTag_(current.selectedTagId) || tags[0] || null;
+      if (selectedTag && selectedTag.id !== current.selectedTagId) current.selectedTagId = selectedTag.id;
+      var filtered = getFilteredDeskMessageTemplates_();
+      if (!findDeskMessageTemplate_(current.selectedTemplateId)) {
+        current.selectedTemplateId = (filtered[0] || templates[0] || {}).id || "";
+      }
+      if (deskTemplateTagCountEl) deskTemplateTagCountEl.textContent = tags.length + "개";
+      if (deskTemplateTagPanelCountEl) deskTemplateTagPanelCountEl.textContent = tags.length + "개";
+      if (deskTemplateMessageCountEl) deskTemplateMessageCountEl.textContent = templates.length + "개";
+      if (deskTemplateSearchInputEl && document.activeElement !== deskTemplateSearchInputEl) deskTemplateSearchInputEl.value = current.searchKeyword || "";
+      if (deskTemplateSortSelectEl) deskTemplateSortSelectEl.value = current.sortOrder || "recent";
+      if (deskTemplateTargetFilterEl) {
+        Array.prototype.forEach.call(deskTemplateTargetFilterEl.querySelectorAll("[data-desk-template-target]"), function(btn) {
+          btn.classList.toggle("active", (btn.getAttribute("data-desk-template-target") || "전체") === current.targetFilter);
+        });
+      }
+      if (deskTemplateTagListEl) {
+        deskTemplateTagListEl.innerHTML = tags.map(function(tag) {
+          var count = templates.filter(function(item) { return item.tagId === tag.id; }).length;
+          return '<div class="desk-template-tag-item ' + (tag.id === current.selectedTagId ? "active" : "") + '" data-desk-template-tag="' + escapeHtml(tag.id) + '">' +
+            '<span class="desk-template-tag-icon ' + getDeskMessageTargetClass_(tag.target) + '"><i data-lucide="' + escapeHtml(tag.icon || "tag") + '"></i></span>' +
+            '<div class="desk-template-tag-main"><strong>' + escapeHtml(tag.label) + '</strong><small>' + escapeHtml(tag.target) + '</small></div>' +
+            '<span class="desk-template-tag-count">' + count + '개 문구</span>' +
+            '<button type="button" data-desk-template-edit-tag="' + escapeHtml(tag.id) + '"><i data-lucide="pencil"></i></button>' +
+            '<button type="button" data-desk-template-delete-tag="' + escapeHtml(tag.id) + '"><i data-lucide="trash-2"></i></button>' +
+          '</div>';
+        }).join("");
+      }
+      if (deskTemplateSelectedInfoEl && selectedTag) {
+        deskTemplateSelectedInfoEl.innerHTML = '<strong>선택한 태그 정보</strong>' +
+          '<dl><dt>대상</dt><dd>' + escapeHtml(selectedTag.target) + '</dd><dt>설명</dt><dd>' + escapeHtml(selectedTag.description || "-") + '</dd><dt>기본 절차</dt><dd>' + escapeHtml(selectedTag.procedure || "-") + '</dd></dl>' +
+          '<button type="button" data-desk-template-view-procedure="' + escapeHtml(selectedTag.id) + '">절차 보기 <i data-lucide="external-link"></i></button>';
+      }
+      if (deskTemplateListTitleEl) deskTemplateListTitleEl.textContent = (selectedTag ? selectedTag.label : "메시지") + " 문구";
+      if (deskTemplateListSubEl) deskTemplateListSubEl.textContent = (selectedTag ? selectedTag.target : "전체") + " 대상 · " + filtered.length + "개 문구";
+      if (deskTemplateTagSelectEl) {
+        deskTemplateTagSelectEl.innerHTML = tags.map(function(tag) {
+          return '<option value="' + escapeHtml(tag.id) + '">' + escapeHtml(tag.label) + '</option>';
+        }).join("");
+      }
+      renderDeskMessageTemplateList_(filtered);
+      renderDeskMessageTemplateEditor_();
+      renderDeskMessageTemplateHistory_();
+      refreshLucideIcons_();
+    }
+
+    function renderDeskMessageTemplateList_(filtered) {
+      if (!deskTemplateMessageListEl) return;
+      if (!filtered.length) {
+        deskTemplateMessageListEl.innerHTML = '<div class="desk-template-empty">조건에 맞는 메시지 문구가 없습니다.</div>';
+        return;
+      }
+      deskTemplateMessageListEl.innerHTML = filtered.map(function(item) {
+        return '<article class="desk-template-message-item ' + (item.id === state.desk.messageTemplates.selectedTemplateId ? "selected" : "") + '" data-desk-template-message="' + escapeHtml(item.id) + '">' +
+          '<button class="desk-template-check" type="button" data-desk-template-check="' + escapeHtml(item.id) + '"><i data-lucide="check"></i></button>' +
+          '<div class="desk-template-message-copy"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message).replace(/\n/g, "<br>") + '</p></div>' +
+          '<div class="desk-template-message-meta"><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><span>' + escapeHtml(item.tone) + '</span></div>' +
+          '<time>' + escapeHtml(item.updatedAt || "방금 전") + '</time>' +
+          '<div class="desk-template-message-actions">' +
+            '<button type="button" data-desk-template-copy-message="' + escapeHtml(item.id) + '"><i data-lucide="copy"></i></button>' +
+            '<button type="button" data-desk-template-edit-message="' + escapeHtml(item.id) + '"><i data-lucide="pencil"></i></button>' +
+            '<button type="button" data-desk-template-duplicate-message="' + escapeHtml(item.id) + '"><i data-lucide="copy-plus"></i></button>' +
+            '<button type="button" data-desk-template-delete-message="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i></button>' +
+          '</div>' +
+        '</article>';
+      }).join("");
+    }
+
+    function renderDeskMessageTemplateEditor_() {
+      var item = findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+      if (!item) return;
+      if (deskTemplateEditorStatusEl) deskTemplateEditorStatusEl.textContent = "선택 문구";
+      if (deskTemplateTitleInputEl && document.activeElement !== deskTemplateTitleInputEl) deskTemplateTitleInputEl.value = item.title || "";
+      if (deskTemplateTargetSelectEl) deskTemplateTargetSelectEl.value = item.target || "학부모";
+      if (deskTemplateTagSelectEl) deskTemplateTagSelectEl.value = item.tagId || state.desk.messageTemplates.selectedTagId;
+      if (deskTemplateMessageInputEl && document.activeElement !== deskTemplateMessageInputEl) deskTemplateMessageInputEl.value = item.message || "";
+      state.desk.messageTemplates.selectedTone = item.tone || state.desk.messageTemplates.selectedTone || "부드럽게";
+      if (deskTemplateToneRowEl) {
+        Array.prototype.forEach.call(deskTemplateToneRowEl.querySelectorAll("[data-desk-template-tone]"), function(btn) {
+          btn.classList.toggle("active", (btn.getAttribute("data-desk-template-tone") || "") === state.desk.messageTemplates.selectedTone);
+        });
+      }
+      updateDeskMessageTemplatePreview_();
+    }
+
+    function updateDeskMessageTemplatePreview_() {
+      if (!deskTemplatePreviewEl) return;
+      var text = deskTemplateMessageInputEl ? String(deskTemplateMessageInputEl.value || "") : "";
+      var replacements = {
+        "{학생명}": "김도윤",
+        "{담당강사}": "송경석",
+        "{수업일}": "5/14",
+        "{상담번호}": "S-042"
+      };
+      Object.keys(replacements).forEach(function(key) {
+        text = text.split(key).join(replacements[key]);
+      });
+      deskTemplatePreviewEl.innerHTML = escapeHtml(text || "문구 내용을 입력하면 미리보기가 표시됩니다.").replace(/\n/g, "<br>") + '<i data-lucide="send"></i>';
+      refreshLucideIcons_();
+    }
+
+    function renderDeskMessageTemplateHistory_() {
+      var templates = (state.desk.messageTemplates.templates || []).slice(0, 4);
+      if (deskTemplateRecentListEl) {
+        deskTemplateRecentListEl.innerHTML = templates.map(function(item) {
+          return '<div class="desk-template-history-row"><i data-lucide="file-text"></i><strong>' + escapeHtml(item.title) + '</strong><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><em>' + escapeHtml(item.updatedBy || "데스크") + ' · ' + escapeHtml(item.updatedAt || "방금 전") + '</em></div>';
+        }).join("");
+      }
+      if (deskTemplateAuditListEl) {
+        deskTemplateAuditListEl.innerHTML = templates.map(function(item) {
+          return '<div class="desk-template-history-row"><span class="dot"></span><strong>' + escapeHtml(item.updatedBy || "데스크") + '</strong><span>' + escapeHtml(item.title) + ' 수정</span><em>' + escapeHtml(item.updatedAt || "방금 전") + '</em></div>';
+        }).join("");
+      }
+    }
+
+    function saveDeskMessageTemplateFromEditor_() {
+      var item = findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+      if (!item) return;
+      item.title = String(deskTemplateTitleInputEl && deskTemplateTitleInputEl.value || "").trim() || "새 메시지 문구";
+      item.target = String(deskTemplateTargetSelectEl && deskTemplateTargetSelectEl.value || "학부모");
+      item.tagId = String(deskTemplateTagSelectEl && deskTemplateTagSelectEl.value || state.desk.messageTemplates.selectedTagId);
+      item.tone = state.desk.messageTemplates.selectedTone || "부드럽게";
+      item.message = String(deskTemplateMessageInputEl && deskTemplateMessageInputEl.value || "").trim();
+      item.updatedBy = "데스크";
+      item.updatedAt = "방금 전";
+      state.desk.messageTemplates.selectedTagId = item.tagId;
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function addDeskMessageTag_() {
+      var label = window.prompt("추가할 유형 태그명을 입력해 주세요.", "새 응대 유형");
+      if (label === null) return;
+      label = String(label || "").trim();
+      if (!label) return;
+      var target = window.prompt("대상을 입력해 주세요. 예: 학부모, 학생, 강사, 지원자", "학부모");
+      target = String(target || "학부모").trim();
+      var tag = normalizeDeskMessageTag_({
+        id: buildDeskShiftId_("messageTag", Date.now(), Math.random().toString(36).slice(2)),
+        label: label,
+        target: target,
+        icon: "tag",
+        description: "관리자가 추가한 상황 태그",
+        procedure: "새 절차"
+      });
+      state.desk.messageTemplates.tags.push(tag);
+      state.desk.messageTemplates.selectedTagId = tag.id;
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function editDeskMessageTag_(id) {
+      var tag = findDeskMessageTag_(id);
+      if (!tag) return;
+      var label = window.prompt("유형 태그명을 수정해 주세요.", tag.label);
+      if (label === null) return;
+      label = String(label || "").trim();
+      if (!label) return;
+      var target = window.prompt("대상을 수정해 주세요.", tag.target);
+      tag.label = label;
+      tag.target = String(target || tag.target || "학부모").trim();
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function deleteDeskMessageTag_(id) {
+      var tag = findDeskMessageTag_(id);
+      if (!tag) return;
+      if (!confirm("'" + tag.label + "' 태그를 삭제할까요? 연결된 문구는 첫 번째 태그로 이동합니다.")) return;
+      var fallback = (state.desk.messageTemplates.tags || []).find(function(item) { return item.id !== id; });
+      state.desk.messageTemplates.tags = (state.desk.messageTemplates.tags || []).filter(function(item) { return item.id !== id; });
+      (state.desk.messageTemplates.templates || []).forEach(function(item) {
+        if (item.tagId === id) item.tagId = fallback ? fallback.id : "";
+      });
+      state.desk.messageTemplates.selectedTagId = fallback ? fallback.id : "";
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function addDeskMessageTemplate_() {
+      ensureDeskMessageTemplatesLoaded_();
+      var tag = findDeskMessageTag_(state.desk.messageTemplates.selectedTagId) || state.desk.messageTemplates.tags[0];
+      var template = normalizeDeskMessageTemplate_({
+        id: buildDeskShiftId_("messageTemplate", Date.now(), Math.random().toString(36).slice(2)),
+        tagId: tag ? tag.id : "",
+        target: tag ? tag.target : "학부모",
+        title: "새 메시지 문구",
+        tone: "부드럽게",
+        message: "{학생명} 학생 관련 안내드립니다.",
+        updatedBy: "데스크",
+        updatedAt: "방금 전"
+      });
+      state.desk.messageTemplates.templates.unshift(template);
+      state.desk.messageTemplates.selectedTemplateId = template.id;
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function duplicateDeskMessageTemplate_(id) {
+      var item = findDeskMessageTemplate_(id);
+      if (!item) return;
+      var copy = normalizeDeskMessageTemplate_(Object.assign({}, item, {
+        id: buildDeskShiftId_("messageTemplate", Date.now(), Math.random().toString(36).slice(2)),
+        title: item.title + " 복사본",
+        updatedBy: "데스크",
+        updatedAt: "방금 전"
+      }));
+      state.desk.messageTemplates.templates.unshift(copy);
+      state.desk.messageTemplates.selectedTemplateId = copy.id;
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
+    function deleteDeskMessageTemplate_(id) {
+      var item = findDeskMessageTemplate_(id);
+      if (!item) return;
+      if (!confirm("'" + item.title + "' 문구를 삭제할까요?")) return;
+      state.desk.messageTemplates.templates = (state.desk.messageTemplates.templates || []).filter(function(template) { return template.id !== id; });
+      var next = getFilteredDeskMessageTemplates_()[0] || state.desk.messageTemplates.templates[0];
+      state.desk.messageTemplates.selectedTemplateId = next ? next.id : "";
+      saveDeskMessageTemplatesLocal_();
+      renderDeskMessageTemplates_();
+    }
+
     function renderDeskLayout_() {
       renderSidebarLayout_();
       Array.prototype.forEach.call(deskTabEls, function(btn) {
@@ -17878,6 +19979,8 @@
       if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
       if (state.desk.activeTab === "recruiting") renderDeskRecruiting_();
+      if (state.desk.activeTab === "responseCenter") renderDeskResponseCenter_();
+      if (state.desk.activeTab === "messageTemplates") renderDeskMessageTemplates_();
       renderDeskLiveFeed_();
       refreshLucideIcons_();
     }
@@ -24037,6 +26140,195 @@
           state.desk.activeTab = nextTab;
           renderDeskLayout_();
         });
+      });
+
+      if (deskResponseSituationInputEl) {
+        deskResponseSituationInputEl.addEventListener("input", function() {
+          state.desk.responseCenter.situationText = String(deskResponseSituationInputEl.value || "");
+        });
+      }
+      if (deskResponseResetBtnEl) {
+        deskResponseResetBtnEl.addEventListener("click", function() {
+          state.desk.responseCenter.situationText = "";
+          if (deskResponseSituationInputEl) deskResponseSituationInputEl.value = "";
+        });
+      }
+      if (deskResponseFindBtnEl) {
+        deskResponseFindBtnEl.addEventListener("click", function() {
+          state.desk.responseCenter.situationText = deskResponseSituationInputEl ? String(deskResponseSituationInputEl.value || "") : "";
+          renderDeskResponseCenter_();
+        });
+      }
+      var deskResponsePanelEl = document.querySelector('[data-desk-panel="responseCenter"]');
+      if (deskResponsePanelEl) {
+        deskResponsePanelEl.addEventListener("click", function(event) {
+          var situationBtn = event.target.closest("[data-desk-response-situation]");
+          if (situationBtn) {
+            state.desk.responseCenter.situationText = situationBtn.getAttribute("data-desk-response-situation") || "";
+            renderDeskResponseCenter_();
+            if (deskResponseSituationInputEl) deskResponseSituationInputEl.focus();
+            return;
+          }
+          var actionBtn = event.target.closest("[data-desk-response-action]");
+          if (!actionBtn) return;
+          var action = actionBtn.getAttribute("data-desk-response-action") || "";
+          var text = actionBtn.getAttribute("data-desk-response-text") || "";
+          if (action === "memo" && deskJournalMemoInputEl) {
+            deskJournalMemoInputEl.value = text;
+            actionBtn.textContent = "메모에 반영";
+            setTimeout(function() { renderDeskResponseCenter_(); }, 900);
+            return;
+          }
+          copyDeskPlainText_(text, function(ok) {
+            actionBtn.innerHTML = ok ? '<i data-lucide="check"></i>복사 완료' : '<i data-lucide="circle-alert"></i>복사 실패';
+            refreshLucideIcons_();
+            setTimeout(renderDeskResponseCenter_, 900);
+          });
+        });
+      }
+
+      if (deskTemplateSearchInputEl) {
+        deskTemplateSearchInputEl.addEventListener("input", function() {
+          state.desk.messageTemplates.searchKeyword = String(deskTemplateSearchInputEl.value || "");
+          renderDeskMessageTemplates_();
+        });
+      }
+      if (deskTemplateTargetFilterEl) {
+        deskTemplateTargetFilterEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-template-target]");
+          if (!btn) return;
+          state.desk.messageTemplates.targetFilter = btn.getAttribute("data-desk-template-target") || "전체";
+          renderDeskMessageTemplates_();
+        });
+      }
+      if (deskTemplateSortSelectEl) {
+        deskTemplateSortSelectEl.addEventListener("change", function() {
+          state.desk.messageTemplates.sortOrder = deskTemplateSortSelectEl.value || "recent";
+          renderDeskMessageTemplates_();
+        });
+      }
+      [deskTemplateAddTagBtnEl, deskTemplateCreateTagBtnEl].forEach(function(btn) {
+        if (!btn) return;
+        btn.addEventListener("click", addDeskMessageTag_);
+      });
+      [deskTemplateAddMessageBtnEl, deskTemplateAddMessageToTagBtnEl].forEach(function(btn) {
+        if (!btn) return;
+        btn.addEventListener("click", addDeskMessageTemplate_);
+      });
+      if (deskTemplateTagListEl) {
+        deskTemplateTagListEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-template-edit-tag]");
+          if (editBtn) {
+            event.stopPropagation();
+            editDeskMessageTag_(editBtn.getAttribute("data-desk-template-edit-tag") || "");
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-template-delete-tag]");
+          if (deleteBtn) {
+            event.stopPropagation();
+            deleteDeskMessageTag_(deleteBtn.getAttribute("data-desk-template-delete-tag") || "");
+            return;
+          }
+          var row = event.target.closest("[data-desk-template-tag]");
+          if (!row) return;
+          state.desk.messageTemplates.selectedTagId = row.getAttribute("data-desk-template-tag") || "";
+          var first = getFilteredDeskMessageTemplates_()[0];
+          state.desk.messageTemplates.selectedTemplateId = first ? first.id : "";
+          renderDeskMessageTemplates_();
+        });
+      }
+      if (deskTemplateMessageListEl) {
+        deskTemplateMessageListEl.addEventListener("click", function(event) {
+          var copyBtn = event.target.closest("[data-desk-template-copy-message]");
+          if (copyBtn) {
+            var copyItem = findDeskMessageTemplate_(copyBtn.getAttribute("data-desk-template-copy-message") || "");
+            if (copyItem) copyDeskPlainText_(copyItem.message);
+            return;
+          }
+          var editBtn = event.target.closest("[data-desk-template-edit-message]");
+          if (editBtn) {
+            state.desk.messageTemplates.selectedTemplateId = editBtn.getAttribute("data-desk-template-edit-message") || "";
+            renderDeskMessageTemplates_();
+            return;
+          }
+          var duplicateBtn = event.target.closest("[data-desk-template-duplicate-message]");
+          if (duplicateBtn) {
+            duplicateDeskMessageTemplate_(duplicateBtn.getAttribute("data-desk-template-duplicate-message") || "");
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-template-delete-message]");
+          if (deleteBtn) {
+            deleteDeskMessageTemplate_(deleteBtn.getAttribute("data-desk-template-delete-message") || "");
+            return;
+          }
+          var row = event.target.closest("[data-desk-template-message]");
+          if (!row) return;
+          state.desk.messageTemplates.selectedTemplateId = row.getAttribute("data-desk-template-message") || "";
+          renderDeskMessageTemplates_();
+        });
+      }
+      if (deskTemplateCopyAllBtnEl) {
+        deskTemplateCopyAllBtnEl.addEventListener("click", function() {
+          var text = getFilteredDeskMessageTemplates_().map(function(item) {
+            return "[" + item.target + "] " + item.title + "\n" + item.message;
+          }).join("\n\n");
+          copyDeskPlainText_(text);
+        });
+      }
+      if (deskTemplateReorderBtnEl) {
+        deskTemplateReorderBtnEl.addEventListener("click", function() {
+          alert("현재는 제목/최근 수정/대상 정렬을 지원합니다. 수동 드래그 정렬은 다음 단계에서 연결할 수 있습니다.");
+        });
+      }
+      if (deskTemplateDeleteSelectedBtnEl) {
+        deskTemplateDeleteSelectedBtnEl.addEventListener("click", function() {
+          deleteDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+        });
+      }
+      if (deskTemplateSaveBtnEl) deskTemplateSaveBtnEl.addEventListener("click", saveDeskMessageTemplateFromEditor_);
+      if (deskTemplateCopyBtnEl) {
+        deskTemplateCopyBtnEl.addEventListener("click", function() {
+          var item = findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+          copyDeskPlainText_(deskTemplateMessageInputEl ? deskTemplateMessageInputEl.value : (item && item.message));
+        });
+      }
+      if (deskTemplateDuplicateBtnEl) {
+        deskTemplateDuplicateBtnEl.addEventListener("click", function() {
+          duplicateDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+        });
+      }
+      if (deskTemplateDeleteBtnEl) {
+        deskTemplateDeleteBtnEl.addEventListener("click", function() {
+          deleteDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
+        });
+      }
+      if (deskTemplateToneRowEl) {
+        deskTemplateToneRowEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-template-tone]");
+          if (!btn) return;
+          state.desk.messageTemplates.selectedTone = btn.getAttribute("data-desk-template-tone") || "부드럽게";
+          Array.prototype.forEach.call(deskTemplateToneRowEl.querySelectorAll("[data-desk-template-tone]"), function(item) {
+            item.classList.toggle("active", item === btn);
+          });
+        });
+      }
+      if (deskTemplateVariableRowEl) {
+        deskTemplateVariableRowEl.addEventListener("click", function(event) {
+          var btn = event.target.closest("[data-desk-template-variable]");
+          if (!btn || !deskTemplateMessageInputEl) return;
+          var token = btn.getAttribute("data-desk-template-variable") || "";
+          var start = deskTemplateMessageInputEl.selectionStart || deskTemplateMessageInputEl.value.length;
+          var end = deskTemplateMessageInputEl.selectionEnd || start;
+          deskTemplateMessageInputEl.value = deskTemplateMessageInputEl.value.slice(0, start) + token + deskTemplateMessageInputEl.value.slice(end);
+          deskTemplateMessageInputEl.focus();
+          deskTemplateMessageInputEl.setSelectionRange(start + token.length, start + token.length);
+          updateDeskMessageTemplatePreview_();
+        });
+      }
+      [deskTemplateTitleInputEl, deskTemplateTargetSelectEl, deskTemplateTagSelectEl, deskTemplateMessageInputEl].forEach(function(el) {
+        if (!el) return;
+        el.addEventListener("input", updateDeskMessageTemplatePreview_);
+        el.addEventListener("change", updateDeskMessageTemplatePreview_);
       });
 
       Array.prototype.forEach.call(deskSupplyTabEls, function(btn) {
