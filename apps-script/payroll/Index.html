@@ -4915,6 +4915,123 @@
       color: #4b5563;
       font-weight: 700;
     }
+    .tuition-assistant {
+      margin-top: 12px;
+      border: 1px solid #d4e5dc;
+      background: linear-gradient(180deg, #f8fcfa 0%, #ffffff 100%);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .tuition-assistant-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .tuition-assistant-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #102133;
+      font-size: 15px;
+      font-weight: 950;
+    }
+    .tuition-assistant-title i {
+      width: 17px;
+      height: 17px;
+      color: #0d684d;
+    }
+    .tuition-assistant-status {
+      color: #607084;
+      font-size: 11px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .tuition-assistant-controls {
+      display: grid;
+      grid-template-columns: 1fr 0.8fr 1.35fr;
+      gap: 8px;
+    }
+    .tuition-assistant-field {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+    .tuition-assistant-field label {
+      color: #42546b;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .tuition-assistant-select,
+    .tuition-assistant-textarea {
+      border: 1px solid #c7d8cf;
+      background: #ffffff;
+      color: #102133;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 800;
+    }
+    .tuition-assistant-select {
+      height: 38px;
+      padding: 0 10px;
+      min-width: 0;
+    }
+    .tuition-assistant-textarea {
+      min-height: 118px;
+      resize: vertical;
+      padding: 10px 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+    .tuition-assistant-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tuition-assistant-action-group {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .tuition-assistant-btn {
+      border: 1px solid #b8d4c9;
+      background: #ffffff;
+      color: #0f3f36;
+      border-radius: 10px;
+      min-height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+    .tuition-assistant-btn.primary {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #ffffff;
+    }
+    .tuition-assistant-btn.warn {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      color: #c2410c;
+    }
+    .tuition-assistant-btn i {
+      width: 14px;
+      height: 14px;
+    }
+    .tuition-assistant-hint {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.45;
+    }
     .tuition-unpaid-list {
       margin-top: 10px;
       display: grid;
@@ -13498,7 +13615,7 @@
   </div>
 
   <div class="modal-overlay" id="tuitionContactModal">
-    <div class="modal-box" style="max-width:560px;">
+    <div class="modal-box" style="max-width:980px;">
       <div class="modal-head">
         <div>
           <h3 class="modal-title" style="font-size:20px;">수강료 안내/연락 기록</h3>
@@ -13526,6 +13643,48 @@
         </div>
       </div>
       <div class="tuition-note">저장 시 연락 날짜/시간이 자동 기록됩니다.</div>
+      <section class="tuition-assistant">
+        <div class="tuition-assistant-head">
+          <div class="tuition-assistant-title"><i data-lucide="bot-message-square"></i>학부모 응대 도우미</div>
+          <div class="tuition-assistant-status" id="tuitionAssistantStatus">문구 동기화 대기</div>
+        </div>
+        <div class="tuition-assistant-controls">
+          <div class="tuition-assistant-field">
+            <label for="tuitionAssistantSituation">상황</label>
+            <select class="tuition-assistant-select" id="tuitionAssistantSituation">
+              <option value="first_notice">미납 최초 안내</option>
+              <option value="followup">재연락</option>
+              <option value="promise">납부 예정 확인</option>
+              <option value="check_needed">확인 필요</option>
+              <option value="unreachable">연락두절</option>
+              <option value="paid_thanks">납부 확인 감사</option>
+            </select>
+          </div>
+          <div class="tuition-assistant-field">
+            <label for="tuitionAssistantTone">톤</label>
+            <select class="tuition-assistant-select" id="tuitionAssistantTone">
+              <option value="polite">정중하게</option>
+              <option value="soft">부드럽게</option>
+              <option value="short">짧게</option>
+              <option value="firm">명확하게</option>
+            </select>
+          </div>
+          <div class="tuition-assistant-field">
+            <label for="tuitionAssistantTemplateSelect">저장 문구</label>
+            <select class="tuition-assistant-select" id="tuitionAssistantTemplateSelect"></select>
+          </div>
+        </div>
+        <textarea class="tuition-assistant-textarea" id="tuitionAssistantOutput" placeholder="상황 문구 만들기를 누르면 학생/월/금액이 반영된 안내 문구가 생성됩니다."></textarea>
+        <div class="tuition-assistant-actions">
+          <div class="tuition-assistant-action-group">
+            <button class="tuition-assistant-btn primary" id="tuitionAssistantDraftBtn" type="button"><i data-lucide="sparkles"></i>상황 문구 만들기</button>
+            <button class="tuition-assistant-btn" id="tuitionAssistantUseMemoBtn" type="button"><i data-lucide="corner-down-left"></i>메모에 넣기</button>
+            <button class="tuition-assistant-btn" id="tuitionAssistantCopyBtn" type="button"><i data-lucide="copy"></i>문구 복사</button>
+            <button class="tuition-assistant-btn warn" id="tuitionAssistantSaveTemplateBtn" type="button"><i data-lucide="save"></i>현재 문구 저장</button>
+          </div>
+          <div class="tuition-assistant-hint">실제 발송 전 이름/금액/납부 예정일은 실무자가 한 번 더 확인해 주세요.</div>
+        </div>
+      </section>
       <div class="modal-foot">
         <div></div>
         <button class="modal-action primary" id="saveTuitionContactBtn" type="button">연락 기록 저장</button>
@@ -13603,6 +13762,8 @@
     var DESK_DAILY_DELETED_MEMOS_KEY = "desk_portal_daily_deleted_memos_v1";
     var DESK_DAILY_DELETE_TOMBSTONE_MS = 5 * 60 * 1000;
     var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
+    var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
+    var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
     var DESK_TASK_ASSIGN_HIGHLIGHT_MS = 10 * 60 * 1000;
     var DESK_DAILY_CARRYOVER_SCAN_DAYS = 60;
@@ -13850,6 +14011,9 @@
         statusListStatus: "",
         unpaidCacheByMonth: {},
         studentHistoryCache: {},
+        parentReplyTemplates: [],
+        parentReplyTemplatesLoaded: false,
+        parentReplyTemplatesLoading: false,
         savingContact: false,
         savingPayment: false
       },
@@ -14259,6 +14423,15 @@
     var tuitionContactGuideAmountEl = document.getElementById("tuitionContactGuideAmount");
     var tuitionContactStatusEl = document.getElementById("tuitionContactStatus");
     var tuitionContactMemoEl = document.getElementById("tuitionContactMemo");
+    var tuitionAssistantStatusEl = document.getElementById("tuitionAssistantStatus");
+    var tuitionAssistantSituationEl = document.getElementById("tuitionAssistantSituation");
+    var tuitionAssistantToneEl = document.getElementById("tuitionAssistantTone");
+    var tuitionAssistantTemplateSelectEl = document.getElementById("tuitionAssistantTemplateSelect");
+    var tuitionAssistantOutputEl = document.getElementById("tuitionAssistantOutput");
+    var tuitionAssistantDraftBtnEl = document.getElementById("tuitionAssistantDraftBtn");
+    var tuitionAssistantUseMemoBtnEl = document.getElementById("tuitionAssistantUseMemoBtn");
+    var tuitionAssistantCopyBtnEl = document.getElementById("tuitionAssistantCopyBtn");
+    var tuitionAssistantSaveTemplateBtnEl = document.getElementById("tuitionAssistantSaveTemplateBtn");
     var tuitionPaymentTargetEl = document.getElementById("tuitionPaymentTarget");
     var tuitionPaymentDueDateEl = document.getElementById("tuitionPaymentDueDate");
     var tuitionPaymentAmountEl = document.getElementById("tuitionPaymentAmount");
@@ -14642,6 +14815,351 @@
         }).join("/");
       }
       return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
+    function buildTuitionConfigRealtimeUrl_(childPath) {
+      var path = TUITION_CONFIG_RT_PATH;
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
+    function getDefaultTuitionParentReplyTemplates_() {
+      return [
+        {
+          id: "first_notice_default",
+          situation: "first_notice",
+          title: "미납 최초 안내",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 안내드립니다.\n안내 금액은 {{안내금액}}이며, 현재 확인된 미납 금액은 {{미납액}}입니다.\n확인 후 납부 부탁드립니다. 감사합니다."
+        },
+        {
+          id: "followup_default",
+          situation: "followup",
+          title: "재연락 안내",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 관련해 한 번 더 안내드립니다.\n현재 {{상태}} 상태로 확인되어 재연락드립니다. 납부 여부 확인 부탁드립니다."
+        },
+        {
+          id: "promise_default",
+          situation: "promise",
+          title: "납부 예정 확인",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 납부 예정일 확인차 연락드립니다.\n예정일에 변동이 있으시면 편하게 말씀 부탁드립니다."
+        },
+        {
+          id: "check_needed_default",
+          situation: "check_needed",
+          title: "확인 필요",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 내역 확인이 필요해 연락드립니다.\n안내 금액 {{안내금액}}, 확인 필요 금액 {{미납액}}으로 보입니다. 확인 후 안내드리겠습니다."
+        },
+        {
+          id: "unreachable_default",
+          situation: "unreachable",
+          title: "연락두절 후 재안내",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 안내 건으로 연락드립니다.\n이전 연락이 닿지 않아 문자로 다시 안내드립니다. 확인 가능하실 때 회신 부탁드립니다."
+        },
+        {
+          id: "paid_thanks_default",
+          situation: "paid_thanks",
+          title: "납부 확인 감사",
+          message: "안녕하세요, {{학생}} 학생 {{월}} 수강료 납부 확인되었습니다.\n확인 감사드립니다."
+        }
+      ].map(normalizeTuitionParentReplyTemplate_);
+    }
+
+    function normalizeTuitionParentReplyTemplate_(template, index) {
+      var fallbackId = "parent_reply_" + (index || 0);
+      var item = template && typeof template === "object" ? template : {};
+      return {
+        id: String(item.id || fallbackId).trim() || fallbackId,
+        situation: String(item.situation || "first_notice").trim() || "first_notice",
+        title: String(item.title || "안내 문구").trim() || "안내 문구",
+        message: String(item.message || "").trim()
+      };
+    }
+
+    function loadTuitionParentReplyTemplatesLocal_() {
+      try {
+        var raw = localStorage.getItem(TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY);
+        var parsed = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed) && parsed.length) {
+          return parsed.map(normalizeTuitionParentReplyTemplate_).filter(function(item) { return !!item.message; });
+        }
+      } catch (err) {}
+      return getDefaultTuitionParentReplyTemplates_();
+    }
+
+    function saveTuitionParentReplyTemplatesLocal_() {
+      try {
+        localStorage.setItem(TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY, JSON.stringify(state.tuition.parentReplyTemplates || []));
+      } catch (err) {}
+    }
+
+    function ensureTuitionParentReplyTemplatesLoaded_() {
+      if (state.tuition.parentReplyTemplatesLoaded || state.tuition.parentReplyTemplatesLoading) {
+        renderTuitionAssistantTemplates_();
+        return;
+      }
+      state.tuition.parentReplyTemplates = loadTuitionParentReplyTemplatesLocal_();
+      state.tuition.parentReplyTemplatesLoading = true;
+      setTuitionAssistantStatus_("저장 문구 불러오는 중");
+      renderTuitionAssistantTemplates_();
+      deskRealtimeFetchJson_("GET", buildTuitionConfigRealtimeUrl_("parentReplyTemplates"), null)
+        .then(function(snapshot) {
+          if (Array.isArray(snapshot) && snapshot.length) {
+            state.tuition.parentReplyTemplates = snapshot.map(normalizeTuitionParentReplyTemplate_).filter(function(item) {
+              return !!item.message;
+            });
+            saveTuitionParentReplyTemplatesLocal_();
+          }
+          state.tuition.parentReplyTemplatesLoaded = true;
+          setTuitionAssistantStatus_("저장 문구 동기화 완료");
+          renderTuitionAssistantTemplates_();
+          updateTuitionAssistantDraft_();
+        })
+        .catch(function(err) {
+          console.warn("tuition parent reply templates load failed", err);
+          state.tuition.parentReplyTemplatesLoaded = true;
+          setTuitionAssistantStatus_("기본/로컬 문구 사용 중");
+        })
+        .finally(function() {
+          state.tuition.parentReplyTemplatesLoading = false;
+        });
+    }
+
+    function saveTuitionParentReplyTemplatesRemote_() {
+      saveTuitionParentReplyTemplatesLocal_();
+      setTuitionAssistantStatus_("저장 문구 동기화 중");
+      return deskRealtimeFetchJson_("PUT", buildTuitionConfigRealtimeUrl_("parentReplyTemplates"), state.tuition.parentReplyTemplates || [])
+        .then(function() {
+          state.tuition.parentReplyTemplatesLoaded = true;
+          setTuitionAssistantStatus_("저장 문구 동기화 완료");
+        })
+        .catch(function(err) {
+          console.warn("tuition parent reply templates save failed", err);
+          setTuitionAssistantStatus_("로컬 저장 완료 · 서버 동기화 실패");
+        });
+    }
+
+    function getTuitionAssistantSituationLabel_(value) {
+      var map = {
+        first_notice: "미납 최초 안내",
+        followup: "재연락",
+        promise: "납부 예정 확인",
+        check_needed: "확인 필요",
+        unreachable: "연락두절",
+        paid_thanks: "납부 확인 감사"
+      };
+      return map[value] || "안내";
+    }
+
+    function setTuitionAssistantStatus_(message) {
+      if (tuitionAssistantStatusEl) tuitionAssistantStatusEl.textContent = message || "";
+    }
+
+    function inferTuitionAssistantSituation_(row) {
+      var status = String(row && row.unpaidStatus || "");
+      if (status === "확인필요") return "check_needed";
+      if (status === "연락두절") return "unreachable";
+      if (status === "납부예정") return "promise";
+      if (status === "안내완료") return "followup";
+      if (status === "납부완료" || status === "이월금") return "paid_thanks";
+      return "first_notice";
+    }
+
+    function renderTuitionAssistantTemplates_() {
+      if (!tuitionAssistantTemplateSelectEl) return;
+      var templates = state.tuition.parentReplyTemplates && state.tuition.parentReplyTemplates.length
+        ? state.tuition.parentReplyTemplates
+        : getDefaultTuitionParentReplyTemplates_();
+      var situation = tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "";
+      var options = ['<option value="">상황에 맞는 기본 문구</option>'];
+      templates.forEach(function(item) {
+        var template = normalizeTuitionParentReplyTemplate_(item);
+        var label = getTuitionAssistantSituationLabel_(template.situation) + " · " + template.title;
+        options.push('<option value="' + escapeHtml(template.id) + '" data-situation="' + escapeHtml(template.situation) + '">' + escapeHtml(label) + '</option>');
+      });
+      tuitionAssistantTemplateSelectEl.innerHTML = options.join("");
+      var matching = templates.filter(function(item) {
+        return normalizeTuitionParentReplyTemplate_(item).situation === situation;
+      })[0];
+      tuitionAssistantTemplateSelectEl.value = matching ? matching.id : "";
+    }
+
+    function getSelectedTuitionAssistantTemplate_() {
+      var templates = state.tuition.parentReplyTemplates && state.tuition.parentReplyTemplates.length
+        ? state.tuition.parentReplyTemplates
+        : getDefaultTuitionParentReplyTemplates_();
+      var selectedId = tuitionAssistantTemplateSelectEl ? tuitionAssistantTemplateSelectEl.value : "";
+      var situation = tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "";
+      var selected = null;
+      if (selectedId) {
+        selected = templates.filter(function(item) {
+          return normalizeTuitionParentReplyTemplate_(item).id === selectedId;
+        })[0] || null;
+      }
+      if (!selected) {
+        selected = templates.filter(function(item) {
+          return normalizeTuitionParentReplyTemplate_(item).situation === situation;
+        })[0] || null;
+      }
+      return selected ? normalizeTuitionParentReplyTemplate_(selected) : getDefaultTuitionParentReplyTemplates_()[0];
+    }
+
+    function buildTuitionAssistantContext_() {
+      var row = state.tuition.contactTarget || {};
+      var guideAmount = Math.max(0, toNumber(tuitionContactGuideAmountEl ? tuitionContactGuideAmountEl.value : row.guideAmount, row.guideAmount || 0));
+      var collected = Math.max(0, toNumber(row.collectedAmount, 0));
+      var outstanding = Math.max(0, toNumber(row.outstandingAmount, Math.max(0, guideAmount - collected)));
+      return {
+        student: formatStudentName(row.studentName || ""),
+        month: state.tuition.selectedMonth || "",
+        school: row.school || "",
+        grade: formatTuitionGradeLabel(row.grade),
+        guideAmount: formatWon(guideAmount),
+        collectedAmount: formatWon(collected),
+        outstandingAmount: formatWon(outstanding),
+        status: row.unpaidStatus || "안내이전",
+        contactCount: String(row.contactCount || 0)
+      };
+    }
+
+    function applyTuitionAssistantPlaceholders_(message, context) {
+      var text = String(message || "");
+      var map = {
+        "{{학생}}": context.student || "학생",
+        "{{월}}": context.month || "이번 달",
+        "{{학교}}": context.school || "학교",
+        "{{학년}}": context.grade || "학년",
+        "{{안내금액}}": context.guideAmount || "0원",
+        "{{수납액}}": context.collectedAmount || "0원",
+        "{{미납액}}": context.outstandingAmount || "0원",
+        "{{상태}}": context.status || "안내이전",
+        "{{연락횟수}}": context.contactCount || "0"
+      };
+      Object.keys(map).forEach(function(key) {
+        text = text.split(key).join(map[key]);
+      });
+      return text;
+    }
+
+    function applyTuitionAssistantTone_(message, tone) {
+      var text = String(message || "").trim();
+      if (!text) return "";
+      if (tone === "short") {
+        return text.split(/\n+/).filter(Boolean).slice(0, 3).join("\n");
+      }
+      if (tone === "soft") {
+        return text + "\n\n편하실 때 확인 부탁드립니다.";
+      }
+      if (tone === "firm") {
+        return text + "\n\n확인 후 회신 부탁드립니다.";
+      }
+      return text;
+    }
+
+    function generalizeTuitionAssistantTemplateMessage_(message, context) {
+      var text = String(message || "");
+      [
+        { value: context.student, token: "{{학생}}" },
+        { value: context.month, token: "{{월}}" },
+        { value: context.guideAmount, token: "{{안내금액}}" },
+        { value: context.collectedAmount, token: "{{수납액}}" },
+        { value: context.outstandingAmount, token: "{{미납액}}" },
+        { value: context.status, token: "{{상태}}" },
+        { value: context.contactCount, token: "{{연락횟수}}" }
+      ].forEach(function(item) {
+        var value = String(item.value || "").trim();
+        if (!value || value.length < 2) return;
+        text = text.split(value).join(item.token);
+      });
+      return text;
+    }
+
+    function updateTuitionAssistantDraft_() {
+      if (!tuitionAssistantOutputEl) return;
+      var template = getSelectedTuitionAssistantTemplate_();
+      var context = buildTuitionAssistantContext_();
+      var draft = applyTuitionAssistantPlaceholders_(template.message, context);
+      draft = applyTuitionAssistantTone_(draft, tuitionAssistantToneEl ? tuitionAssistantToneEl.value : "polite");
+      tuitionAssistantOutputEl.value = draft;
+      setTuitionAssistantStatus_("문구 생성 완료");
+    }
+
+    function useTuitionAssistantDraftAsMemo_() {
+      var draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
+      if (!draft) {
+        updateTuitionAssistantDraft_();
+        draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
+      }
+      if (!draft || !tuitionContactMemoEl) return;
+      tuitionContactMemoEl.value = draft;
+      setTuitionAssistantStatus_("연락 메모에 반영했습니다");
+    }
+
+    function copyTuitionAssistantDraft_() {
+      var draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
+      if (!draft) {
+        updateTuitionAssistantDraft_();
+        draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
+      }
+      if (!draft) return;
+      function copied(message) {
+        setTuitionAssistantStatus_(message);
+      }
+      if (typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(draft)
+          .then(function() { copied("문구를 복사했습니다"); })
+          .catch(function() {
+            tuitionAssistantOutputEl.focus();
+            tuitionAssistantOutputEl.select();
+            try {
+              document.execCommand("copy");
+              copied("문구를 복사했습니다");
+            } catch (err) {
+              copied("복사 실패 · 수동 복사 필요");
+            }
+          });
+      } else {
+        tuitionAssistantOutputEl.focus();
+        tuitionAssistantOutputEl.select();
+        try {
+          document.execCommand("copy");
+          copied("문구를 복사했습니다");
+        } catch (err2) {
+          copied("복사 실패 · 수동 복사 필요");
+        }
+      }
+    }
+
+    function saveCurrentTuitionAssistantTemplate_() {
+      var draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
+      if (!draft) {
+        alert("저장할 문구가 없습니다. 먼저 문구를 작성해 주세요.");
+        return;
+      }
+      var defaultTitle = getTuitionAssistantSituationLabel_(tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "first_notice");
+      var title = window.prompt("저장할 문구 제목을 입력해 주세요.", defaultTitle);
+      if (title === null) return;
+      title = String(title || "").trim();
+      if (!title) {
+        alert("문구 제목은 비워둘 수 없습니다.");
+        return;
+      }
+      var template = normalizeTuitionParentReplyTemplate_({
+        id: "parent_reply_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        situation: tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "first_notice",
+        title: title,
+        message: generalizeTuitionAssistantTemplateMessage_(draft, buildTuitionAssistantContext_())
+      });
+      state.tuition.parentReplyTemplates = (state.tuition.parentReplyTemplates || []).filter(function(item) {
+        return normalizeTuitionParentReplyTemplate_(item).id !== template.id;
+      });
+      state.tuition.parentReplyTemplates.unshift(template);
+      renderTuitionAssistantTemplates_();
+      if (tuitionAssistantTemplateSelectEl) tuitionAssistantTemplateSelectEl.value = template.id;
+      saveTuitionParentReplyTemplatesRemote_();
     }
 
     function ensureDeskMemoTemplatesLoaded_() {
@@ -24957,6 +25475,30 @@
       });
       saveTuitionContactBtnEl.addEventListener("click", saveTuitionContactRecord);
       saveTuitionPaymentBtnEl.addEventListener("click", saveTuitionPaymentEntry);
+      if (tuitionAssistantSituationEl) {
+        tuitionAssistantSituationEl.addEventListener("change", function() {
+          renderTuitionAssistantTemplates_();
+          updateTuitionAssistantDraft_();
+        });
+      }
+      if (tuitionAssistantToneEl) {
+        tuitionAssistantToneEl.addEventListener("change", updateTuitionAssistantDraft_);
+      }
+      if (tuitionAssistantTemplateSelectEl) {
+        tuitionAssistantTemplateSelectEl.addEventListener("change", updateTuitionAssistantDraft_);
+      }
+      if (tuitionAssistantDraftBtnEl) {
+        tuitionAssistantDraftBtnEl.addEventListener("click", updateTuitionAssistantDraft_);
+      }
+      if (tuitionAssistantUseMemoBtnEl) {
+        tuitionAssistantUseMemoBtnEl.addEventListener("click", useTuitionAssistantDraftAsMemo_);
+      }
+      if (tuitionAssistantCopyBtnEl) {
+        tuitionAssistantCopyBtnEl.addEventListener("click", copyTuitionAssistantDraft_);
+      }
+      if (tuitionAssistantSaveTemplateBtnEl) {
+        tuitionAssistantSaveTemplateBtnEl.addEventListener("click", saveCurrentTuitionAssistantTemplate_);
+      }
       tuitionPaymentAmountEl.addEventListener("input", function() {
         tuitionPaymentAmountEl.value = formatSignedAmountInput(tuitionPaymentAmountEl.value);
       });
@@ -27201,7 +27743,13 @@
       tuitionContactStatusEl.value = "안내완료";
       tuitionContactStatusEl.disabled = true;
       tuitionContactMemoEl.value = "";
+      if (tuitionAssistantSituationEl) tuitionAssistantSituationEl.value = inferTuitionAssistantSituation_(row);
+      if (tuitionAssistantToneEl) tuitionAssistantToneEl.value = "polite";
+      ensureTuitionParentReplyTemplatesLoaded_();
+      renderTuitionAssistantTemplates_();
+      updateTuitionAssistantDraft_();
       tuitionContactModalEl.style.display = "flex";
+      refreshLucideIcons_();
     }
 
     function openTuitionPaymentModal(studentName) {
