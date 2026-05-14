@@ -3224,9 +3224,9 @@
     }
     .desk-template-toolbar {
       border: 1px solid #d8e6de;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
-      padding: 14px;
+      padding: 14px 16px;
       display: grid;
       grid-template-columns: minmax(260px, 1fr) auto auto auto auto;
       gap: 12px;
@@ -3328,16 +3328,17 @@
     }
     .desk-template-layout {
       display: grid;
-      grid-template-columns: 310px minmax(390px, 1fr) 420px;
-      gap: 12px;
+      grid-template-columns: clamp(286px, 22vw, 370px) minmax(480px, 1fr) clamp(390px, 30vw, 500px);
+      gap: 14px;
       align-items: start;
     }
     .desk-template-card {
       border: 1px solid #d8e6de;
-      border-radius: 12px;
+      border-radius: 10px;
       background: #fff;
       box-shadow: 0 12px 24px rgba(15, 60, 46, 0.04);
       min-width: 0;
+      overflow: hidden;
     }
     .desk-template-card-head {
       display: flex;
@@ -3361,7 +3362,7 @@
     }
     .desk-template-tag-item {
       border: 1px solid #e2ebe6;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
       padding: 10px 9px 10px 12px;
       display: grid;
@@ -3379,7 +3380,7 @@
     .desk-template-tag-icon {
       width: 30px;
       height: 30px;
-      border-radius: 9px;
+      border-radius: 8px;
       display: grid;
       place-items: center;
       background: #ecfdf5;
@@ -3395,6 +3396,7 @@
       font-weight: 950;
       color: inherit;
       line-height: 1.2;
+      word-break: keep-all;
     }
     .desk-template-tag-main span {
       display: inline-flex;
@@ -3440,19 +3442,19 @@
     }
     .desk-template-message-item {
       border: 1px solid #dfe9e4;
-      border-radius: 10px;
+      border-radius: 8px;
       background: #fff;
-      padding: 14px;
+      padding: 14px 14px 14px 13px;
       display: grid;
       grid-template-columns: 24px minmax(0, 1fr) auto;
       gap: 12px;
-      align-items: center;
+      align-items: start;
       cursor: pointer;
     }
     .desk-template-message-item.active {
       border-color: #a7d8c5;
       background: linear-gradient(180deg, #fbfffd 0%, #f5fffb 100%);
-      box-shadow: inset 4px 0 0 #0d684d;
+      box-shadow: 0 10px 20px rgba(13, 104, 77, 0.08);
     }
     .desk-template-check {
       width: 18px;
@@ -3774,25 +3776,32 @@
       color: #eafff6;
     }
     .desk-template-message-item {
-      grid-template-columns: 24px minmax(0, 1fr) auto auto;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
     }
     .desk-template-message-item.selected,
     .desk-template-message-item.active {
       border-color: #a7d8c5;
       background: linear-gradient(180deg, #fbfffd 0%, #f5fffb 100%);
-      box-shadow: inset 4px 0 0 #0d684d;
+      box-shadow: 0 10px 20px rgba(13, 104, 77, 0.08);
     }
     .desk-template-message-item.selected .desk-template-check,
     .desk-template-message-item.active .desk-template-check {
       background: #0d684d;
       border-color: #0d684d;
     }
+    .desk-template-message-side {
+      display: grid;
+      gap: 16px;
+      justify-items: end;
+      align-self: stretch;
+      min-width: 176px;
+    }
     .desk-template-message-meta {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
       justify-content: flex-end;
-      min-width: 96px;
+      min-width: 0;
     }
     .desk-template-message-meta span,
     .desk-template-history-row span:not(.dot) {
@@ -3805,6 +3814,8 @@
       font-size: 11px;
       font-weight: 900;
       white-space: nowrap;
+      line-height: 1;
+      min-height: 24px;
     }
     .desk-template-message-meta .parent,
     .desk-template-history-row .parent { background: #fff7ed; color: #ea580c; }
@@ -3816,11 +3827,13 @@
     .desk-template-history-row .applicant { background: #f5f3ff; color: #7c3aed; }
     .desk-template-message-meta .internal,
     .desk-template-history-row .internal { background: #f4f4f5; color: #52525b; }
+    .desk-template-message-meta time,
     .desk-template-message-item time {
       color: #617487;
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
+      line-height: 24px;
     }
     .desk-template-empty {
       border: 1px dashed #cfe0d8;
@@ -19945,13 +19958,14 @@
         return '<article class="desk-template-message-item ' + (item.id === state.desk.messageTemplates.selectedTemplateId ? "selected" : "") + '" data-desk-template-message="' + escapeHtml(item.id) + '">' +
           '<button class="desk-template-check" type="button" data-desk-template-check="' + escapeHtml(item.id) + '"><i data-lucide="check"></i></button>' +
           '<div class="desk-template-message-copy"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message).replace(/\n/g, "<br>") + '</p></div>' +
-          '<div class="desk-template-message-meta"><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><span>' + escapeHtml(item.tone) + '</span></div>' +
-          '<time>' + escapeHtml(item.updatedAt || "방금 전") + '</time>' +
-          '<div class="desk-template-message-actions">' +
-            '<button type="button" data-desk-template-copy-message="' + escapeHtml(item.id) + '"><i data-lucide="copy"></i></button>' +
-            '<button type="button" data-desk-template-edit-message="' + escapeHtml(item.id) + '"><i data-lucide="pencil"></i></button>' +
-            '<button type="button" data-desk-template-duplicate-message="' + escapeHtml(item.id) + '"><i data-lucide="copy-plus"></i></button>' +
-            '<button type="button" data-desk-template-delete-message="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i></button>' +
+          '<div class="desk-template-message-side">' +
+            '<div class="desk-template-message-meta"><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><span>' + escapeHtml(item.tone) + '</span><time>' + escapeHtml(item.updatedAt || "방금 전") + '</time></div>' +
+            '<div class="desk-template-message-actions">' +
+              '<button type="button" data-desk-template-copy-message="' + escapeHtml(item.id) + '"><i data-lucide="copy"></i></button>' +
+              '<button type="button" data-desk-template-edit-message="' + escapeHtml(item.id) + '"><i data-lucide="pencil"></i></button>' +
+              '<button type="button" data-desk-template-duplicate-message="' + escapeHtml(item.id) + '"><i data-lucide="copy-plus"></i></button>' +
+              '<button type="button" data-desk-template-delete-message="' + escapeHtml(item.id) + '"><i data-lucide="trash-2"></i></button>' +
+            '</div>' +
           '</div>' +
         '</article>';
       }).join("");
