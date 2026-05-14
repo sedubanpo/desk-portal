@@ -3325,6 +3325,188 @@
       height: 20px;
       flex: 0 0 auto;
     }
+    .desk-guide-manager {
+      border: 1px solid #d7e5de;
+      border-radius: 12px;
+      background: #fff;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 0;
+      overflow: hidden;
+    }
+    .desk-guide-list-panel {
+      border-right: 1px solid #dce9e2;
+      background: #fbfdfc;
+      padding: 16px;
+    }
+    .desk-guide-manager-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .desk-guide-manager-head h3 {
+      margin: 0 0 4px;
+      color: #102133;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .desk-guide-manager-head p {
+      margin: 0;
+      color: #5d7085;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .desk-guide-manager-head > span {
+      border: 1px solid #b8e2d2;
+      background: #f0fbf6;
+      color: #0d684d;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .desk-guide-list {
+      display: grid;
+      gap: 8px;
+      max-height: 370px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .desk-guide-list-item {
+      border: 1px solid #dce8e2;
+      background: #fff;
+      border-radius: 10px;
+      padding: 11px 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      cursor: pointer;
+      color: #173044;
+      text-align: left;
+      font: inherit;
+    }
+    .desk-guide-list-item.active {
+      border-color: #0d684d;
+      background: #f1fbf6;
+      box-shadow: inset 0 0 0 1px rgba(13, 104, 77, 0.14);
+    }
+    .desk-guide-list-item strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 950;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desk-guide-list-item em {
+      display: block;
+      margin-top: 4px;
+      color: #6b7d90;
+      font-size: 11px;
+      font-style: normal;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desk-guide-list-item span {
+      border-radius: 999px;
+      background: #eef5f1;
+      color: #0d684d;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .desk-guide-editor-panel {
+      padding: 16px 18px;
+      background: linear-gradient(180deg, #fff 0%, #fbfffd 100%);
+    }
+    .desk-guide-editor-top,
+    .desk-guide-editor-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .desk-guide-editor-top {
+      margin-bottom: 14px;
+    }
+    .desk-guide-editor-top strong {
+      color: #102133;
+      font-size: 17px;
+      font-weight: 950;
+    }
+    .desk-guide-editor-top div {
+      display: flex;
+      gap: 8px;
+    }
+    .desk-guide-editor-top button,
+    .desk-guide-editor-foot button {
+      border: 1px solid #c8dbd2;
+      background: #fff;
+      color: #173044;
+      border-radius: 8px;
+      min-height: 38px;
+      padding: 0 13px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-guide-editor-top button.danger {
+      border-color: #fecaca;
+      color: #dc2626;
+      background: #fffafa;
+    }
+    .desk-guide-editor-foot button {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
+    }
+    .desk-guide-form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 130px minmax(180px, 0.8fr);
+      gap: 12px;
+    }
+    .desk-guide-form-grid label {
+      display: grid;
+      gap: 6px;
+      color: #40546a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-guide-form-grid label.wide {
+      grid-column: 1 / -1;
+    }
+    .desk-guide-form-grid input,
+    .desk-guide-form-grid select,
+    .desk-guide-form-grid textarea {
+      border: 1px solid #cfe0d8;
+      border-radius: 9px;
+      background: #fff;
+      color: #102133;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.45;
+      padding: 11px 12px;
+      resize: vertical;
+    }
+    .desk-guide-editor-foot {
+      margin-top: 14px;
+      border-top: 1px solid #e0ebe6;
+      padding-top: 14px;
+    }
+    .desk-guide-editor-foot span {
+      color: #60758a;
+      font-size: 12px;
+      font-weight: 800;
+    }
     .desk-template-toolbar {
       border: 1px solid #d8e6de;
       border-radius: 8px;
@@ -14491,6 +14673,39 @@
                 <button type="button" data-desk-response-situation="학생 시간표 확인"><i data-lucide="book-open"></i>학생 시간표 확인<i data-lucide="chevron-right"></i></button>
                 <button type="button" data-desk-response-situation="강사 상담 자료 요청"><i data-lucide="clipboard-list"></i>강사 상담 자료 요청<i data-lucide="chevron-right"></i></button>
               </section>
+
+              <section class="desk-guide-manager">
+                <div class="desk-guide-list-panel">
+                  <div class="desk-guide-manager-head">
+                    <div>
+                      <h3>상황 가이드 관리</h3>
+                      <p>키워드와 대응 절차를 저장하면 응대 센터가 입력 문구와 대조합니다.</p>
+                    </div>
+                    <span id="deskResponseGuideCount">0개</span>
+                  </div>
+                  <div class="desk-guide-list" id="deskResponseGuideList"></div>
+                </div>
+                <div class="desk-guide-editor-panel">
+                  <div class="desk-guide-editor-top">
+                    <strong id="deskResponseGuideEditorTitle">가이드 편집</strong>
+                    <div>
+                      <button type="button" id="deskResponseNewGuideBtn">새 가이드</button>
+                      <button type="button" id="deskResponseDeleteGuideBtn" class="danger">삭제</button>
+                    </div>
+                  </div>
+                  <div class="desk-guide-form-grid">
+                    <label>상황명<input id="deskResponseGuideTitleInput" type="text" placeholder="예: 시간표 미등록 등원"></label>
+                    <label>긴급도<select id="deskResponseGuideUrgencySelect"><option>낮음</option><option>보통</option><option>높음</option></select></label>
+                    <label>연결 유형<select id="deskResponseGuideTagSelect"></select></label>
+                    <label class="wide">키워드<textarea id="deskResponseGuideKeywordsInput" rows="3" placeholder="쉼표로 구분: 시간표 없음, 미등록 등원, 갑자기 등원"></textarea></label>
+                    <label class="wide">대응 절차<textarea id="deskResponseGuideStepsInput" rows="5" placeholder="한 줄에 하나씩 입력"></textarea></label>
+                  </div>
+                  <div class="desk-guide-editor-foot">
+                    <span>대상별 안내 문구는 메세지 템플릿의 연결 유형 문구를 우선 사용합니다.</span>
+                    <button type="button" id="deskResponseSaveGuideBtn">가이드 저장</button>
+                  </div>
+                </div>
+              </section>
             </div>
           </section>
 
@@ -15563,6 +15778,7 @@
     var DESK_DAILY_DELETE_TOMBSTONE_MS = 5 * 60 * 1000;
     var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
     var DESK_MESSAGE_TEMPLATES_STORAGE_KEY = "desk_portal_message_templates_v1";
+    var DESK_RESPONSE_GUIDES_STORAGE_KEY = "desk_portal_response_guides_v1";
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -15727,7 +15943,12 @@
           lastStatus: "가이드 동기화 정상",
           matchedGuideId: "schedule-missing",
           matchConfidence: 1,
-          matchCandidates: []
+          matchCandidates: [],
+          guides: [],
+          selectedGuideId: "schedule-missing",
+          remoteLoaded: false,
+          remoteLoading: false,
+          remoteSaving: false
         },
         messageTemplates: {
           tags: [],
@@ -16074,6 +16295,17 @@
     var deskResponseConfidenceEl = document.getElementById("deskResponseConfidence");
     var deskResponseStepsEl = document.getElementById("deskResponseSteps");
     var deskResponseMessageGridEl = document.getElementById("deskResponseMessageGrid");
+    var deskResponseGuideCountEl = document.getElementById("deskResponseGuideCount");
+    var deskResponseGuideListEl = document.getElementById("deskResponseGuideList");
+    var deskResponseGuideEditorTitleEl = document.getElementById("deskResponseGuideEditorTitle");
+    var deskResponseGuideTitleInputEl = document.getElementById("deskResponseGuideTitleInput");
+    var deskResponseGuideUrgencySelectEl = document.getElementById("deskResponseGuideUrgencySelect");
+    var deskResponseGuideTagSelectEl = document.getElementById("deskResponseGuideTagSelect");
+    var deskResponseGuideKeywordsInputEl = document.getElementById("deskResponseGuideKeywordsInput");
+    var deskResponseGuideStepsInputEl = document.getElementById("deskResponseGuideStepsInput");
+    var deskResponseNewGuideBtnEl = document.getElementById("deskResponseNewGuideBtn");
+    var deskResponseDeleteGuideBtnEl = document.getElementById("deskResponseDeleteGuideBtn");
+    var deskResponseSaveGuideBtnEl = document.getElementById("deskResponseSaveGuideBtn");
     var deskTemplateTagCountEl = document.getElementById("deskTemplateTagCount");
     var deskTemplateMessageCountEl = document.getElementById("deskTemplateMessageCount");
     var deskTemplateSearchInputEl = document.getElementById("deskTemplateSearchInput");
@@ -19972,6 +20204,123 @@
       ];
     }
 
+    function getDefaultDeskResponseCards_() {
+      return [
+        { target: "학부모", title: "확인 후 안내", body: "안녕하세요. 데스크입니다. 현재 상황을 확인 중입니다. 담당자 확인 후 정확한 내용으로 다시 안내드리겠습니다." },
+        { target: "강사", title: "상황 확인 요청", body: "확인이 필요한 상황이 접수되었습니다. 관련 학생과 수업 가능 여부 확인 부탁드립니다." },
+        { target: "내부 업무", title: "실무자 공유", body: "[확인 요청] 상황 확인이 필요합니다. 담당자 확인 후 대응 방향을 정리해 주세요." },
+        { target: "학생", title: "대기 안내", body: "잠시만 안전한 공간에서 기다려 주세요. 확인한 뒤 바로 안내해드릴게요." }
+      ];
+    }
+
+    function normalizeDeskResponseGuide_(item, index) {
+      item = item || {};
+      var defaults = getDefaultDeskResponseCards_();
+      var rawKeywords = Array.isArray(item.keywords) ? item.keywords : String(item.keywords || "").split(/[,，\n]/);
+      var rawSteps = Array.isArray(item.steps) ? item.steps : String(item.steps || "").split(/\n/);
+      var cards = Array.isArray(item.cards) && item.cards.length ? item.cards : defaults;
+      return {
+        id: String(item.id || buildDeskShiftId_("responseGuide", Date.now(), index || 0, Math.random().toString(36).slice(2))).trim(),
+        tagId: String(item.tagId || "schedule-check").trim(),
+        title: String(item.title || "새 상황 가이드").trim(),
+        urgency: String(item.urgency || "보통").trim(),
+        keywords: rawKeywords.map(function(keyword) { return String(keyword || "").trim(); }).filter(Boolean),
+        steps: rawSteps.map(function(step) { return String(step || "").trim(); }).filter(Boolean).slice(0, 5),
+        cards: cards.map(function(card, cardIndex) {
+          card = card || {};
+          var fallback = defaults[cardIndex % defaults.length];
+          return {
+            target: String(card.target || fallback.target || "학부모").trim(),
+            title: String(card.title || fallback.title || "안내 문구").trim(),
+            body: String(card.body || fallback.body || "").trim()
+          };
+        })
+      };
+    }
+
+    function ensureDeskResponseGuidesLoaded_() {
+      if ((state.desk.responseCenter.guides || []).length) return;
+      var loaded = false;
+      try {
+        var raw = localStorage.getItem(DESK_RESPONSE_GUIDES_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          var source = Array.isArray(parsed) ? parsed : (parsed && parsed.guides);
+          if (Array.isArray(source) && source.length) {
+            state.desk.responseCenter.guides = source.map(normalizeDeskResponseGuide_);
+            loaded = true;
+          }
+        }
+      } catch (err) {}
+      if (!loaded) {
+        state.desk.responseCenter.guides = getDefaultDeskResponseGuides_().map(normalizeDeskResponseGuide_);
+      }
+      if (!findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId)) {
+        state.desk.responseCenter.selectedGuideId = (state.desk.responseCenter.guides[0] || {}).id || "";
+      }
+    }
+
+    function ensureDeskResponseGuidesRemoteLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.responseCenter.remoteLoaded || state.desk.responseCenter.remoteLoading) return;
+      state.desk.responseCenter.remoteLoading = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("responseGuides"), null)
+        .then(function(snapshot) {
+          var source = Array.isArray(snapshot) ? snapshot : (snapshot && snapshot.guides);
+          if (Array.isArray(source) && source.length) {
+            state.desk.responseCenter.guides = source.map(normalizeDeskResponseGuide_);
+            try {
+              localStorage.setItem(DESK_RESPONSE_GUIDES_STORAGE_KEY, JSON.stringify({ guides: state.desk.responseCenter.guides || [] }));
+            } catch (err) {}
+            if (!findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId)) {
+              state.desk.responseCenter.selectedGuideId = (state.desk.responseCenter.guides[0] || {}).id || "";
+            }
+            if (state.desk.activeTab === "responseCenter") renderDeskResponseCenter_();
+          }
+          state.desk.responseCenter.remoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk response guides remote load failed", err);
+        })
+        .finally(function() {
+          state.desk.responseCenter.remoteLoading = false;
+        });
+    }
+
+    function saveDeskResponseGuidesLocal_() {
+      ensureDeskResponseGuidesLoaded_();
+      try {
+        localStorage.setItem(DESK_RESPONSE_GUIDES_STORAGE_KEY, JSON.stringify({ guides: state.desk.responseCenter.guides || [] }));
+      } catch (err) {}
+      saveDeskResponseGuidesRemote_();
+    }
+
+    function saveDeskResponseGuidesRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      state.desk.responseCenter.remoteSaving = true;
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseGuides"), {
+        guides: state.desk.responseCenter.guides || []
+      })
+        .then(function() {
+          state.desk.responseCenter.remoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk response guides remote save failed", err);
+        })
+        .finally(function() {
+          state.desk.responseCenter.remoteSaving = false;
+        });
+    }
+
+    function findDeskResponseGuide_(id) {
+      return (state.desk.responseCenter.guides || []).find(function(item) { return item.id === id; }) || null;
+    }
+
+    function getDeskResponseGuides_() {
+      ensureDeskResponseGuidesLoaded_();
+      return state.desk.responseCenter.guides || [];
+    }
+
     function normalizeDeskResponseText_(text) {
       var value = String(text || "")
         .toLowerCase()
@@ -20020,7 +20369,7 @@
     }
 
     function matchDeskResponseGuide_(query) {
-      var guides = getDefaultDeskResponseGuides_();
+      var guides = getDeskResponseGuides_();
       var normalizedQuery = normalizeDeskResponseText_(query);
       if (!normalizedQuery) {
         return {
@@ -20074,6 +20423,110 @@
           actions: getDeskResponseActionsForTarget_(card.target)
         };
       });
+    }
+
+    function renderDeskResponseGuideManager_() {
+      ensureDeskResponseGuidesLoaded_();
+      ensureDeskMessageTemplatesLoaded_();
+      var guides = getDeskResponseGuides_();
+      var selected = findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId) || guides[0] || null;
+      if (selected && selected.id !== state.desk.responseCenter.selectedGuideId) {
+        state.desk.responseCenter.selectedGuideId = selected.id;
+      }
+      if (deskResponseGuideCountEl) deskResponseGuideCountEl.textContent = guides.length + "개";
+      if (deskResponseGuideListEl) {
+        deskResponseGuideListEl.innerHTML = guides.map(function(guide) {
+          var tag = findDeskMessageTag_(guide.tagId);
+          var keywordText = (guide.keywords || []).slice(0, 4).join(", ");
+          return '<button type="button" class="desk-guide-list-item ' + (guide.id === state.desk.responseCenter.selectedGuideId ? "active" : "") + '" data-desk-response-guide="' + escapeHtml(guide.id) + '">' +
+            '<div><strong>' + escapeHtml(guide.title) + '</strong><em>' + escapeHtml((tag && tag.label ? tag.label + " · " : "") + keywordText) + '</em></div>' +
+            '<span>' + escapeHtml(guide.urgency || "보통") + '</span>' +
+          '</button>';
+        }).join("");
+      }
+      if (deskResponseGuideTagSelectEl) {
+        deskResponseGuideTagSelectEl.innerHTML = (state.desk.messageTemplates.tags || []).map(function(tag) {
+          return '<option value="' + escapeHtml(tag.id) + '">' + escapeHtml(tag.label) + '</option>';
+        }).join("");
+      }
+      if (!selected) return;
+      if (deskResponseGuideEditorTitleEl) deskResponseGuideEditorTitleEl.textContent = selected.title + " 편집";
+      if (deskResponseGuideTitleInputEl && document.activeElement !== deskResponseGuideTitleInputEl) deskResponseGuideTitleInputEl.value = selected.title || "";
+      if (deskResponseGuideUrgencySelectEl && document.activeElement !== deskResponseGuideUrgencySelectEl) deskResponseGuideUrgencySelectEl.value = selected.urgency || "보통";
+      if (deskResponseGuideTagSelectEl && document.activeElement !== deskResponseGuideTagSelectEl) deskResponseGuideTagSelectEl.value = selected.tagId || "schedule-check";
+      if (deskResponseGuideKeywordsInputEl && document.activeElement !== deskResponseGuideKeywordsInputEl) deskResponseGuideKeywordsInputEl.value = (selected.keywords || []).join(", ");
+      if (deskResponseGuideStepsInputEl && document.activeElement !== deskResponseGuideStepsInputEl) deskResponseGuideStepsInputEl.value = (selected.steps || []).join("\n");
+    }
+
+    function saveDeskResponseGuideFromEditor_() {
+      ensureDeskResponseGuidesLoaded_();
+      var guide = findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId);
+      if (!guide) return;
+      var title = String(deskResponseGuideTitleInputEl && deskResponseGuideTitleInputEl.value || "").trim();
+      if (!title) {
+        alert("상황명을 입력해주세요.");
+        return;
+      }
+      var steps = String(deskResponseGuideStepsInputEl && deskResponseGuideStepsInputEl.value || "")
+        .split(/\n/)
+        .map(function(step) { return step.trim(); })
+        .filter(Boolean)
+        .slice(0, 5);
+      if (!steps.length) {
+        alert("대응 절차를 한 줄 이상 입력해주세요.");
+        return;
+      }
+      guide.title = title;
+      guide.urgency = String(deskResponseGuideUrgencySelectEl && deskResponseGuideUrgencySelectEl.value || "보통");
+      guide.tagId = String(deskResponseGuideTagSelectEl && deskResponseGuideTagSelectEl.value || "schedule-check");
+      guide.keywords = String(deskResponseGuideKeywordsInputEl && deskResponseGuideKeywordsInputEl.value || "")
+        .split(/[,，\n]/)
+        .map(function(keyword) { return keyword.trim(); })
+        .filter(Boolean);
+      guide.steps = steps;
+      saveDeskResponseGuidesLocal_();
+      state.desk.responseCenter.situationText = guide.title;
+      if (deskResponseSituationInputEl) deskResponseSituationInputEl.value = guide.title;
+      renderDeskResponseCenter_();
+    }
+
+    function addDeskResponseGuide_() {
+      ensureDeskResponseGuidesLoaded_();
+      var guide = normalizeDeskResponseGuide_({
+        title: "새 상황 가이드",
+        urgency: "보통",
+        tagId: (state.desk.messageTemplates.tags[0] || {}).id || "schedule-check",
+        keywords: ["새 상황"],
+        steps: [
+          "상황을 정확히 확인",
+          "담당자 또는 관련 메뉴에서 기준 정보 확인",
+          "확정 전에는 단정 안내 금지",
+          "필요 시 실무자 단톡방에 공유",
+          "처리 결과를 업무일지에 기록"
+        ]
+      });
+      state.desk.responseCenter.guides.unshift(guide);
+      state.desk.responseCenter.selectedGuideId = guide.id;
+      saveDeskResponseGuidesLocal_();
+      renderDeskResponseCenter_();
+      if (deskResponseGuideTitleInputEl) deskResponseGuideTitleInputEl.focus();
+    }
+
+    function deleteDeskResponseGuide_() {
+      ensureDeskResponseGuidesLoaded_();
+      var guide = findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId);
+      if (!guide) return;
+      if ((state.desk.responseCenter.guides || []).length <= 1) {
+        alert("상황 가이드는 최소 1개가 필요합니다.");
+        return;
+      }
+      if (!confirm("이 상황 가이드를 삭제할까요?")) return;
+      state.desk.responseCenter.guides = (state.desk.responseCenter.guides || []).filter(function(item) {
+        return item.id !== guide.id;
+      });
+      state.desk.responseCenter.selectedGuideId = (state.desk.responseCenter.guides[0] || {}).id || "";
+      saveDeskResponseGuidesLocal_();
+      renderDeskResponseCenter_();
     }
 
     function normalizeDeskMessageTag_(item, index) {
@@ -20281,12 +20734,14 @@
     function renderDeskResponseCenter_() {
       ensureDeskMessageTemplatesLoaded_();
       ensureDeskMessageTemplatesRemoteLoaded_();
+      ensureDeskResponseGuidesLoaded_();
+      ensureDeskResponseGuidesRemoteLoaded_();
       if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
       if (deskResponseSituationInputEl && document.activeElement !== deskResponseSituationInputEl) {
         deskResponseSituationInputEl.value = state.desk.responseCenter.situationText || "";
       }
       var match = matchDeskResponseGuide_(state.desk.responseCenter.situationText || "");
-      var guide = match.guide || getDefaultDeskResponseGuides_()[0];
+      var guide = match.guide || getDeskResponseGuides_()[0];
       state.desk.responseCenter.matchedGuideId = guide.id;
       state.desk.responseCenter.matchConfidence = match.confidence;
       state.desk.responseCenter.matchCandidates = match.candidates || [];
@@ -20313,6 +20768,7 @@
           '</article>';
         }).join("");
       }
+      renderDeskResponseGuideManager_();
       refreshLucideIcons_();
     }
 
@@ -26766,6 +27222,12 @@
             if (deskResponseSituationInputEl) deskResponseSituationInputEl.focus();
             return;
           }
+          var guideBtn = event.target.closest("[data-desk-response-guide]");
+          if (guideBtn) {
+            state.desk.responseCenter.selectedGuideId = guideBtn.getAttribute("data-desk-response-guide") || "";
+            renderDeskResponseGuideManager_();
+            return;
+          }
           var actionBtn = event.target.closest("[data-desk-response-action]");
           if (!actionBtn) return;
           var action = actionBtn.getAttribute("data-desk-response-action") || "";
@@ -26782,6 +27244,15 @@
             setTimeout(renderDeskResponseCenter_, 900);
           });
         });
+      }
+      if (deskResponseNewGuideBtnEl) {
+        deskResponseNewGuideBtnEl.addEventListener("click", addDeskResponseGuide_);
+      }
+      if (deskResponseDeleteGuideBtnEl) {
+        deskResponseDeleteGuideBtnEl.addEventListener("click", deleteDeskResponseGuide_);
+      }
+      if (deskResponseSaveGuideBtnEl) {
+        deskResponseSaveGuideBtnEl.addEventListener("click", saveDeskResponseGuideFromEditor_);
       }
 
       if (deskTemplateSearchInputEl) {
