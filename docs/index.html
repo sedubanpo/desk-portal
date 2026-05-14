@@ -2574,18 +2574,18 @@
       border: 1px solid #c9ddd3;
       border-radius: 12px;
       background: linear-gradient(135deg, #fbfefd 0%, #f5fbf8 56%, #fbf8ff 100%);
-      min-height: 246px;
+      min-height: 232px;
       padding: 22px 28px 20px;
       display: grid;
-      grid-template-columns: minmax(390px, 430px) minmax(0, 1fr);
-      gap: 24px;
+      grid-template-columns: minmax(390px, 420px) minmax(0, 1fr);
+      gap: 26px;
       align-items: center;
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 12px 30px rgba(15, 60, 46, 0.05);
     }
     .desk-helper-zone {
       display: grid;
-      grid-template-columns: 168px minmax(190px, 1fr);
-      gap: 16px;
+      grid-template-columns: 184px minmax(176px, 1fr);
+      gap: 18px;
       align-items: center;
     }
     .desk-helper-card {
@@ -2595,7 +2595,7 @@
       border-radius: 10px;
       padding: 18px 20px;
       box-shadow: 0 12px 24px rgba(15, 60, 46, 0.08);
-      min-height: 120px;
+      min-height: 112px;
       min-width: 0;
     }
     .desk-helper-card::before {
@@ -2621,7 +2621,7 @@
     .desk-helper-card strong {
       display: block;
       color: #0d684d;
-      font-size: 22px;
+      font-size: 21px;
       line-height: 1.25;
       font-weight: 950;
       margin-bottom: 8px;
@@ -2636,185 +2636,28 @@
     }
     .desk-mascot {
       position: relative;
-      width: 154px;
-      height: 184px;
+      width: 178px;
+      height: 188px;
       margin: 0 auto;
     }
-    .desk-mascot .antenna {
-      position: absolute;
-      left: 92px;
-      top: 0;
-      width: 28px;
-      height: 38px;
-      border-left: 5px solid #214469;
-      transform: rotate(22deg);
-      transform-origin: bottom;
-      z-index: 2;
+    .desk-mascot svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 16px 16px rgba(20, 54, 86, 0.12));
     }
-    .desk-mascot .antenna::after {
-      content: "";
-      position: absolute;
-      right: -13px;
-      top: -7px;
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      background: radial-gradient(circle at 30% 30%, #8fd5ff, #2b74b9 62%, #12335b);
-      border: 3px solid #102b4e;
+    .desk-mascot .mascot-blink {
+      transform-origin: center;
     }
-    .desk-mascot .head {
-      position: absolute;
-      left: 20px;
-      top: 28px;
-      width: 112px;
-      height: 104px;
-      border-radius: 48% 48% 46% 46%;
-      background: radial-gradient(circle at 50% 64%, #ffffff 0 54%, transparent 55%),
-                  linear-gradient(145deg, #2d75b8 0%, #71b8ef 48%, #1f4d87 100%);
-      border: 4px solid #15395d;
-      box-shadow: inset 0 5px 0 rgba(255,255,255,0.45), 0 14px 20px rgba(17, 44, 73, 0.16);
-      z-index: 3;
+    .desk-mascot .mascot-think-mark {
+      opacity: 0;
+      transform-origin: center;
     }
-    .desk-mascot .ear {
-      position: absolute;
-      top: 72px;
-      width: 24px;
-      height: 46px;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #2f6da7, #1f426c);
-      border: 4px solid #15395d;
-      z-index: 2;
-    }
-    .desk-mascot .ear.left { left: 8px; }
-    .desk-mascot .ear.right { right: 7px; }
-    .desk-mascot .face-dot {
-      position: absolute;
-      top: 74px;
-      width: 11px;
-      height: 18px;
-      border-radius: 999px;
-      background: #10233d;
-      z-index: 5;
-    }
-    .desk-mascot .face-dot.left { left: 57px; }
-    .desk-mascot .face-dot.right { left: 94px; }
-    .desk-mascot .cheek {
-      position: absolute;
-      top: 101px;
-      width: 21px;
-      height: 12px;
-      border-radius: 999px;
-      background: #ffd0c4;
-      z-index: 5;
-    }
-    .desk-mascot .cheek.left { left: 37px; }
-    .desk-mascot .cheek.right { left: 106px; }
-    .desk-mascot .mouth {
-      position: absolute;
-      left: 74px;
-      top: 99px;
-      width: 20px;
-      height: 13px;
-      border-radius: 0 0 16px 16px;
-      background: #e45858;
-      border: 3px solid #10233d;
-      border-top: 0;
-      z-index: 6;
-    }
-    .desk-mascot .mic {
-      position: absolute;
-      left: 8px;
-      top: 106px;
-      width: 55px;
-      height: 25px;
-      border-left: 4px solid #15395d;
-      border-bottom: 4px solid #15395d;
-      border-radius: 0 0 0 22px;
-      z-index: 5;
-    }
-    .desk-mascot .mic::after {
-      content: "";
-      position: absolute;
-      right: -9px;
-      bottom: -7px;
-      width: 12px;
-      height: 8px;
-      border-radius: 999px;
-      background: #15395d;
-    }
-    .desk-mascot .body {
-      position: absolute;
-      left: 46px;
-      top: 122px;
-      width: 64px;
-      height: 50px;
-      border-radius: 18px 18px 12px 12px;
-      background: linear-gradient(180deg, #e8f1f8, #c8d9e8);
-      border: 4px solid #15395d;
-      z-index: 2;
-    }
-    .desk-mascot .body::before {
-      content: "S";
-      position: absolute;
-      left: 20px;
-      top: 12px;
-      width: 26px;
-      height: 26px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, #16a34a, #2878bc);
-      color: #fff;
-      display: grid;
-      place-items: center;
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 18px;
-      font-weight: 900;
-    }
-    .desk-mascot .arm {
-      position: absolute;
-      width: 34px;
-      height: 14px;
-      background: #f9fbfd;
-      border: 4px solid #15395d;
-      border-radius: 999px;
-      z-index: 2;
-    }
-    .desk-mascot .arm.left { left: 24px; top: 136px; transform: rotate(28deg); }
-    .desk-mascot .arm.right { right: 20px; top: 120px; transform: rotate(-56deg); }
-    .desk-mascot .finger {
-      position: absolute;
-      right: 7px;
-      top: 91px;
-      width: 15px;
-      height: 34px;
-      background: #fff;
-      border: 4px solid #15395d;
-      border-radius: 999px;
-      transform: rotate(-24deg);
-      z-index: 4;
-    }
-    .desk-mascot .spark {
-      position: absolute;
-      right: 0;
-      top: 46px;
-      width: 32px;
-      height: 42px;
-      z-index: 1;
-    }
-    .desk-mascot .spark span {
-      position: absolute;
-      width: 5px;
-      height: 20px;
-      border-radius: 999px;
-      background: #20c786;
-    }
-    .desk-mascot .spark span:nth-child(1) { left: 5px; top: 12px; transform: rotate(16deg); }
-    .desk-mascot .spark span:nth-child(2) { left: 22px; top: 22px; transform: rotate(62deg); }
-    .desk-mascot .spark span:nth-child(3) { left: 20px; top: 0; transform: rotate(24deg); }
     .desk-mascot .shadow {
       position: absolute;
-      left: 18px;
+      left: 16px;
       bottom: 0;
-      width: 118px;
+      width: 138px;
       height: 16px;
       border-radius: 50%;
       background: rgba(17, 44, 73, 0.13);
@@ -2847,23 +2690,18 @@
     .desk-response-shell.is-thinking .desk-mascot .thought.two {
       animation-delay: 0.18s;
     }
-    .desk-response-shell.is-thinking .desk-mascot .face-dot {
-      height: 10px;
-      top: 82px;
-      transform: translateY(-2px);
+    .desk-response-shell.is-thinking .desk-mascot .mascot-blink {
+      transform: scaleY(0.45);
     }
-    .desk-response-shell.is-thinking .desk-mascot .mouth {
-      width: 13px;
-      height: 13px;
-      left: 78px;
-      top: 101px;
-      border-radius: 999px;
-      border-top: 3px solid #10233d;
-      background: #fff;
+    .desk-response-shell.is-thinking .desk-mascot .mascot-smile {
+      opacity: 0;
     }
-    .desk-response-shell.is-thinking .desk-mascot .finger,
-    .desk-response-shell.is-thinking .desk-mascot .spark {
-      opacity: 0.22;
+    .desk-response-shell.is-thinking .desk-mascot .mascot-thinking-mouth {
+      opacity: 1;
+    }
+    .desk-response-shell.is-thinking .desk-mascot .mascot-think-mark {
+      opacity: 1;
+      animation: deskThoughtFloat 1s ease-in-out infinite;
     }
     @keyframes deskThoughtFloat {
       0%, 100% { transform: translateY(0); opacity: 0.72; }
@@ -2872,12 +2710,12 @@
     .desk-response-bubble {
       position: relative;
       border: 4px solid transparent;
-      border-radius: 28px;
+      border-radius: 30px;
       background:
         linear-gradient(#fff, #fff) padding-box,
         linear-gradient(120deg, #22c17b 0%, #4aa3e5 52%, #8b5cf6 100%) border-box;
-      min-height: 168px;
-      padding: 34px 36px 54px 42px;
+      min-height: 174px;
+      padding: 34px 34px 54px 46px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 28px;
@@ -2891,23 +2729,23 @@
     .desk-response-bubble::before {
       content: "";
       position: absolute;
-      left: -28px;
-      top: 74px;
-      width: 38px;
-      height: 48px;
+      left: -38px;
+      top: 72px;
+      width: 46px;
+      height: 56px;
       background: linear-gradient(135deg, #22c17b 0%, #4aa3e5 100%);
-      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      clip-path: polygon(0 50%, 100% 8%, 100% 92%);
       z-index: 0;
     }
     .desk-response-bubble::after {
       content: "";
       position: absolute;
-      left: -20px;
-      top: 82px;
-      width: 30px;
-      height: 32px;
+      left: -27px;
+      top: 81px;
+      width: 36px;
+      height: 38px;
       background: #fff;
-      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+      clip-path: polygon(0 50%, 100% 9%, 100% 91%);
       z-index: 1;
     }
     .desk-response-input {
@@ -2923,9 +2761,14 @@
       font-family: inherit;
       background: transparent;
     }
+    .desk-response-input.is-example {
+      color: #6f7f92;
+      opacity: 0.62;
+      font-weight: 850;
+    }
     .desk-response-input::placeholder {
-      color: #191f2c;
-      opacity: 0.95;
+      color: #7b8999;
+      opacity: 0.56;
     }
     .desk-response-example {
       color: #8190a3;
@@ -3033,11 +2876,12 @@
       border: 1px solid #c9ddd3;
       border-radius: 12px;
       background: linear-gradient(180deg, #fff 0%, #fbfffd 100%);
-      padding: 18px 20px;
+      padding: 0;
       display: grid;
-      grid-template-columns: 264px minmax(0, 1fr);
+      grid-template-columns: 280px minmax(0, 1fr);
       align-items: center;
-      min-height: 104px;
+      min-height: 116px;
+      overflow: hidden;
     }
     .desk-response-summary-head {
       display: grid;
@@ -3045,7 +2889,9 @@
       gap: 14px;
       align-items: center;
       border-right: 1px solid #d6e5de;
-      padding-right: 20px;
+      align-self: stretch;
+      padding: 18px 20px;
+      background: linear-gradient(180deg, #fbfffd 0%, #f6fcf9 100%);
     }
     .desk-response-summary-icon {
       width: 52px;
@@ -3110,22 +2956,42 @@
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 0;
+      align-self: stretch;
     }
     .desk-response-step {
       position: relative;
-      min-height: 66px;
-      padding: 0 18px;
+      min-height: 114px;
+      padding: 22px 18px 18px;
       display: grid;
-      grid-template-columns: 28px minmax(0, 1fr);
-      gap: 12px;
-      align-items: center;
+      grid-template-columns: 1fr;
+      gap: 11px;
+      align-content: center;
+      justify-items: start;
       color: #1f3144;
       font-size: 13px;
       font-weight: 850;
       line-height: 1.45;
+      background:
+        linear-gradient(90deg, rgba(13,104,77,0.08), rgba(13,104,77,0)) 0 0 / 100% 3px no-repeat;
     }
     .desk-response-step:not(:last-child) {
       border-right: 1px solid #d8e5df;
+    }
+    .desk-response-step::after {
+      content: "";
+      position: absolute;
+      top: 34px;
+      right: -7px;
+      width: 14px;
+      height: 14px;
+      border-top: 1px solid #d8e5df;
+      border-right: 1px solid #d8e5df;
+      background: #fff;
+      transform: rotate(45deg);
+      z-index: 2;
+    }
+    .desk-response-step:last-child::after {
+      display: none;
     }
     .desk-response-step b,
     .desk-response-step strong {
@@ -14607,22 +14473,49 @@
               <section class="desk-response-hero">
                 <div class="desk-helper-zone">
                   <div class="desk-mascot" aria-hidden="true">
-                    <span class="antenna"></span>
-                    <span class="ear left"></span>
-                    <span class="ear right"></span>
-                    <span class="head"></span>
-                    <span class="face-dot left"></span>
-                    <span class="face-dot right"></span>
-                    <span class="cheek left"></span>
-                    <span class="cheek right"></span>
-                    <span class="mouth"></span>
-                    <span class="mic"></span>
-                    <span class="body"></span>
-                    <span class="arm left"></span>
-                    <span class="arm right"></span>
-                    <span class="finger"></span>
-                    <span class="spark one"></span>
-                    <span class="spark two"></span>
+                    <svg viewBox="0 0 178 188" role="img" focusable="false">
+                      <defs>
+                        <linearGradient id="deskMascotBlue" x1="22" y1="16" x2="130" y2="144" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stop-color="#83c7f4"/>
+                          <stop offset="0.48" stop-color="#2d78bc"/>
+                          <stop offset="1" stop-color="#173f70"/>
+                        </linearGradient>
+                        <linearGradient id="deskMascotBadge" x1="76" y1="132" x2="108" y2="163" gradientUnits="userSpaceOnUse">
+                          <stop offset="0" stop-color="#17b978"/>
+                          <stop offset="1" stop-color="#2476bd"/>
+                        </linearGradient>
+                        <radialGradient id="deskMascotAntenna" cx="35%" cy="28%" r="70%">
+                          <stop offset="0" stop-color="#9ee7ff"/>
+                          <stop offset="0.58" stop-color="#3b86cc"/>
+                          <stop offset="1" stop-color="#14345d"/>
+                        </radialGradient>
+                      </defs>
+                      <ellipse cx="86" cy="174" rx="58" ry="10" fill="#122b4a" opacity="0.12"/>
+                      <path d="M102 33 L117 6" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <circle cx="122" cy="5" r="12" fill="url(#deskMascotAntenna)" stroke="#12345b" stroke-width="4"/>
+                      <path d="M36 78 C20 80 16 92 18 113 C20 133 32 138 42 128" fill="#245b93" stroke="#12345b" stroke-width="5"/>
+                      <path d="M138 78 C154 80 158 92 156 113 C154 133 142 138 132 128" fill="#245b93" stroke="#12345b" stroke-width="5"/>
+                      <path d="M29 77 C31 37 63 20 91 25 C123 30 143 52 142 85 C141 119 119 137 86 137 C52 137 28 114 29 77Z" fill="url(#deskMascotBlue)" stroke="#12345b" stroke-width="5" stroke-linejoin="round"/>
+                      <path d="M45 82 C46 57 64 47 88 48 C113 49 128 63 128 85 C128 112 110 125 86 125 C61 125 44 109 45 82Z" fill="#ffffff"/>
+                      <ellipse class="mascot-blink" cx="69" cy="82" rx="6" ry="11" fill="#122039"/>
+                      <ellipse class="mascot-blink" cx="103" cy="82" rx="6" ry="11" fill="#122039"/>
+                      <ellipse cx="52" cy="105" rx="11" ry="7" fill="#ffc8bc"/>
+                      <ellipse cx="120" cy="105" rx="11" ry="7" fill="#ffc8bc"/>
+                      <path class="mascot-smile" d="M78 101 C80 112 94 112 97 101" fill="#ec5457" stroke="#122039" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle class="mascot-thinking-mouth" cx="87" cy="105" r="6" fill="#fff" stroke="#122039" stroke-width="4" opacity="0"/>
+                      <path d="M25 117 C23 134 35 146 55 152" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M32 139 C44 147 56 151 69 153" fill="#fff" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M139 112 C142 126 139 141 127 151" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M135 116 L151 139" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M149 140 L158 153" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <rect x="57" y="126" width="59" height="48" rx="16" fill="#eaf2f8" stroke="#12345b" stroke-width="5"/>
+                      <rect x="76" y="139" width="28" height="28" rx="7" fill="url(#deskMascotBadge)"/>
+                      <text x="90" y="160" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#fff">S</text>
+                      <path d="M37 112 C24 111 18 106 14 96" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <path d="M18 97 C13 99 10 104 9 111" fill="none" stroke="#12345b" stroke-width="5" stroke-linecap="round"/>
+                      <circle class="mascot-think-mark" cx="151" cy="37" r="5" fill="#25c383"/>
+                      <path class="mascot-think-mark" d="M144 58 L138 69 M158 58 L168 64 M160 43 L171 37" stroke="#25c383" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
                     <span class="thought one"></span>
                     <span class="thought two"></span>
                     <span class="shadow"></span>
@@ -14633,9 +14526,9 @@
                   </div>
                 </div>
                 <div class="desk-response-bubble">
-                  <textarea id="deskResponseSituationInput" class="desk-response-input" placeholder="학생이 시간표에 없는데 등원했습니다">학생이 시간표에 없는데 등원했습니다</textarea>
+                  <textarea id="deskResponseSituationInput" class="desk-response-input" placeholder="상황을 짧게 적어주세요"></textarea>
                   <div class="desk-response-actions">
-                    <span>예: 학부모 일정 변경 요청, 강사 상담 자료 요청, 지원자 면접 조율</span>
+                    <span>예시: 학부모 일정 변경 요청, 강사 상담 자료 요청, 지원자 면접 조율</span>
                     <div>
                       <button class="desk-response-reset" id="deskResponseResetBtn" type="button">초기화</button>
                       <button class="desk-response-search-btn" id="deskResponseFindBtn" type="button"><i data-lucide="sparkles"></i><span class="desk-search-label">대응 찾기</span><span class="desk-loading-dots" aria-hidden="true"><i></i><i></i><i></i></span></button>
@@ -15801,6 +15694,7 @@
     var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
     var DESK_SHARED_WORKER_NAME = "공동업무";
     var DESK_ROUTINE_TAB_KEY = "__routine__";
+    var DESK_RESPONSE_EXAMPLE_TEXT = "학생이 시간표에 없는데 등원했습니다";
     var DESK_WORKER_NAME_ALIASES = {
       "이미현": "이민현"
     };
@@ -15939,7 +15833,7 @@
           keywordFilter: ""
         },
         responseCenter: {
-          situationText: "학생이 시간표에 없는데 등원했습니다",
+          situationText: "",
           lastStatus: "가이드 동기화 정상",
           matchedGuideId: "schedule-missing",
           matchConfidence: 1,
@@ -20458,6 +20352,32 @@
       if (deskResponseGuideStepsInputEl && document.activeElement !== deskResponseGuideStepsInputEl) deskResponseGuideStepsInputEl.value = (selected.steps || []).join("\n");
     }
 
+    function isDeskResponseExampleVisible_() {
+      return !!(deskResponseSituationInputEl && deskResponseSituationInputEl.classList.contains("is-example"));
+    }
+
+    function setDeskResponseInputDisplay_(forceExample) {
+      if (!deskResponseSituationInputEl) return;
+      var text = String(state.desk.responseCenter.situationText || "").trim();
+      var shouldShowExample = forceExample || (!text && document.activeElement !== deskResponseSituationInputEl);
+      if (shouldShowExample) {
+        deskResponseSituationInputEl.value = "예시: " + DESK_RESPONSE_EXAMPLE_TEXT;
+        deskResponseSituationInputEl.classList.add("is-example");
+        deskResponseSituationInputEl.setAttribute("aria-label", "상황 입력 예시");
+        return;
+      }
+      deskResponseSituationInputEl.classList.remove("is-example");
+      deskResponseSituationInputEl.setAttribute("aria-label", "상황 입력");
+      deskResponseSituationInputEl.value = text;
+    }
+
+    function clearDeskResponseExampleInput_() {
+      if (!isDeskResponseExampleVisible_()) return;
+      deskResponseSituationInputEl.value = "";
+      deskResponseSituationInputEl.classList.remove("is-example");
+      deskResponseSituationInputEl.setAttribute("aria-label", "상황 입력");
+    }
+
     function saveDeskResponseGuideFromEditor_() {
       ensureDeskResponseGuidesLoaded_();
       var guide = findDeskResponseGuide_(state.desk.responseCenter.selectedGuideId);
@@ -20486,7 +20406,10 @@
       guide.steps = steps;
       saveDeskResponseGuidesLocal_();
       state.desk.responseCenter.situationText = guide.title;
-      if (deskResponseSituationInputEl) deskResponseSituationInputEl.value = guide.title;
+      if (deskResponseSituationInputEl) {
+        deskResponseSituationInputEl.classList.remove("is-example");
+        deskResponseSituationInputEl.value = guide.title;
+      }
       renderDeskResponseCenter_();
     }
 
@@ -20737,9 +20660,7 @@
       ensureDeskResponseGuidesLoaded_();
       ensureDeskResponseGuidesRemoteLoaded_();
       if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
-      if (deskResponseSituationInputEl && document.activeElement !== deskResponseSituationInputEl) {
-        deskResponseSituationInputEl.value = state.desk.responseCenter.situationText || "";
-      }
+      setDeskResponseInputDisplay_(false);
       var match = matchDeskResponseGuide_(state.desk.responseCenter.situationText || "");
       var guide = match.guide || getDeskResponseGuides_()[0];
       state.desk.responseCenter.matchedGuideId = guide.id;
@@ -20774,7 +20695,7 @@
 
     function runDeskResponseSearch_() {
       var panel = document.querySelector('[data-desk-panel="responseCenter"] .desk-response-shell');
-      state.desk.responseCenter.situationText = deskResponseSituationInputEl ? String(deskResponseSituationInputEl.value || "") : "";
+      state.desk.responseCenter.situationText = (deskResponseSituationInputEl && !isDeskResponseExampleVisible_()) ? String(deskResponseSituationInputEl.value || "") : "";
       if (panel) panel.classList.add("is-thinking");
       window.clearTimeout(state.desk.responseCenter.thinkingTimer);
       state.desk.responseCenter.thinkingTimer = window.setTimeout(function() {
@@ -27192,7 +27113,10 @@
       });
 
       if (deskResponseSituationInputEl) {
+        deskResponseSituationInputEl.addEventListener("focus", clearDeskResponseExampleInput_);
+        deskResponseSituationInputEl.addEventListener("click", clearDeskResponseExampleInput_);
         deskResponseSituationInputEl.addEventListener("input", function() {
+          deskResponseSituationInputEl.classList.remove("is-example");
           state.desk.responseCenter.situationText = String(deskResponseSituationInputEl.value || "");
         });
         deskResponseSituationInputEl.addEventListener("keydown", function(event) {
@@ -27204,7 +27128,7 @@
       if (deskResponseResetBtnEl) {
         deskResponseResetBtnEl.addEventListener("click", function() {
           state.desk.responseCenter.situationText = "";
-          if (deskResponseSituationInputEl) deskResponseSituationInputEl.value = "";
+          setDeskResponseInputDisplay_(true);
         });
       }
       if (deskResponseFindBtnEl) {
@@ -27218,6 +27142,7 @@
           var situationBtn = event.target.closest("[data-desk-response-situation]");
           if (situationBtn) {
             state.desk.responseCenter.situationText = situationBtn.getAttribute("data-desk-response-situation") || "";
+            if (deskResponseSituationInputEl) deskResponseSituationInputEl.classList.remove("is-example");
             renderDeskResponseCenter_();
             if (deskResponseSituationInputEl) deskResponseSituationInputEl.focus();
             return;
