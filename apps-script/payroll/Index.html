@@ -2984,6 +2984,22 @@
       background: #fff7ed;
       color: #c2410c;
     }
+    .desk-response-log-meta .status {
+      background: #edf7f4;
+      color: #0d684d;
+    }
+    .desk-response-log-meta .status.reviewing {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+    .desk-response-log-meta .status.done {
+      background: #f0fdf4;
+      color: #15803d;
+    }
+    .desk-response-log-meta .status.ignored {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
     .desk-response-log-actions {
       display: flex;
       gap: 7px;
@@ -15926,6 +15942,7 @@
     var DESK_MESSAGE_TEMPLATES_STORAGE_KEY = "desk_portal_message_templates_v1";
     var DESK_RESPONSE_GUIDES_STORAGE_KEY = "desk_portal_response_guides_v1";
     var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
+    var DESK_RESPONSE_LOG_STATUS_OPTIONS = ["미처리", "검토중", "가이드 반영", "무시"];
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -20496,15 +20513,31 @@
     function normalizeDeskResponseLog_(item, index) {
       item = item || {};
       var text = String(item.text || item.query || "").trim();
+      var confidence = Math.max(0, Math.min(1, Number(item.confidence || 0)));
+      var status = normalizeDeskResponseLogStatus_(item.status || item.reviewStatus || (confidence >= 0.28 ? "가이드 반영" : "미처리"));
       return {
         id: String(item.id || buildDeskShiftId_("responseLog", Date.now(), index || 0, Math.random().toString(36).slice(2))).trim(),
         text: text,
         matchedGuideId: String(item.matchedGuideId || "").trim(),
         matchedTitle: String(item.matchedTitle || "").trim(),
-        confidence: Math.max(0, Math.min(1, Number(item.confidence || 0))),
+        confidence: confidence,
+        status: status,
         createdAt: String(item.createdAt || new Date().toISOString()).trim(),
         source: String(item.source || "응대 센터").trim()
       };
+    }
+
+    function normalizeDeskResponseLogStatus_(status) {
+      var text = String(status || "").trim();
+      return DESK_RESPONSE_LOG_STATUS_OPTIONS.indexOf(text) >= 0 ? text : "미처리";
+    }
+
+    function getDeskResponseLogStatusClass_(status) {
+      var safeStatus = normalizeDeskResponseLogStatus_(status);
+      if (safeStatus === "검토중") return "reviewing";
+      if (safeStatus === "가이드 반영") return "done";
+      if (safeStatus === "무시") return "ignored";
+      return "";
     }
 
     function mergeDeskResponseLogs_(primary, secondary) {
@@ -20597,6 +20630,24 @@
         });
     }
 
+    function updateDeskResponseLogStatus_(id, status) {
+      var safeId = String(id || "").trim();
+      var safeStatus = normalizeDeskResponseLogStatus_(status);
+      if (!safeId) return;
+      ensureDeskResponseLogsLoaded_();
+      var updated = null;
+      state.desk.responseCenter.logs = (state.desk.responseCenter.logs || []).map(function(item) {
+        if (item.id !== safeId) return item;
+        updated = normalizeDeskResponseLog_(Object.assign({}, item, {
+          status: safeStatus
+        }));
+        return updated;
+      });
+      if (!updated) return;
+      saveDeskResponseLogsLocal_(updated);
+      renderDeskResponseAdminDashboard_();
+    }
+
     function recordDeskResponseQuestionLog_(text, match) {
       var query = String(text || "").trim();
       if (!query || query === DESK_RESPONSE_EXAMPLE_TEXT || query.indexOf("예시:") === 0) return;
@@ -20610,6 +20661,7 @@
         matchedGuideId: guide && guide.id,
         matchedTitle: guide && guide.title,
         confidence: match && match.confidence,
+        status: Number(match && match.confidence || 0) >= 0.28 ? "가이드 반영" : "미처리",
         createdAt: new Date().toISOString()
       });
       logs.unshift(log);
@@ -20803,7 +20855,10 @@
       }
       if (!isOpen) return;
       var now = Date.now();
-      var noMatchCount = logs.filter(function(item) { return Number(item.confidence || 0) < 0.28; }).length;
+      var noMatchCount = logs.filter(function(item) {
+        var status = normalizeDeskResponseLogStatus_(item.status);
+        return status === "미처리" || status === "검토중";
+      }).length;
       var recentCount = logs.filter(function(item) {
         var time = new Date(item.createdAt || 0).getTime();
         return time && now - time <= 7 * 24 * 60 * 60 * 1000;
@@ -20824,16 +20879,25 @@
           deskResponseLogListEl.innerHTML = logs.slice(0, 40).map(function(item) {
             var confidence = Math.round(Number(item.confidence || 0) * 100);
             var needsGuide = confidence < 28;
+            var status = normalizeDeskResponseLogStatus_(item.status);
+            var statusClass = getDeskResponseLogStatusClass_(status);
+            var statusButtons = DESK_RESPONSE_LOG_STATUS_OPTIONS.filter(function(option) {
+              return option !== status;
+            }).map(function(option) {
+              return '<button type="button" data-desk-response-log-status="' + escapeHtml(item.id) + '" data-desk-response-log-next="' + escapeHtml(option) + '">' + escapeHtml(option) + '</button>';
+            }).join("");
             return '<article class="desk-response-log-row">' +
               '<strong>' + escapeHtml(item.text) + '</strong>' +
               '<div class="desk-response-log-meta">' +
                 '<span class="' + (needsGuide ? 'warn' : '') + '">매칭 ' + escapeHtml(String(confidence)) + '%</span>' +
+                '<span class="status ' + escapeHtml(statusClass) + '">' + escapeHtml(status) + '</span>' +
                 '<span>' + escapeHtml(item.matchedTitle || "가이드 없음") + '</span>' +
                 '<span>' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
               '</div>' +
               '<div class="desk-response-log-actions">' +
                 '<button class="primary" type="button" data-desk-response-log-guide="' + escapeHtml(item.id) + '">가이드 만들기</button>' +
                 '<button type="button" data-desk-response-log-replay="' + escapeHtml(item.id) + '">다시 검색</button>' +
+                statusButtons +
               '</div>' +
             '</article>';
           }).join("");
@@ -27754,6 +27818,15 @@
           if (logGuideBtn) {
             var logItem = findDeskResponseLog_(logGuideBtn.getAttribute("data-desk-response-log-guide") || "");
             createDeskResponseGuideFromText_(logItem && logItem.text || "");
+            if (logItem && logItem.id) updateDeskResponseLogStatus_(logItem.id, "가이드 반영");
+            return;
+          }
+          var logStatusBtn = event.target.closest("[data-desk-response-log-status]");
+          if (logStatusBtn) {
+            updateDeskResponseLogStatus_(
+              logStatusBtn.getAttribute("data-desk-response-log-status") || "",
+              logStatusBtn.getAttribute("data-desk-response-log-next") || ""
+            );
             return;
           }
           var logReplayBtn = event.target.closest("[data-desk-response-log-replay]");
