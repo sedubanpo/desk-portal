@@ -2948,6 +2948,49 @@
       overflow: auto;
       padding-right: 2px;
     }
+    .desk-response-group-list {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .desk-response-group-card {
+      border: 1px solid #cfe1d8;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #f7fffc 0%, #ffffff 100%);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .desk-response-group-card strong {
+      color: #102133;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 950;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .desk-response-group-card p {
+      margin: 0;
+      color: #50657a;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.45;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .desk-response-group-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .desk-response-group-meta span {
+      border-radius: 999px;
+      background: #eef5f1;
+      color: #40546a;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 900;
+    }
     .desk-response-log-row {
       border: 1px solid #dce8e2;
       border-radius: 10px;
@@ -14832,6 +14875,7 @@
                     <h4>최근 질문</h4>
                     <p>낮은 매칭 질문은 우선 가이드 후보로 검토하세요.</p>
                     <div class="desk-response-keyword-list" id="deskResponseKeywordList"></div>
+                    <div class="desk-response-group-list" id="deskResponseGroupList"></div>
                     <div class="desk-response-log-list" id="deskResponseLogList"></div>
                   </aside>
                   <section class="desk-guide-manager">
@@ -16480,6 +16524,7 @@
     var deskResponseLogNoMatchEl = document.getElementById("deskResponseLogNoMatch");
     var deskResponseLogRecentEl = document.getElementById("deskResponseLogRecent");
     var deskResponseKeywordListEl = document.getElementById("deskResponseKeywordList");
+    var deskResponseGroupListEl = document.getElementById("deskResponseGroupList");
     var deskResponseLogListEl = document.getElementById("deskResponseLogList");
     var deskResponseSituationInputEl = document.getElementById("deskResponseSituationInput");
     var deskResponseResetBtnEl = document.getElementById("deskResponseResetBtn");
@@ -20844,6 +20889,77 @@
       }).slice(0, 8);
     }
 
+    function getDeskResponseLogGroupTokens_(log) {
+      var seen = {};
+      return tokenizeDeskResponseText_(log && log.text || "").filter(function(token) {
+        if (seen[token]) return false;
+        seen[token] = true;
+        return true;
+      }).slice(0, 8);
+    }
+
+    function getDeskResponseLogGroupOverlap_(aTokens, bTokens) {
+      var a = aTokens || [];
+      var b = bTokens || [];
+      if (!a.length || !b.length) return 0;
+      var bMap = {};
+      b.forEach(function(token) { bMap[token] = true; });
+      var shared = a.filter(function(token) { return !!bMap[token]; }).length;
+      return shared / Math.max(1, Math.min(a.length, b.length));
+    }
+
+    function getDeskResponseLogGroups_(logs) {
+      var groups = [];
+      (logs || []).slice(0, 140).forEach(function(log) {
+        if (!log || !log.text) return;
+        var tokens = getDeskResponseLogGroupTokens_(log);
+        if (tokens.length < 2) return;
+        var group = groups.find(function(candidate) {
+          return getDeskResponseLogGroupOverlap_(tokens, candidate.tokens) >= 0.5;
+        });
+        if (!group) {
+          group = {
+            id: tokens.slice(0, 5).join("__"),
+            tokens: tokens,
+            items: [],
+            representative: log
+          };
+          groups.push(group);
+        }
+        group.items.push(log);
+        if (String(log.createdAt || "") > String((group.representative && group.representative.createdAt) || "")) {
+          group.representative = log;
+        }
+      });
+      return groups.map(function(group) {
+        var pendingCount = group.items.filter(function(item) {
+          var status = normalizeDeskResponseLogStatus_(item.status);
+          return status === "미처리" || status === "검토중";
+        }).length;
+        var lowMatchCount = group.items.filter(function(item) {
+          return Number(item.confidence || 0) < 0.28;
+        }).length;
+        var labelTokens = group.tokens.slice(0, 4);
+        group.label = labelTokens.join(" · ");
+        group.pendingCount = pendingCount;
+        group.lowMatchCount = lowMatchCount;
+        group.priority = (group.items.length * 2) + pendingCount + lowMatchCount;
+        return group;
+      }).filter(function(group) {
+        return group.items.length >= 2;
+      }).sort(function(a, b) {
+        return b.priority - a.priority || String(b.representative.createdAt || "").localeCompare(String(a.representative.createdAt || ""));
+      }).slice(0, 5);
+    }
+
+    function findDeskResponseLogGroup_(id) {
+      var safeId = String(id || "").trim();
+      if (!safeId) return null;
+      return getDeskResponseLogGroups_(state.desk.responseCenter.logs || []).find(function(group) {
+        return group.id === safeId;
+      }) || null;
+    }
+
     function renderDeskResponseAdminDashboard_() {
       ensureDeskResponseLogsLoaded_();
       var logs = state.desk.responseCenter.logs || [];
@@ -20871,6 +20987,27 @@
         deskResponseKeywordListEl.innerHTML = keywords.length
           ? keywords.map(function(item) { return '<span>' + escapeHtml(item.token) + ' ' + escapeHtml(String(item.count)) + '</span>'; }).join("")
           : '<span>아직 반복 키워드가 없습니다.</span>';
+      }
+      if (deskResponseGroupListEl) {
+        var groups = getDeskResponseLogGroups_(logs);
+        deskResponseGroupListEl.innerHTML = groups.length
+          ? groups.map(function(group) {
+            var representative = group.representative || group.items[0] || {};
+            return '<article class="desk-response-group-card">' +
+              '<strong>' + escapeHtml(group.label || "비슷한 질문") + '</strong>' +
+              '<p>' + escapeHtml(representative.text || "") + '</p>' +
+              '<div class="desk-response-group-meta">' +
+                '<span>' + escapeHtml(String(group.items.length)) + '건 반복</span>' +
+                '<span>검토 ' + escapeHtml(String(group.pendingCount)) + '건</span>' +
+                '<span>낮은 매칭 ' + escapeHtml(String(group.lowMatchCount)) + '건</span>' +
+              '</div>' +
+              '<div class="desk-response-log-actions">' +
+                '<button class="primary" type="button" data-desk-response-group-guide="' + escapeHtml(group.id) + '">묶음 가이드</button>' +
+                '<button type="button" data-desk-response-group-replay="' + escapeHtml(group.id) + '">대표 검색</button>' +
+              '</div>' +
+            '</article>';
+          }).join("")
+          : '<div class="desk-template-empty">아직 반복되는 유사 질문 묶음이 없습니다.</div>';
       }
       if (deskResponseLogListEl) {
         if (!logs.length) {
@@ -27827,6 +27964,28 @@
               logStatusBtn.getAttribute("data-desk-response-log-status") || "",
               logStatusBtn.getAttribute("data-desk-response-log-next") || ""
             );
+            return;
+          }
+          var groupGuideBtn = event.target.closest("[data-desk-response-group-guide]");
+          if (groupGuideBtn) {
+            var guideGroup = findDeskResponseLogGroup_(groupGuideBtn.getAttribute("data-desk-response-group-guide") || "");
+            var guideText = guideGroup && guideGroup.representative && guideGroup.representative.text;
+            createDeskResponseGuideFromText_(guideText || "");
+            return;
+          }
+          var groupReplayBtn = event.target.closest("[data-desk-response-group-replay]");
+          if (groupReplayBtn) {
+            var replayGroup = findDeskResponseLogGroup_(groupReplayBtn.getAttribute("data-desk-response-group-replay") || "");
+            var replayText = replayGroup && replayGroup.representative && replayGroup.representative.text;
+            if (replayText) {
+              state.desk.responseCenter.situationText = replayText;
+              if (deskResponseSituationInputEl) {
+                deskResponseSituationInputEl.classList.remove("is-example");
+                deskResponseSituationInputEl.value = replayText;
+                deskResponseSituationInputEl.focus();
+              }
+              renderDeskResponseCenter_();
+            }
             return;
           }
           var logReplayBtn = event.target.closest("[data-desk-response-log-replay]");
