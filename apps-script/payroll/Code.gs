@@ -11,6 +11,7 @@ const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
+const DESK_DAILY_PENDING_TASKS_ROOT_PATH = "desk_portal/daily_pending_tasks";
 const DESK_SUPPLIES_ROOT_PATH = "desk_portal/supplies";
 const DESK_RECRUITING_ROOT_PATH = "desk_portal/hr_recruiting/applicants";
 const DESK_REPORT_CALENDAR_ID = "1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com";
@@ -774,6 +775,10 @@ function buildDeskDailyJournalPath_(dateKey) {
   return DESK_DAILY_JOURNAL_ROOT_PATH + "/" + dateKey;
 }
 
+function buildDeskDailyPendingTaskPath_(taskId) {
+  return DESK_DAILY_PENDING_TASKS_ROOT_PATH + "/" + String(taskId || "").trim();
+}
+
 function buildDeskSuppliesPath_() {
   return DESK_SUPPLIES_ROOT_PATH;
 }
@@ -1219,16 +1224,32 @@ function getDeskDailyJournalPendingTasks(payload) {
     });
     var hasWorkerFilter = !!Object.keys(workerKeys).length;
     var tasks = [];
-    for (var offset = 1; offset <= 60; offset += 1) {
+    var seen = {};
+
+    function addPendingTask_(rawTask, fallbackId, fallbackDateKey) {
+      var task = normalizeDeskDailyJournalTask_(rawTask, fallbackId, fallbackDateKey);
+      if (!task.id || seen[task.id]) return;
+      if (!task.dateKey || task.dateKey >= beforeDateKey || task.completed) return;
+      if (!isDeskDailyJournalSharedTask_(task) && (!hasWorkerFilter || !workerKeys[normalizeDeskWorkerNameKey_(task.worker)])) return;
+      seen[task.id] = true;
+      tasks.push(task);
+    }
+
+    var indexedTasks = firebaseRequestWithServiceAccount_("get", DESK_DAILY_PENDING_TASKS_ROOT_PATH) || {};
+    Object.keys(indexedTasks || {}).forEach(function(id) {
+      var item = indexedTasks[id];
+      if (!item || typeof item !== "object") return;
+      addPendingTask_(item, id, item.dateKey);
+    });
+
+    var legacyScanDays = Math.min(14, Math.max(0, Number(req.legacyScanDays || 7)));
+    for (var offset = 1; offset <= legacyScanDays; offset += 1) {
       var normalizedDateKey = shiftDeskDateKey_(beforeDateKey, -offset);
       if (!normalizedDateKey) continue;
       var dayData = firebaseRequestWithServiceAccount_("get", buildDeskDailyJournalPath_(normalizedDateKey) + "/tasks") || {};
       var tasksMap = dayData && typeof dayData === "object" ? dayData : {};
       Object.keys(tasksMap).forEach(function(id) {
-        var task = normalizeDeskDailyJournalTask_(tasksMap[id], id, normalizedDateKey);
-        if (task.completed) return;
-        if (!isDeskDailyJournalSharedTask_(task) && (!hasWorkerFilter || !workerKeys[normalizeDeskWorkerNameKey_(task.worker)])) return;
-        tasks.push(task);
+        addPendingTask_(tasksMap[id], id, normalizedDateKey);
       });
     }
     tasks.sort(compareDeskDailyJournalTasks_);
@@ -1236,6 +1257,15 @@ function getDeskDailyJournalPendingTasks(payload) {
   } catch (e) {
     return { success: false, message: "미해결 이월 업무 조회 오류: " + e.message };
   }
+}
+
+function syncDeskDailyJournalPendingTaskIndex_(task) {
+  if (!task || !task.id) return;
+  if (task.completed) {
+    firebaseRequestWithServiceAccount_("delete", buildDeskDailyPendingTaskPath_(task.id));
+    return;
+  }
+  firebaseRequestWithServiceAccount_("put", buildDeskDailyPendingTaskPath_(task.id), task);
 }
 
 function saveDeskDailyJournalTask(payload) {
@@ -1247,6 +1277,7 @@ function saveDeskDailyJournalTask(payload) {
     if (!task.worker) return { success: false, message: "업무 대상 근무자가 필요합니다." };
     if (!task.title) return { success: false, message: "업무 제목을 입력해 주세요." };
     firebaseRequestWithServiceAccount_("put", buildDeskDailyJournalPath_(dateKey) + "/tasks/" + task.id, task);
+    syncDeskDailyJournalPendingTaskIndex_(task);
     return { success: true, dateKey: dateKey, task: task };
   } catch (e) {
     return { success: false, message: "일일 업무 저장 오류: " + e.message };
@@ -1261,6 +1292,7 @@ function deleteDeskDailyJournalTask(payload) {
     if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
     if (!id) return { success: false, message: "삭제할 업무 ID가 없습니다." };
     firebaseRequestWithServiceAccount_("delete", buildDeskDailyJournalPath_(dateKey) + "/tasks/" + id);
+    firebaseRequestWithServiceAccount_("delete", buildDeskDailyPendingTaskPath_(id));
     return { success: true, dateKey: dateKey, id: id };
   } catch (e) {
     return { success: false, message: "일일 업무 삭제 오류: " + e.message };

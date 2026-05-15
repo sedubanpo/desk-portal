@@ -15933,6 +15933,7 @@
     var DESK_DAILY_CARRYOVER_SCAN_DAYS = 60;
     var DESK_DAILY_CARRYOVER_QUICK_SCAN_DAYS = 1;
     var DESK_DAILY_CARRYOVER_SCAN_BATCH_SIZE = 5;
+    var DESK_DAILY_CARRYOVER_LEGACY_SCAN_DAYS = 7;
     var DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS = 7000;
     var PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
     var PAYROLL_SUSPICION_CLASS_TYPES = [
@@ -15941,8 +15942,16 @@
       { key: "2:1", label: "2:1" }
     ];
     var PAYROLL_SUSPICION_HOUR_BUCKETS = [1, 2, 3, 4];
-    var DESK_DAILY_SERVER_POLL_MS = 3500;
+    var DESK_DAILY_SERVER_POLL_MS = 12000;
+    var DESK_DAILY_POLL_ERROR_BACKOFF_MS = 30000;
     var DESK_LIVE_FEED_HISTORY_DAYS = 14;
+    var DESK_LIVE_FEED_INITIAL_LOAD_DAYS = 3;
+    var DESK_LIVE_FEED_LOAD_DAYS_PER_PAGE = 3;
+    var RUN_SERVER_DEFAULT_TIMEOUT_MS = 25000;
+    var RUN_SERVER_WRITE_TIMEOUT_MS = 75000;
+    var RUN_SERVER_HEAVY_READ_TIMEOUT_MS = 45000;
+    var RUN_SERVER_READ_RETRY_ATTEMPTS = 2;
+    var RUN_SERVER_READ_RETRY_BASE_DELAY_MS = 700;
     var DESK_ROUTINE_TEMPLATE_KEY = "2099-12-31";
     var DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
     var DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
@@ -16143,6 +16152,7 @@
           liveFeedCollapsed: false,
           liveFeedPage: 1,
           liveFeedPageSize: 10,
+          liveFeedLoadedDays: DESK_LIVE_FEED_INITIAL_LOAD_DAYS,
           memoPage: 1,
           memoPageSize: 5,
           taskQueuePage: 1,
@@ -16799,6 +16809,8 @@
     var deskDailyJournalPollTimer_ = null;
     var deskDailyJournalPollInFlight_ = false;
     var deskDailyJournalRoutinePollTick_ = 0;
+    var deskDailyJournalNextPollAt_ = 0;
+    var deskDailyJournalPollErrorDelayMs_ = 0;
     var deskDailyMemoLocalSeq_ = 0;
     var entryGateEl = document.getElementById("entryGate");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
@@ -25234,7 +25246,8 @@
 
       var serverScan = withDeskTimeout_(runServer("getDeskDailyJournalPendingTasks", {
         beforeDateKey: safeDateKey,
-        workers: workerNames
+        workers: workerNames,
+        legacyScanDays: DESK_DAILY_CARRYOVER_LEGACY_SCAN_DAYS
       }), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS).then(function(res) {
         if (!res || res.success === false) {
           throw new Error(res && res.message ? res.message : "이월 업무 조회 실패");
@@ -25610,12 +25623,13 @@
       if (state.activeModule !== "expense") return;
       if (deskDailyJournalPollInFlight_) return;
       if ((state.desk.daily.syncStatus || "") === "pending") return;
+      if (deskDailyJournalNextPollAt_ && Date.now() < deskDailyJournalNextPollAt_) return;
       var liveDateKeys = getDeskLiveFeedDateKeys_();
       var liveDateKey = liveDateKeys[0] || getDeskLiveFeedDateKey_();
       var dateKey = state.desk.daily.dateKey || liveDateKey;
       var dateKeys = [liveDateKey];
       if (state.desk.activeTab === "dailyJournal" && dateKey !== liveDateKey) dateKeys.push(dateKey);
-      var loadDateKeys = liveDateKeys.slice();
+      var loadDateKeys = getDeskLiveFeedLoadDateKeys_();
       if (dateKey && loadDateKeys.indexOf(dateKey) === -1) loadDateKeys.push(dateKey);
       var unloadedDateKeys = loadDateKeys.filter(function(pollDateKey) {
         return pollDateKey && !state.desk.daily.loadedDates[pollDateKey];
@@ -25648,6 +25662,8 @@
       }, Promise.resolve())
         .then(function() {
           var afterSignature = buildDeskDailyJournalSignature_(dateKeys);
+          deskDailyJournalPollErrorDelayMs_ = 0;
+          deskDailyJournalNextPollAt_ = 0;
           setDeskDailySyncStatus_("idle");
           if (beforeSignature !== afterSignature && state.activeModule === "expense" && state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === viewKeyAtStart) {
             renderDeskDailyJournal_();
@@ -25658,6 +25674,11 @@
         })
         .catch(function(err) {
           console.warn("desk daily journal server polling failed", err && err.message ? err.message : err);
+          deskDailyJournalPollErrorDelayMs_ = Math.min(
+            DESK_DAILY_POLL_ERROR_BACKOFF_MS * 4,
+            deskDailyJournalPollErrorDelayMs_ ? deskDailyJournalPollErrorDelayMs_ * 2 : DESK_DAILY_POLL_ERROR_BACKOFF_MS
+          );
+          deskDailyJournalNextPollAt_ = Date.now() + deskDailyJournalPollErrorDelayMs_;
           setDeskDailySyncStatus_("error");
           renderDeskDailySyncStatus_();
         })
@@ -25854,6 +25875,7 @@
       if (state.desk.daily.liveFeedDateKey !== todayKey) {
         state.desk.daily.liveFeedDateKey = todayKey;
         state.desk.daily.liveFeedPage = 1;
+        state.desk.daily.liveFeedLoadedDays = DESK_LIVE_FEED_INITIAL_LOAD_DAYS;
       }
       return todayKey;
     }
@@ -25866,6 +25888,16 @@
         if (key) keys.push(key);
       }
       return keys;
+    }
+
+    function getDeskLiveFeedLoadDateKeys_() {
+      var dateKeys = getDeskLiveFeedDateKeys_();
+      var loadedDays = Math.max(
+        DESK_LIVE_FEED_INITIAL_LOAD_DAYS,
+        Number(state.desk.daily.liveFeedLoadedDays) || DESK_LIVE_FEED_INITIAL_LOAD_DAYS,
+        (Number(state.desk.daily.liveFeedPage) || 1) * DESK_LIVE_FEED_LOAD_DAYS_PER_PAGE
+      );
+      return dateKeys.slice(0, Math.min(dateKeys.length, loadedDays));
     }
 
     function isDeskLiveFeedDateKey_(dateKey) {
@@ -26080,10 +26112,11 @@
       if (liveTitleEl) liveTitleEl.textContent = "실시간 현황";
       if (liveSubEl) liveSubEl.textContent = "근무 이슈와 배정 업무 흐름을 한눈에 보여줍니다.";
       var dateKeys = getDeskLiveFeedDateKeys_();
-      var loadedDateKeys = dateKeys.filter(function(dateKey) {
+      var loadDateKeys = getDeskLiveFeedLoadDateKeys_();
+      var loadedDateKeys = loadDateKeys.filter(function(dateKey) {
         return !!state.desk.daily.loadedDates[dateKey];
       });
-      var missingDateKeys = dateKeys.filter(function(dateKey) {
+      var missingDateKeys = loadDateKeys.filter(function(dateKey) {
         return dateKey && !state.desk.daily.loadedDates[dateKey];
       });
       if (missingDateKeys.length && !shouldDeferPortalDataLoad_()) {
@@ -26103,6 +26136,10 @@
       if (deskLiveFeedPageEl) deskLiveFeedPageEl.textContent = state.desk.daily.liveFeedPage + " / " + totalPages;
       if (deskLiveFeedPrevBtnEl) deskLiveFeedPrevBtnEl.disabled = state.desk.daily.liveFeedPage <= 1;
       if (deskLiveFeedNextBtnEl) deskLiveFeedNextBtnEl.disabled = state.desk.daily.liveFeedPage >= totalPages;
+      if (deskLiveFeedMoreBtnEl) {
+        deskLiveFeedMoreBtnEl.textContent = loadDateKeys.length >= dateKeys.length ? "전체 현황 확인됨" : "이전 현황 더보기";
+        deskLiveFeedMoreBtnEl.disabled = loadDateKeys.length >= dateKeys.length;
+      }
       if (!deskLiveFeedBodyEl) return;
       if (isLiveFeedLoading) {
         deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">업무일지 데이터를 불러오는 중입니다.</div>';
@@ -29070,7 +29107,9 @@
       }
       if (deskLiveFeedMoreBtnEl) {
         deskLiveFeedMoreBtnEl.addEventListener("click", function() {
-          flashDeskButtonFeedback_(deskLiveFeedMoreBtnEl, "준비 중");
+          var currentDays = Number(state.desk.daily.liveFeedLoadedDays) || DESK_LIVE_FEED_INITIAL_LOAD_DAYS;
+          state.desk.daily.liveFeedLoadedDays = Math.min(DESK_LIVE_FEED_HISTORY_DAYS, currentDays + DESK_LIVE_FEED_LOAD_DAYS_PER_PAGE);
+          renderDeskLiveFeed_();
         });
       }
       if (deskLiveFeedToggleBtnEl) {
@@ -33772,18 +33811,63 @@
     }
 
     function runServer(fnName, payload) {
+      var attempts = shouldRetryRunServer_(fnName) ? RUN_SERVER_READ_RETRY_ATTEMPTS : 1;
+      var timeoutMs = getRunServerTimeoutMs_(fnName);
+      var attemptNo = 0;
+      function runAttempt() {
+        attemptNo += 1;
+        return runServerAttempt_(fnName, payload, timeoutMs).catch(function(err) {
+          if (attemptNo >= attempts) throw err;
+          return delay_(RUN_SERVER_READ_RETRY_BASE_DELAY_MS * attemptNo).then(runAttempt);
+        });
+      }
+      return runAttempt();
+    }
+
+    function runServerAttempt_(fnName, payload, timeoutMs) {
       if (!canUseGoogleScript()) {
         return apiJsonp(fnName, payload);
       }
       return new Promise(function(resolve, reject) {
+        var settled = false;
+        var timer = setTimeout(function() {
+          if (settled) return;
+          settled = true;
+          reject(new Error("API 호출 시간 초과"));
+        }, timeoutMs);
+        function settle(done, value) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          done(value);
+        }
         var runner = google.script.run
-          .withSuccessHandler(resolve)
+          .withSuccessHandler(function(res) {
+            settle(resolve, res || {});
+          })
           .withFailureHandler(function(err) {
-            reject(new Error(err && err.message ? err.message : String(err)));
+            settle(reject, new Error(err && err.message ? err.message : String(err)));
           });
         if (typeof payload === "undefined") runner[fnName]();
         else runner[fnName](payload);
       });
+    }
+
+    function isRunServerWriteApi_(fnName) {
+      return /^(save|delete|append|update|batchUpdate|adjust)/.test(String(fnName || ""));
+    }
+
+    function shouldRetryRunServer_(fnName) {
+      var name = String(fnName || "");
+      if (isRunServerWriteApi_(name)) return false;
+      return /^(get|verify|poll|search|list)/.test(name);
+    }
+
+    function getRunServerTimeoutMs_(fnName) {
+      var name = String(fnName || "");
+      if (/^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
+      if (isRunServerWriteApi_(name)) return RUN_SERVER_WRITE_TIMEOUT_MS;
+      return RUN_SERVER_DEFAULT_TIMEOUT_MS;
     }
 
     function canUseGoogleScript() {
@@ -33832,8 +33916,7 @@
           reject(new Error("API 호출 실패"));
         };
 
-        var isWriteApi = /^(save|delete|append|update)/.test(String(fnName || ""));
-        var timeoutMs = /^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(fnName) ? 45000 : (isWriteApi ? 75000 : 25000);
+        var timeoutMs = getRunServerTimeoutMs_(fnName);
         timer = setTimeout(function() {
           if (settled) return;
           settled = true;
