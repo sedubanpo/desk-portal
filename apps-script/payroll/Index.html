@@ -10098,15 +10098,6 @@
       border-radius: 8px 8px 0 0;
       box-shadow: 0 -1px 0 rgba(255,255,255,0.9) inset, 0 10px 18px rgba(2, 24, 18, 0.12);
     }
-    .module-tab.active::after {
-      content: "";
-      position: absolute;
-      left: 8px;
-      right: 8px;
-      bottom: -1px;
-      height: 2px;
-      background: #f3f8f5;
-    }
     .desk-global-tools { margin-left: auto; min-height: 52px; display: flex; align-items: center; gap: 12px; color: #d9eee4; font-size: 12px; font-weight: 800; }
     .desk-global-search { width: 260px; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(226,232,240,0.28); border-radius: 8px; background: rgba(255,255,255,0.04); color: #cfe9df; }
     .desk-global-search svg,
@@ -10119,7 +10110,8 @@
     .desk-global-clock { white-space: nowrap; color: rgba(236,253,245,0.9); }
     .desk-shell { gap: 0; }
     .desk-subtabs { width: fit-content; gap: 6px; padding: 0; margin: 0 0 6px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-    .desk-subtab { border: 1px solid #d3e0da; background: #fff; color: #43576a; padding: 10px 18px; font-size: 13px; }
+    .desk-subtab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #d3e0da; background: #fff; color: #43576a; padding: 10px 18px; font-size: 13px; }
+    .desk-subtab svg { width: 15px; height: 15px; stroke-width: 2.4; flex: 0 0 auto; }
     .desk-subtab.active { background: #0d684d; border-color: #0d684d; color: #fff; transform: none; box-shadow: none; }
     .desk-panel { border-color: #d4e0da; background: #fff; padding: 16px; gap: 12px; min-height: 0; }
     .desk-panel-head { align-items: center; padding: 2px 4px 4px; }
@@ -13443,12 +13435,12 @@
       <section id="moduleExpense" style="display:none;">
         <div class="desk-shell">
           <section class="desk-subtabs">
-            <button class="desk-subtab active" type="button" data-desk-tab="monthlySchedule">월별 근무표</button>
-            <button class="desk-subtab" type="button" data-desk-tab="supplies">물품 관리</button>
-            <button class="desk-subtab" type="button" data-desk-tab="dailyJournal">일일 업무일지</button>
-            <button class="desk-subtab" type="button" data-desk-tab="recruiting">인사 관리</button>
-            <button class="desk-subtab" type="button" data-desk-tab="responseCenter">응대 센터</button>
-            <button class="desk-subtab" type="button" data-desk-tab="messageTemplates">메세지 템플릿</button>
+            <button class="desk-subtab" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
+            <button class="desk-subtab active" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="supplies"><i data-lucide="package-check" aria-hidden="true"></i><span>물품 관리</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="recruiting"><i data-lucide="user-round-search" aria-hidden="true"></i><span>인사 관리</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="messageTemplates"><i data-lucide="messages-square" aria-hidden="true"></i><span>메세지 템플릿</span></button>
           </section>
 
           <section class="desk-panel" data-desk-panel="monthlySchedule">
