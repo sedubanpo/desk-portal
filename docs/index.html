@@ -13435,15 +13435,15 @@
       <section id="moduleExpense" style="display:none;">
         <div class="desk-shell">
           <section class="desk-subtabs">
-            <button class="desk-subtab" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
+            <button class="desk-subtab active" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
-            <button class="desk-subtab active" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="supplies"><i data-lucide="package-check" aria-hidden="true"></i><span>물품 관리</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="recruiting"><i data-lucide="user-round-search" aria-hidden="true"></i><span>인사 관리</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="messageTemplates"><i data-lucide="messages-square" aria-hidden="true"></i><span>메세지 템플릿</span></button>
           </section>
 
-          <section class="desk-panel" data-desk-panel="monthlySchedule">
+          <section class="desk-panel hidden" data-desk-panel="monthlySchedule">
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">월별 근무표</h2>
@@ -14705,7 +14705,7 @@
             </div>
           </section>
 
-          <section class="desk-panel hidden" data-desk-panel="dailyJournal">
+          <section class="desk-panel" data-desk-panel="dailyJournal">
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">일일 업무일지</h2>
@@ -15742,7 +15742,7 @@
       detailTab: "detail",
       activeModule: "expense",
       desk: {
-        activeTab: "monthlySchedule",
+        activeTab: "dailyJournal",
         suppliesTab: "inventory",
         view: "calendar",
         currentMonth: "",
@@ -24738,17 +24738,8 @@
         return [];
       });
 
-      var extendedScan = fetchDeskDailyCarryoverTasksByDateScan_(
-        safeDateKey,
-        workerNames,
-        Math.max(0, DESK_DAILY_CARRYOVER_SCAN_DAYS - DESK_DAILY_CARRYOVER_QUICK_SCAN_DAYS),
-        DESK_DAILY_CARRYOVER_QUICK_SCAN_DAYS + 1
-      ).catch(function() {
-        return [];
-      });
-
-      Promise.all([quickScan, serverScan, extendedScan]).then(function(groups) {
-        var merged = mergeDeskCarryoverTaskLists_(mergeDeskCarryoverTaskLists_(groups[0], groups[1]), groups[2]);
+      Promise.all([quickScan, serverScan]).then(function(groups) {
+        var merged = mergeDeskCarryoverTaskLists_(groups[0], groups[1]);
         applyDeskCarryoverTasks_(safeDateKey, workerKey, merged);
       }).catch(function() {
         applyDeskCarryoverTasks_(safeDateKey, workerKey, []);
@@ -25303,7 +25294,8 @@
         .sort(compareDeskSharedTask_);
       var ackCandidates = getDeskSharedAckCandidates_(dateKey);
       var visibleTasks = sharedTasks;
-      var carryoverLoading = String(state.desk.daily.carryoverLoadingDateKey || "").indexOf(dateKey + "::") === 0;
+      var carryoverLoading = String(state.desk.daily.carryoverLoadingDateKey || "").indexOf(dateKey + "::") === 0 &&
+        state.desk.daily.carryoverDateKey !== dateKey;
       deskJournalSharedSummaryListEl.classList.remove("expanded");
       if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = sharedTasks.length + "건";
       if (!sharedTasks.length) {
@@ -25831,7 +25823,8 @@
       if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = allVisibleTasks.length + "건";
       if (!visible.length) {
         var loadingCarryover = state.desk.daily.carryoverLoadingDateKey &&
-          state.desk.daily.carryoverLoadingDateKey.indexOf(String(state.desk.daily.dateKey || "")) === 0;
+          state.desk.daily.carryoverLoadingDateKey.indexOf(String(state.desk.daily.dateKey || "")) === 0 &&
+          state.desk.daily.carryoverDateKey !== String(state.desk.daily.dateKey || "");
         deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">' + (loadingCarryover ? '이월 업무를 확인하는 중입니다.' : (activeFilter === "전체" ? '선택 근무자에게 배정된 미해결 업무가 없습니다.' : activeFilter + ' 상태의 미해결 업무가 없습니다.')) + '</div>' +
           renderDeskCompletedTasksHtml_(completedItems);
         refreshLucideIcons_();
