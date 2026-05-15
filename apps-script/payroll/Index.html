@@ -2508,6 +2508,13 @@
       justify-content: space-between;
       gap: 16px;
     }
+    .desk-response-topbar { order: 0; }
+    .desk-response-admin-dashboard { order: 1; }
+    .desk-response-hero { order: 2; }
+    .desk-response-section-title { order: 3; }
+    .desk-response-summary { order: 4; }
+    .desk-response-message-grid { order: 5; }
+    .desk-response-frequent { order: 6; }
     .desk-response-title,
     .desk-template-title {
       margin: 0;
@@ -2561,6 +2568,31 @@
       width: 18px;
       height: 18px;
       color: #123044;
+    }
+    .desk-response-admin-btn {
+      min-height: 40px;
+      border: 1px solid #b8d9cd;
+      background: #f3fbf7;
+      color: #0d684d;
+      border-radius: 10px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(15, 60, 46, 0.04);
+    }
+    .desk-response-admin-btn.active {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
+    }
+    .desk-response-admin-btn svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 2.5;
     }
     .desk-response-status-pill .dot,
     .desk-template-status-pill .dot {
@@ -2827,6 +2859,153 @@
       font-size: 14px;
       font-weight: 800;
       margin: 0;
+    }
+    .desk-response-admin-dashboard {
+      border: 1px solid #cfe1d8;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fcfa 100%);
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      box-shadow: 0 14px 30px rgba(15, 60, 46, 0.07);
+    }
+    .desk-response-admin-dashboard.hidden {
+      display: none;
+    }
+    .desk-response-admin-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .desk-response-admin-head h3 {
+      margin: 0;
+      color: #102133;
+      font-size: 20px;
+      font-weight: 950;
+    }
+    .desk-response-admin-head p {
+      margin: 5px 0 0;
+      color: #5d7085;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .desk-response-admin-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .desk-response-admin-kpi {
+      border: 1px solid #dbe8e2;
+      border-radius: 10px;
+      background: #fff;
+      padding: 13px 14px;
+      display: grid;
+      gap: 6px;
+    }
+    .desk-response-admin-kpi span {
+      color: #66788c;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-response-admin-kpi strong {
+      color: #0f2a3d;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 950;
+    }
+    .desk-response-admin-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.3fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .desk-response-admin-card {
+      border: 1px solid #d7e5de;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px;
+      min-width: 0;
+    }
+    .desk-response-admin-card h4 {
+      margin: 0 0 5px;
+      color: #102133;
+      font-size: 15px;
+      font-weight: 950;
+    }
+    .desk-response-admin-card p {
+      margin: 0 0 12px;
+      color: #60758a;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+    .desk-response-log-list {
+      display: grid;
+      gap: 8px;
+      max-height: 430px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .desk-response-log-row {
+      border: 1px solid #dce8e2;
+      border-radius: 10px;
+      background: #fbfdfc;
+      padding: 11px;
+      display: grid;
+      gap: 8px;
+    }
+    .desk-response-log-row strong {
+      color: #102133;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 950;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .desk-response-log-meta,
+    .desk-response-keyword-list {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .desk-response-log-meta span,
+    .desk-response-keyword-list span {
+      border-radius: 999px;
+      background: #eef5f1;
+      color: #40546a;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .desk-response-log-meta .warn {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+    .desk-response-log-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .desk-response-log-actions button,
+    .desk-response-admin-action {
+      border: 1px solid #cfe0d8;
+      border-radius: 8px;
+      min-height: 32px;
+      padding: 0 10px;
+      background: #fff;
+      color: #173044;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-admin-action.primary,
+    .desk-response-log-actions button.primary {
+      background: #0d684d;
+      border-color: #0d684d;
+      color: #fff;
     }
     .desk-response-summary {
       border: 1px solid #c9ddd3;
@@ -3378,6 +3557,92 @@
       color: #60758a;
       font-size: 12px;
       font-weight: 800;
+    }
+    @media (max-width: 1280px) {
+      .desk-response-hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-response-bubble {
+        min-height: 152px;
+        padding: 24px 30px 54px 104px;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+      .desk-response-actions > span {
+        left: 104px;
+        right: 230px;
+      }
+      .desk-response-admin-grid,
+      .desk-guide-manager {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-guide-list-panel {
+        border-right: 0;
+        border-bottom: 1px solid #dce9e2;
+      }
+    }
+    @media (max-width: 860px) {
+      .desk-response-topbar,
+      .desk-response-admin-head {
+        flex-direction: column;
+      }
+      .desk-response-badges {
+        justify-content: flex-start;
+      }
+      .desk-helper-zone {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-mascot {
+        height: 154px;
+      }
+      .desk-mascot-img {
+        width: 164px;
+        height: 164px;
+      }
+      .desk-helper-card::before,
+      .desk-helper-card::after {
+        display: none;
+      }
+      .desk-response-bubble {
+        min-height: 176px;
+        padding: 24px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        align-items: stretch;
+      }
+      .desk-response-input {
+        min-height: 82px;
+        font-size: 18px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      .desk-response-actions {
+        align-items: flex-start;
+        justify-content: space-between;
+        white-space: normal;
+        gap: 10px;
+      }
+      .desk-response-actions > span {
+        position: static;
+        min-width: 0;
+        white-space: normal;
+        overflow: visible;
+      }
+      .desk-response-actions > div {
+        flex: 0 0 auto;
+        gap: 8px;
+      }
+      .desk-response-search-btn {
+        min-width: 136px;
+        height: 48px;
+        font-size: 16px;
+        padding: 0 16px;
+      }
+      .desk-response-admin-kpis {
+        grid-template-columns: 1fr;
+      }
+      .desk-guide-form-grid {
+        grid-template-columns: 1fr;
+      }
     }
     .desk-template-toolbar {
       border: 1px solid #d8e6de;
@@ -14464,6 +14729,7 @@
                 </div>
                 <div class="desk-response-badges">
                   <span class="desk-response-status-pill"><i data-lucide="circle"></i>가이드 동기화 정상</span>
+                  <button class="desk-response-admin-btn" id="deskResponseAdminToggleBtn" type="button"><i data-lucide="layout-dashboard"></i>질문 관리</button>
                   <span class="desk-response-count-pill"><i data-lucide="clipboard-list"></i>저장 문구 <strong id="deskResponseSavedCount">128개</strong></span>
                 </div>
               </header>
@@ -14532,7 +14798,27 @@
                 <button type="button" data-desk-response-situation="강사 상담 자료 요청"><i data-lucide="clipboard-list"></i>강사 상담 자료 요청<i data-lucide="chevron-right"></i></button>
               </section>
 
-              <section class="desk-guide-manager">
+              <section class="desk-response-admin-dashboard hidden" id="deskResponseAdminDashboard">
+                <div class="desk-response-admin-head">
+                  <div>
+                    <h3>질문 학습 대시보드</h3>
+                    <p>근무자가 응대 센터에 입력한 질문을 모아 보고, 반복 질문을 바로 상황 가이드로 저장합니다.</p>
+                  </div>
+                  <button class="desk-response-admin-action primary" id="deskResponseCreateCurrentGuideBtn" type="button"><i data-lucide="plus"></i>현재 입력으로 가이드</button>
+                </div>
+                <div class="desk-response-admin-kpis">
+                  <article class="desk-response-admin-kpi"><span>누적 질문</span><strong id="deskResponseLogTotal">0건</strong></article>
+                  <article class="desk-response-admin-kpi"><span>가이드 필요</span><strong id="deskResponseLogNoMatch">0건</strong></article>
+                  <article class="desk-response-admin-kpi"><span>최근 7일</span><strong id="deskResponseLogRecent">0건</strong></article>
+                </div>
+                <div class="desk-response-admin-grid">
+                  <aside class="desk-response-admin-card">
+                    <h4>최근 질문</h4>
+                    <p>낮은 매칭 질문은 우선 가이드 후보로 검토하세요.</p>
+                    <div class="desk-response-keyword-list" id="deskResponseKeywordList"></div>
+                    <div class="desk-response-log-list" id="deskResponseLogList"></div>
+                  </aside>
+                  <section class="desk-guide-manager">
                 <div class="desk-guide-list-panel">
                   <div class="desk-guide-manager-head">
                     <div>
@@ -14562,6 +14848,8 @@
                     <span>대상별 안내 문구는 메세지 템플릿의 연결 유형 문구를 우선 사용합니다.</span>
                     <button type="button" id="deskResponseSaveGuideBtn">가이드 저장</button>
                   </div>
+                </div>
+                  </section>
                 </div>
               </section>
             </div>
@@ -15637,6 +15925,7 @@
     var DESK_HR_GUIDANCE_TEMPLATES_STORAGE_KEY = "desk_portal_hr_guidance_templates_v1";
     var DESK_MESSAGE_TEMPLATES_STORAGE_KEY = "desk_portal_message_templates_v1";
     var DESK_RESPONSE_GUIDES_STORAGE_KEY = "desk_portal_response_guides_v1";
+    var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -15814,7 +16103,12 @@
           selectedGuideId: "schedule-missing",
           remoteLoaded: false,
           remoteLoading: false,
-          remoteSaving: false
+          remoteSaving: false,
+          logs: [],
+          logsRemoteLoaded: false,
+          logsRemoteLoading: false,
+          logsRemoteSaving: false,
+          adminOpen: false
         },
         messageTemplates: {
           tags: [],
@@ -16152,6 +16446,14 @@
     var deskHrApplicantListSearchEl = document.getElementById("deskHrApplicantListSearch");
     var deskHrApplicantTableBodyEl = document.getElementById("deskHrApplicantTableBody");
     var deskResponseSavedCountEl = document.getElementById("deskResponseSavedCount");
+    var deskResponseAdminToggleBtnEl = document.getElementById("deskResponseAdminToggleBtn");
+    var deskResponseAdminDashboardEl = document.getElementById("deskResponseAdminDashboard");
+    var deskResponseCreateCurrentGuideBtnEl = document.getElementById("deskResponseCreateCurrentGuideBtn");
+    var deskResponseLogTotalEl = document.getElementById("deskResponseLogTotal");
+    var deskResponseLogNoMatchEl = document.getElementById("deskResponseLogNoMatch");
+    var deskResponseLogRecentEl = document.getElementById("deskResponseLogRecent");
+    var deskResponseKeywordListEl = document.getElementById("deskResponseKeywordList");
+    var deskResponseLogListEl = document.getElementById("deskResponseLogList");
     var deskResponseSituationInputEl = document.getElementById("deskResponseSituationInput");
     var deskResponseResetBtnEl = document.getElementById("deskResponseResetBtn");
     var deskResponseFindBtnEl = document.getElementById("deskResponseFindBtn");
@@ -20179,6 +20481,116 @@
         });
     }
 
+    function normalizeDeskResponseLog_(item, index) {
+      item = item || {};
+      var text = String(item.text || item.query || "").trim();
+      return {
+        id: String(item.id || buildDeskShiftId_("responseLog", Date.now(), index || 0, Math.random().toString(36).slice(2))).trim(),
+        text: text,
+        matchedGuideId: String(item.matchedGuideId || "").trim(),
+        matchedTitle: String(item.matchedTitle || "").trim(),
+        confidence: Math.max(0, Math.min(1, Number(item.confidence || 0))),
+        createdAt: String(item.createdAt || new Date().toISOString()).trim(),
+        source: String(item.source || "응대 센터").trim()
+      };
+    }
+
+    function mergeDeskResponseLogs_(primary, secondary) {
+      var seen = {};
+      return (primary || []).concat(secondary || []).map(normalizeDeskResponseLog_).filter(function(item) {
+        if (!item.text || seen[item.id]) return false;
+        seen[item.id] = true;
+        return true;
+      }).sort(function(a, b) {
+        return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+      }).slice(0, 250);
+    }
+
+    function ensureDeskResponseLogsLoaded_() {
+      if ((state.desk.responseCenter.logs || []).length) return;
+      try {
+        var raw = localStorage.getItem(DESK_RESPONSE_LOGS_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          var source = Array.isArray(parsed) ? parsed : (parsed && parsed.logs);
+          if (Array.isArray(source)) state.desk.responseCenter.logs = mergeDeskResponseLogs_(source, []);
+        }
+      } catch (err) {}
+    }
+
+    function ensureDeskResponseLogsRemoteLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.responseCenter.logsRemoteLoaded || state.desk.responseCenter.logsRemoteLoading) return;
+      state.desk.responseCenter.logsRemoteLoading = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("responseLogs"), null)
+        .then(function(snapshot) {
+          var source = Array.isArray(snapshot) ? snapshot : (snapshot && snapshot.logs);
+          if (Array.isArray(source)) {
+            state.desk.responseCenter.logs = mergeDeskResponseLogs_(source, state.desk.responseCenter.logs || []);
+            try {
+              localStorage.setItem(DESK_RESPONSE_LOGS_STORAGE_KEY, JSON.stringify({ logs: state.desk.responseCenter.logs || [] }));
+            } catch (err) {}
+            if (state.desk.activeTab === "responseCenter") renderDeskResponseAdminDashboard_();
+          }
+          state.desk.responseCenter.logsRemoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk response logs remote load failed", err);
+        })
+        .finally(function() {
+          state.desk.responseCenter.logsRemoteLoading = false;
+        });
+    }
+
+    function saveDeskResponseLogsLocal_() {
+      ensureDeskResponseLogsLoaded_();
+      state.desk.responseCenter.logs = mergeDeskResponseLogs_(state.desk.responseCenter.logs || [], []);
+      try {
+        localStorage.setItem(DESK_RESPONSE_LOGS_STORAGE_KEY, JSON.stringify({ logs: state.desk.responseCenter.logs || [] }));
+      } catch (err) {}
+      saveDeskResponseLogsRemote_();
+    }
+
+    function saveDeskResponseLogsRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      state.desk.responseCenter.logsRemoteSaving = true;
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseLogs"), {
+        logs: state.desk.responseCenter.logs || []
+      })
+        .then(function() {
+          state.desk.responseCenter.logsRemoteLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk response logs remote save failed", err);
+        })
+        .finally(function() {
+          state.desk.responseCenter.logsRemoteSaving = false;
+        });
+    }
+
+    function recordDeskResponseQuestionLog_(text, match) {
+      var query = String(text || "").trim();
+      if (!query || query === DESK_RESPONSE_EXAMPLE_TEXT || query.indexOf("예시:") === 0) return;
+      ensureDeskResponseLogsLoaded_();
+      var logs = state.desk.responseCenter.logs || [];
+      var latest = logs[0];
+      if (latest && latest.text === query && Date.now() - new Date(latest.createdAt || 0).getTime() < 30000) return;
+      var guide = match && match.guide;
+      logs.unshift(normalizeDeskResponseLog_({
+        text: query,
+        matchedGuideId: guide && guide.id,
+        matchedTitle: guide && guide.title,
+        confidence: match && match.confidence,
+        createdAt: new Date().toISOString()
+      }));
+      state.desk.responseCenter.logs = mergeDeskResponseLogs_(logs, []);
+      saveDeskResponseLogsLocal_();
+    }
+
+    function findDeskResponseLog_(id) {
+      return (state.desk.responseCenter.logs || []).find(function(item) { return item.id === id; }) || null;
+    }
+
     function findDeskResponseGuide_(id) {
       return (state.desk.responseCenter.guides || []).find(function(item) { return item.id === id; }) || null;
     }
@@ -20334,6 +20746,105 @@
       if (deskResponseGuideTagSelectEl && document.activeElement !== deskResponseGuideTagSelectEl) deskResponseGuideTagSelectEl.value = selected.tagId || "schedule-check";
       if (deskResponseGuideKeywordsInputEl && document.activeElement !== deskResponseGuideKeywordsInputEl) deskResponseGuideKeywordsInputEl.value = (selected.keywords || []).join(", ");
       if (deskResponseGuideStepsInputEl && document.activeElement !== deskResponseGuideStepsInputEl) deskResponseGuideStepsInputEl.value = (selected.steps || []).join("\n");
+    }
+
+    function getDeskResponseLogKeywords_(logs) {
+      var counts = {};
+      (logs || []).forEach(function(item) {
+        tokenizeDeskResponseText_(item.text || "").forEach(function(token) {
+          counts[token] = (counts[token] || 0) + 1;
+        });
+      });
+      return Object.keys(counts).map(function(token) {
+        return { token: token, count: counts[token] };
+      }).sort(function(a, b) {
+        return b.count - a.count || a.token.localeCompare(b.token, "ko");
+      }).slice(0, 8);
+    }
+
+    function renderDeskResponseAdminDashboard_() {
+      ensureDeskResponseLogsLoaded_();
+      var logs = state.desk.responseCenter.logs || [];
+      var isOpen = !!state.desk.responseCenter.adminOpen;
+      if (deskResponseAdminDashboardEl) deskResponseAdminDashboardEl.classList.toggle("hidden", !isOpen);
+      if (deskResponseAdminToggleBtnEl) {
+        deskResponseAdminToggleBtnEl.classList.toggle("active", isOpen);
+        deskResponseAdminToggleBtnEl.innerHTML = '<i data-lucide="' + (isOpen ? 'x' : 'layout-dashboard') + '"></i>' + (isOpen ? '관리 닫기' : '질문 관리');
+      }
+      if (!isOpen) return;
+      var now = Date.now();
+      var noMatchCount = logs.filter(function(item) { return Number(item.confidence || 0) < 0.28; }).length;
+      var recentCount = logs.filter(function(item) {
+        var time = new Date(item.createdAt || 0).getTime();
+        return time && now - time <= 7 * 24 * 60 * 60 * 1000;
+      }).length;
+      if (deskResponseLogTotalEl) deskResponseLogTotalEl.textContent = logs.length + "건";
+      if (deskResponseLogNoMatchEl) deskResponseLogNoMatchEl.textContent = noMatchCount + "건";
+      if (deskResponseLogRecentEl) deskResponseLogRecentEl.textContent = recentCount + "건";
+      var keywords = getDeskResponseLogKeywords_(logs);
+      if (deskResponseKeywordListEl) {
+        deskResponseKeywordListEl.innerHTML = keywords.length
+          ? keywords.map(function(item) { return '<span>' + escapeHtml(item.token) + ' ' + escapeHtml(String(item.count)) + '</span>'; }).join("")
+          : '<span>아직 반복 키워드가 없습니다.</span>';
+      }
+      if (deskResponseLogListEl) {
+        if (!logs.length) {
+          deskResponseLogListEl.innerHTML = '<div class="desk-template-empty">아직 저장된 질문이 없습니다. 근무자가 대응 찾기를 누르면 이곳에 쌓입니다.</div>';
+        } else {
+          deskResponseLogListEl.innerHTML = logs.slice(0, 40).map(function(item) {
+            var confidence = Math.round(Number(item.confidence || 0) * 100);
+            var needsGuide = confidence < 28;
+            return '<article class="desk-response-log-row">' +
+              '<strong>' + escapeHtml(item.text) + '</strong>' +
+              '<div class="desk-response-log-meta">' +
+                '<span class="' + (needsGuide ? 'warn' : '') + '">매칭 ' + escapeHtml(String(confidence)) + '%</span>' +
+                '<span>' + escapeHtml(item.matchedTitle || "가이드 없음") + '</span>' +
+                '<span>' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
+              '</div>' +
+              '<div class="desk-response-log-actions">' +
+                '<button class="primary" type="button" data-desk-response-log-guide="' + escapeHtml(item.id) + '">가이드 만들기</button>' +
+                '<button type="button" data-desk-response-log-replay="' + escapeHtml(item.id) + '">다시 검색</button>' +
+              '</div>' +
+            '</article>';
+          }).join("");
+        }
+      }
+      renderDeskResponseGuideManager_();
+      refreshLucideIcons_();
+    }
+
+    function buildDeskResponseGuideDraftFromText_(text) {
+      var query = String(text || "").trim();
+      var tokens = tokenizeDeskResponseText_(query).slice(0, 6);
+      return normalizeDeskResponseGuide_({
+        title: query ? query.slice(0, 34) : "새 질문 대응",
+        urgency: "보통",
+        tagId: (state.desk.messageTemplates.tags[0] || {}).id || "schedule-check",
+        keywords: tokens.length ? tokens : [query || "새 질문"],
+        steps: [
+          "질문 내용을 정확히 다시 확인",
+          "학생/강사/수강료/업무일지 중 관련 메뉴에서 기준 정보 확인",
+          "확정 전에는 단정 안내 금지",
+          "필요 시 담당자 또는 단톡방에 공유",
+          "처리 결과를 업무일지에 기록"
+        ]
+      });
+    }
+
+    function createDeskResponseGuideFromText_(text) {
+      var query = String(text || "").trim();
+      if (!query) {
+        alert("가이드로 만들 질문을 먼저 입력하거나 선택해주세요.");
+        return;
+      }
+      ensureDeskResponseGuidesLoaded_();
+      var guide = buildDeskResponseGuideDraftFromText_(query);
+      state.desk.responseCenter.guides.unshift(guide);
+      state.desk.responseCenter.selectedGuideId = guide.id;
+      state.desk.responseCenter.adminOpen = true;
+      saveDeskResponseGuidesLocal_();
+      renderDeskResponseCenter_();
+      if (deskResponseGuideTitleInputEl) deskResponseGuideTitleInputEl.focus();
     }
 
     function isDeskResponseExampleVisible_() {
@@ -20662,6 +21173,8 @@
       ensureDeskMessageTemplatesRemoteLoaded_();
       ensureDeskResponseGuidesLoaded_();
       ensureDeskResponseGuidesRemoteLoaded_();
+      ensureDeskResponseLogsLoaded_();
+      ensureDeskResponseLogsRemoteLoaded_();
       if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
       if (deskResponseBubbleHintEl) deskResponseBubbleHintEl.textContent = "예: " + DESK_RESPONSE_EXAMPLE_TEXT + " 짧게 적어도 필요한 절차와 안내 문구를 찾아드릴게요!";
       setDeskResponseInputDisplay_(false);
@@ -20708,6 +21221,7 @@
         }).join("");
       }
       renderDeskResponseGuideManager_();
+      renderDeskResponseAdminDashboard_();
       refreshLucideIcons_();
     }
 
@@ -20722,6 +21236,7 @@
       window.clearTimeout(state.desk.responseCenter.thinkingTimer);
       state.desk.responseCenter.thinkingTimer = window.setTimeout(function() {
         if (panel) panel.classList.remove("is-thinking");
+        recordDeskResponseQuestionLog_(state.desk.responseCenter.situationText, matchDeskResponseGuide_(state.desk.responseCenter.situationText));
         renderDeskResponseCenter_();
       }, 900);
     }
@@ -27151,6 +27666,18 @@
           runDeskResponseSearch_();
         });
       }
+      if (deskResponseAdminToggleBtnEl) {
+        deskResponseAdminToggleBtnEl.addEventListener("click", function() {
+          state.desk.responseCenter.adminOpen = !state.desk.responseCenter.adminOpen;
+          renderDeskResponseCenter_();
+        });
+      }
+      if (deskResponseCreateCurrentGuideBtnEl) {
+        deskResponseCreateCurrentGuideBtnEl.addEventListener("click", function() {
+          var text = (deskResponseSituationInputEl && !isDeskResponseExampleVisible_()) ? String(deskResponseSituationInputEl.value || "") : state.desk.responseCenter.situationText;
+          createDeskResponseGuideFromText_(text);
+        });
+      }
       var deskResponsePanelEl = document.querySelector('[data-desk-panel="responseCenter"]');
       if (deskResponsePanelEl) {
         deskResponsePanelEl.addEventListener("click", function(event) {
@@ -27166,6 +27693,26 @@
           if (guideBtn) {
             state.desk.responseCenter.selectedGuideId = guideBtn.getAttribute("data-desk-response-guide") || "";
             renderDeskResponseGuideManager_();
+            return;
+          }
+          var logGuideBtn = event.target.closest("[data-desk-response-log-guide]");
+          if (logGuideBtn) {
+            var logItem = findDeskResponseLog_(logGuideBtn.getAttribute("data-desk-response-log-guide") || "");
+            createDeskResponseGuideFromText_(logItem && logItem.text || "");
+            return;
+          }
+          var logReplayBtn = event.target.closest("[data-desk-response-log-replay]");
+          if (logReplayBtn) {
+            var replayItem = findDeskResponseLog_(logReplayBtn.getAttribute("data-desk-response-log-replay") || "");
+            if (replayItem) {
+              state.desk.responseCenter.situationText = replayItem.text || "";
+              if (deskResponseSituationInputEl) {
+                deskResponseSituationInputEl.classList.remove("is-example");
+                deskResponseSituationInputEl.value = replayItem.text || "";
+                deskResponseSituationInputEl.focus();
+              }
+              renderDeskResponseCenter_();
+            }
             return;
           }
           var actionBtn = event.target.closest("[data-desk-response-action]");
