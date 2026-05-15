@@ -20518,6 +20518,24 @@
       }).slice(0, 250);
     }
 
+    function collectDeskResponseLogsFromSnapshot_(snapshot) {
+      if (!snapshot) return [];
+      if (Array.isArray(snapshot)) return snapshot;
+      var logs = [];
+      if (Array.isArray(snapshot.logs)) {
+        Array.prototype.push.apply(logs, snapshot.logs);
+      }
+      if (snapshot && typeof snapshot === "object") {
+        Object.keys(snapshot).forEach(function(id) {
+          if (id === "logs") return;
+          var item = snapshot[id];
+          if (!item || typeof item !== "object" || Array.isArray(item)) return;
+          logs.push(Object.assign({}, item, { id: item.id || id }));
+        });
+      }
+      return logs;
+    }
+
     function ensureDeskResponseLogsLoaded_() {
       if ((state.desk.responseCenter.logs || []).length) return;
       try {
@@ -20536,7 +20554,7 @@
       state.desk.responseCenter.logsRemoteLoading = true;
       deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("responseLogs"), null)
         .then(function(snapshot) {
-          var source = Array.isArray(snapshot) ? snapshot : (snapshot && snapshot.logs);
+          var source = collectDeskResponseLogsFromSnapshot_(snapshot);
           if (Array.isArray(source)) {
             state.desk.responseCenter.logs = mergeDeskResponseLogs_(source, state.desk.responseCenter.logs || []);
             try {
@@ -20554,21 +20572,20 @@
         });
     }
 
-    function saveDeskResponseLogsLocal_() {
+    function saveDeskResponseLogsLocal_(remoteLog) {
       ensureDeskResponseLogsLoaded_();
       state.desk.responseCenter.logs = mergeDeskResponseLogs_(state.desk.responseCenter.logs || [], []);
       try {
         localStorage.setItem(DESK_RESPONSE_LOGS_STORAGE_KEY, JSON.stringify({ logs: state.desk.responseCenter.logs || [] }));
       } catch (err) {}
-      saveDeskResponseLogsRemote_();
+      if (remoteLog) saveDeskResponseLogRemote_(remoteLog);
     }
 
-    function saveDeskResponseLogsRemote_() {
-      if (shouldDeferPortalDataLoad_()) return;
+    function saveDeskResponseLogRemote_(log) {
+      var item = normalizeDeskResponseLog_(log);
+      if (shouldDeferPortalDataLoad_() || !item.text || !item.id) return;
       state.desk.responseCenter.logsRemoteSaving = true;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseLogs"), {
-        logs: state.desk.responseCenter.logs || []
-      })
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseLogs/" + item.id), item)
         .then(function() {
           state.desk.responseCenter.logsRemoteLoaded = true;
         })
@@ -20588,15 +20605,16 @@
       var latest = logs[0];
       if (latest && latest.text === query && Date.now() - new Date(latest.createdAt || 0).getTime() < 30000) return;
       var guide = match && match.guide;
-      logs.unshift(normalizeDeskResponseLog_({
+      var log = normalizeDeskResponseLog_({
         text: query,
         matchedGuideId: guide && guide.id,
         matchedTitle: guide && guide.title,
         confidence: match && match.confidence,
         createdAt: new Date().toISOString()
-      }));
+      });
+      logs.unshift(log);
       state.desk.responseCenter.logs = mergeDeskResponseLogs_(logs, []);
-      saveDeskResponseLogsLocal_();
+      saveDeskResponseLogsLocal_(log);
     }
 
     function findDeskResponseLog_(id) {
