@@ -2948,6 +2948,29 @@
       overflow: auto;
       padding-right: 2px;
     }
+    .desk-response-log-filter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 0 0 10px;
+    }
+    .desk-response-log-filter button {
+      border: 1px solid #d5e4dd;
+      border-radius: 999px;
+      min-height: 30px;
+      padding: 0 10px;
+      background: #fff;
+      color: #40546a;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-response-log-filter button.active {
+      border-color: #0d684d;
+      background: #0d684d;
+      color: #fff;
+    }
     .desk-response-group-list {
       display: grid;
       gap: 8px;
@@ -14875,6 +14898,7 @@
                     <h4>최근 질문</h4>
                     <p>낮은 매칭 질문은 우선 가이드 후보로 검토하세요.</p>
                     <div class="desk-response-keyword-list" id="deskResponseKeywordList"></div>
+                    <div class="desk-response-log-filter" id="deskResponseLogFilter"></div>
                     <div class="desk-response-group-list" id="deskResponseGroupList"></div>
                     <div class="desk-response-log-list" id="deskResponseLogList"></div>
                   </aside>
@@ -15987,6 +16011,7 @@
     var DESK_RESPONSE_GUIDES_STORAGE_KEY = "desk_portal_response_guides_v1";
     var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
     var DESK_RESPONSE_LOG_STATUS_OPTIONS = ["미처리", "검토중", "가이드 반영", "무시"];
+    var DESK_RESPONSE_LOG_FILTER_OPTIONS = ["전체", "미처리", "검토중", "가이드 반영", "무시", "낮은 매칭", "최근 7일", "유사 질문"];
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -16178,7 +16203,8 @@
           logsRemoteLoaded: false,
           logsRemoteLoading: false,
           logsRemoteSaving: false,
-          adminOpen: false
+          adminOpen: false,
+          logFilter: "전체"
         },
         messageTemplates: {
           tags: [],
@@ -16524,6 +16550,7 @@
     var deskResponseLogNoMatchEl = document.getElementById("deskResponseLogNoMatch");
     var deskResponseLogRecentEl = document.getElementById("deskResponseLogRecent");
     var deskResponseKeywordListEl = document.getElementById("deskResponseKeywordList");
+    var deskResponseLogFilterEl = document.getElementById("deskResponseLogFilter");
     var deskResponseGroupListEl = document.getElementById("deskResponseGroupList");
     var deskResponseLogListEl = document.getElementById("deskResponseLogList");
     var deskResponseSituationInputEl = document.getElementById("deskResponseSituationInput");
@@ -20960,6 +20987,71 @@
       }) || null;
     }
 
+    function normalizeDeskResponseLogFilter_(filter) {
+      var text = String(filter || "").trim();
+      return DESK_RESPONSE_LOG_FILTER_OPTIONS.indexOf(text) >= 0 ? text : "전체";
+    }
+
+    function getDeskResponseGroupedLogIdMap_(groups) {
+      var map = {};
+      (groups || []).forEach(function(group) {
+        (group.items || []).forEach(function(item) {
+          if (item && item.id) map[item.id] = true;
+        });
+      });
+      return map;
+    }
+
+    function getDeskResponseFilteredLogs_(logs, filter, now, groups) {
+      var safeFilter = normalizeDeskResponseLogFilter_(filter);
+      var source = logs || [];
+      if (safeFilter === "전체") return source;
+      if (DESK_RESPONSE_LOG_STATUS_OPTIONS.indexOf(safeFilter) >= 0) {
+        return source.filter(function(item) {
+          return normalizeDeskResponseLogStatus_(item.status) === safeFilter;
+        });
+      }
+      if (safeFilter === "낮은 매칭") {
+        return source.filter(function(item) {
+          return Number(item.confidence || 0) < 0.28;
+        });
+      }
+      if (safeFilter === "최근 7일") {
+        return source.filter(function(item) {
+          var time = new Date(item.createdAt || 0).getTime();
+          return time && now - time <= 7 * 24 * 60 * 60 * 1000;
+        });
+      }
+      if (safeFilter === "유사 질문") {
+        var grouped = getDeskResponseGroupedLogIdMap_(groups);
+        return source.filter(function(item) {
+          return !!(item && grouped[item.id]);
+        });
+      }
+      return source;
+    }
+
+    function getDeskResponseLogFilterCounts_(logs, now, groups) {
+      var counts = { "전체": (logs || []).length };
+      DESK_RESPONSE_LOG_STATUS_OPTIONS.forEach(function(status) {
+        counts[status] = (logs || []).filter(function(item) {
+          return normalizeDeskResponseLogStatus_(item.status) === status;
+        }).length;
+      });
+      counts["낮은 매칭"] = (logs || []).filter(function(item) {
+        return Number(item.confidence || 0) < 0.28;
+      }).length;
+      counts["최근 7일"] = (logs || []).filter(function(item) {
+        var time = new Date(item.createdAt || 0).getTime();
+        return time && now - time <= 7 * 24 * 60 * 60 * 1000;
+      }).length;
+      var grouped = getDeskResponseGroupedLogIdMap_(groups);
+      counts["유사 질문"] = (logs || []).filter(function(item) {
+        return !!(item && grouped[item.id]);
+      }).length;
+      return counts;
+    }
+
     function renderDeskResponseAdminDashboard_() {
       ensureDeskResponseLogsLoaded_();
       var logs = state.desk.responseCenter.logs || [];
@@ -20983,13 +21075,26 @@
       if (deskResponseLogNoMatchEl) deskResponseLogNoMatchEl.textContent = noMatchCount + "건";
       if (deskResponseLogRecentEl) deskResponseLogRecentEl.textContent = recentCount + "건";
       var keywords = getDeskResponseLogKeywords_(logs);
+      var groups = getDeskResponseLogGroups_(logs);
+      var activeFilter = normalizeDeskResponseLogFilter_(state.desk.responseCenter.logFilter);
+      state.desk.responseCenter.logFilter = activeFilter;
+      var filterCounts = getDeskResponseLogFilterCounts_(logs, now, groups);
+      var filteredLogs = getDeskResponseFilteredLogs_(logs, activeFilter, now, groups);
       if (deskResponseKeywordListEl) {
         deskResponseKeywordListEl.innerHTML = keywords.length
           ? keywords.map(function(item) { return '<span>' + escapeHtml(item.token) + ' ' + escapeHtml(String(item.count)) + '</span>'; }).join("")
           : '<span>아직 반복 키워드가 없습니다.</span>';
       }
+      if (deskResponseLogFilterEl) {
+        deskResponseLogFilterEl.innerHTML = DESK_RESPONSE_LOG_FILTER_OPTIONS.map(function(option) {
+          var isActive = option === activeFilter;
+          var count = filterCounts[option] || 0;
+          return '<button type="button" class="' + (isActive ? 'active' : '') + '" data-desk-response-log-filter="' + escapeHtml(option) + '">' +
+            escapeHtml(option) + ' ' + escapeHtml(String(count)) +
+          '</button>';
+        }).join("");
+      }
       if (deskResponseGroupListEl) {
-        var groups = getDeskResponseLogGroups_(logs);
         deskResponseGroupListEl.innerHTML = groups.length
           ? groups.map(function(group) {
             var representative = group.representative || group.items[0] || {};
@@ -21012,8 +21117,10 @@
       if (deskResponseLogListEl) {
         if (!logs.length) {
           deskResponseLogListEl.innerHTML = '<div class="desk-template-empty">아직 저장된 질문이 없습니다. 근무자가 대응 찾기를 누르면 이곳에 쌓입니다.</div>';
+        } else if (!filteredLogs.length) {
+          deskResponseLogListEl.innerHTML = '<div class="desk-template-empty">선택한 보기 조건에 해당하는 질문이 없습니다.</div>';
         } else {
-          deskResponseLogListEl.innerHTML = logs.slice(0, 40).map(function(item) {
+          deskResponseLogListEl.innerHTML = filteredLogs.slice(0, 40).map(function(item) {
             var confidence = Math.round(Number(item.confidence || 0) * 100);
             var needsGuide = confidence < 28;
             var status = normalizeDeskResponseLogStatus_(item.status);
@@ -27964,6 +28071,12 @@
               logStatusBtn.getAttribute("data-desk-response-log-status") || "",
               logStatusBtn.getAttribute("data-desk-response-log-next") || ""
             );
+            return;
+          }
+          var logFilterBtn = event.target.closest("[data-desk-response-log-filter]");
+          if (logFilterBtn) {
+            state.desk.responseCenter.logFilter = normalizeDeskResponseLogFilter_(logFilterBtn.getAttribute("data-desk-response-log-filter") || "");
+            renderDeskResponseAdminDashboard_();
             return;
           }
           var groupGuideBtn = event.target.closest("[data-desk-response-group-guide]");
