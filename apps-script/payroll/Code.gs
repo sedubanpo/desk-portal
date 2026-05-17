@@ -1381,6 +1381,7 @@ function normalizeDeskDailyJournalMemo_(item, fallbackId, dateKey) {
     text: String((item && item.text) || "").trim(),
     category: String((item && (item.category || item.type || item.memoType)) || "일반").trim() || "일반",
     mode: mode === "record" ? "record" : "report",
+    highlight: !!(item && (item.highlight || item.important || item.major)),
     createdAt: String((item && item.createdAt) || now).trim(),
     updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim(),
     clientOrder: normalizeDeskDailyMemoClientOrder_(item && item.clientOrder, (item && (item.createdAt || item.updatedAt)) || now)

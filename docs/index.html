@@ -11611,6 +11611,20 @@
       align-items: start;
     }
     .desk-composer-label { margin-bottom: 7px; color: #334155; font-size: 12px; font-weight: 900; }
+    .desk-type-auto-hint {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      margin-left: 6px;
+      margin-right: 6px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: #eef8f3;
+      color: #0d684d;
+      font-size: 11px;
+      font-weight: 900;
+      vertical-align: middle;
+    }
     .desk-chip-row { display: flex; gap: 7px; flex-wrap: wrap; }
     .desk-template-panel {
       grid-column: 1 / -1;
@@ -11663,6 +11677,38 @@
       background: #fff;
       box-shadow: none;
       resize: none;
+    }
+    .desk-memo-input-wrap {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .desk-main-work-toggle {
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      min-height: 36px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-self: start;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-main-work-toggle input {
+      width: 15px;
+      height: 15px;
+      accent-color: #0d684d;
+    }
+    .desk-main-work-toggle.active,
+    .desk-main-work-toggle:has(input:checked) {
+      border-color: #f59e0b;
+      background: #fff7ed;
+      color: #92400e;
     }
     .desk-report-mode-toggle {
       display: inline-grid;
@@ -11886,6 +11932,9 @@
       padding: 0;
     }
     .desk-note-row-card:hover { background: #f8fafc !important; }
+    .desk-note-row-card.is-highlight {
+      background: #fff7ed !important;
+    }
     .desk-note-row {
       display: grid;
       grid-template-columns: 52px 14px auto minmax(0, 1fr) auto;
@@ -12171,6 +12220,80 @@
       font-weight: 900;
       margin-right: 8px;
     }
+    .desk-report-summary-list,
+    .desk-report-main-list,
+    .desk-report-timeline-list,
+    .desk-report-pending-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .desk-report-summary-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .desk-report-main-item {
+      border: 1px solid #fed7aa;
+      border-radius: 8px;
+      background: #fff7ed;
+      padding: 10px 12px;
+      display: grid;
+      gap: 5px;
+    }
+    .desk-report-main-label {
+      color: #b45309;
+      font-size: 11px;
+      font-weight: 950;
+    }
+    .desk-report-main-text {
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 900;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .desk-report-timeline-row {
+      display: grid;
+      grid-template-columns: 82px auto minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .desk-report-timeline-row.highlight {
+      border-radius: 8px;
+      background: #fff7ed;
+      padding: 8px;
+    }
+    .desk-report-timeline-text {
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.5;
+      font-weight: 900;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+    .desk-report-major-mark {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      margin-left: 6px;
+      margin-right: 6px;
+      padding: 0 7px;
+      border-radius: 999px;
+      background: #f97316;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 950;
+      vertical-align: middle;
+    }
     .desk-report-info-card { border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; padding: 13px 14px; min-width: 0; }
     .desk-report-info-card h4 { margin: 0 0 8px; color: #0f172a; font-size: 13px; font-weight: 900; }
     .desk-report-info-card ul { margin: 0; padding-left: 16px; color: #334155; font-size: 12px; line-height: 1.75; font-weight: 800; }
@@ -12181,8 +12304,8 @@
     .desk-report-info-icon { width: 28px; height: 28px; border-radius: 8px; background: #dcfce7; color: #0d684d; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px; }
     .desk-report-info-icon svg { width: 16px; height: 16px; }
     .desk-report-copy-card {
-      width: 420px;
-      max-width: 420px;
+      width: 560px;
+      max-width: 560px;
       background: #ffffff;
       border: 1px solid #dbe8e2;
       border-radius: 8px;
@@ -12503,6 +12626,9 @@
     .desk-daily-journal-mode .desk-memo-compose-row {
       grid-template-columns: minmax(0, 1fr) 104px;
       gap: 10px;
+    }
+    .desk-daily-journal-mode .desk-memo-input-wrap {
+      min-width: 0;
     }
     .desk-daily-journal-mode .desk-memo-compose-input {
       min-height: 48px;
@@ -12870,8 +12996,10 @@
       grid-template-columns: minmax(0, 1fr) 118px;
       grid-column: 2 / 3;
     }
-    .desk-daily-journal-mode .desk-memo-compose-input {
+    .desk-daily-journal-mode .desk-memo-input-wrap {
       grid-area: input;
+    }
+    .desk-daily-journal-mode .desk-memo-compose-input {
       min-height: 86px;
     }
     .desk-daily-journal-mode .desk-memo-action-stack {
@@ -15148,7 +15276,7 @@
                   <div class="desk-memo-worker-quick hidden" id="deskJournalMemoWorkerQuick"></div>
                   <div class="desk-composer-row">
                     <div class="desk-composer-group">
-                      <div class="desk-composer-label">업무 유형</div>
+                      <div class="desk-composer-label">업무 유형 <span class="desk-type-auto-hint" id="deskMemoTypeAutoHint">자동 분류</span></div>
                       <div class="desk-chip-row" id="deskMemoTypeChips">
                         <button class="desk-memo-type-chip active" type="button" data-desk-memo-type="일반">일반</button>
                         <button class="desk-memo-type-chip" type="button" data-desk-memo-type="상담">상담</button>
@@ -15166,7 +15294,10 @@
                       </div>
                       <div class="desk-chip-row" id="deskMemoTemplateChips"></div>
                     </div>
-                    <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
+                    <div class="desk-memo-input-wrap">
+                      <textarea id="deskJournalMemoInput" class="modal-input desk-memo-compose-input" rows="3" placeholder="예: 5시 20분 학부모 방문 상담 요청 접수 후 전달"></textarea>
+                      <label class="desk-main-work-toggle" id="deskJournalMemoHighlightWrap"><input id="deskJournalMemoHighlight" type="checkbox">오늘 주요 업무</label>
+                    </div>
                     <div class="desk-memo-action-stack">
                       <button class="desk-memo-submit-btn" id="deskJournalMemoSubmitBtn" type="submit"><i data-lucide="save"></i>저장</button>
                       <button class="desk-journal-report-shortcut" id="deskJournalReportShortcutBtn" type="button"><i data-lucide="copy"></i>보고 복사</button>
@@ -16012,6 +16143,13 @@
     var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
     var DESK_RESPONSE_LOG_STATUS_OPTIONS = ["미처리", "검토중", "가이드 반영", "무시"];
     var DESK_RESPONSE_LOG_FILTER_OPTIONS = ["전체", "미처리", "검토중", "가이드 반영", "무시", "낮은 매칭", "최근 7일", "유사 질문"];
+    var DESK_MEMO_TYPE_KEYWORD_RULES = [
+      { type: "긴급", keywords: ["긴급", "사고", "응급", "컴플레인", "항의", "민원", "누수", "정전", "분실", "아픔", "다침", "중단"] },
+      { type: "상담", keywords: ["상담", "학부모", "어머님", "아버님", "문의", "전화", "카톡", "응대", "연락", "방문", "면담", "수강료", "납부", "결제", "미납"] },
+      { type: "자료", keywords: ["자료", "업로드", "노션", "엑세스", "액세스", "입력", "출력", "프린트", "복사", "문서", "파일", "엑셀", "시간표 작성"] },
+      { type: "학생", keywords: ["학생", "등원", "하원", "출결", "지각", "결석", "시간표", "스케줄", "수업", "보강", "수행평가"] },
+      { type: "시설", keywords: ["청소", "시설", "강의실", "냉난방", "에어컨", "책상", "의자", "프린터", "비품", "소모품", "쓰레기", "정리", "수리"] }
+    ];
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -16225,7 +16363,9 @@
           reportWorker: "",
           editorMode: "shared",
           memoType: "일반",
+          memoTypeManual: false,
           memoMode: "report",
+          memoHighlight: false,
           editingMemoId: "",
           syncStatus: "idle",
           routineLabelFilter: "전체",
@@ -16736,6 +16876,9 @@
     var deskJournalMemoWorkerEl = document.getElementById("deskJournalMemoWorker");
     var deskJournalMemoWorkerQuickEl = document.getElementById("deskJournalMemoWorkerQuick");
     var deskJournalMemoInputEl = document.getElementById("deskJournalMemoInput");
+    var deskMemoTypeAutoHintEl = document.getElementById("deskMemoTypeAutoHint");
+    var deskJournalMemoHighlightEl = document.getElementById("deskJournalMemoHighlight");
+    var deskJournalMemoHighlightWrapEl = document.getElementById("deskJournalMemoHighlightWrap");
     var deskJournalMemoSubmitBtnEl = document.getElementById("deskJournalMemoSubmitBtn");
     var deskJournalMemoSaveStatusEl = document.getElementById("deskJournalMemoSaveStatus");
     var deskMemoTemplateChipsEl = document.getElementById("deskMemoTemplateChips");
@@ -24278,6 +24421,7 @@
         text: String((item && item.text) || "").trim(),
         category: category,
         mode: mode === "record" ? "record" : "report",
+        highlight: !!(item && (item.highlight || item.important || item.major)),
         createdAt: createdAt,
         updatedAt: updatedAt,
         clientOrder: normalizeDeskDailyMemoClientOrder_(item && item.clientOrder, createdAt || updatedAt)
@@ -26312,6 +26456,50 @@
       return String((memo && (memo.category || memo.type || memo.memoType)) || "일반").trim() || "일반";
     }
 
+    function inferDeskMemoTypeFromText_(text) {
+      var source = String(text || "").replace(/\s+/g, " ").trim();
+      var compact = source.replace(/\s+/g, "");
+      if (!source) return "일반";
+      var ranked = DESK_MEMO_TYPE_KEYWORD_RULES.map(function(rule, ruleIndex) {
+        var score = 0;
+        (rule.keywords || []).forEach(function(keyword) {
+          var key = String(keyword || "").trim();
+          if (!key) return;
+          if (source.indexOf(key) >= 0 || compact.indexOf(key.replace(/\s+/g, "")) >= 0) score += key.length >= 4 ? 2 : 1;
+        });
+        return { type: rule.type, score: score, index: ruleIndex };
+      }).filter(function(item) {
+        return item.score > 0;
+      }).sort(function(a, b) {
+        return b.score - a.score || a.index - b.index;
+      });
+      return ranked.length ? ranked[0].type : "일반";
+    }
+
+    function setDeskMemoType_(type, manual) {
+      state.desk.daily.memoType = getDeskMemoType_({ category: type || "일반" });
+      state.desk.daily.memoTypeManual = !!manual;
+      syncDeskMemoComposerState_();
+    }
+
+    function syncDeskMemoTypeFromInput_() {
+      if (!deskJournalMemoInputEl) return;
+      var text = String(deskJournalMemoInputEl.value || "").trim();
+      if (!text) {
+        state.desk.daily.memoTypeManual = false;
+        state.desk.daily.memoType = "일반";
+        syncDeskMemoComposerState_();
+        return;
+      }
+      if (state.desk.daily.memoTypeManual) return;
+      state.desk.daily.memoType = inferDeskMemoTypeFromText_(text);
+      syncDeskMemoComposerState_();
+    }
+
+    function isDeskMemoHighlighted_(memo) {
+      return !!(memo && (memo.highlight || memo.important || memo.major));
+    }
+
     function getDeskMemoMode_(memo) {
       return String((memo && memo.mode) || "report").trim() === "record" ? "record" : "report";
     }
@@ -26385,6 +26573,13 @@
           btn.classList.toggle("active", (btn.getAttribute("data-desk-memo-type") || "일반") === (state.desk.daily.memoType || "일반"));
         });
       }
+      if (deskMemoTypeAutoHintEl) {
+        deskMemoTypeAutoHintEl.textContent = state.desk.daily.memoTypeManual
+          ? "수동 선택"
+          : "자동: " + (state.desk.daily.memoType || "일반");
+      }
+      if (deskJournalMemoHighlightEl) deskJournalMemoHighlightEl.checked = !!state.desk.daily.memoHighlight;
+      if (deskJournalMemoHighlightWrapEl) deskJournalMemoHighlightWrapEl.classList.toggle("active", !!state.desk.daily.memoHighlight);
     }
 
     function reloadDeskSuppliesData_(button) {
@@ -26905,18 +27100,19 @@
       if (deskJournalMemoPaginationEl) {
         deskJournalMemoPaginationEl.innerHTML = "";
       }
-	      if (!pageItems.length) {
-	        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
-	        syncDeskWorkerDetailTabs_();
-	        return;
-	      }
-	      deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
+      if (!pageItems.length) {
+        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
+        syncDeskWorkerDetailTabs_();
+        return;
+      }
+      deskJournalMemoListEl.innerHTML = pageItems.map(function(item) {
         var isEditing = state.desk.daily.editingMemoId === item.id;
         var type = getDeskMemoType_(item);
         var display = getDeskMemoDisplayParts_(item);
         var typeIcon = getDeskMemoTypeIcon_(type);
         var timeText = formatDeskJournalTimeOnly_(display.createdAt || item.createdAt);
-        return '<article class="desk-note-card desk-note-row-card" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
+        var highlight = isDeskMemoHighlighted_(item);
+        return '<article class="desk-note-card desk-note-row-card' + (highlight ? ' is-highlight' : '') + '" style="' + escapeHtml(getDeskWorkerCardStyle_(item.worker || "")) + '" data-desk-journal-memo-card="' + escapeHtml(item.id) + '">' +
           '<div class="desk-note-row">' +
             '<div class="desk-note-meta-stack">' +
               (isEditing
@@ -26927,6 +27123,7 @@
             '<div class="desk-note-body">' +
               '<div class="desk-note-main">' +
                 '<span class="desk-note-worker-inline">' + escapeHtml(item.worker || "-") + '</span>' +
+                (highlight && !isEditing ? '<span class="desk-report-major-mark">주요</span>' : '') +
                 (isEditing
                   ? '<textarea class="modal-input desk-note-edit-input" data-desk-journal-memo-edit-input="' + escapeHtml(item.id) + '" placeholder="근무 이슈 내용을 입력해 주세요">' + escapeHtml(item.text || "") + '</textarea>'
                   : '<span class="desk-note-text">' + escapeHtml(display.text || "") + '</span>') +
@@ -26941,10 +27138,10 @@
             '</div>' +
           '</div>' +
         '</article>';
-	      }).join("");
-	      syncDeskWorkerDetailTabs_();
-	      refreshLucideIcons_();
-	    }
+      }).join("");
+      syncDeskWorkerDetailTabs_();
+      refreshLucideIcons_();
+    }
 
     function buildDeskMemoPaginationHtml_(currentPage, totalPages) {
       var buttons = [];
@@ -27013,13 +27210,26 @@
         var type = getDeskMemoType_(item);
         typeCounts[type] = (typeCounts[type] || 0) + 1;
       });
+      var highlighted = (timeline || []).filter(isDeskMemoHighlighted_);
       var shiftText = shifts.length ? shifts.map(formatDeskReportShiftTime_).join(" / ") : "등록된 근무시간 없음";
       var weekLabel = getDeskWeekIndex_(dateKey, String(dateKey || "").slice(0, 7)) + "주차";
       var summaryHtml = Object.keys(typeCounts).length
         ? Object.keys(typeCounts).sort(function(a, b) { return a.localeCompare(b, "ko"); }).map(function(type) {
-            return '<li>' + renderDeskMemoTypeBadge_(type) + '<strong>' + escapeHtml(String(typeCounts[type])) + '건</strong></li>';
+            return '<li class="desk-report-summary-row">' + renderDeskMemoTypeBadge_(type) + '<strong>' + escapeHtml(String(typeCounts[type])) + '건</strong></li>';
           }).join("")
-        : '<li>기록 없음</li>';
+        : '<li class="desk-report-summary-row">기록 없음</li>';
+      var highlightedHtml = highlighted.length
+        ? '<section class="desk-mobile-report-section desk-report-main-section">' +
+            '<h4>[오늘 주요 업무]</h4>' +
+            '<ul class="desk-report-main-list">' + highlighted.map(function(item) {
+              var display = getDeskMemoDisplayParts_(item);
+              return '<li class="desk-report-main-item">' +
+                '<span class="desk-report-main-label">' + escapeHtml(formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt)) + ' · ' + escapeHtml(getDeskMemoType_(item)) + '</span>' +
+                '<span class="desk-report-main-text">' + escapeHtml(display.text || "") + '</span>' +
+              '</li>';
+            }).join("") + '</ul>' +
+          '</section>'
+        : '';
       var dateLabel = formatDeskDateLabel_(dateKey);
       return '<section class="desk-report-compact" id="deskJournalReportCard">' +
         '<article class="desk-mobile-report-card">' +
@@ -27033,18 +27243,20 @@
           (shifts.length ? '<div class="desk-report-shift-list">' + shifts.map(renderDeskReportShiftPill_).join("") + '</div>' : '') +
           '<section class="desk-mobile-report-section">' +
             '<h4>[업무 요약]</h4>' +
-            '<ul>' + summaryHtml + '</ul>' +
+            '<ul class="desk-report-summary-list">' + summaryHtml + '</ul>' +
           '</section>' +
+          highlightedHtml +
           '<section class="desk-mobile-report-section">' +
             '<h4>[시간대별 기록]</h4>' +
-          '<ul>' + (timeline.length ? timeline.map(function(item) {
+          '<ul class="desk-report-timeline-list">' + (timeline.length ? timeline.map(function(item) {
             var display = getDeskMemoDisplayParts_(item);
-            return '<li class="desk-report-timeline-item"><span class="desk-report-time-label">' + escapeHtml(formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt)) + '</span>' + renderDeskMemoTypeBadge_(getDeskMemoType_(item)) + '<span class="desk-report-timeline-text">' + escapeHtml(display.text || "") + '</span></li>';
-          }).join("") : '<li>기록 없음</li>') + '</ul>' +
+            var highlight = isDeskMemoHighlighted_(item);
+            return '<li class="desk-report-timeline-row' + (highlight ? ' highlight' : '') + '"><span class="desk-report-time-label">' + escapeHtml(formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt)) + '</span>' + renderDeskMemoTypeBadge_(getDeskMemoType_(item)) + '<span class="desk-report-timeline-text">' + (highlight ? '<span class="desk-report-major-mark">주요</span>' : '') + escapeHtml(display.text || "") + '</span></li>';
+          }).join("") : '<li class="desk-report-timeline-row">기록 없음</li>') + '</ul>' +
           '</section>' +
           '<section class="desk-mobile-report-section">' +
             '<h4>[미해결 항목]</h4>' +
-          '<ul>' + (pending.length ? pending.map(function(item) {
+          '<ul class="desk-report-pending-list">' + (pending.length ? pending.map(function(item) {
             return '<li>' + escapeHtml(item.title || "-") + '</li>';
           }).join("") : '<li>미해결 항목 없음</li>') + '</ul>' +
           '</section>' +
@@ -27086,6 +27298,7 @@
       var countedTasks = tasks.filter(function(item) { return !isDeskSharedTask_(item); });
       var completed = countedTasks.filter(function(item) { return item.completed; }).length;
       var pending = countedTasks.length - completed;
+      var highlighted = memos.filter(isDeskMemoHighlighted_);
       var weekLabel = getDeskWeekIndex_(dateKey, String(dateKey || "").slice(0, 7)) + "주차";
       var lines = [];
       lines.push("[데스크 근무 보고]");
@@ -27110,11 +27323,21 @@
         });
       }
       lines.push("");
-      lines.push("3. 시간대별 현장 기록");
+      lines.push("3. 오늘 주요 업무");
+      if (highlighted.length) {
+        highlighted.forEach(function(item) {
+          var display = getDeskMemoDisplayParts_(item);
+          lines.push("- " + formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
+        });
+      } else {
+        lines.push("- 주요 업무 표시 없음");
+      }
+      lines.push("");
+      lines.push("4. 시간대별 현장 기록");
       if (memos.length) {
         memos.forEach(function(item) {
           var display = getDeskMemoDisplayParts_(item);
-          lines.push("- " + formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
+          lines.push("- " + (isDeskMemoHighlighted_(item) ? "[주요] " : "") + formatDeskReportTimeFromStamp_(display.createdAt || item.createdAt) + " [" + getDeskMemoType_(item) + "] " + (display.text || ""));
         });
       } else {
         lines.push("- 기록 없음");
@@ -27150,8 +27373,8 @@
           var clonedNode = clonedDoc.getElementById("deskJournalReportCard");
           if (clonedNode) {
             clonedNode.classList.add("desk-report-copy-card");
-            clonedNode.style.width = "420px";
-            clonedNode.style.maxWidth = "420px";
+            clonedNode.style.width = "560px";
+            clonedNode.style.maxWidth = "560px";
           }
           Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
             el.style.display = "none";
@@ -27836,6 +28059,7 @@
         text: text,
         category: state.desk.daily.memoType || "일반",
         mode: state.desk.daily.memoMode || "report",
+        highlight: !!state.desk.daily.memoHighlight,
         createdAt: createdAt,
         updatedAt: createdAt,
         clientOrder: clientOrder
@@ -27845,6 +28069,8 @@
         state.desk.daily.reportWorker = worker;
         state.desk.daily.memoPage = 1;
         state.desk.daily.memoType = "일반";
+        state.desk.daily.memoTypeManual = false;
+        state.desk.daily.memoHighlight = false;
         syncDeskMemoComposerState_();
       });
     }
@@ -29388,8 +29614,7 @@
         deskJournalMemoFormEl.addEventListener("click", function(event) {
           var typeBtn = event.target.closest("[data-desk-memo-type]");
           if (typeBtn) {
-            state.desk.daily.memoType = typeBtn.getAttribute("data-desk-memo-type") || "일반";
-            syncDeskMemoComposerState_();
+            setDeskMemoType_(typeBtn.getAttribute("data-desk-memo-type") || "일반", true);
             return;
           }
           var templateBtn = event.target.closest("[data-desk-memo-template]");
@@ -29403,6 +29628,7 @@
               if (value) {
                 var current = String(deskJournalMemoInputEl.value || "").trim();
                 deskJournalMemoInputEl.value = current ? (current + " · " + value) : value;
+                syncDeskMemoTypeFromInput_();
               }
               deskJournalMemoInputEl.focus();
             }
@@ -29422,10 +29648,19 @@
         });
       }
       if (deskJournalMemoInputEl) {
+        deskJournalMemoInputEl.addEventListener("input", function() {
+          syncDeskMemoTypeFromInput_();
+        });
         deskJournalMemoInputEl.addEventListener("keydown", function(event) {
           if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
           event.preventDefault();
           saveDeskDailyMemoFromForm_();
+        });
+      }
+      if (deskJournalMemoHighlightEl) {
+        deskJournalMemoHighlightEl.addEventListener("change", function() {
+          state.desk.daily.memoHighlight = !!deskJournalMemoHighlightEl.checked;
+          syncDeskMemoComposerState_();
         });
       }
       if (deskJournalMemoWorkerEl) {
