@@ -4347,6 +4347,11 @@
       color: #617487;
       font-weight: 850;
     }
+    .desk-template-empty.compact {
+      min-height: 0;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
     .desk-template-editor {
       padding: 0;
     }
@@ -14459,7 +14464,7 @@
                 <p class="desk-panel-sub">소모품 재고, 공용 물품 현황, 대표님께 올릴 구매 요청 문안을 한 화면에서 관리합니다.</p>
               </div>
               <div class="desk-panel-head-actions">
-                <button class="desk-ghost-btn" id="deskSuppliesReloadBtn" type="button">다시시도</button>
+                <button class="desk-ghost-btn hidden" id="deskSuppliesReloadBtn" type="button">연결 다시시도</button>
                 <span class="desk-status-chip">Firebase 서버 저장</span>
               </div>
             </header>
@@ -16401,6 +16406,9 @@
     var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
     var DESK_RESPONSE_LOG_STATUS_OPTIONS = ["미처리", "검토중", "가이드 반영", "무시"];
     var DESK_RESPONSE_LOG_FILTER_OPTIONS = ["전체", "미처리", "검토중", "가이드 반영", "무시", "낮은 매칭", "최근 7일", "유사 질문"];
+    var DESK_RESPONSE_LOG_RENDER_LIMIT = 24;
+    var DESK_RESPONSE_GROUP_RENDER_LIMIT = 8;
+    var DESK_MESSAGE_TEMPLATE_RENDER_LIMIT = 30;
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -18429,6 +18437,11 @@
           status === "error" ? "연결 또는 저장 오류가 있어 자동 재시도를 기다리는 중입니다." :
           formatDeskSuppliesSyncTime_(state.desk.supplies.lastSyncAt);
       }
+      if (deskSuppliesReloadBtnEl) {
+        var shouldShowRetry = !realtimeEnabled || status === "error";
+        deskSuppliesReloadBtnEl.classList.toggle("hidden", !shouldShowRetry);
+        deskSuppliesReloadBtnEl.textContent = shouldShowRetry ? "연결 다시시도" : "다시시도";
+      }
       renderGlobalSyncWidget_();
     }
 
@@ -18479,6 +18492,44 @@
       if (meta.status === "error") globalSyncWidgetEl.classList.add("error");
       if (meta.status === "stopped") globalSyncWidgetEl.classList.add("stopped");
       if (globalSyncLabelEl) globalSyncLabelEl.textContent = meta.label;
+    }
+
+    function collectDeskPortalDiagnostics_() {
+      var visiblePanel = document.querySelector(".desk-panel:not(.hidden)");
+      var calendarWeeks = document.querySelectorAll(".desk-calendar-week");
+      var collapsedWeeks = document.querySelectorAll(".desk-calendar-week.collapsed");
+      return {
+        capturedAt: new Date().toISOString(),
+        activeModule: state.activeModule || "",
+        deskActiveTab: state.desk.activeTab || "",
+        visibleDeskPanel: visiblePanel ? (visiblePanel.getAttribute("data-desk-panel") || "") : "",
+        dom: {
+          totalElements: document.querySelectorAll("*").length,
+          buttons: document.querySelectorAll("button").length,
+          calendarWeeks: calendarWeeks.length,
+          collapsedCalendarWeeks: collapsedWeeks.length,
+          calendarRows: document.querySelectorAll(".desk-calendar-week-row").length,
+          calendarDays: document.querySelectorAll(".desk-calendar-day").length,
+          responseLogRows: document.querySelectorAll(".desk-response-log-row").length,
+          responseGroupCards: document.querySelectorAll(".desk-response-group-card").length,
+          messageTemplateRows: document.querySelectorAll(".desk-template-message-item").length
+        },
+        sync: getGlobalSyncState_(),
+        daily: {
+          memoCount: (state.desk.dailyMemos || []).length,
+          pendingQueueCount: Object.keys(state.desk.dailyPendingMemoWrites || {}).length,
+          deletedMemoCount: Object.keys(state.desk.dailyDeletedMemos || {}).length
+        },
+        supplies: {
+          syncStatus: state.desk.supplies.syncStatus || "idle",
+          realtimeEnabled: state.desk.supplies.realtimeEnabled !== false
+        }
+      };
+    }
+
+    if (typeof window !== "undefined") {
+      window.collectDeskPortalDiagnostics = collectDeskPortalDiagnostics_;
+      document.documentElement.setAttribute("data-desk-diagnostics", "ready");
     }
 
     function showDeskSupplyCopyStatus_(text, isError) {
@@ -21772,8 +21823,9 @@
         }).join("");
       }
       if (deskResponseGroupListEl) {
+        var visibleGroups = groups.slice(0, DESK_RESPONSE_GROUP_RENDER_LIMIT);
         deskResponseGroupListEl.innerHTML = groups.length
-          ? groups.map(function(group) {
+          ? visibleGroups.map(function(group) {
             var representative = group.representative || group.items[0] || {};
             return '<article class="desk-response-group-card">' +
               '<strong>' + escapeHtml(group.label || "비슷한 질문") + '</strong>' +
@@ -21788,7 +21840,10 @@
                 '<button type="button" data-desk-response-group-replay="' + escapeHtml(group.id) + '">대표 검색</button>' +
               '</div>' +
             '</article>';
-          }).join("")
+          }).join("") +
+            (groups.length > visibleGroups.length
+              ? '<div class="desk-template-empty compact">반복도가 높은 묶음 ' + escapeHtml(String(visibleGroups.length)) + '개만 표시 중입니다. 보기 조건을 좁히면 더 빠르게 찾을 수 있습니다.</div>'
+              : "")
           : '<div class="desk-template-empty">아직 반복되는 유사 질문 묶음이 없습니다.</div>';
       }
       if (deskResponseLogListEl) {
@@ -21797,7 +21852,8 @@
         } else if (!filteredLogs.length) {
           deskResponseLogListEl.innerHTML = '<div class="desk-template-empty">선택한 보기 조건에 해당하는 질문이 없습니다.</div>';
         } else {
-          deskResponseLogListEl.innerHTML = filteredLogs.slice(0, 40).map(function(item) {
+          var visibleLogs = filteredLogs.slice(0, DESK_RESPONSE_LOG_RENDER_LIMIT);
+          deskResponseLogListEl.innerHTML = visibleLogs.map(function(item) {
             var confidence = Math.round(Number(item.confidence || 0) * 100);
             var needsGuide = confidence < 28;
             var status = normalizeDeskResponseLogStatus_(item.status);
@@ -21821,7 +21877,10 @@
                 statusButtons +
               '</div>' +
             '</article>';
-          }).join("");
+          }).join("") +
+            (filteredLogs.length > visibleLogs.length
+              ? '<div class="desk-template-empty compact">최근/대표 질문 ' + escapeHtml(String(visibleLogs.length)) + '건만 표시 중입니다. 상태 필터를 사용하면 목록이 더 가벼워집니다.</div>'
+              : "");
         }
       }
       renderDeskResponseGuideManager_();
@@ -22314,7 +22373,13 @@
         deskTemplateMessageListEl.innerHTML = '<div class="desk-template-empty">조건에 맞는 메시지 문구가 없습니다.</div>';
         return;
       }
-      deskTemplateMessageListEl.innerHTML = filtered.map(function(item) {
+      var visibleItems = filtered.slice(0, DESK_MESSAGE_TEMPLATE_RENDER_LIMIT);
+      var selectedId = state.desk.messageTemplates.selectedTemplateId;
+      if (selectedId && !visibleItems.some(function(item) { return item.id === selectedId; })) {
+        var selectedItem = filtered.filter(function(item) { return item.id === selectedId; })[0];
+        if (selectedItem) visibleItems.push(selectedItem);
+      }
+      deskTemplateMessageListEl.innerHTML = visibleItems.map(function(item) {
         return '<article class="desk-template-message-item ' + (item.id === state.desk.messageTemplates.selectedTemplateId ? "selected" : "") + '" data-desk-template-message="' + escapeHtml(item.id) + '">' +
           '<button class="desk-template-check" type="button" data-desk-template-check="' + escapeHtml(item.id) + '"><i data-lucide="check"></i></button>' +
           '<div class="desk-template-message-copy"><strong>' + escapeHtml(item.title) + '</strong><p>' + escapeHtml(item.message).replace(/\n/g, "<br>") + '</p></div>' +
@@ -22328,7 +22393,10 @@
             '</div>' +
           '</div>' +
         '</article>';
-      }).join("");
+      }).join("") +
+        (filtered.length > visibleItems.length
+          ? '<div class="desk-template-empty compact">상위 ' + escapeHtml(String(visibleItems.length)) + '개 문구만 표시 중입니다. 검색어나 태그를 선택하면 더 빠르게 찾을 수 있습니다.</div>'
+          : "");
     }
 
     function renderDeskMessageTemplateEditor_() {
@@ -22711,54 +22779,56 @@
           return acc + Number(item.hours || 0);
         }, 0);
         var weekCellHtml = [];
-        weekCells.forEach(function(cell, cellIndex) {
-          var dayItems = (grouped[cell.date] || []).slice().sort(compareDeskShift_);
-          var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
-          var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
-          var showUnavailable = !!state.desk.expandedUnavailableDates[cell.date];
-          var isTodayCell = cell.date === getDeskDateKey_(new Date());
-          var isSelectedCell = cell.date === state.desk.selectedDateKey;
-          var dayTitle = formatDeskCalendarDayTitle_(cell.date, cell.day);
-          weekCellHtml.push('<article class="desk-calendar-day' +
-            (cell.outside ? ' outside' : '') +
-            (isTodayCell ? ' today' : '') +
-            (isSelectedCell ? ' selected' : '') +
-            '" data-desk-date="' + escapeHtml(cell.date) + '">' +
-            '<div class="desk-day-head">' +
-              '<div class="desk-day-num">' + escapeHtml(dayTitle) + (isTodayCell ? '<span class="desk-day-today-label">오늘</span>' : '') + '</div>' +
-              '<div class="desk-day-count">' + dayItems.length + '건</div>' +
-            '</div>' +
-            '<div class="desk-day-shifts">' +
-              (primaryItems.length ? primaryItems.map(function(item, itemIndex) {
-                var tone = getDeskShiftTone_(item);
-                return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
-                  '<span class="desk-shift-name">' + getDeskCalendarWorkerNameHtml_(item.worker) + '</span>' +
-                  renderDeskCalendarShiftTimeHtml_(item) +
-                  '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
-                  (item.note ? '<span class="desk-shift-note">' + escapeHtml(item.note) + '</span>' : '') +
-                '</button>';
-              }).join("") : '<div class="desk-day-empty-state"><i data-lucide="calendar-plus"></i><strong>+ 이 날짜에</strong><span>일정 추가</span><small>지난주 같은<br>요일 복사</small></div>') +
-              (unavailableItems.length ? (
-                '<button type="button" class="desk-shift-chip collapsed tone-unavailable" data-desk-toggle-unavailable="' + escapeHtml(cell.date) + '">' +
-                  '<span class="desk-shift-name">근무 불가 ' + unavailableItems.length + '명 ' + (showUnavailable ? '접기' : '보기') + '</span>' +
-                  '<span class="desk-shift-meta">사유/메모는 팝업에서 수정</span>' +
-                '</button>' +
-                (showUnavailable ? unavailableItems.map(function(item) {
-                  return '<button type="button" class="desk-shift-chip tone-unavailable" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+        if (!isCollapsed) {
+          weekCells.forEach(function(cell, cellIndex) {
+            var dayItems = (grouped[cell.date] || []).slice().sort(compareDeskShift_);
+            var primaryItems = dayItems.filter(function(item) { return !item.unavailable; });
+            var unavailableItems = dayItems.filter(function(item) { return !!item.unavailable; });
+            var showUnavailable = !!state.desk.expandedUnavailableDates[cell.date];
+            var isTodayCell = cell.date === getDeskDateKey_(new Date());
+            var isSelectedCell = cell.date === state.desk.selectedDateKey;
+            var dayTitle = formatDeskCalendarDayTitle_(cell.date, cell.day);
+            weekCellHtml.push('<article class="desk-calendar-day' +
+              (cell.outside ? ' outside' : '') +
+              (isTodayCell ? ' today' : '') +
+              (isSelectedCell ? ' selected' : '') +
+              '" data-desk-date="' + escapeHtml(cell.date) + '">' +
+              '<div class="desk-day-head">' +
+                '<div class="desk-day-num">' + escapeHtml(dayTitle) + (isTodayCell ? '<span class="desk-day-today-label">오늘</span>' : '') + '</div>' +
+                '<div class="desk-day-count">' + dayItems.length + '건</div>' +
+              '</div>' +
+              '<div class="desk-day-shifts">' +
+                (primaryItems.length ? primaryItems.map(function(item, itemIndex) {
+                  var tone = getDeskShiftTone_(item);
+                  return '<button type="button" class="desk-shift-chip tone-' + tone + (item.id === state.desk.selectedShiftId ? ' active' : '') + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
                     '<span class="desk-shift-name">' + getDeskCalendarWorkerNameHtml_(item.worker) + '</span>' +
                     renderDeskCalendarShiftTimeHtml_(item) +
-                    '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + (item.note ? (' <span style="display:inline-block;margin-left:6px;">' + escapeHtml(item.note) + '</span>') : '') + '</span>' +
+                    '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
+                    (item.note ? '<span class="desk-shift-note">' + escapeHtml(item.note) + '</span>' : '') +
                   '</button>';
-                }).join("") : '')
-              ) : '') +
-              '<div class="desk-day-actions">' +
-                '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
-                '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '"><i data-lucide="copy"></i><span>지난주 같은 요일 복사</span></button>' +
-                (dayItems.length ? '<button type="button" class="desk-day-delete-btn" data-desk-copy-hide="true" data-desk-delete-date="' + escapeHtml(cell.date) + '"><i data-lucide="trash-2"></i><span>이 날짜 근무자 모두 삭제</span></button>' : '') +
+                }).join("") : '<div class="desk-day-empty-state"><i data-lucide="calendar-plus"></i><strong>+ 이 날짜에</strong><span>일정 추가</span><small>지난주 같은<br>요일 복사</small></div>') +
+                (unavailableItems.length ? (
+                  '<button type="button" class="desk-shift-chip collapsed tone-unavailable" data-desk-toggle-unavailable="' + escapeHtml(cell.date) + '">' +
+                    '<span class="desk-shift-name">근무 불가 ' + unavailableItems.length + '명 ' + (showUnavailable ? '접기' : '보기') + '</span>' +
+                    '<span class="desk-shift-meta">사유/메모는 팝업에서 수정</span>' +
+                  '</button>' +
+                  (showUnavailable ? unavailableItems.map(function(item) {
+                    return '<button type="button" class="desk-shift-chip tone-unavailable" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '" data-desk-shift-id="' + escapeHtml(item.id) + '" data-desk-date="' + escapeHtml(item.date) + '">' +
+                      '<span class="desk-shift-name">' + getDeskCalendarWorkerNameHtml_(item.worker) + '</span>' +
+                      renderDeskCalendarShiftTimeHtml_(item) +
+                      '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + (item.note ? (' <span style="display:inline-block;margin-left:6px;">' + escapeHtml(item.note) + '</span>') : '') + '</span>' +
+                    '</button>';
+                  }).join("") : '')
+                ) : '') +
+                '<div class="desk-day-actions">' +
+                  '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
+                  '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '"><i data-lucide="copy"></i><span>지난주 같은 요일 복사</span></button>' +
+                  (dayItems.length ? '<button type="button" class="desk-day-delete-btn" data-desk-copy-hide="true" data-desk-delete-date="' + escapeHtml(cell.date) + '"><i data-lucide="trash-2"></i><span>이 날짜 근무자 모두 삭제</span></button>' : '') +
+                '</div>' +
               '</div>' +
-            '</div>' +
-          '</article>');
-        });
+            '</article>');
+          });
+        }
         rowsHtml.push(
           '<section class="desk-calendar-week' + (isCollapsed ? ' collapsed' : '') + '">' +
             '<div class="desk-calendar-week-head collapsible">' +
@@ -22771,7 +22841,7 @@
                 '<button type="button" class="desk-week-collapse-btn" data-desk-week-toggle="' + escapeHtml(weekSummaryKey) + '">' + (isCollapsed ? '펼치기' : '접기') + '</button>' +
               '</div>' +
             '</div>' +
-            '<div class="desk-calendar-week-row">' + weekCellHtml.join("") + '</div>' +
+            (isCollapsed ? '' : '<div class="desk-calendar-week-row">' + weekCellHtml.join("") + '</div>') +
           '</section>'
         );
       }
