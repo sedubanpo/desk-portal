@@ -2503,15 +2503,21 @@ function getTuitionMonthSummary(payload) {
         target.lastUpdatedAt = String(follow.lastUpdatedAt || "");
       }
 
-      if (target.collectedAmount > 0 || (target.guideAmount > 0 && target.collectedAmount >= target.guideAmount)) {
+      var computedOutstanding = Math.max(0, Math.round((target.guideAmount || 0) - (target.collectedAmount || 0)));
+      if (
+        (target.guideAmount > 0 && target.collectedAmount >= target.guideAmount) ||
+        (target.guideAmount <= 0 && target.collectedAmount > 0)
+      ) {
         target.unpaidStatus = "납부완료";
+      } else if (computedOutstanding > 0 && target.unpaidStatus === "납부완료") {
+        target.unpaidStatus = "확인필요";
       } else if (!follow) {
         target.unpaidStatus = "안내이전";
       }
 
       target.guideAmount = Math.round(target.guideAmount || 0);
       target.collectedAmount = Math.round(target.collectedAmount || 0);
-      target.outstandingAmount = Math.max(0, Math.round((target.guideAmount || 0) - (target.collectedAmount || 0)));
+      target.outstandingAmount = computedOutstanding;
     });
 
     var list = Object.keys(studentMap).map(function(key) {
@@ -2980,8 +2986,11 @@ function getTuitionStudentMonthlyHistory(payload) {
       var paidDates = Object.keys(paidInfo.paidDates || {}).sort(function(a, b) { return String(a).localeCompare(String(b)); });
       var routes = Object.keys(paidInfo.routes || {});
       var unpaidStatus = normalizeTuitionUnpaidStatus_(followInfo.unpaidStatus || "");
-      var paid = collectedAmount > 0 || unpaidStatus === "납부완료" || unpaidStatus === "이월금";
+      var paid = unpaidStatus === "이월금" ||
+        (guideAmount > 0 && collectedAmount >= guideAmount) ||
+        (guideAmount <= 0 && collectedAmount > 0);
       if (paid && unpaidStatus !== "이월금") unpaidStatus = "납부완료";
+      if (!paid && outstandingAmount > 0 && unpaidStatus === "납부완료") unpaidStatus = "확인필요";
       return {
         monthName: monthName,
         guideAmount: guideAmount,
