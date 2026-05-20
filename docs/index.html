@@ -6623,6 +6623,7 @@
     }
     .tuition-row-unguided td { background: #f3f4f6; }
     .tuition-row-guided td { background: #fff8d9; }
+    .tuition-row-partial td { background: #eff6ff; }
     .tuition-row-check td { background: #ecfeff; }
     .tuition-row-paid td { background: #ecf9df; }
     .status-chip {
@@ -6636,6 +6637,7 @@
     .st-paid { background: #dcfce7; color: #166534; }
     .st-before { background: #e5e7eb; color: #475569; }
     .st-guided { background: #fef3c7; color: #92400e; }
+    .st-partial { background: #dbeafe; color: #1d4ed8; }
     .st-carry { background: #dcfce7; color: #166534; }
     .st-lost { background: #fee2e2; color: #991b1b; }
     .st-check { background: #ccfbf1; color: #0f766e; }
@@ -6753,6 +6755,7 @@
     .tuition-student-carryover {
       display: inline-flex;
       align-items: center;
+      gap: 6px;
       width: fit-content;
       max-width: 100%;
       border-radius: 999px;
@@ -6763,6 +6766,23 @@
       font-size: 11px;
       font-weight: 900;
       white-space: nowrap;
+    }
+    .tuition-carryover-hide-btn {
+      border: 0;
+      border-left: 1px solid rgba(190, 18, 60, 0.24);
+      background: transparent;
+      color: #9f1239;
+      cursor: pointer;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 950;
+      line-height: 1;
+      padding: 1px 0 1px 6px;
+    }
+    .tuition-carryover-hide-btn:hover {
+      color: #881337;
+      text-decoration: underline;
+      text-underline-offset: 2px;
     }
     .tuition-row-carryover td:first-child {
       box-shadow: inset 4px 0 0 #ef4444;
@@ -13962,6 +13982,7 @@
                 <option value="">전체</option>
                 <option value="납부완료">납부완료</option>
                 <option value="이월금">이월금</option>
+                <option value="일부완료">일부완료</option>
                 <option value="안내이전">안내이전</option>
                 <option value="안내완료">안내완료</option>
                 <option value="연락두절">연락두절</option>
@@ -16301,6 +16322,7 @@
           <label for="tuitionContactStatus">연락 기록 상태(자동)</label>
           <select id="tuitionContactStatus" class="modal-select">
             <option value="안내완료">안내완료</option>
+            <option value="일부완료">일부완료</option>
             <option value="납부예정">납부예정</option>
             <option value="확인필요">확인필요</option>
             <option value="연락두절">연락두절</option>
@@ -16753,6 +16775,7 @@
         monthlyFocus: "both",
         statusListStatus: "",
         unpaidCacheByMonth: {},
+        hiddenCarryoverByMonth: {},
         studentHistoryCache: {},
         parentReplyTemplates: [],
         parentReplyTemplatesLoaded: false,
@@ -31032,7 +31055,10 @@
       state.tuition.calendarSelectedDateKey = state.tuition.dailyCursorDateKey || "";
       applyTuitionLocalFilters_();
       var monthAtRender = state.tuition.selectedMonth || "";
-      ensureTuitionPreviousMonthUnpaidCache_(monthAtRender)
+      Promise.all([
+        ensureTuitionPreviousMonthUnpaidCache_(monthAtRender),
+        ensureTuitionCarryoverHiddenCache_(monthAtRender)
+      ])
         .then(function() {
           if (state.tuition.selectedMonth !== monthAtRender) return;
           renderTuitionStudentRows();
@@ -31114,6 +31140,7 @@
       var statusMap = {
         "납부완료": 0,
         "이월금": 0,
+        "일부완료": 0,
         "안내이전": 0,
         "안내완료": 0,
         "연락두절": 0,
@@ -31160,6 +31187,7 @@
       var colorMap = {
         "납부완료": "#22c55e",
         "이월금": "#65a30d",
+        "일부완료": "#3b82f6",
         "안내이전": "#94a3b8",
         "안내완료": "#f59e0b",
         "연락두절": "#ef4444",
@@ -31272,6 +31300,7 @@
       var items = [
         { status: "안내이전", title: "안내이전", desc: "오늘 안내 필요", action: "대상 보기", icon: "megaphone", color: "#f97316", bg: "#fff7ed", value: byStatus["안내이전"] || 0 },
         { status: "안내완료", title: "안내완료 미납", desc: "재연락 후보", action: "연락 기록", icon: "phone-call", color: "#f59e0b", bg: "#fffbeb", value: byStatus["안내완료"] || 0 },
+        { status: "일부완료", title: "일부완료", desc: "잔액 확인", action: "확인", icon: "receipt", color: "#3b82f6", bg: "#eff6ff", value: byStatus["일부완료"] || 0 },
         { status: "납부예정", title: "납부예정", desc: "예정일 확인", action: "확인", icon: "calendar-days", color: "#4f46e5", bg: "#eef2ff", value: byStatus["납부예정"] || 0 },
         { status: "highUnpaid", title: "고액 미납", desc: "10만원 이상 미납", action: "필터 적용", icon: "circle-dollar-sign", color: "#ef4444", bg: "#fef2f2", value: highUnpaid.length },
         { status: "amountIssue", title: "이상 금액", desc: "금액 데이터 점검", action: "점검", icon: "badge-alert", color: "#b45309", bg: "#fff7ed", value: amountIssues.length }
@@ -31504,7 +31533,7 @@
         tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
         return;
       }
-      var groupOrder = ["안내이전", "안내완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
+      var groupOrder = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
       var grouped = {};
       rows.forEach(function(row) {
         var st = String(row.unpaidStatus || "안내이전");
@@ -31543,6 +31572,7 @@
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
         else if (row.unpaidStatus === "안내완료") rowClass = "tuition-row-guided";
+        else if (row.unpaidStatus === "일부완료") rowClass = "tuition-row-partial";
         else if (row.unpaidStatus === "확인필요") rowClass = "tuition-row-check";
         else if (row.unpaidStatus === "납부완료" || row.unpaidStatus === "이월금") rowClass = "tuition-row-paid";
         if (carryInfo) rowClass += " tuition-row-carryover";
@@ -31593,6 +31623,13 @@
           var studentName = btn.getAttribute("data-student-history") || "";
           if (!studentName) return;
           openTuitionStudentHistoryModal_(studentName);
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-hide-tuition-carryover]"), function(btn) {
+        btn.addEventListener("click", function(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          hideTuitionPreviousMonthCarryover_(btn.getAttribute("data-hide-tuition-carryover") || "");
         });
       });
       refreshLucideIcons_();
@@ -31815,7 +31852,8 @@
     function buildTuitionStudentCell(row, carryInfo) {
       var carryHtml = "";
       if (carryInfo) {
-        carryHtml = '<span class="tuition-student-carryover">전월 미납 ' + formatWon(carryInfo.outstandingAmount || 0) + '</span>';
+        carryHtml = '<span class="tuition-student-carryover">전월 미납 ' + formatWon(carryInfo.outstandingAmount || 0) +
+          '<button type="button" class="tuition-carryover-hide-btn" data-hide-tuition-carryover="' + escapeHtml(formatStudentName(row.studentName)) + '" title="이 학생의 전월 미납 표시 숨김">숨김</button></span>';
       }
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
@@ -31946,7 +31984,82 @@
       return promise;
     }
 
-    function getTuitionPreviousMonthCarryInfo_(studentName, currentMonthName) {
+    function getTuitionCarryoverHiddenKey_(studentName) {
+      return formatStudentName(studentName);
+    }
+
+    function ensureTuitionCarryoverHiddenCache_(monthName) {
+      var currentMonth = String(monthName || "").trim();
+      if (!currentMonth) return Promise.resolve({});
+      var cache = state.tuition.hiddenCarryoverByMonth[currentMonth];
+      if (cache && cache.loaded) return Promise.resolve(cache.map || {});
+      if (cache && cache.promise) return cache.promise;
+
+      var promise = deskRealtimeFetchJson_("GET", buildTuitionConfigRealtimeUrl_("carryoverSuppressions/" + currentMonth), null)
+        .then(function(snapshot) {
+          var map = (snapshot && typeof snapshot === "object") ? snapshot : {};
+          state.tuition.hiddenCarryoverByMonth[currentMonth] = {
+            loaded: true,
+            map: map
+          };
+          return map;
+        })
+        .catch(function(err) {
+          console.warn("tuition carryover suppression load failed", err);
+          state.tuition.hiddenCarryoverByMonth[currentMonth] = {
+            loaded: true,
+            map: {}
+          };
+          return {};
+        });
+
+      state.tuition.hiddenCarryoverByMonth[currentMonth] = {
+        loaded: false,
+        map: {},
+        promise: promise
+      };
+      return promise;
+    }
+
+    function isTuitionCarryoverHidden_(studentName, currentMonthName) {
+      var currentMonth = String(currentMonthName || "").trim();
+      var cache = state.tuition.hiddenCarryoverByMonth[currentMonth];
+      if (!cache || !cache.loaded) return false;
+      var key = getTuitionCarryoverHiddenKey_(studentName);
+      return !!((cache.map || {})[key]);
+    }
+
+    function hideTuitionPreviousMonthCarryover_(studentName) {
+      var currentMonth = state.tuition.selectedMonth || "";
+      var name = formatStudentName(studentName);
+      if (!currentMonth || !name) return;
+      var carryInfo = getTuitionPreviousMonthCarryInfo_(name, currentMonth, { ignoreHidden: true });
+      if (!carryInfo) return;
+      if (!confirm(name + " 학생의 전월 미납 표시를 숨길까요?\\n잘못 안내되었거나 받지 않기로 한 전월 미납일 때 사용하세요.")) return;
+
+      var cache = state.tuition.hiddenCarryoverByMonth[currentMonth];
+      var map = Object.assign({}, (cache && cache.map) || {});
+      map[getTuitionCarryoverHiddenKey_(name)] = {
+        studentName: name,
+        currentMonth: currentMonth,
+        previousMonth: carryInfo.monthName || getTuitionPrevMonthName_(currentMonth),
+        outstandingAmount: Math.max(0, toNumber(carryInfo.outstandingAmount, 0)),
+        hiddenAt: new Date().toISOString()
+      };
+      state.tuition.hiddenCarryoverByMonth[currentMonth] = {
+        loaded: true,
+        map: map
+      };
+      renderTuitionStudentRows();
+      return deskRealtimeFetchJson_("PUT", buildTuitionConfigRealtimeUrl_("carryoverSuppressions/" + currentMonth), map)
+        .catch(function(err) {
+          console.warn("tuition carryover suppression save failed", err);
+          alert("전월 미납 숨김 저장에 실패했습니다. 새로고침 후 다시 시도해 주세요.");
+        });
+    }
+
+    function getTuitionPreviousMonthCarryInfo_(studentName, currentMonthName, options) {
+      if (!(options && options.ignoreHidden) && isTuitionCarryoverHidden_(studentName, currentMonthName)) return null;
       var prevMonth = getTuitionPrevMonthName_(currentMonthName);
       var cache = state.tuition.unpaidCacheByMonth[prevMonth];
       if (!cache || !cache.loaded) return null;
@@ -33026,6 +33139,7 @@
       var cls = "st-before";
       if (s === "납부완료") cls = "st-paid";
       else if (s === "이월금") cls = "st-carry";
+      else if (s === "일부완료") cls = "st-partial";
       else if (s === "안내완료") cls = "st-guided";
       else if (s === "연락두절") cls = "st-lost";
       else if (s === "확인필요") cls = "st-check";
@@ -33036,7 +33150,7 @@
     function buildTuitionStatusControl(row) {
       var s = String(row && row.unpaidStatus || "안내이전");
       var studentName = String(row && row.studentName || "");
-      var options = ["안내이전", "안내완료", "확인필요", "납부예정", "연락두절", "이월금", "납부완료"].map(function(v) {
+      var options = ["안내이전", "안내완료", "일부완료", "확인필요", "납부예정", "연락두절", "이월금", "납부완료"].map(function(v) {
         return '<option value="' + escapeHtml(v) + '"' + (v === s ? " selected" : "") + ">" + v + "</option>";
       }).join("");
       return '<div class="status-edit-wrap">' +

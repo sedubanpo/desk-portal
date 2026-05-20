@@ -2509,6 +2509,8 @@ function getTuitionMonthSummary(payload) {
         (target.guideAmount <= 0 && target.collectedAmount > 0)
       ) {
         target.unpaidStatus = "납부완료";
+      } else if (target.guideAmount > 0 && target.collectedAmount > 0 && computedOutstanding > 0) {
+        target.unpaidStatus = "일부완료";
       } else if (computedOutstanding > 0 && target.unpaidStatus === "납부완료") {
         target.unpaidStatus = "확인필요";
       } else if (!follow) {
@@ -2996,6 +2998,7 @@ function getTuitionStudentMonthlyHistory(payload) {
         (guideAmount > 0 && collectedAmount >= guideAmount) ||
         (guideAmount <= 0 && collectedAmount > 0);
       if (paid && unpaidStatus !== "이월금") unpaidStatus = "납부완료";
+      if (!paid && guideAmount > 0 && collectedAmount > 0 && outstandingAmount > 0) unpaidStatus = "일부완료";
       if (!paid && outstandingAmount > 0 && unpaidStatus === "납부완료") unpaidStatus = "확인필요";
       return {
         monthName: monthName,
@@ -4039,6 +4042,7 @@ function normalizeTuitionUnpaidStatus_(status) {
   var allow = {
     "납부완료": true,
     "이월금": true,
+    "일부완료": true,
     "안내이전": true,
     "안내완료": true,
     "연락두절": true,
@@ -4060,6 +4064,7 @@ function buildTuitionSummaryStats_(rows, paymentRows) {
   var statusMap = {
     "납부완료": 0,
     "이월금": 0,
+    "일부완료": 0,
     "안내이전": 0,
     "안내완료": 0,
     "연락두절": 0,
