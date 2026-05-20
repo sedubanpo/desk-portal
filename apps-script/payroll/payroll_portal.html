@@ -11644,6 +11644,17 @@
       border-radius: 0;
       background: transparent;
     }
+    .desk-type-panel-head,
+    .desk-memo-type-settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-type-panel-head .desk-composer-label {
+      margin-bottom: 0;
+    }
     .desk-memo-type-chip,
     .desk-template-chip {
       border: 1px solid #d8e4de;
@@ -11659,6 +11670,81 @@
     .desk-memo-type-chip.active,
     .desk-template-chip:hover { background: #064e3b; border-color: #064e3b; color: #fff; }
     .desk-memo-type-chip.urgent { color: #dc2626; }
+    .desk-memo-type-chip.urgent.active { color: #fff; }
+    .desk-memo-type-settings {
+      grid-column: 1 / -1;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #f8fbf9;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .desk-memo-type-settings.hidden { display: none; }
+    .desk-type-settings-sub {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+    .desk-memo-type-settings-list {
+      display: grid;
+      gap: 7px;
+    }
+    .desk-memo-type-setting-row {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .desk-memo-type-setting-main {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .desk-memo-type-keywords {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .desk-memo-type-setting-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .desk-memo-type-setting-actions button {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fff;
+      color: #42576a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .desk-memo-type-setting-actions button.danger { color: #dc2626; }
+    .desk-memo-type-setting-actions svg { width: 14px; height: 14px; }
+    .desk-memo-type-form {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1.4fr) minmax(110px, 0.7fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+    .desk-memo-type-form-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
     .desk-memo-compose-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 96px;
@@ -11982,6 +12068,7 @@
     .desk-memo-type-badge.data { background: #ecfdf5; color: #0f766e; border-color: #bbf7d0; }
     .desk-memo-type-badge.student { background: #f3e8ff; color: #7c3aed; border-color: #ddd6fe; }
     .desk-memo-type-badge.urgent { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+    .desk-memo-type-badge.custom { background: #f0fdfa; color: #0f766e; border-color: #ccfbf1; }
     .desk-note-main { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; }
     .desk-note-worker-inline { color: #334155; font-size: 12px; font-weight: 900; white-space: nowrap; }
     .desk-note-text { color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -12238,6 +12325,85 @@
       color: #0f172a;
       font-size: 13px;
       font-weight: 900;
+    }
+    .desk-report-summary-chart-wrap {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .desk-report-donut {
+      width: 124px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,0.08);
+    }
+    .desk-report-donut::after {
+      content: "";
+      position: absolute;
+      inset: 30px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.06);
+    }
+    .desk-report-donut span {
+      position: relative;
+      z-index: 1;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: 950;
+    }
+    .desk-report-summary-legend {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .desk-report-summary-legend-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .desk-report-summary-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .desk-report-summary-swatch {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--type-color, #0d684d);
+      flex: 0 0 auto;
+    }
+    .desk-report-summary-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #eef2f7;
+      overflow: hidden;
+      min-width: 56px;
+    }
+    .desk-report-summary-bar span {
+      display: block;
+      height: 100%;
+      width: var(--type-ratio, 0%);
+      min-width: 4px;
+      border-radius: inherit;
+      background: var(--type-color, #0d684d);
+    }
+    .desk-report-summary-count {
+      color: #64748b;
+      white-space: nowrap;
     }
     .desk-report-main-item {
       border: 1px solid #fed7aa;
@@ -12556,6 +12722,9 @@
     .desk-daily-journal-mode .desk-composer-row {
       grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
       gap: 10px 14px;
+    }
+    .desk-daily-journal-mode .desk-memo-type-settings {
+      grid-column: 1 / -1;
     }
     .desk-daily-journal-mode .desk-template-panel {
       grid-column: 2 / 3;
@@ -13357,6 +13526,13 @@
       }
       .tuition-metric-card:last-child {
         border-bottom: 0;
+      }
+      .desk-memo-type-form,
+      .desk-report-summary-chart-wrap {
+        grid-template-columns: 1fr;
+      }
+      .desk-report-donut {
+        width: 118px;
       }
     }
   </style>
@@ -15276,14 +15452,50 @@
                   <div class="desk-memo-worker-quick hidden" id="deskJournalMemoWorkerQuick"></div>
                   <div class="desk-composer-row">
                     <div class="desk-composer-group">
-                      <div class="desk-composer-label">업무 유형 <span class="desk-type-auto-hint" id="deskMemoTypeAutoHint">자동 분류</span></div>
-                      <div class="desk-chip-row" id="deskMemoTypeChips">
-                        <button class="desk-memo-type-chip active" type="button" data-desk-memo-type="일반">일반</button>
-                        <button class="desk-memo-type-chip" type="button" data-desk-memo-type="상담">상담</button>
-                        <button class="desk-memo-type-chip" type="button" data-desk-memo-type="시설">시설</button>
-                        <button class="desk-memo-type-chip" type="button" data-desk-memo-type="자료">자료</button>
-                        <button class="desk-memo-type-chip" type="button" data-desk-memo-type="학생">학생</button>
-                        <button class="desk-memo-type-chip urgent" type="button" data-desk-memo-type="긴급">긴급</button>
+                      <div class="desk-type-panel-head">
+                        <div class="desk-composer-label">업무 유형 <span class="desk-type-auto-hint" id="deskMemoTypeAutoHint">자동 분류</span></div>
+                        <button class="desk-template-manage-btn" id="deskMemoTypeSettingsBtn" type="button"><i data-lucide="sliders-horizontal"></i>유형 설정</button>
+                      </div>
+                      <div class="desk-chip-row" id="deskMemoTypeChips"></div>
+                    </div>
+                    <div class="desk-memo-type-settings hidden" id="deskMemoTypeSettingsPanel">
+                      <div class="desk-memo-type-settings-head">
+                        <div>
+                          <div class="desk-composer-label">업무 유형 자동 매칭 설정</div>
+                          <div class="desk-type-settings-sub">키워드는 쉼표로 구분합니다. 저장된 설정은 모든 데스크 PC에 공유됩니다.</div>
+                        </div>
+                        <button class="desk-template-manage-btn" id="deskMemoTypeResetBtn" type="button"><i data-lucide="rotate-ccw"></i>기본값</button>
+                      </div>
+                      <div class="desk-memo-type-settings-list" id="deskMemoTypeSettingsList"></div>
+                      <div class="desk-memo-type-form">
+                        <input id="deskMemoTypeEditingId" type="hidden">
+                        <div class="field">
+                          <label for="deskMemoTypeLabelInput">유형 이름</label>
+                          <input id="deskMemoTypeLabelInput" class="modal-input" type="text" placeholder="예: 수납">
+                        </div>
+                        <div class="field">
+                          <label for="deskMemoTypeKeywordsInput">자동 매칭 키워드</label>
+                          <input id="deskMemoTypeKeywordsInput" class="modal-input" type="text" placeholder="예: 수납, 결제, 미납, 환불">
+                        </div>
+                        <div class="field">
+                          <label for="deskMemoTypeIconSelect">아이콘</label>
+                          <select id="deskMemoTypeIconSelect" class="modal-input">
+                            <option value="pencil">기본</option>
+                            <option value="phone">전화/상담</option>
+                            <option value="wrench">시설</option>
+                            <option value="upload">자료</option>
+                            <option value="user-round">학생</option>
+                            <option value="bell">긴급</option>
+                            <option value="credit-card">수납</option>
+                            <option value="calendar-days">시간표</option>
+                            <option value="clipboard-list">체크리스트</option>
+                            <option value="message-square">메시지</option>
+                          </select>
+                        </div>
+                        <div class="desk-memo-type-form-actions">
+                          <button class="modal-action primary" id="deskMemoTypeSaveBtn" type="button">유형 저장</button>
+                          <button class="modal-action" id="deskMemoTypeNewBtn" type="button">새 유형</button>
+                        </div>
                       </div>
                     </div>
                     <div class="desk-template-panel">
@@ -16134,6 +16346,7 @@
     var DESK_TASK_ASSIGN_ALERT_SEEN_KEY = "desk_portal_task_assign_alert_dismissed_v1";
     var DESK_TASK_ASSIGN_ALERT_ACTIVE_KEY = "desk_portal_task_assign_alert_active_v1";
     var DESK_MEMO_TEMPLATES_STORAGE_KEY = "desk_portal_daily_memo_templates_v1";
+    var DESK_MEMO_TYPES_STORAGE_KEY = "desk_portal_daily_memo_types_v1";
     var DESK_DAILY_PENDING_MEMO_WRITES_KEY = "desk_portal_daily_pending_memo_writes_v1";
     var DESK_DAILY_DELETED_MEMOS_KEY = "desk_portal_daily_deleted_memos_v1";
     var DESK_DAILY_DELETE_TOMBSTONE_MS = 5 * 60 * 1000;
@@ -16143,13 +16356,6 @@
     var DESK_RESPONSE_LOGS_STORAGE_KEY = "desk_portal_response_question_logs_v1";
     var DESK_RESPONSE_LOG_STATUS_OPTIONS = ["미처리", "검토중", "가이드 반영", "무시"];
     var DESK_RESPONSE_LOG_FILTER_OPTIONS = ["전체", "미처리", "검토중", "가이드 반영", "무시", "낮은 매칭", "최근 7일", "유사 질문"];
-    var DESK_MEMO_TYPE_KEYWORD_RULES = [
-      { type: "긴급", keywords: ["긴급", "사고", "응급", "컴플레인", "항의", "민원", "누수", "정전", "분실", "아픔", "다침", "중단"] },
-      { type: "상담", keywords: ["상담", "학부모", "어머님", "아버님", "문의", "전화", "카톡", "응대", "연락", "방문", "면담", "수강료", "납부", "결제", "미납"] },
-      { type: "자료", keywords: ["자료", "업로드", "노션", "엑세스", "액세스", "입력", "출력", "프린트", "복사", "문서", "파일", "엑셀", "시간표 작성"] },
-      { type: "학생", keywords: ["학생", "등원", "하원", "출결", "지각", "결석", "시간표", "스케줄", "수업", "보강", "수행평가"] },
-      { type: "시설", keywords: ["청소", "시설", "강의실", "냉난방", "에어컨", "책상", "의자", "프린터", "비품", "소모품", "쓰레기", "정리", "수리"] }
-    ];
     var TUITION_PARENT_REPLY_TEMPLATES_STORAGE_KEY = "desk_portal_tuition_parent_reply_templates_v1";
     var TUITION_CONFIG_RT_PATH = "desk_portal/tuition_config";
     var DESK_TASK_ASSIGN_ALERT_RECENT_MS = 15 * 60 * 1000;
@@ -16219,6 +16425,15 @@
       { icon: "calendar-clock", label: "시간표 수정", text: "학생 시간표 수정" },
       { icon: "plus", label: "직접 입력", text: "" }
     ];
+    var DESK_DEFAULT_MEMO_TYPES = [
+      { id: "general", label: "일반", icon: "pencil", className: "general", color: "#64748b", keywords: [] },
+      { id: "consult", label: "상담", icon: "phone", className: "consult", color: "#ea580c", keywords: ["상담", "학부모", "어머님", "아버님", "문의", "전화", "카톡", "응대", "연락", "방문", "면담", "수강료", "납부", "결제", "미납"] },
+      { id: "facility", label: "시설", icon: "wrench", className: "facility", color: "#2563eb", keywords: ["청소", "시설", "강의실", "냉난방", "에어컨", "책상", "의자", "프린터", "비품", "소모품", "쓰레기", "정리", "수리"] },
+      { id: "data", label: "자료", icon: "upload", className: "data", color: "#0f766e", keywords: ["자료", "업로드", "노션", "엑세스", "액세스", "입력", "출력", "프린트", "복사", "문서", "파일", "엑셀", "시간표 작성"] },
+      { id: "student", label: "학생", icon: "user-round", className: "student", color: "#7c3aed", keywords: ["학생", "등원", "하원", "출결", "지각", "결석", "시간표", "스케줄", "수업", "보강", "수행평가"] },
+      { id: "urgent", label: "긴급", icon: "bell", className: "urgent", color: "#dc2626", keywords: ["긴급", "사고", "응급", "컴플레인", "항의", "민원", "누수", "정전", "분실", "아픔", "다침", "중단"] }
+    ];
+    var DESK_MEMO_TYPE_CHART_COLORS = ["#0d684d", "#2563eb", "#7c3aed", "#ea580c", "#dc2626", "#0f766e", "#b45309", "#334155"];
 
     function canonicalizeDeskWorkerName_(name) {
       var text = String(name || "").trim();
@@ -16388,6 +16603,10 @@
           memoTemplates: [],
           memoTemplatesLoaded: false,
           memoTemplatesLoading: false,
+          memoTypes: [],
+          memoTypesLoaded: false,
+          memoTypesLoading: false,
+          memoTypeSettingsOpen: false,
           tasks: [],
           memos: [],
           carryoverTasks: [],
@@ -16877,6 +17096,17 @@
     var deskJournalMemoWorkerQuickEl = document.getElementById("deskJournalMemoWorkerQuick");
     var deskJournalMemoInputEl = document.getElementById("deskJournalMemoInput");
     var deskMemoTypeAutoHintEl = document.getElementById("deskMemoTypeAutoHint");
+    var deskMemoTypeChipsEl = document.getElementById("deskMemoTypeChips");
+    var deskMemoTypeSettingsBtnEl = document.getElementById("deskMemoTypeSettingsBtn");
+    var deskMemoTypeSettingsPanelEl = document.getElementById("deskMemoTypeSettingsPanel");
+    var deskMemoTypeSettingsListEl = document.getElementById("deskMemoTypeSettingsList");
+    var deskMemoTypeEditingIdEl = document.getElementById("deskMemoTypeEditingId");
+    var deskMemoTypeLabelInputEl = document.getElementById("deskMemoTypeLabelInput");
+    var deskMemoTypeKeywordsInputEl = document.getElementById("deskMemoTypeKeywordsInput");
+    var deskMemoTypeIconSelectEl = document.getElementById("deskMemoTypeIconSelect");
+    var deskMemoTypeSaveBtnEl = document.getElementById("deskMemoTypeSaveBtn");
+    var deskMemoTypeNewBtnEl = document.getElementById("deskMemoTypeNewBtn");
+    var deskMemoTypeResetBtnEl = document.getElementById("deskMemoTypeResetBtn");
     var deskJournalMemoHighlightEl = document.getElementById("deskJournalMemoHighlight");
     var deskJournalMemoHighlightWrapEl = document.getElementById("deskJournalMemoHighlightWrap");
     var deskJournalMemoSubmitBtnEl = document.getElementById("deskJournalMemoSubmitBtn");
@@ -17166,6 +17396,10 @@
       state.desk.daily.memoTemplates = loadDeskMemoTemplates_();
       state.desk.daily.memoTemplatesLoaded = false;
       state.desk.daily.memoTemplatesLoading = false;
+      state.desk.daily.memoTypes = loadDeskMemoTypes_();
+      state.desk.daily.memoTypesLoaded = false;
+      state.desk.daily.memoTypesLoading = false;
+      state.desk.daily.memoTypeSettingsOpen = false;
       state.desk.daily.templateEditMode = false;
       state.desk.daily.editorMode = "shared";
       state.desk.daily.editingMemoId = "";
@@ -17295,6 +17529,73 @@
 
     function getDefaultDeskMemoTemplates_() {
       return DESK_DEFAULT_MEMO_TEMPLATES.map(normalizeDeskMemoTemplate_);
+    }
+
+    function parseDeskMemoTypeKeywords_(value) {
+      var source = Array.isArray(value) ? value.join(",") : String(value || "");
+      var seen = {};
+      return source.split(/[,，\n]+/)
+        .map(function(keyword) { return String(keyword || "").trim(); })
+        .filter(function(keyword) {
+          var key = keyword.replace(/\s+/g, "").toLowerCase();
+          if (!key || seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
+    }
+
+    function normalizeDeskMemoType_(item, index) {
+      var fallback = DESK_DEFAULT_MEMO_TYPES[index] || DESK_DEFAULT_MEMO_TYPES[0] || {};
+      var label = String((item && item.label) || fallback.label || "일반").trim() || "일반";
+      var id = String((item && item.id) || fallback.id || ("memo_type_" + index)).trim();
+      if (!id) id = "memo_type_" + Date.now() + "_" + index;
+      return {
+        id: id,
+        label: label,
+        icon: String((item && item.icon) || fallback.icon || "pencil").trim() || "pencil",
+        className: String((item && item.className) || fallback.className || "custom").trim() || "custom",
+        color: String((item && item.color) || fallback.color || DESK_MEMO_TYPE_CHART_COLORS[index % DESK_MEMO_TYPE_CHART_COLORS.length] || "#0d684d").trim() || "#0d684d",
+        keywords: parseDeskMemoTypeKeywords_((item && item.keywords) || fallback.keywords || [])
+      };
+    }
+
+    function getDefaultDeskMemoTypes_() {
+      return DESK_DEFAULT_MEMO_TYPES.map(normalizeDeskMemoType_);
+    }
+
+    function dedupeDeskMemoTypes_(items) {
+      var seen = {};
+      var list = (items || []).map(normalizeDeskMemoType_).filter(function(item) {
+        var key = item.label.replace(/\s+/g, "").toLowerCase();
+        if (!key || seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+      if (!list.some(function(item) { return item.label === "일반"; })) {
+        list.unshift(normalizeDeskMemoType_(DESK_DEFAULT_MEMO_TYPES[0], 0));
+      }
+      return list.length ? list : getDefaultDeskMemoTypes_();
+    }
+
+    function loadDeskMemoTypes_() {
+      try {
+        var raw = localStorage.getItem(DESK_MEMO_TYPES_STORAGE_KEY);
+        var parsed = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(parsed) && parsed.length) return dedupeDeskMemoTypes_(parsed);
+      } catch (err) {}
+      return getDefaultDeskMemoTypes_();
+    }
+
+    function saveDeskMemoTypesLocal_() {
+      try {
+        localStorage.setItem(DESK_MEMO_TYPES_STORAGE_KEY, JSON.stringify(state.desk.daily.memoTypes || []));
+      } catch (err) {}
+    }
+
+    function saveDeskMemoTypes_() {
+      state.desk.daily.memoTypes = dedupeDeskMemoTypes_(state.desk.daily.memoTypes || []);
+      saveDeskMemoTypesLocal_();
+      saveDeskMemoTypesRemote_();
     }
 
     function loadDeskMemoTemplates_() {
@@ -17702,6 +18003,190 @@
         .catch(function(err) {
           console.warn("desk memo templates save failed", err);
         });
+    }
+
+    function ensureDeskMemoTypesLoaded_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.daily.memoTypesLoaded || state.desk.daily.memoTypesLoading) return;
+      state.desk.daily.memoTypesLoading = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTypes"), null)
+        .then(function(snapshot) {
+          if (Array.isArray(snapshot) && snapshot.length) {
+            state.desk.daily.memoTypes = dedupeDeskMemoTypes_(snapshot);
+            saveDeskMemoTypesLocal_();
+            if (!findDeskMemoType_(state.desk.daily.memoType)) state.desk.daily.memoType = "일반";
+          }
+          state.desk.daily.memoTypesLoaded = true;
+          renderDeskMemoTypes_();
+          syncDeskMemoTypeFromInput_();
+        })
+        .catch(function(err) {
+          console.warn("desk memo types load failed", err);
+        })
+        .finally(function() {
+          state.desk.daily.memoTypesLoading = false;
+        });
+    }
+
+    function saveDeskMemoTypesRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("memoTypes"), state.desk.daily.memoTypes || [])
+        .then(function() {
+          state.desk.daily.memoTypesLoaded = true;
+        })
+        .catch(function(err) {
+          console.warn("desk memo types save failed", err);
+        });
+    }
+
+    function getDeskMemoTypes_() {
+      if (!state.desk.daily.memoTypes || !state.desk.daily.memoTypes.length) {
+        state.desk.daily.memoTypes = loadDeskMemoTypes_();
+      }
+      state.desk.daily.memoTypes = dedupeDeskMemoTypes_(state.desk.daily.memoTypes);
+      return state.desk.daily.memoTypes;
+    }
+
+    function findDeskMemoType_(labelOrId) {
+      var value = String(labelOrId || "").trim();
+      if (!value) return null;
+      var key = value.replace(/\s+/g, "").toLowerCase();
+      return getDeskMemoTypes_().filter(function(item) {
+        return item.id === value || item.label === value || item.label.replace(/\s+/g, "").toLowerCase() === key;
+      })[0] || null;
+    }
+
+    function getDeskMemoTypeById_(id) {
+      var safeId = String(id || "").trim();
+      if (!safeId) return null;
+      return getDeskMemoTypes_().filter(function(item) { return item.id === safeId; })[0] || null;
+    }
+
+    function clearDeskMemoTypeForm_() {
+      if (deskMemoTypeEditingIdEl) deskMemoTypeEditingIdEl.value = "";
+      if (deskMemoTypeLabelInputEl) deskMemoTypeLabelInputEl.value = "";
+      if (deskMemoTypeKeywordsInputEl) deskMemoTypeKeywordsInputEl.value = "";
+      if (deskMemoTypeIconSelectEl) deskMemoTypeIconSelectEl.value = "pencil";
+    }
+
+    function fillDeskMemoTypeForm_(item) {
+      var type = normalizeDeskMemoType_(item || {}, 0);
+      if (deskMemoTypeEditingIdEl) deskMemoTypeEditingIdEl.value = type.id;
+      if (deskMemoTypeLabelInputEl) deskMemoTypeLabelInputEl.value = type.label;
+      if (deskMemoTypeKeywordsInputEl) deskMemoTypeKeywordsInputEl.value = (type.keywords || []).join(", ");
+      if (deskMemoTypeIconSelectEl) deskMemoTypeIconSelectEl.value = type.icon || "pencil";
+    }
+
+    function saveDeskMemoTypeFromSettings_() {
+      var label = String(deskMemoTypeLabelInputEl && deskMemoTypeLabelInputEl.value || "").trim();
+      if (!label) {
+        alert("업무 유형 이름을 입력해 주세요.");
+        return;
+      }
+      var editingId = String(deskMemoTypeEditingIdEl && deskMemoTypeEditingIdEl.value || "").trim();
+      var keywords = parseDeskMemoTypeKeywords_(deskMemoTypeKeywordsInputEl && deskMemoTypeKeywordsInputEl.value || "");
+      var existing = editingId ? getDeskMemoTypeById_(editingId) : null;
+      if (existing && existing.id === "general" && label !== "일반") {
+        alert("기본 유형 이름은 '일반'으로 유지해 주세요.");
+        return;
+      }
+      var duplicate = getDeskMemoTypes_().filter(function(item) {
+        return item.id !== editingId && item.label.replace(/\s+/g, "").toLowerCase() === label.replace(/\s+/g, "").toLowerCase();
+      })[0];
+      if (duplicate) {
+        alert("이미 같은 이름의 업무 유형이 있습니다.");
+        return;
+      }
+      var paletteIndex = Math.max(0, getDeskMemoTypes_().length % DESK_MEMO_TYPE_CHART_COLORS.length);
+      var next = normalizeDeskMemoType_(Object.assign({}, existing || {}, {
+        id: editingId || ("memo_type_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
+        label: label,
+        icon: deskMemoTypeIconSelectEl ? deskMemoTypeIconSelectEl.value : "pencil",
+        className: existing && existing.className && existing.className !== "general" ? existing.className : (label === "긴급" ? "urgent" : "custom"),
+        color: existing && existing.color || DESK_MEMO_TYPE_CHART_COLORS[paletteIndex],
+        keywords: keywords
+      }), paletteIndex);
+      var list = getDeskMemoTypes_().filter(function(item) { return item.id !== next.id; });
+      if (editingId) {
+        list = getDeskMemoTypes_().map(function(item) { return item.id === next.id ? next : item; });
+      } else {
+        list.push(next);
+      }
+      state.desk.daily.memoTypes = dedupeDeskMemoTypes_(list);
+      state.desk.daily.memoType = next.label;
+      state.desk.daily.memoTypeManual = true;
+      saveDeskMemoTypes_();
+      renderDeskMemoTypes_();
+      syncDeskMemoComposerState_();
+      showDeskMemoSaveStatus_("업무 유형 설정을 저장했습니다.", "saved");
+    }
+
+    function deleteDeskMemoType_(id) {
+      var item = getDeskMemoTypeById_(id);
+      if (!item) return;
+      if (item.label === "일반") {
+        alert("기본 유형은 삭제할 수 없습니다.");
+        return;
+      }
+      if (!confirm("'" + item.label + "' 유형을 삭제할까요? 기존 기록의 표시명은 그대로 남습니다.")) return;
+      state.desk.daily.memoTypes = getDeskMemoTypes_().filter(function(row) { return row.id !== item.id; });
+      if (state.desk.daily.memoType === item.label) {
+        state.desk.daily.memoType = "일반";
+        state.desk.daily.memoTypeManual = false;
+      }
+      clearDeskMemoTypeForm_();
+      saveDeskMemoTypes_();
+      renderDeskMemoTypes_();
+      syncDeskMemoComposerState_();
+      showDeskMemoSaveStatus_("업무 유형을 삭제했습니다.", "saved");
+    }
+
+    function resetDeskMemoTypes_() {
+      state.desk.daily.memoTypes = getDefaultDeskMemoTypes_();
+      state.desk.daily.memoType = "일반";
+      state.desk.daily.memoTypeManual = false;
+      clearDeskMemoTypeForm_();
+      saveDeskMemoTypes_();
+      renderDeskMemoTypes_();
+      syncDeskMemoComposerState_();
+      showDeskMemoSaveStatus_("업무 유형 설정을 기본값으로 되돌렸습니다.", "saved");
+    }
+
+    function renderDeskMemoTypes_() {
+      var types = getDeskMemoTypes_();
+      if (deskMemoTypeChipsEl) {
+        deskMemoTypeChipsEl.innerHTML = types.map(function(item) {
+          var normalized = normalizeDeskMemoType_(item, 0);
+          var active = normalized.label === (state.desk.daily.memoType || "일반");
+          return '<button class="desk-memo-type-chip ' + escapeHtml(getDeskMemoTypeClass_(normalized.label)) + (active ? ' active' : '') + '" type="button" data-desk-memo-type="' + escapeHtml(normalized.label) + '">' +
+            escapeHtml(normalized.label) +
+          '</button>';
+        }).join("");
+      }
+      if (deskMemoTypeSettingsBtnEl) {
+        deskMemoTypeSettingsBtnEl.classList.toggle("active", !!state.desk.daily.memoTypeSettingsOpen);
+        deskMemoTypeSettingsBtnEl.innerHTML = state.desk.daily.memoTypeSettingsOpen
+          ? '<i data-lucide="check"></i>설정 닫기'
+          : '<i data-lucide="sliders-horizontal"></i>유형 설정';
+      }
+      if (deskMemoTypeSettingsPanelEl) deskMemoTypeSettingsPanelEl.classList.toggle("hidden", !state.desk.daily.memoTypeSettingsOpen);
+      if (deskMemoTypeSettingsListEl) {
+        deskMemoTypeSettingsListEl.innerHTML = types.map(function(item) {
+          var normalized = normalizeDeskMemoType_(item, 0);
+          var keywordText = (normalized.keywords || []).length ? normalized.keywords.join(", ") : "자동 매칭 키워드 없음";
+          return '<article class="desk-memo-type-setting-row" data-desk-memo-type-row="' + escapeHtml(normalized.id) + '">' +
+            '<div class="desk-memo-type-setting-main">' +
+              renderDeskMemoTypeBadge_(normalized.label) +
+              '<span class="desk-memo-type-keywords">' + escapeHtml(keywordText) + '</span>' +
+            '</div>' +
+            '<div class="desk-memo-type-setting-actions">' +
+              '<button type="button" data-desk-memo-type-edit="' + escapeHtml(normalized.id) + '"><i data-lucide="pencil"></i></button>' +
+              '<button class="danger" type="button" data-desk-memo-type-delete="' + escapeHtml(normalized.id) + '"><i data-lucide="trash-2"></i></button>' +
+            '</div>' +
+          '</article>';
+        }).join("");
+      }
+      refreshLucideIcons_();
     }
 
     function resetDeskMemoTemplates_() {
@@ -25480,6 +25965,8 @@
     function renderDeskDailyJournal_() {
       if (shouldDeferPortalDataLoad_()) return;
       renderDeskDailySyncStatus_();
+      renderDeskMemoTypes_();
+      ensureDeskMemoTypesLoaded_();
       renderDeskMemoTemplates_();
       ensureDeskMemoTemplatesLoaded_();
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
@@ -26460,14 +26947,14 @@
       var source = String(text || "").replace(/\s+/g, " ").trim();
       var compact = source.replace(/\s+/g, "");
       if (!source) return "일반";
-      var ranked = DESK_MEMO_TYPE_KEYWORD_RULES.map(function(rule, ruleIndex) {
+      var ranked = getDeskMemoTypes_().map(function(rule, ruleIndex) {
         var score = 0;
         (rule.keywords || []).forEach(function(keyword) {
           var key = String(keyword || "").trim();
           if (!key) return;
           if (source.indexOf(key) >= 0 || compact.indexOf(key.replace(/\s+/g, "")) >= 0) score += key.length >= 4 ? 2 : 1;
         });
-        return { type: rule.type, score: score, index: ruleIndex };
+        return { type: rule.label, score: score, index: ruleIndex };
       }).filter(function(item) {
         return item.score > 0;
       }).sort(function(a, b) {
@@ -26506,6 +26993,8 @@
 
     function getDeskMemoTypeClass_(type) {
       var label = String(type || "일반").trim();
+      var custom = findDeskMemoType_(label);
+      if (custom && custom.className) return custom.className;
       if (label === "상담") return "consult";
       if (label === "시설") return "facility";
       if (label === "자료") return "data";
@@ -26516,12 +27005,20 @@
 
     function getDeskMemoTypeIcon_(type) {
       var label = String(type || "일반").trim();
+      var custom = findDeskMemoType_(label);
+      if (custom && custom.icon) return custom.icon;
       if (label === "상담") return "phone";
       if (label === "시설") return "wrench";
       if (label === "자료") return "upload";
       if (label === "학생") return "user-round";
       if (label === "긴급") return "bell";
       return "pencil";
+    }
+
+    function getDeskMemoTypeColor_(type, index) {
+      var custom = findDeskMemoType_(type);
+      if (custom && custom.color) return custom.color;
+      return DESK_MEMO_TYPE_CHART_COLORS[Math.abs(Number(index || 0)) % DESK_MEMO_TYPE_CHART_COLORS.length] || "#0d684d";
     }
 
     function renderDeskMemoTypeBadge_(type) {
@@ -27203,6 +27700,42 @@
       deskJournalReportPreviewEl.innerHTML = buildDeskDailyReportHtml_(dateKey, worker, workerShifts, workerTasks, completed, pending, timeline);
     }
 
+    function buildDeskDailyReportSummaryChartHtml_(typeCounts, total) {
+      var entries = Object.keys(typeCounts || {}).map(function(type, index) {
+        return {
+          type: type,
+          count: Number(typeCounts[type] || 0),
+          color: getDeskMemoTypeColor_(type, index),
+          index: index
+        };
+      }).filter(function(item) {
+        return item.count > 0;
+      }).sort(function(a, b) {
+        return b.count - a.count || a.type.localeCompare(b.type, "ko");
+      });
+      if (!entries.length || !total) {
+        return '<div class="desk-report-summary-chart-wrap empty"><div class="desk-report-donut" style="background:#eef2f7;"><span>0건</span></div><div class="desk-report-summary-legend"><div class="desk-report-summary-legend-row"><span class="desk-report-summary-name">기록 없음</span></div></div></div>';
+      }
+      var cursor = 0;
+      var slices = entries.map(function(item) {
+        var start = cursor;
+        cursor += (item.count / total) * 360;
+        return item.color + " " + start.toFixed(2) + "deg " + cursor.toFixed(2) + "deg";
+      });
+      var legendHtml = entries.map(function(item) {
+        var ratio = Math.round((item.count / total) * 100);
+        return '<div class="desk-report-summary-legend-row" style="--type-color:' + escapeHtml(item.color) + ';--type-ratio:' + escapeHtml(String(ratio)) + '%;">' +
+          '<span class="desk-report-summary-name"><span class="desk-report-summary-swatch"></span>' + escapeHtml(item.type) + '</span>' +
+          '<span class="desk-report-summary-bar"><span></span></span>' +
+          '<span class="desk-report-summary-count">' + escapeHtml(String(item.count)) + '건 · ' + escapeHtml(String(ratio)) + '%</span>' +
+        '</div>';
+      }).join("");
+      return '<div class="desk-report-summary-chart-wrap">' +
+        '<div class="desk-report-donut" style="background:conic-gradient(' + escapeHtml(slices.join(", ")) + ');"><span>' + escapeHtml(String(total)) + '건</span></div>' +
+        '<div class="desk-report-summary-legend">' + legendHtml + '</div>' +
+      '</div>';
+    }
+
     function buildDeskDailyReportHtml_(dateKey, worker, shifts, tasks, completed, pending, timeline) {
       var countedTasks = (tasks || []).filter(function(item) { return !isDeskSharedTask_(item); });
       var typeCounts = {};
@@ -27213,11 +27746,7 @@
       var highlighted = (timeline || []).filter(isDeskMemoHighlighted_);
       var shiftText = shifts.length ? shifts.map(formatDeskReportShiftTime_).join(" / ") : "등록된 근무시간 없음";
       var weekLabel = getDeskWeekIndex_(dateKey, String(dateKey || "").slice(0, 7)) + "주차";
-      var summaryHtml = Object.keys(typeCounts).length
-        ? Object.keys(typeCounts).sort(function(a, b) { return a.localeCompare(b, "ko"); }).map(function(type) {
-            return '<li class="desk-report-summary-row">' + renderDeskMemoTypeBadge_(type) + '<strong>' + escapeHtml(String(typeCounts[type])) + '건</strong></li>';
-          }).join("")
-        : '<li class="desk-report-summary-row">기록 없음</li>';
+      var summaryHtml = buildDeskDailyReportSummaryChartHtml_(typeCounts, (timeline || []).length);
       var highlightedHtml = highlighted.length
         ? '<section class="desk-mobile-report-section desk-report-main-section">' +
             '<h4>[오늘 주요 업무]</h4>' +
@@ -27243,7 +27772,7 @@
           (shifts.length ? '<div class="desk-report-shift-list">' + shifts.map(renderDeskReportShiftPill_).join("") + '</div>' : '') +
           '<section class="desk-mobile-report-section">' +
             '<h4>[업무 요약]</h4>' +
-            '<ul class="desk-report-summary-list">' + summaryHtml + '</ul>' +
+            summaryHtml +
           '</section>' +
           highlightedHtml +
           '<section class="desk-mobile-report-section">' +
@@ -29645,6 +30174,40 @@
         deskMemoTemplateResetBtnEl.addEventListener("click", function() {
           if (!confirm("빠른 템플릿을 기본값으로 되돌릴까요?")) return;
           resetDeskMemoTemplates_();
+        });
+      }
+      if (deskMemoTypeSettingsBtnEl) {
+        deskMemoTypeSettingsBtnEl.addEventListener("click", function() {
+          state.desk.daily.memoTypeSettingsOpen = !state.desk.daily.memoTypeSettingsOpen;
+          renderDeskMemoTypes_();
+        });
+      }
+      if (deskMemoTypeSettingsListEl) {
+        deskMemoTypeSettingsListEl.addEventListener("click", function(event) {
+          var editBtn = event.target.closest("[data-desk-memo-type-edit]");
+          if (editBtn) {
+            fillDeskMemoTypeForm_(getDeskMemoTypeById_(editBtn.getAttribute("data-desk-memo-type-edit") || ""));
+            return;
+          }
+          var deleteBtn = event.target.closest("[data-desk-memo-type-delete]");
+          if (deleteBtn) {
+            deleteDeskMemoType_(deleteBtn.getAttribute("data-desk-memo-type-delete") || "");
+          }
+        });
+      }
+      if (deskMemoTypeSaveBtnEl) {
+        deskMemoTypeSaveBtnEl.addEventListener("click", saveDeskMemoTypeFromSettings_);
+      }
+      if (deskMemoTypeNewBtnEl) {
+        deskMemoTypeNewBtnEl.addEventListener("click", function() {
+          clearDeskMemoTypeForm_();
+          if (deskMemoTypeLabelInputEl) deskMemoTypeLabelInputEl.focus();
+        });
+      }
+      if (deskMemoTypeResetBtnEl) {
+        deskMemoTypeResetBtnEl.addEventListener("click", function() {
+          if (!confirm("업무 유형과 자동 매칭 키워드를 기본값으로 되돌릴까요?")) return;
+          resetDeskMemoTypes_();
         });
       }
       if (deskJournalMemoInputEl) {
