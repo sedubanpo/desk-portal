@@ -2695,6 +2695,7 @@ function saveTuitionFollowup(payload) {
 
     var lastRow = sheet.getLastRow();
     var rowNo = -1;
+    var selectedRow = null;
     var currentContactCount = 0;
     if (lastRow >= 2) {
       var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getDisplayValues();
@@ -2702,9 +2703,12 @@ function saveTuitionFollowup(payload) {
         var monthCell = String(data[i][index.monthName] || "").trim();
         var nameCell = normalizeTuitionStudentName_(data[i][index.studentName]);
         if (monthCell === monthName && nameCell === studentName) {
-          rowNo = i + 2;
-          currentContactCount = parseInt(data[i][index.contactCount] || "0", 10) || 0;
-          break;
+          var candidateRowNo = i + 2;
+          if (isTuitionFollowupRowPreferred_(data[i], index, monthName, candidateRowNo, selectedRow, rowNo)) {
+            rowNo = candidateRowNo;
+            selectedRow = data[i];
+            currentContactCount = parseInt(data[i][index.contactCount] || "0", 10) || 0;
+          }
         }
       }
     }
@@ -2783,9 +2787,11 @@ function saveTuitionStatusOnly(payload) {
         var monthCell = String(data[i][index.monthName] || "").trim();
         var nameCell = normalizeTuitionStudentName_(data[i][index.studentName]);
         if (monthCell === monthName && nameCell === studentName) {
-          rowNo = i + 2;
-          currentRow = data[i];
-          break;
+          var candidateRowNo = i + 2;
+          if (isTuitionFollowupRowPreferred_(data[i], index, monthName, candidateRowNo, currentRow, rowNo)) {
+            rowNo = candidateRowNo;
+            currentRow = data[i];
+          }
         }
       }
     }
@@ -4130,6 +4136,8 @@ function loadTuitionFollowupMap_(monthName) {
   var ss = getPayrollSpreadsheet_();
   var sheet = ss.getSheetByName(TUITION_FOLLOWUP_SHEET_NAME);
   var map = {};
+  var selectedRows = {};
+  var selectedRowNos = {};
   if (!sheet || sheet.getLastRow() < 2) return map;
   var values = sheet.getDataRange().getDisplayValues();
   var headers = values[0] || [];
@@ -4148,6 +4156,12 @@ function loadTuitionFollowupMap_(monthName) {
     if (String(row[index.monthName] || "").trim() !== monthName) continue;
     var name = normalizeTuitionStudentName_(row[index.studentName]);
     if (!name) continue;
+    var rowNo = i + 1;
+    if (!isTuitionFollowupRowPreferred_(row, index, monthName, rowNo, selectedRows[name], selectedRowNos[name] || -1)) {
+      continue;
+    }
+    selectedRows[name] = row;
+    selectedRowNos[name] = rowNo;
     map[name] = {
       guideAmount: toPayrollNumber_(row[index.guideAmount]),
       unpaidStatus: normalizeTuitionUnpaidStatus_(row[index.unpaidStatus]),
@@ -4158,6 +4172,21 @@ function loadTuitionFollowupMap_(monthName) {
     };
   }
   return map;
+}
+
+function getTuitionFollowupRowSortKey_(row, index, monthName) {
+  if (!row) return -1;
+  var updatedKey = parseTuitionDateTimeMs_(row[index.lastUpdatedAt], monthName);
+  var contactKey = parseTuitionDateTimeMs_(row[index.lastContactAt], monthName);
+  return Math.max(updatedKey, contactKey);
+}
+
+function isTuitionFollowupRowPreferred_(candidateRow, index, monthName, candidateRowNo, currentRow, currentRowNo) {
+  if (!currentRow) return true;
+  var candidateKey = getTuitionFollowupRowSortKey_(candidateRow, index, monthName);
+  var currentKey = getTuitionFollowupRowSortKey_(currentRow, index, monthName);
+  if (candidateKey !== currentKey) return candidateKey > currentKey;
+  return candidateRowNo > currentRowNo;
 }
 
 function parsePayrollMonthName_(name) {
