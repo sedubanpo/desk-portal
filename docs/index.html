@@ -7182,15 +7182,16 @@
       min-width: 0;
     }
     .tuition-outstanding-side {
-      margin-top: 24px;
       border: 1px solid #fed7aa;
       background: #fff7ed;
       color: #ea580c;
       border-radius: 999px;
-      padding: 5px 10px;
+      padding: 6px 10px;
       font-size: 13px;
       font-weight: 950;
-      white-space: nowrap;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      text-align: right;
     }
     .tuition-metric-group:last-child .tuition-metric-pair {
       grid-template-columns: 0.88fr 1.32fr;
@@ -7204,21 +7205,20 @@
     }
     .tuition-money-card {
       position: relative;
-      padding-right: 118px;
+      padding-right: 14px;
     }
     .tuition-money-card .tuition-money-row {
-      display: block;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
     }
     .tuition-money-card .tuition-money-row .meta {
       display: none;
     }
     .tuition-money-card .tuition-outstanding-side {
-      position: absolute;
-      top: 48px;
-      right: 12px;
-      max-width: 104px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      position: static;
+      justify-self: end;
+      max-width: 100%;
       margin: 0;
     }
     .tuition-layout {
@@ -14015,7 +14015,7 @@
                   <div>
                     <div class="label">안내 금액 합계</div>
                     <div class="value" id="tuitionExpectedAmount">0원</div>
-                    <div class="meta">실무자 입력 기준</div>
+                    <div class="meta">안내 기록 누적 기준</div>
                   </div>
                 </article>
                 <article class="tuition-metric-card tuition-money-card">
@@ -31116,7 +31116,10 @@
         outstandingAmount: 0
       };
       list.forEach(function(row) {
-        var guide = Math.max(0, toNumber(row.guideAmount, 0));
+        var guide = Math.max(0, toNumber(
+          typeof row.totalGuideAmount !== "undefined" ? row.totalGuideAmount : row.guideAmount,
+          0
+        ));
         var collected = Math.max(0, toNumber(row.collectedAmount, 0));
         var outstanding = Math.max(0, toNumber(row.outstandingAmount, Math.max(0, guide - collected)));
         kpi.expectedAmount += guide;
@@ -31347,7 +31350,10 @@
       }).slice().sort(function(a, b) {
         return compareTuitionStatusRows_(status, a, b);
       });
-      var guideTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.guideAmount, 0)); }, 0);
+      var guideTotal = rows.reduce(function(acc, row) {
+        var amount = typeof row.totalGuideAmount !== "undefined" ? row.totalGuideAmount : row.guideAmount;
+        return acc + Math.max(0, toNumber(amount, 0));
+      }, 0);
       var collectedTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.collectedAmount, 0)); }, 0);
       var outstandingTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.outstandingAmount, 0)); }, 0);
       tuitionStatusListSummaryEl.textContent = monthName + " · " + status + " " + rows.length + "명 · 안내 " + formatWon(guideTotal) + " · 수납 " + formatWon(collectedTotal) + " · 미납 " + formatWon(outstandingTotal);

@@ -2432,6 +2432,7 @@ function getTuitionMonthSummary(payload) {
     var classStudentMap = loadTuitionClassStudentMapByMonth_(monthName);
     var studentRows = loadTuitionStudentMaster_();
     var followupMap = loadTuitionFollowupMap_(monthName);
+    var guideTotalMap = loadTuitionGuideAmountTotalMap_(monthName);
 
     var studentMap = {};
     studentRows.forEach(function(row) {
@@ -2443,6 +2444,7 @@ function getTuitionMonthSummary(payload) {
         school: row.school,
         grade: row.grade,
         guideAmount: 0,
+        totalGuideAmount: 0,
         collectedAmount: 0,
         paymentCount: 0,
         latestPaidAt: "",
@@ -2502,6 +2504,10 @@ function getTuitionMonthSummary(payload) {
         target.lastContactMemo = String(follow.lastContactMemo || "");
         target.lastUpdatedAt = String(follow.lastUpdatedAt || "");
       }
+      target.totalGuideAmount = Math.max(0, toPayrollNumber_(guideTotalMap[key]));
+      if (!target.totalGuideAmount && target.contactCount > 0) {
+        target.totalGuideAmount = Math.max(0, toPayrollNumber_(target.guideAmount));
+      }
 
       if (target.collectedAmount > 0 || (target.guideAmount > 0 && target.collectedAmount >= target.guideAmount)) {
         target.unpaidStatus = "납부완료";
@@ -2510,6 +2516,7 @@ function getTuitionMonthSummary(payload) {
       }
 
       target.guideAmount = Math.round(target.guideAmount || 0);
+      target.totalGuideAmount = Math.round(target.totalGuideAmount || 0);
       target.collectedAmount = Math.round(target.collectedAmount || 0);
       target.outstandingAmount = Math.max(0, Math.round((target.guideAmount || 0) - (target.collectedAmount || 0)));
     });
@@ -4053,7 +4060,10 @@ function buildTuitionSummaryStats_(rows, paymentRows) {
   };
 
   rows.forEach(function(row) {
-    kpi.expectedAmount += Math.max(0, toPayrollNumber_(row.guideAmount));
+    var totalGuide = typeof row.totalGuideAmount !== "undefined"
+      ? row.totalGuideAmount
+      : row.guideAmount;
+    kpi.expectedAmount += Math.max(0, toPayrollNumber_(totalGuide));
     kpi.collectedAmount += Math.max(0, toPayrollNumber_(row.collectedAmount));
     kpi.outstandingAmount += Math.max(0, toPayrollNumber_(row.outstandingAmount));
     if (row.unpaidStatus === "납부완료" || row.unpaidStatus === "이월금") kpi.paidStudents += 1;
@@ -4148,6 +4158,31 @@ function loadTuitionFollowupMap_(monthName) {
       lastUpdatedAt: String(row[index.lastUpdatedAt] || "")
     };
   }
+  return map;
+}
+
+function loadTuitionGuideAmountTotalMap_(monthName) {
+  var ss = getPayrollSpreadsheet_();
+  var sheet = ss.getSheetByName(TUITION_CONTACT_LOG_SHEET_NAME);
+  var map = {};
+  if (!sheet || sheet.getLastRow() < 2) return map;
+  var values = sheet.getDataRange().getDisplayValues();
+  var headers = values[0] || [];
+  var index = buildTuitionHeaderIndex_(headers, {
+    monthName: ["월"],
+    studentName: ["학생명"],
+    guideAmount: ["안내금액"]
+  });
+  for (var i = 1; i < values.length; i++) {
+    var row = values[i];
+    if (String(row[index.monthName] || "").trim() !== monthName) continue;
+    var name = normalizeTuitionStudentName_(row[index.studentName]);
+    if (!name) continue;
+    map[name] = Math.max(0, toPayrollNumber_(map[name])) + Math.max(0, toPayrollNumber_(row[index.guideAmount]));
+  }
+  Object.keys(map).forEach(function(name) {
+    map[name] = Math.round(map[name] || 0);
+  });
   return map;
 }
 
