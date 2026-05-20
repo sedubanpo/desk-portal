@@ -14015,7 +14015,7 @@
                   <div>
                     <div class="label">안내 금액 합계</div>
                     <div class="value" id="tuitionExpectedAmount">0원</div>
-                    <div class="meta">안내 기록 누적 기준</div>
+                    <div class="meta">학생별 최신 안내 기준</div>
                   </div>
                 </article>
                 <article class="tuition-metric-card tuition-money-card">
@@ -31116,10 +31116,7 @@
         outstandingAmount: 0
       };
       list.forEach(function(row) {
-        var guide = Math.max(0, toNumber(
-          typeof row.totalGuideAmount !== "undefined" ? row.totalGuideAmount : row.guideAmount,
-          0
-        ));
+        var guide = Math.max(0, toNumber(row.guideAmount, 0));
         var collected = Math.max(0, toNumber(row.collectedAmount, 0));
         var outstanding = Math.max(0, toNumber(row.outstandingAmount, Math.max(0, guide - collected)));
         kpi.expectedAmount += guide;
@@ -31350,10 +31347,7 @@
       }).slice().sort(function(a, b) {
         return compareTuitionStatusRows_(status, a, b);
       });
-      var guideTotal = rows.reduce(function(acc, row) {
-        var amount = typeof row.totalGuideAmount !== "undefined" ? row.totalGuideAmount : row.guideAmount;
-        return acc + Math.max(0, toNumber(amount, 0));
-      }, 0);
+      var guideTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.guideAmount, 0)); }, 0);
       var collectedTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.collectedAmount, 0)); }, 0);
       var outstandingTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.outstandingAmount, 0)); }, 0);
       tuitionStatusListSummaryEl.textContent = monthName + " · " + status + " " + rows.length + "명 · 안내 " + formatWon(guideTotal) + " · 수납 " + formatWon(collectedTotal) + " · 미납 " + formatWon(outstandingTotal);
