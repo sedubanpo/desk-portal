@@ -7092,6 +7092,19 @@
       font-weight: 700;
       color: #64748b;
     }
+    .tuition-amount-issue-chip {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 6px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color: #c2410c;
+      font-size: 11px;
+      font-weight: 950;
+      vertical-align: middle;
+    }
     .tuition-name-link {
       border: 0;
       background: transparent;
@@ -31254,14 +31267,14 @@
       labels.forEach(function(label, i) {
         byStatus[label] = toNumber(values[i], 0);
       });
-      var highUnpaid = rows.filter(function(row) {
-        return !isTuitionPaidStatus_(row.unpaidStatus) && toNumber(row.outstandingAmount, 0) >= 100000;
-      }).length;
+      var highUnpaid = getTuitionHighUnpaidRows_(rows);
+      var amountIssues = getTuitionAmountIssueRows_(rows);
       var items = [
         { status: "안내이전", title: "안내이전", desc: "오늘 안내 필요", action: "대상 보기", icon: "megaphone", color: "#f97316", bg: "#fff7ed", value: byStatus["안내이전"] || 0 },
         { status: "안내완료", title: "안내완료 미납", desc: "재연락 후보", action: "연락 기록", icon: "phone-call", color: "#f59e0b", bg: "#fffbeb", value: byStatus["안내완료"] || 0 },
         { status: "납부예정", title: "납부예정", desc: "예정일 확인", action: "확인", icon: "calendar-days", color: "#4f46e5", bg: "#eef2ff", value: byStatus["납부예정"] || 0 },
-        { status: "확인필요", title: "고액 미납", desc: "금액 우선 확인", action: "필터 적용", icon: "circle-dollar-sign", color: "#ef4444", bg: "#fef2f2", value: highUnpaid }
+        { status: "highUnpaid", title: "고액 미납", desc: "10만원 이상 미납", action: "필터 적용", icon: "circle-dollar-sign", color: "#ef4444", bg: "#fef2f2", value: highUnpaid.length },
+        { status: "amountIssue", title: "이상 금액", desc: "금액 데이터 점검", action: "점검", icon: "badge-alert", color: "#b45309", bg: "#fff7ed", value: amountIssues.length }
       ];
       tuitionStatusSummaryEl.innerHTML = items.map(function(item, i) {
         return '<button type="button" class="tuition-priority-item" style="--st-color:' + item.color + ';--st-bg:' + item.bg + ';" data-status-card="' + escapeHtml(item.status) + '">' +
@@ -31288,6 +31301,71 @@
       return status === "납부완료" || status === "이월금";
     }
 
+    function getTuitionHighUnpaidRows_(rows) {
+      return (rows || []).filter(function(row) {
+        return !isTuitionPaidStatus_(row.unpaidStatus) && toNumber(row.outstandingAmount, 0) >= 100000;
+      });
+    }
+
+    function getTuitionAmountIssueReasons_(row) {
+      var reasons = [];
+      var guideAmount = Math.max(0, toNumber(row && row.guideAmount, 0));
+      var collectedAmount = toNumber(row && row.collectedAmount, 0);
+      var outstandingAmount = Math.max(0, toNumber(row && row.outstandingAmount, 0));
+      var paidStatus = isTuitionPaidStatus_(row && row.unpaidStatus);
+      if (guideAmount >= 10000000) reasons.push("안내금액 1천만원 이상");
+      if (outstandingAmount >= 10000000) reasons.push("미납액 1천만원 이상");
+      if (collectedAmount < 0) reasons.push("수납액 음수");
+      if (paidStatus && outstandingAmount > 0) reasons.push("납부완료 미납 잔액");
+      if (guideAmount > 0 && collectedAmount > guideAmount * 1.5) reasons.push("수납액 과다");
+      return reasons;
+    }
+
+    function getTuitionAmountIssueRows_(rows) {
+      return (rows || []).map(function(row) {
+        var reasons = getTuitionAmountIssueReasons_(row);
+        if (!reasons.length) return null;
+        var copy = Object.assign({}, row);
+        copy.__tuitionIssueText = reasons.join(", ");
+        return copy;
+      }).filter(Boolean);
+    }
+
+    function getTuitionStatusListConfig_(key) {
+      var filterKey = String(key || "").trim();
+      var rows = Array.isArray(state.tuition.rows) ? state.tuition.rows : [];
+      if (filterKey === "highUnpaid") {
+        return {
+          key: filterKey,
+          title: "고액 미납",
+          summaryLabel: "고액 미납",
+          rows: getTuitionHighUnpaidRows_(rows),
+          sortStatus: "안내완료",
+          sideLabel: "미납"
+        };
+      }
+      if (filterKey === "amountIssue") {
+        return {
+          key: filterKey,
+          title: "이상 금액",
+          summaryLabel: "이상 금액",
+          rows: getTuitionAmountIssueRows_(rows),
+          sortStatus: "amountIssue",
+          sideLabel: "점검"
+        };
+      }
+      return {
+        key: filterKey,
+        title: filterKey,
+        summaryLabel: filterKey,
+        rows: rows.filter(function(row) {
+          return String(row.unpaidStatus || "안내이전") === filterKey;
+        }),
+        sortStatus: filterKey,
+        sideLabel: isTuitionPaidStatus_(filterKey) ? "수납" : "미납"
+      };
+    }
+
     function syncTuitionStatusCardSelection_() {
       if (!tuitionStatusSummaryEl) return;
       var activeStatus = state.tuition.statusListStatus || "";
@@ -31299,6 +31377,11 @@
     }
 
     function compareTuitionStatusRows_(status, a, b) {
+      if (status === "amountIssue") {
+        var aIssue = Math.max(toNumber(a.guideAmount, 0), toNumber(a.outstandingAmount, 0));
+        var bIssue = Math.max(toNumber(b.guideAmount, 0), toNumber(b.outstandingAmount, 0));
+        if (bIssue !== aIssue) return bIssue - aIssue;
+      }
       var paidStatus = isTuitionPaidStatus_(status);
       var aPrimary = paidStatus ? toNumber(a.collectedAmount, 0) : toNumber(a.outstandingAmount, 0);
       var bPrimary = paidStatus ? toNumber(b.collectedAmount, 0) : toNumber(b.outstandingAmount, 0);
@@ -31342,34 +31425,49 @@
         return;
       }
 
-      var rows = (state.tuition.rows || []).filter(function(row) {
-        return String(row.unpaidStatus || "안내이전") === status;
-      }).slice().sort(function(a, b) {
-        return compareTuitionStatusRows_(status, a, b);
+      var config = getTuitionStatusListConfig_(status);
+      var rows = (config.rows || []).slice().sort(function(a, b) {
+        return compareTuitionStatusRows_(config.sortStatus, a, b);
       });
-      var guideTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.guideAmount, 0)); }, 0);
-      var collectedTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.collectedAmount, 0)); }, 0);
-      var outstandingTotal = rows.reduce(function(acc, row) { return acc + Math.max(0, toNumber(row.outstandingAmount, 0)); }, 0);
-      tuitionStatusListSummaryEl.textContent = monthName + " · " + status + " " + rows.length + "명 · 안내 " + formatWon(guideTotal) + " · 수납 " + formatWon(collectedTotal) + " · 미납 " + formatWon(outstandingTotal);
+      var paidStatus = isTuitionPaidStatus_(config.sortStatus);
+      var issueMode = config.key === "amountIssue";
+      var guideTotal = rows.reduce(function(acc, row) {
+        return acc + Math.max(0, toNumber(row.guideAmount, 0));
+      }, 0);
+      var collectedTotal = rows.reduce(function(acc, row) {
+        return acc + Math.max(0, toNumber(row.collectedAmount, 0));
+      }, 0);
+      var outstandingTotal = rows.reduce(function(acc, row) {
+        return acc + Math.max(0, toNumber(row.outstandingAmount, 0));
+      }, 0);
+      tuitionStatusListSummaryEl.textContent = monthName + " · " + config.summaryLabel + " " + rows.length + "명 · 안내 " + formatWon(guideTotal) + " · 수납 " + formatWon(collectedTotal) + " · 미납 " + formatWon(outstandingTotal);
 
       if (!rows.length) {
         tuitionStatusListEl.innerHTML = '<div class="tuition-cal-empty">현재 필터 기준으로 표시할 학생이 없습니다.</div>';
         return;
       }
 
-      var paidStatus = isTuitionPaidStatus_(status);
       tuitionStatusListEl.innerHTML = rows.map(function(row) {
         var name = formatStudentName(row.studentName);
-        var sideAmount = paidStatus ? Math.max(0, toNumber(row.collectedAmount, 0)) : Math.max(0, toNumber(row.outstandingAmount, 0));
-        var sideLabel = paidStatus ? "수납" : "미납";
-        var subText = paidStatus
+        var issueText = issueMode ? (row.__tuitionIssueText || getTuitionAmountIssueReasons_(row).join(", ")) : "";
+        var sideAmount = issueMode
+          ? Math.max(toNumber(row.guideAmount, 0), toNumber(row.outstandingAmount, 0))
+          : (paidStatus ? Math.max(0, toNumber(row.collectedAmount, 0)) : Math.max(0, toNumber(row.outstandingAmount, 0)));
+        var sideLabel = issueMode ? "최대" : (paidStatus ? "수납" : "미납");
+        var subText = issueMode
+          ? (issueText || "금액 점검")
+          : (paidStatus
           ? ("최근 납부 " + (row.latestPaidAt || "-"))
-          : ("최근 연락 " + (row.lastContactAt || "-"));
+          : ("최근 연락 " + (row.lastContactAt || "-")));
+        var issueBadge = issueText
+          ? '<span class="tuition-amount-issue-chip">' + escapeHtml(issueText) + '</span>'
+          : "";
+        var statusMeta = buildTuitionStatusBadge(row.unpaidStatus) + issueBadge + ' · 안내 ' + formatWon(row.guideAmount || 0) + ' · 수납 ' + formatWon(row.collectedAmount || 0) + ' · 미납 ' + formatWon(row.outstandingAmount || 0);
         return '<article class="tuition-status-list-item' + (paidStatus ? ' is-paid' : '') + '">' +
           '<div class="tuition-status-list-main">' +
             '<button type="button" class="tuition-status-list-name tuition-name-link" data-student-history="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>' +
             '<div class="tuition-status-list-meta">' + escapeHtml((row.school || "학교미입력") + " / " + formatTuitionGradeLabel(row.grade)) + '</div>' +
-            '<div class="tuition-status-list-meta">' + buildTuitionStatusBadge(row.unpaidStatus) + ' · 안내 ' + formatWon(row.guideAmount || 0) + ' · 수납 ' + formatWon(row.collectedAmount || 0) + ' · 미납 ' + formatWon(row.outstandingAmount || 0) + '</div>' +
+            '<div class="tuition-status-list-meta">' + statusMeta + '</div>' +
           '</div>' +
           '<div class="tuition-status-list-side">' +
             '<div class="v">' + sideLabel + ' ' + formatWon(sideAmount) + '</div>' +
