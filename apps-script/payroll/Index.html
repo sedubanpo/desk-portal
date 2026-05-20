@@ -16444,6 +16444,7 @@
     ];
     var PAYROLL_SUSPICION_HOUR_BUCKETS = [1, 2, 3, 4];
     var DESK_DAILY_SERVER_POLL_MS = 12000;
+    var DESK_MEMO_TYPES_POLL_MS = 5000;
     var DESK_DAILY_POLL_ERROR_BACKOFF_MS = 30000;
     var DESK_LIVE_FEED_HISTORY_DAYS = 14;
     var DESK_LIVE_FEED_INITIAL_LOAD_DAYS = 3;
@@ -17341,7 +17342,11 @@
     var deskTodayWorkerTimer_ = null;
     var deskTaskAssignAlertTimer_ = null;
     var deskDailyJournalPollTimer_ = null;
+    var deskMemoTypesPollTimer_ = null;
     var deskDailyJournalPollInFlight_ = false;
+    var deskMemoTypesPollInFlight_ = false;
+    var deskMemoTypesSaving_ = false;
+    var deskMemoTypesRemoteSignature_ = "";
     var deskDailyJournalRoutinePollTick_ = 0;
     var deskDailyJournalNextPollAt_ = 0;
     var deskDailyJournalPollErrorDelayMs_ = 0;
@@ -17368,6 +17373,9 @@
       deskDailyJournalPollTimer_ = setInterval(function() {
         pollDeskDailyJournalServerUpdates_();
       }, DESK_DAILY_SERVER_POLL_MS);
+      deskMemoTypesPollTimer_ = setInterval(function() {
+        pollDeskMemoTypesRemote_();
+      }, DESK_MEMO_TYPES_POLL_MS);
     });
 
     function renderModuleLayout() {
@@ -17667,7 +17675,37 @@
     function saveDeskMemoTypes_() {
       state.desk.daily.memoTypes = dedupeDeskMemoTypes_(state.desk.daily.memoTypes || []);
       saveDeskMemoTypesLocal_();
+      deskMemoTypesRemoteSignature_ = buildDeskMemoTypesSignature_(state.desk.daily.memoTypes);
       saveDeskMemoTypesRemote_();
+    }
+
+    function buildDeskMemoTypesSignature_(types) {
+      return JSON.stringify(dedupeDeskMemoTypes_(types || []).map(function(item) {
+        return {
+          id: item.id || "",
+          label: item.label || "",
+          icon: item.icon || "",
+          keywords: (item.keywords || []).slice().sort()
+        };
+      }));
+    }
+
+    function applyDeskMemoTypesSnapshot_(snapshot, options) {
+      if (!Array.isArray(snapshot) || !snapshot.length) return false;
+      var nextTypes = dedupeDeskMemoTypes_(snapshot);
+      var nextSignature = buildDeskMemoTypesSignature_(nextTypes);
+      if (nextSignature === deskMemoTypesRemoteSignature_) return false;
+      if (options && options.skipWhenEditing && state.desk.daily.memoTypeSettingsOpen) return false;
+      state.desk.daily.memoTypes = nextTypes;
+      deskMemoTypesRemoteSignature_ = nextSignature;
+      saveDeskMemoTypesLocal_();
+      if (!findDeskMemoType_(state.desk.daily.memoType)) {
+        state.desk.daily.memoType = "일반";
+        state.desk.daily.memoTypeManual = false;
+      }
+      renderDeskMemoTypes_();
+      syncDeskMemoTypeFromInput_();
+      return true;
     }
 
     function loadDeskMemoTemplates_() {
@@ -18083,11 +18121,7 @@
       state.desk.daily.memoTypesLoading = true;
       deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTypes"), null)
         .then(function(snapshot) {
-          if (Array.isArray(snapshot) && snapshot.length) {
-            state.desk.daily.memoTypes = dedupeDeskMemoTypes_(snapshot);
-            saveDeskMemoTypesLocal_();
-            if (!findDeskMemoType_(state.desk.daily.memoType)) state.desk.daily.memoType = "일반";
-          }
+          applyDeskMemoTypesSnapshot_(snapshot, { skipWhenEditing: false });
           state.desk.daily.memoTypesLoaded = true;
           renderDeskMemoTypes_();
           syncDeskMemoTypeFromInput_();
@@ -18102,12 +18136,17 @@
 
     function saveDeskMemoTypesRemote_() {
       if (shouldDeferPortalDataLoad_()) return;
+      deskMemoTypesSaving_ = true;
       deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("memoTypes"), state.desk.daily.memoTypes || [])
         .then(function() {
           state.desk.daily.memoTypesLoaded = true;
+          deskMemoTypesRemoteSignature_ = buildDeskMemoTypesSignature_(state.desk.daily.memoTypes);
         })
         .catch(function(err) {
           console.warn("desk memo types save failed", err);
+        })
+        .finally(function() {
+          deskMemoTypesSaving_ = false;
         });
     }
 
@@ -26779,6 +26818,28 @@
         })
         .finally(function() {
           deskDailyJournalPollInFlight_ = false;
+        });
+    }
+
+    function pollDeskMemoTypesRemote_() {
+      if (shouldDeferPortalDataLoad_()) return;
+      if (state.activeModule !== "expense" || state.desk.activeTab !== "dailyJournal") return;
+      if (state.desk.daily.memoTypeSettingsOpen) return;
+      if (state.desk.daily.memoTypesLoading || deskMemoTypesPollInFlight_ || deskMemoTypesSaving_) return;
+      deskMemoTypesPollInFlight_ = true;
+      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTypes"), null)
+        .then(function(snapshot) {
+          var changed = applyDeskMemoTypesSnapshot_(snapshot, { skipWhenEditing: true });
+          if (changed) {
+            state.desk.daily.memoTypesLoaded = true;
+            showDeskMemoSaveStatus_("업무 유형 설정이 다른 PC 변경사항으로 갱신되었습니다.", "saved");
+          }
+        })
+        .catch(function(err) {
+          console.warn("desk memo types polling failed", err && err.message ? err.message : err);
+        })
+        .finally(function() {
+          deskMemoTypesPollInFlight_ = false;
         });
     }
 
