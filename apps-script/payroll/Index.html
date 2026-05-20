@@ -11551,6 +11551,7 @@
       border-radius: 8px;
       background: #fbfdfc;
       padding: 14px 16px;
+      position: relative;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -11672,15 +11673,35 @@
     .desk-memo-type-chip.urgent { color: #dc2626; }
     .desk-memo-type-chip.urgent.active { color: #fff; }
     .desk-memo-type-settings {
-      grid-column: 1 / -1;
+      position: fixed;
+      left: max(16px, calc(50vw - 520px));
+      right: max(16px, calc(50vw - 520px));
+      top: 72px;
+      z-index: 80;
       border: 1px solid #d8e4de;
       border-radius: 8px;
-      background: #f8fbf9;
-      padding: 12px;
+      background: #fbfdfc;
+      padding: 14px;
       display: grid;
-      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.58fr);
+      gap: 12px;
+      max-height: min(560px, calc(100vh - 96px));
+      overflow: auto;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
     }
     .desk-memo-type-settings.hidden { display: none; }
+    .desk-memo-type-settings::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(15, 23, 42, 0.12);
+      pointer-events: none;
+    }
+    .desk-memo-type-settings-head {
+      grid-column: 1 / -1;
+      padding-bottom: 2px;
+    }
     .desk-type-settings-sub {
       color: #64748b;
       font-size: 11px;
@@ -11690,12 +11711,16 @@
     .desk-memo-type-settings-list {
       display: grid;
       gap: 7px;
+      align-content: start;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 2px;
     }
     .desk-memo-type-setting-row {
       border: 1px solid #e2e8f0;
       border-radius: 8px;
       background: #fff;
-      padding: 8px;
+      padding: 7px 8px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
@@ -11713,6 +11738,11 @@
       font-size: 11px;
       font-weight: 800;
       line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
     }
     .desk-memo-type-setting-actions {
       display: inline-flex;
@@ -11735,15 +11765,20 @@
     .desk-memo-type-setting-actions svg { width: 14px; height: 14px; }
     .desk-memo-type-form {
       display: grid;
-      grid-template-columns: minmax(120px, 0.7fr) minmax(180px, 1.4fr) minmax(110px, 0.7fr) auto;
-      gap: 8px;
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 9px;
       align-items: end;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
     }
     .desk-memo-type-form-actions {
-      display: inline-flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       align-items: center;
       gap: 6px;
-      white-space: nowrap;
     }
     .desk-memo-compose-row {
       display: grid;
@@ -13527,9 +13562,19 @@
       .tuition-metric-card:last-child {
         border-bottom: 0;
       }
-      .desk-memo-type-form,
+      .desk-memo-type-settings,
       .desk-report-summary-chart-wrap {
         grid-template-columns: 1fr;
+      }
+      .desk-memo-type-settings {
+        left: 10px;
+        right: 10px;
+        top: 58px;
+        max-height: calc(100vh - 76px);
+        padding: 12px;
+      }
+      .desk-memo-type-settings-list {
+        max-height: 260px;
       }
       .desk-report-donut {
         width: 118px;
@@ -15458,7 +15503,7 @@
                       </div>
                       <div class="desk-chip-row" id="deskMemoTypeChips"></div>
                     </div>
-                    <div class="desk-memo-type-settings hidden" id="deskMemoTypeSettingsPanel">
+                    <div class="desk-memo-type-settings hidden" id="deskMemoTypeSettingsPanel" role="dialog" aria-modal="false" aria-label="업무 유형 자동 매칭 설정">
                       <div class="desk-memo-type-settings-head">
                         <div>
                           <div class="desk-composer-label">업무 유형 자동 매칭 설정</div>
@@ -18165,11 +18210,15 @@
       }
       if (deskMemoTypeSettingsBtnEl) {
         deskMemoTypeSettingsBtnEl.classList.toggle("active", !!state.desk.daily.memoTypeSettingsOpen);
+        deskMemoTypeSettingsBtnEl.setAttribute("aria-expanded", state.desk.daily.memoTypeSettingsOpen ? "true" : "false");
         deskMemoTypeSettingsBtnEl.innerHTML = state.desk.daily.memoTypeSettingsOpen
           ? '<i data-lucide="check"></i>설정 닫기'
           : '<i data-lucide="sliders-horizontal"></i>유형 설정';
       }
-      if (deskMemoTypeSettingsPanelEl) deskMemoTypeSettingsPanelEl.classList.toggle("hidden", !state.desk.daily.memoTypeSettingsOpen);
+      if (deskMemoTypeSettingsPanelEl) {
+        deskMemoTypeSettingsPanelEl.classList.toggle("hidden", !state.desk.daily.memoTypeSettingsOpen);
+        deskMemoTypeSettingsPanelEl.setAttribute("aria-hidden", state.desk.daily.memoTypeSettingsOpen ? "false" : "true");
+      }
       if (deskMemoTypeSettingsListEl) {
         deskMemoTypeSettingsListEl.innerHTML = types.map(function(item) {
           var normalized = normalizeDeskMemoType_(item, 0);
@@ -30210,6 +30259,20 @@
           resetDeskMemoTypes_();
         });
       }
+      document.addEventListener("click", function(event) {
+        if (!state.desk.daily.memoTypeSettingsOpen) return;
+        if (event.target.closest("#deskMemoTypeSettingsPanel") || event.target.closest("#deskMemoTypeSettingsBtn")) return;
+        state.desk.daily.memoTypeSettingsOpen = false;
+        renderDeskMemoTypes_();
+        event.preventDefault();
+        event.stopPropagation();
+      }, true);
+      document.addEventListener("keydown", function(event) {
+        if (event.key !== "Escape" || !state.desk.daily.memoTypeSettingsOpen) return;
+        state.desk.daily.memoTypeSettingsOpen = false;
+        renderDeskMemoTypes_();
+        if (deskMemoTypeSettingsBtnEl) deskMemoTypeSettingsBtnEl.focus();
+      });
       if (deskJournalMemoInputEl) {
         deskJournalMemoInputEl.addEventListener("input", function() {
           syncDeskMemoTypeFromInput_();
