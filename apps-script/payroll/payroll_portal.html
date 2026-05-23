@@ -12159,6 +12159,23 @@
     .desk-memo-type-badge.student { background: #f3e8ff; color: #7c3aed; border-color: #ddd6fe; }
     .desk-memo-type-badge.urgent { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
     .desk-memo-type-badge.custom { background: #f0fdfa; color: #0f766e; border-color: #ccfbf1; }
+    .desk-note-type-select {
+      width: 96px;
+      min-width: 96px;
+      border: 1px solid #d8e5df;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 900;
+      font-family: inherit;
+      outline: none;
+    }
+    .desk-note-type-select:focus {
+      border-color: #0d684d;
+      box-shadow: 0 0 0 3px rgba(13, 104, 77, 0.12);
+    }
     .desk-note-main { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; }
     .desk-note-worker-inline { color: #334155; font-size: 12px; font-weight: 900; white-space: nowrap; }
     .desk-note-text { color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -27263,6 +27280,17 @@
       '</span>';
     }
 
+    function buildDeskMemoTypeSelectOptions_(selectedType) {
+      var selected = String(selectedType || "일반").trim() || "일반";
+      var labels = getDeskMemoTypes_().map(function(item) {
+        return String(item && item.label || "").trim();
+      }).filter(Boolean);
+      if (labels.indexOf(selected) === -1) labels.unshift(selected);
+      return labels.map(function(label) {
+        return '<option value="' + escapeHtml(label) + '"' + (label === selected ? " selected" : "") + ">" + escapeHtml(label) + "</option>";
+      }).join("");
+    }
+
     function getDeskDailySelectedWorkerShifts_(worker) {
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       return state.desk.scheduleItems
@@ -27850,7 +27878,9 @@
               (isEditing
                 ? '<input class="desk-note-time-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="HH:MM" value="' + escapeHtml(timeText) + '" data-desk-journal-memo-time="' + escapeHtml(item.id) + '">'
                 : '<span class="desk-note-time-static">' + escapeHtml(timeText || "-") + '</span>') +
-              '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>' +
+              (isEditing
+                ? '<select class="desk-note-type-select" data-desk-journal-memo-type="' + escapeHtml(item.id) + '" aria-label="업무 유형">' + buildDeskMemoTypeSelectOptions_(type) + '</select>'
+                : '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>') +
             '</div>' +
             '<div class="desk-note-body">' +
               '<div class="desk-note-main">' +
@@ -28862,7 +28892,7 @@
       renderDeskDailyJournal_();
     }
 
-    function saveDeskDailyMemoText_(memoId, textValue, timeValue) {
+    function saveDeskDailyMemoText_(memoId, textValue, timeValue, typeValue) {
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var current = getDeskDailyJournalMemos_(dateKey).find(function(item) {
         return item.id === memoId;
@@ -28877,6 +28907,9 @@
         text: nextText,
         updatedAt: buildDeskCurrentDateTimeForKey_(dateKey)
       });
+      if (typeof typeValue !== "undefined") {
+        next.category = String(typeValue || "일반").trim() || "일반";
+      }
       if (typeof timeValue !== "undefined") {
         var createdAt = buildDeskJournalDateTime_(dateKey, timeValue, current.createdAt);
         if (!createdAt) {
@@ -30553,7 +30586,8 @@
             var card = saveBtn.closest("[data-desk-journal-memo-card]");
             var input = card && card.querySelector('[data-desk-journal-memo-edit-input="' + memoId + '"]');
             var timeInput = card && card.querySelector('[data-desk-journal-memo-time="' + memoId + '"]');
-            saveDeskDailyMemoText_(memoId, input && input.value || "", timeInput && timeInput.value);
+            var typeSelect = card && card.querySelector('[data-desk-journal-memo-type="' + memoId + '"]');
+            saveDeskDailyMemoText_(memoId, input && input.value || "", timeInput && timeInput.value, typeSelect && typeSelect.value);
             return;
           }
           var saveTimeBtn = event.target.closest("[data-desk-journal-memo-time-save]");
@@ -30579,7 +30613,11 @@
           var input = event.target.closest("[data-desk-journal-memo-edit-input]");
           if (!input || !(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
           event.preventDefault();
-          saveDeskDailyMemoText_(input.getAttribute("data-desk-journal-memo-edit-input") || "", input.value || "");
+          var memoId = input.getAttribute("data-desk-journal-memo-edit-input") || "";
+          var card = input.closest("[data-desk-journal-memo-card]");
+          var timeInput = card && card.querySelector('[data-desk-journal-memo-time="' + memoId + '"]');
+          var typeSelect = card && card.querySelector('[data-desk-journal-memo-type="' + memoId + '"]');
+          saveDeskDailyMemoText_(memoId, input.value || "", timeInput && timeInput.value, typeSelect && typeSelect.value);
         });
       }
       if (deskJournalMemoPaginationEl) {
