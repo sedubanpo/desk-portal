@@ -1005,6 +1005,9 @@
     .desk-daily-sync-status.error .desk-daily-sync-ring {
       border-color: #dc2626;
     }
+    .desk-daily-sync-status.pending .desk-daily-sync-ring {
+      border-color: #f59e0b;
+    }
     .desk-daily-sync-status.stopped .desk-daily-sync-ring {
       border-color: #94a3b8;
     }
@@ -11379,6 +11382,10 @@
       background: #dc2626;
       box-shadow: 0 0 0 4px rgba(220,38,38,0.12);
     }
+    .desk-journal-sync-card.pending .desk-daily-sync-ring {
+      background: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245,158,11,0.14);
+    }
     .desk-journal-sync-card.stopped .desk-daily-sync-ring {
       background: #94a3b8;
       box-shadow: 0 0 0 4px rgba(148,163,184,0.14);
@@ -11390,6 +11397,55 @@
     }
     .desk-journal-sync-card .desk-daily-sync-sub {
       display: none;
+    }
+    .desk-pending-flush-btn {
+      min-height: 44px;
+      min-width: 116px;
+      border: 1px solid #d8e4de;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 7px 11px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.035);
+      transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+    .desk-pending-flush-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2.4;
+    }
+    .desk-pending-flush-btn strong {
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #eef2f7;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1;
+    }
+    .desk-pending-flush-btn.has-pending {
+      border-color: #f6c36d;
+      background: #fffbeb;
+      color: #9a5700;
+    }
+    .desk-pending-flush-btn.has-pending strong {
+      background: #f59e0b;
+      color: #fff;
+    }
+    .desk-pending-flush-btn:disabled {
+      cursor: default;
+      opacity: 0.62;
     }
     .desk-journal-shared-strip {
       border: 1px solid #bddfd1;
@@ -15545,6 +15601,11 @@
                       <span class="desk-daily-sync-sub" id="deskDailySyncSub">Firebase 연결 상태를 점검하고 있습니다.</span>
                     </span>
                   </section>
+                  <button class="desk-pending-flush-btn" id="deskDailyFlushPendingBtn" type="button" title="브라우저에 남은 업무 기록을 서버에 다시 저장">
+                    <i data-lucide="upload-cloud"></i>
+                    <span>대기 저장</span>
+                    <strong id="deskDailyPendingWriteCount">0</strong>
+                  </button>
                   <button class="desk-ghost-btn" id="deskJournalReloadBtn" type="button"><i data-lucide="refresh-cw"></i>새로고침</button>
                 </div>
                 <span class="hidden" id="deskJournalTaskSummary">0건</span>
@@ -17194,6 +17255,8 @@
     var deskDailySyncStatusEl = document.getElementById("deskDailySyncStatus");
     var deskDailySyncLabelEl = document.getElementById("deskDailySyncLabel");
     var deskDailySyncSubEl = document.getElementById("deskDailySyncSub");
+    var deskDailyFlushPendingBtnEl = document.getElementById("deskDailyFlushPendingBtn");
+    var deskDailyPendingWriteCountEl = document.getElementById("deskDailyPendingWriteCount");
     var deskJournalWorkerTabsEl = document.getElementById("deskJournalWorkerTabs");
     var deskJournalLayoutEl = document.getElementById("deskJournalLayout");
     var deskJournalTaskFormEl = document.getElementById("deskJournalTaskForm");
@@ -18583,7 +18646,7 @@
         }
         return {
           status: dailyStatus,
-          label: dailyStatus === "error" ? "동기화 비정상" : dailyStatus === "stopped" ? "동기화 중지" : "동기화 정상"
+          label: dailyStatus === "error" ? "동기화 비정상" : dailyStatus === "pending" ? "동기화 중" : dailyStatus === "stopped" ? "동기화 중지" : "동기화 정상"
         };
       }
       if (state.desk.activeTab === "supplies") {
@@ -18641,7 +18704,7 @@
         sync: getGlobalSyncState_(),
         daily: {
           memoCount: (state.desk.dailyMemos || []).length,
-          pendingQueueCount: Object.keys(state.desk.dailyPendingMemoWrites || {}).length,
+          pendingQueueCount: typeof getDeskDailyPendingMemoWriteCount_ === "function" ? getDeskDailyPendingMemoWriteCount_() : 0,
           deletedMemoCount: Object.keys(state.desk.dailyDeletedMemos || {}).length
         },
         supplies: {
@@ -25390,6 +25453,7 @@
 
     function setDeskDailySyncStatus_(status) {
       state.desk.daily.syncStatus = status || "idle";
+      updateDeskDailyPendingMemoFlushButton_();
       renderGlobalSyncWidget_();
     }
 
@@ -25399,21 +25463,25 @@
       if (!state.desk.daily.realtimeEnabled) {
         status = "stopped";
       }
-      deskDailySyncStatusEl.classList.remove("error", "stopped");
+      deskDailySyncStatusEl.classList.remove("pending", "error", "stopped");
+      if (status === "pending") deskDailySyncStatusEl.classList.add("pending");
       if (status === "error") deskDailySyncStatusEl.classList.add("error");
       if (status === "stopped") deskDailySyncStatusEl.classList.add("stopped");
       if (deskDailySyncLabelEl) {
         deskDailySyncLabelEl.textContent =
           status === "error" ? "동기화 비정상" :
+          status === "pending" ? "동기화 중" :
           status === "stopped" ? "동기화 중지" :
           "동기화 정상";
       }
       if (deskDailySyncSubEl) {
         deskDailySyncSubEl.textContent =
           status === "error" ? "실시간 연결 또는 저장에 문제가 있어 자동 재시도 중입니다." :
+          status === "pending" ? "서버에 업무일지 변경 내용을 저장하고 있습니다." :
           status === "stopped" ? "서버 저장과 새로고침 기준으로 공유 중입니다. 표시가 다르면 새로고침으로 다시 맞춰 주세요." :
           "서버 API를 짧은 주기로 확인하며 같은 날짜 업무일지를 공유 중입니다.";
       }
+      updateDeskDailyPendingMemoFlushButton_();
       renderGlobalSyncWidget_();
     }
 
@@ -28284,6 +28352,7 @@
     var deskMemoSaveStatusTimer_ = null;
     var deskDailyMemoSaveQueue_ = Promise.resolve();
     var deskDailyMutationQueue_ = Promise.resolve();
+    var deskDailyPendingMemoFlushInProgress_ = false;
 
     function delay_(ms) {
       return new Promise(function(resolve) {
@@ -28305,6 +28374,32 @@
       try {
         localStorage.setItem(DESK_DAILY_PENDING_MEMO_WRITES_KEY, JSON.stringify(map || {}));
       } catch (err) {}
+    }
+
+    function collectDeskDailyPendingMemoWriteItems_() {
+      var pending = loadDeskDailyPendingMemoWrites_();
+      return Object.keys(pending).map(function(id) {
+        return normalizeDeskDailyMemo_(Object.assign({}, pending[id], { id: id }));
+      }).filter(function(item) {
+        return item.id && item.dateKey && item.worker && item.text && !isDeskDailyMemoDeleted_(item.id, item.dateKey);
+      }).sort(compareDeskDailyMemo_);
+    }
+
+    function getDeskDailyPendingMemoWriteCount_() {
+      return collectDeskDailyPendingMemoWriteItems_().length;
+    }
+
+    function updateDeskDailyPendingMemoFlushButton_() {
+      var count = getDeskDailyPendingMemoWriteCount_();
+      var isBusy = !!deskDailyPendingMemoFlushInProgress_ || state.desk.daily.syncStatus === "pending";
+      if (deskDailyPendingWriteCountEl) deskDailyPendingWriteCountEl.textContent = String(count);
+      if (deskDailyFlushPendingBtnEl) {
+        deskDailyFlushPendingBtnEl.classList.toggle("has-pending", count > 0);
+        deskDailyFlushPendingBtnEl.disabled = !count || isBusy;
+        deskDailyFlushPendingBtnEl.title = count
+          ? "브라우저에 저장된 업무 기록 " + count + "건을 서버에 다시 저장합니다. 같은 기록은 덮어씁니다."
+          : "서버 저장 대기 중인 브라우저 기록이 없습니다.";
+      }
     }
 
     function loadDeskDailyDeletedMemos_() {
@@ -28371,6 +28466,7 @@
       var pending = loadDeskDailyPendingMemoWrites_();
       pending[memo.id] = memo;
       saveDeskDailyPendingMemoWrites_(pending);
+      updateDeskDailyPendingMemoFlushButton_();
       return memo;
     }
 
@@ -28381,6 +28477,7 @@
       if (!pending[id]) return;
       delete pending[id];
       saveDeskDailyPendingMemoWrites_(pending);
+      updateDeskDailyPendingMemoFlushButton_();
     }
 
     function getDeskDailyPendingMemosForDate_(dateKey) {
@@ -28405,14 +28502,17 @@
     }
 
     function flushDeskDailyPendingMemoWrites_() {
-      if (shouldDeferPortalDataLoad_()) return Promise.resolve();
-      var pending = loadDeskDailyPendingMemoWrites_();
-      var items = Object.keys(pending).map(function(id) {
-        return normalizeDeskDailyMemo_(Object.assign({}, pending[id], { id: id }));
-      }).filter(function(item) {
-        return item.id && item.dateKey && item.worker && item.text;
-      }).sort(compareDeskDailyMemo_);
-      if (!items.length) return Promise.resolve();
+      if (shouldDeferPortalDataLoad_()) return Promise.resolve({ total: 0, saved: 0, remaining: 0, dates: [], success: true });
+      var items = collectDeskDailyPendingMemoWriteItems_();
+      if (!items.length) {
+        updateDeskDailyPendingMemoFlushButton_();
+        return Promise.resolve({ total: 0, saved: 0, remaining: 0, dates: [], success: true });
+      }
+      var savedCount = 0;
+      var dateMap = {};
+      items.forEach(function(item) {
+        dateMap[item.dateKey] = true;
+      });
       setDeskDailySyncStatus_("pending");
       showDeskMemoSaveStatus_("미전송 기록 " + items.length + "건을 서버에 저장 중", "saving");
       return items.reduce(function(chain, item) {
@@ -28423,15 +28523,67 @@
           }
           return saveDeskDailyMemoRemoteWithRetry_(item, 0).then(function() {
             forgetDeskDailyPendingMemoWrite_(item.id);
+            savedCount += 1;
           });
         });
       }, deskDailyMemoSaveQueue_.catch(function() { return null; })).then(function() {
         setDeskDailySyncStatus_("idle");
         showDeskMemoSaveStatus_("미전송 기록 저장을 완료했습니다.", "saved");
+        updateDeskDailyPendingMemoFlushButton_();
+        return {
+          total: items.length,
+          saved: savedCount,
+          remaining: getDeskDailyPendingMemoWriteCount_(),
+          dates: Object.keys(dateMap),
+          success: true
+        };
       }).catch(function(err) {
         console.warn("desk daily pending memo flush failed", err && err.message ? err.message : err);
         setDeskDailySyncStatus_("error");
         showDeskMemoSaveStatus_("미전송 기록은 보관됨 · 서버 저장을 계속 재시도합니다.", "error");
+        updateDeskDailyPendingMemoFlushButton_();
+        return {
+          total: items.length,
+          saved: savedCount,
+          remaining: getDeskDailyPendingMemoWriteCount_(),
+          dates: Object.keys(dateMap),
+          success: false,
+          error: err
+        };
+      });
+    }
+
+    function flushDeskDailyPendingMemoWritesFromButton_() {
+      if (deskDailyPendingMemoFlushInProgress_) return Promise.resolve();
+      var count = getDeskDailyPendingMemoWriteCount_();
+      if (!count) {
+        updateDeskDailyPendingMemoFlushButton_();
+        showDeskMemoSaveStatus_("서버 저장 대기 기록이 없습니다.", "saved");
+        return Promise.resolve();
+      }
+      deskDailyPendingMemoFlushInProgress_ = true;
+      updateDeskDailyPendingMemoFlushButton_();
+      showDeskMemoSaveStatus_("브라우저 대기 기록 " + count + "건을 서버에 일괄 저장 중입니다.", "saving");
+      return flushDeskDailyPendingMemoWrites_().then(function(summary) {
+        var result = summary || {};
+        var remaining = Number(result.remaining || 0);
+        if (remaining > 0) {
+          showDeskMemoSaveStatus_("일부 기록 " + remaining + "건이 아직 서버 저장 대기 중입니다. 연결 상태를 확인해 주세요.", "error");
+        } else if (Number(result.total || 0) > 0) {
+          showDeskMemoSaveStatus_("브라우저 대기 기록 " + Number(result.saved || result.total || 0) + "건을 서버에 저장했습니다.", "saved");
+        }
+        var currentDateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
+        if (!remaining && currentDateKey) {
+          return syncDeskDailyJournalAfterMutation_(currentDateKey);
+        }
+        renderDeskDailyJournal_();
+        return null;
+      }).finally(function() {
+        deskDailyPendingMemoFlushInProgress_ = false;
+        updateDeskDailyPendingMemoFlushButton_();
+        if (state.activeModule === "expense" && state.desk.activeTab === "dailyJournal") {
+          renderDeskDailyJournal_();
+        }
       });
     }
 
@@ -30187,6 +30339,11 @@
       if (deskJournalReloadBtnEl) {
         deskJournalReloadBtnEl.addEventListener("click", function() {
           reloadDeskDailyJournalData_(deskJournalReloadBtnEl);
+        });
+      }
+      if (deskDailyFlushPendingBtnEl) {
+        deskDailyFlushPendingBtnEl.addEventListener("click", function() {
+          flushDeskDailyPendingMemoWritesFromButton_();
         });
       }
       if (deskJournalDateInputEl) {
