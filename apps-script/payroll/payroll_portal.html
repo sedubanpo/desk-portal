@@ -16532,6 +16532,7 @@
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
     var DESK_DAILY_CONFIG_RT_PATH = "desk_portal/daily_config";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
+    var DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = true;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_RECRUITING_RT_PATH = "desk_portal/hr_recruiting/applicants";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
@@ -25559,8 +25560,18 @@
       return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + DESK_DAILY_JOURNAL_RT_PATH + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
     }
 
+    function isDeskDailyJournalRealtimeRequestAllowed_(method, url) {
+      var target = String(url || "");
+      if (target.indexOf(DESK_DAILY_JOURNAL_RT_PATH) === -1) return true;
+      if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) return true;
+      if (!DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) return false;
+      var verb = String(method || "GET").toUpperCase();
+      if (!/^(PUT|PATCH|DELETE)$/.test(verb)) return false;
+      return /\/memos\/[^/?]+\.json(?:\?|$)/.test(target);
+    }
+
     function deskRealtimeFetchJson_(method, url, payload) {
-      if (!DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED && String(url || "").indexOf(DESK_DAILY_JOURNAL_RT_PATH) !== -1) {
+      if (!isDeskDailyJournalRealtimeRequestAllowed_(method, url)) {
         return Promise.reject(new Error("일일 업무일지는 서버 API 경로로만 동기화합니다."));
       }
       var options = {
@@ -25594,6 +25605,33 @@
       });
     }
 
+    function saveDeskDailyMemoServer_(item) {
+      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item });
+    }
+
+    function deleteDeskDailyMemoServer_(dateKey, memoId) {
+      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId });
+    }
+
+    function saveDeskDailyMemoRealtime_(item) {
+      var safeItem = normalizeDeskDailyMemo_(item);
+      if (!safeItem.dateKey || !safeItem.id) return Promise.reject(new Error("저장할 기록 정보가 부족합니다."));
+      return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(safeItem.dateKey, "memos/" + safeItem.id), safeItem)
+        .then(function() {
+          return { success: true, source: "firebase", dateKey: safeItem.dateKey, memo: safeItem };
+        });
+    }
+
+    function deleteDeskDailyMemoRealtime_(dateKey, memoId) {
+      var safeDateKey = String(dateKey || "").trim();
+      var safeMemoId = String(memoId || "").trim();
+      if (!safeDateKey || !safeMemoId) return Promise.reject(new Error("삭제할 기록 정보가 부족합니다."));
+      return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "memos/" + safeMemoId), null)
+        .then(function() {
+          return { success: true, source: "firebase", dateKey: safeDateKey, id: safeMemoId };
+        });
+    }
+
     function saveDeskDailyTaskRemote_(item) {
       return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
         .catch(function(err) {
@@ -25611,19 +25649,32 @@
     }
 
     function saveDeskDailyMemoRemote_(item) {
-      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalMemo", { dateKey: item.dateKey, memo: item })
-        .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
-          return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "memos/" + item.id), item);
+      var safeItem = normalizeDeskDailyMemo_(item);
+      if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) {
+        return saveDeskDailyMemoRealtime_(safeItem).catch(function(err) {
+          console.warn("desk daily direct memo save fallback", err && err.message ? err.message : err);
+          return saveDeskDailyMemoServer_(safeItem);
         });
+      }
+      return saveDeskDailyMemoServer_(safeItem).catch(function(err) {
+        if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
+        return saveDeskDailyMemoRealtime_(safeItem);
+      });
     }
 
     function deleteDeskDailyMemoRemote_(dateKey, memoId) {
-      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId })
-        .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
-          return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "memos/" + memoId), null);
+      var safeDateKey = String(dateKey || "").trim();
+      var safeMemoId = String(memoId || "").trim();
+      if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) {
+        return deleteDeskDailyMemoRealtime_(safeDateKey, safeMemoId).catch(function(err) {
+          console.warn("desk daily direct memo delete fallback", err && err.message ? err.message : err);
+          return deleteDeskDailyMemoServer_(safeDateKey, safeMemoId);
         });
+      }
+      return deleteDeskDailyMemoServer_(safeDateKey, safeMemoId).catch(function(err) {
+        if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
+        return deleteDeskDailyMemoRealtime_(safeDateKey, safeMemoId);
+      });
     }
 
     function syncDeskDailyJournalAfterMutation_(dateKey) {
@@ -28673,6 +28724,10 @@
         forgetDeskDailyPendingMemoWrite_(safeItem.id);
         setDeskDailySyncStatus_("idle");
         showDeskMemoSaveStatus_("서버 저장을 완료했습니다.", "saved");
+        if (result && result.source === "firebase") {
+          refreshDeskDailyJournalSnapshotForDate_(safeItem.dateKey);
+          return null;
+        }
         return syncDeskDailyJournalAfterMutation_(safeItem.dateKey);
       }).catch(function(err) {
         var message = err && err.message ? err.message : String(err);
@@ -29147,8 +29202,12 @@
         delay: 40,
         label: "desk daily memo delete"
       })
-        .then(function() {
+        .then(function(result) {
           setDeskDailySyncStatus_("idle");
+          if (result && result.source === "firebase") {
+            refreshDeskDailyJournalSnapshotForDate_(dateKey);
+            return null;
+          }
           return syncDeskDailyJournalAfterMutation_(dateKey);
         });
     }
