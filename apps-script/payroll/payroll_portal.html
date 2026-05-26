@@ -16533,6 +16533,8 @@
     var DESK_DAILY_CONFIG_RT_PATH = "desk_portal/daily_config";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
     var DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = true;
+    var DESK_DAILY_DIRECT_MEMO_READ_ENABLED = true;
+    var DESK_DAILY_DIRECT_MEMO_STREAM_ENABLED = true;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_RECRUITING_RT_PATH = "desk_portal/hr_recruiting/applicants";
     var DESK_SCHEDULE_STORAGE_KEY = "desk_portal_monthly_schedule_v1";
@@ -25501,12 +25503,14 @@
 
     function stopDeskDailyJournalRealtime_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
-      var source = state.desk.daily.realtimeSources[safeDateKey];
-      if (!source) return;
-      try {
-        source.close();
-      } catch (err) {}
-      delete state.desk.daily.realtimeSources[safeDateKey];
+      [safeDateKey, getDeskDailyMemoRealtimeSourceKey_(safeDateKey)].forEach(function(key) {
+        var source = state.desk.daily.realtimeSources[key];
+        if (!source) return;
+        try {
+          source.close();
+        } catch (err) {}
+        delete state.desk.daily.realtimeSources[key];
+      });
     }
 
     function getDeskPendingShiftAlerts_(tasks, dateKey) {
@@ -25564,10 +25568,12 @@
       var target = String(url || "");
       if (target.indexOf(DESK_DAILY_JOURNAL_RT_PATH) === -1) return true;
       if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) return true;
-      if (!DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) return false;
       var verb = String(method || "GET").toUpperCase();
-      if (!/^(PUT|PATCH|DELETE)$/.test(verb)) return false;
-      return /\/memos\/[^/?]+\.json(?:\?|$)/.test(target);
+      var isMemoItemPath = /\/memos\/[^/?]+\.json(?:\?|$)/.test(target);
+      var isMemoListPath = /\/memos\.json(?:\?|$)/.test(target);
+      if (DESK_DAILY_DIRECT_MEMO_READ_ENABLED && verb === "GET" && (isMemoListPath || isMemoItemPath)) return true;
+      if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED && /^(PUT|PATCH|DELETE)$/.test(verb) && isMemoItemPath) return true;
+      return false;
     }
 
     function deskRealtimeFetchJson_(method, url, payload) {
@@ -25611,6 +25617,33 @@
 
     function deleteDeskDailyMemoServer_(dateKey, memoId) {
       return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId });
+    }
+
+    function normalizeDeskDailyMemoMap_(dateKey, snapshot) {
+      var safeDateKey = String(dateKey || "").trim();
+      var map = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+      return Object.keys(map).map(function(id) {
+        return normalizeDeskDailyMemo_(Object.assign({}, map[id], { id: id, dateKey: safeDateKey || map[id] && map[id].dateKey }));
+      }).filter(function(item) {
+        return item.id && item.dateKey && item.worker && item.text;
+      }).sort(compareDeskDailyMemo_);
+    }
+
+    function fetchDeskDailyMemosRealtime_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || !DESK_DAILY_DIRECT_MEMO_READ_ENABLED) return Promise.resolve(null);
+      return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "memos"), null)
+        .then(function(snapshot) {
+          return normalizeDeskDailyMemoMap_(safeDateKey, snapshot || {});
+        });
+    }
+
+    function mergeDeskDailyMemosForDate_(dateKey, memos) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || !Array.isArray(memos)) return;
+      mergeDeskDailyJournalData_(safeDateKey, getDeskDailyJournalTasks_(safeDateKey), memos);
+      mergeDeskDailyPendingMemosForDate_(safeDateKey);
+      refreshDeskDailyJournalSnapshotForDate_(safeDateKey);
     }
 
     function saveDeskDailyMemoRealtime_(item) {
@@ -25761,6 +25794,94 @@
       applyDeskDailyJournalSnapshot_(safeDateKey, snapshot);
     }
 
+    function getDeskDailyMemoRealtimeSourceKey_(dateKey) {
+      return String(dateKey || "").trim() + "::memos";
+    }
+
+    function applyDeskDailyMemoRealtimePayload_(dateKey, path, value, isPatch) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return;
+      var normalizedPath = String(path || "/");
+      if (normalizedPath === "/" || normalizedPath === "") {
+        if (isPatch) {
+          var patchMap = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+          var byId = {};
+          getDeskDailyJournalMemos_(safeDateKey).forEach(function(item) {
+            if (item && item.id) byId[item.id] = normalizeDeskDailyMemo_(item);
+          });
+          Object.keys(patchMap).forEach(function(id) {
+            var patchValue = patchMap[id];
+            if (patchValue === null) {
+              delete byId[id];
+            } else {
+              byId[id] = normalizeDeskDailyMemo_(Object.assign({}, patchValue, { id: id, dateKey: safeDateKey }));
+            }
+          });
+          mergeDeskDailyMemosForDate_(safeDateKey, Object.keys(byId).map(function(id) { return byId[id]; }));
+        } else {
+          mergeDeskDailyMemosForDate_(safeDateKey, normalizeDeskDailyMemoMap_(safeDateKey, value || {}));
+        }
+      } else {
+        var memoId = normalizedPath.replace(/^\/+/, "").split("/")[0];
+        if (!memoId) return;
+        var current = {};
+        getDeskDailyJournalMemos_(safeDateKey).forEach(function(item) {
+          if (item && item.id) current[item.id] = normalizeDeskDailyMemo_(item);
+        });
+        if (value === null) {
+          delete current[memoId];
+        } else {
+          current[memoId] = normalizeDeskDailyMemo_(Object.assign({}, value, { id: memoId, dateKey: safeDateKey }));
+        }
+        mergeDeskDailyMemosForDate_(safeDateKey, Object.keys(current).map(function(id) { return current[id]; }));
+      }
+      setDeskDailySyncStatus_("idle");
+      if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
+        renderDeskDailyJournal_();
+      } else if (isDeskLiveFeedDateKey_(safeDateKey)) {
+        renderDeskLiveFeed_();
+      }
+    }
+
+    function startDeskDailyMemoRealtime_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || !state.desk.daily.realtimeEnabled || !DESK_DAILY_DIRECT_MEMO_STREAM_ENABLED) return false;
+      if (typeof EventSource === "undefined") return false;
+      var sourceKey = getDeskDailyMemoRealtimeSourceKey_(safeDateKey);
+      if (state.desk.daily.realtimeSources[sourceKey]) return true;
+      var source = new EventSource(buildDeskDailyJournalRealtimeUrl_(safeDateKey, "memos", true));
+      source.addEventListener("put", function(event) {
+        try {
+          var payload = JSON.parse(event.data || "{}");
+          applyDeskDailyMemoRealtimePayload_(safeDateKey, payload.path, payload.data, false);
+        } catch (err) {
+          console.warn("desk daily memo realtime put parse error", err);
+        }
+      });
+      source.addEventListener("patch", function(event) {
+        try {
+          var payload = JSON.parse(event.data || "{}");
+          applyDeskDailyMemoRealtimePayload_(safeDateKey, payload.path, payload.data, true);
+        } catch (err) {
+          console.warn("desk daily memo realtime patch parse error", err);
+        }
+      });
+      source.onerror = function() {
+        if (state.desk.daily.realtimeSources[sourceKey] === source) {
+          source.close();
+          delete state.desk.daily.realtimeSources[sourceKey];
+          setDeskDailySyncStatus_("error");
+          setTimeout(function() {
+            if (state.desk.daily.realtimeEnabled) {
+              startDeskDailyMemoRealtime_(safeDateKey);
+            }
+          }, 3000);
+        }
+      };
+      state.desk.daily.realtimeSources[sourceKey] = source;
+      return true;
+    }
+
     function startDeskDailyJournalRealtime_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey || !state.desk.daily.realtimeEnabled) {
@@ -25768,6 +25889,10 @@
         return;
       }
       if (!DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || typeof EventSource === "undefined") {
+        if (startDeskDailyMemoRealtime_(safeDateKey)) {
+          setDeskDailySyncStatus_("idle");
+          return;
+        }
         setDeskDailySyncStatus_("idle");
         return;
       }
@@ -26404,12 +26529,21 @@
       }
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
       var request;
-      request = runServer("getDeskDailyJournalData", { dateKey: key })
-        .then(function(res) {
+      var directMemoRequest = fetchDeskDailyMemosRealtime_(key).catch(function(err) {
+        console.warn("desk daily direct memo load fallback", err && err.message ? err.message : err);
+        return null;
+      });
+      request = Promise.all([
+        runServer("getDeskDailyJournalData", { dateKey: key }),
+        directMemoRequest
+      ])
+        .then(function(results) {
+          var res = results[0];
+          var directMemos = results[1];
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
           }
-          mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
+          mergeDeskDailyJournalData_(key, res.tasks || [], Array.isArray(directMemos) ? directMemos : (res.memos || []));
           mergeDeskDailyPendingMemosForDate_(key);
           refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
