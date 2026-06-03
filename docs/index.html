@@ -10909,6 +10909,38 @@
       padding: 12px;
       min-width: 0;
     }
+    .desk-day-report-worker-card.is-unavailable {
+      --desk-card-border: #b8c1cc;
+      --desk-card-accent: #475569;
+      --desk-card-text: #475569;
+      background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.08), rgba(248, 250, 252, 0.92)),
+        #f1f5f9;
+      border-color: #cbd5e1;
+      color: #475569;
+      filter: saturate(0.45);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+    }
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-time {
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,0.18), transparent 28%),
+        linear-gradient(180deg, #334155 0%, #1f2937 100%);
+      border-color: rgba(15, 23, 42, 0.28);
+      color: #dbe3ea;
+      box-shadow: inset 0 -18px 28px rgba(0, 0, 0, 0.18);
+    }
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-duration,
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-worker-main p {
+      color: #64748b;
+    }
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-worker-name {
+      color: #334155;
+    }
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-coverage-chip {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
     .desk-day-report-time {
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.78);
@@ -23151,7 +23183,8 @@
     function renderDeskDayReportWorkerCard_(item, dayItems) {
       var tone = getDeskShiftTone_(item);
       var memo = item.note || getDeskToneLabel_(tone) || "메모 없음";
-      return '<article class="desk-day-report-worker-card" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
+      var unavailableClass = item.unavailable ? " is-unavailable" : "";
+      return '<article class="desk-day-report-worker-card' + unavailableClass + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
         '<div class="desk-day-report-time">' +
           '<strong>' + formatDeskReportShiftTimeHtml_(item) + '</strong>' +
           '<span class="desk-day-report-duration">' + escapeHtml(formatDeskReportDuration_(item)) + '</span>' +
