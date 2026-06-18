@@ -13608,6 +13608,107 @@
     .folder-tab,
     .folder-body { border-radius: 8px; }
 
+    @media (max-width: 1800px) {
+      .main,
+      .main.expense-live-mode {
+        padding-right: 18px;
+      }
+      .module-tabs {
+        margin-right: -18px;
+      }
+      .desk-live-feed {
+        display: none !important;
+      }
+      .desk-calendar-side,
+      .desk-journal-layout,
+      .desk-journal-layout.worker-focus,
+      .desk-journal-layout.manager-mode,
+      .desk-journal-layout.manager-mode.worker-focus,
+      .desk-response-admin-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-response-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        padding: 14px 18px;
+      }
+      .desk-helper-zone {
+        grid-template-columns: 156px minmax(0, 1fr);
+      }
+      .desk-mascot {
+        width: 156px;
+        height: 148px;
+      }
+      .desk-mascot-img {
+        width: 154px;
+        height: 154px;
+      }
+      .desk-response-bubble {
+        min-height: 118px;
+        padding: 18px 22px 40px;
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+      .desk-response-actions > span {
+        left: 22px;
+        right: 224px;
+        bottom: 16px;
+      }
+      .desk-response-search-btn {
+        min-width: 132px;
+        height: 48px;
+        padding: 0 18px;
+        font-size: 17px;
+      }
+      .desk-response-summary {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-response-summary-head {
+        border-right: 0;
+        border-bottom: 1px solid #d6e5de;
+        padding: 16px 18px;
+      }
+      .desk-response-steps {
+        grid-template-columns: repeat(5, minmax(120px, 1fr));
+        overflow-x: auto;
+      }
+      .desk-response-step {
+        min-height: 112px;
+        padding: 16px 14px;
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+        font-size: 15px;
+        line-height: 1.48;
+      }
+      .desk-response-step b,
+      .desk-response-step strong {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+      .desk-response-step span {
+        max-width: none;
+        overflow-wrap: anywhere;
+      }
+      .desk-response-message-grid,
+      .desk-day-report-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-day-report-worker-card {
+        grid-template-columns: minmax(150px, 0.58fr) minmax(0, 1fr);
+        gap: 10px;
+      }
+      .desk-day-report-time strong {
+        font-size: 16px;
+        line-height: 1.28;
+      }
+      .desk-day-report-time strong span {
+        white-space: normal;
+      }
+      .desk-day-report-worker-name {
+        font-size: 18px;
+      }
+    }
+
     @media (max-width: 1360px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { display: none; }
