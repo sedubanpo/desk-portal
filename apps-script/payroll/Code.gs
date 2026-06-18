@@ -20,6 +20,7 @@ const DESK_REPORT_CALENDAR_ICS_BASE_URL = "https://calendar.google.com/calendar/
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
+const DESK_RETIRED_SCHEDULE_WORKERS = ["인유빈", "유지연"];
 const DESK_HR_STATUSES = ["이력서 검토", "추천", "면접 조율", "면접 진행", "합격 안내", "불합격 안내"];
 const DESK_HR_STATUS_ALIASES = {
   "미연락": "이력서 검토",
@@ -479,6 +480,7 @@ function getDeskScheduleMonthData(payload) {
     var basePath = buildDeskScheduleMonthPath_(monthKey);
     var stored = firebaseRequestWithServiceAccount_("get", basePath) || null;
     var entriesMap = stored && stored.entries ? stored.entries : stored;
+    var hasWrappedEntries = !!(stored && stored.entries);
     var seeded = false;
 
     if (!entriesMap || typeof entriesMap !== "object" || !Object.keys(entriesMap).length) {
@@ -492,6 +494,17 @@ function getDeskScheduleMonthData(payload) {
         entries: entriesMap
       });
       seeded = true;
+    }
+
+    var retiredUpdates = {};
+    Object.keys(entriesMap).forEach(function(id) {
+      if (isDeskRetiredScheduleWorker_(entriesMap[id] && entriesMap[id].worker)) {
+        retiredUpdates[id] = null;
+        delete entriesMap[id];
+      }
+    });
+    if (Object.keys(retiredUpdates).length) {
+      firebaseRequestWithServiceAccount_("patch", basePath + (hasWrappedEntries ? "/entries" : ""), retiredUpdates);
     }
 
     var entries = Object.keys(entriesMap).map(function(id) {
@@ -699,6 +712,7 @@ function saveDeskScheduleEntry(payload) {
       return { success: false, message: "근무일과 monthKey가 일치하지 않습니다." };
     }
     if (!entry.worker) return { success: false, message: "근무자 이름이 필요합니다." };
+    if (isDeskRetiredScheduleWorker_(entry.worker)) return { success: false, message: "퇴사자는 근무표에 저장할 수 없습니다." };
     if (!entry.resident && !entry.unavailable && (!entry.start || !entry.end)) {
       return { success: false, message: "시작/종료 시간이 필요합니다." };
     }
@@ -736,6 +750,8 @@ function batchUpdateDeskScheduleEntries(payload) {
 
     var entries = Array.isArray(req.entries) ? req.entries.map(function(item) {
       return normalizeDeskScheduleEntry_(item || {}, item && item.id);
+    }).filter(function(entry) {
+      return !isDeskRetiredScheduleWorker_(entry.worker);
     }) : [];
 
     for (var i = 0; i < entries.length; i += 1) {
@@ -769,6 +785,12 @@ function batchUpdateDeskScheduleEntries(payload) {
 
 function buildDeskScheduleMonthPath_(monthKey) {
   return DESK_SCHEDULE_ROOT_PATH + "/" + monthKey;
+}
+
+function isDeskRetiredScheduleWorker_(workerName) {
+  var safeName = String(workerName || "").trim();
+  if (!safeName) return false;
+  return DESK_RETIRED_SCHEDULE_WORKERS.indexOf(safeName) !== -1;
 }
 
 function buildDeskDailyJournalPath_(dateKey) {
@@ -1433,9 +1455,7 @@ function buildDefaultDeskScheduleMonthSeed_(monthKey) {
   var rules = [
     { worker: "홍성우", role: "총괄 팀장", days: [1, 2, 3, 4, 5, 6, 0], resident: true, note: "근무시간 상주 · 운영 총괄" },
     { worker: "안종성", role: "오후 데스크", days: [2, 4, 5, 6], start: "14:00", end: "22:30", note: "상담/학부모 응대" },
-    { worker: "인유빈", role: "오전 데스크", days: [1, 3, 5, 0], start: "09:30", end: "18:00", note: "등원 응대 및 등록 안내" },
     { worker: "이민현", role: "마감 담당", days: [1, 4, 5, 6], start: "16:00", end: "22:30", note: "마감 점검 및 정산" },
-    { worker: "유지연", role: "운영 지원", days: [2, 6, 0], start: "13:00", end: "19:00", note: "자료 정리 및 업무 지원" },
     { worker: "김유민", role: "오전 데스크", days: [2, 4], start: "09:30", end: "17:00", note: "접수 및 행정 처리" },
     { worker: "이창연", role: "주임", days: [3], start: "11:00", end: "18:00", note: "실무 운영 점검" },
     { worker: "김유민", role: "야간 지원", days: [5], start: "17:30", end: "22:30", note: "금요일 마감 보조" }
@@ -1451,7 +1471,6 @@ function buildDefaultDeskScheduleMonthSeed_(monthKey) {
     rules.forEach(function(rule, idx) {
       if (rule.days.indexOf(weekday) === -1) return;
       if (rule.worker === "이창연" && weekIndex % 2 === 0) return;
-      if (rule.worker === "유지연" && weekIndex === 1 && weekday === 0) return;
       var time = getDeskScheduleRuleTime_(rule, weekday, weekIndex);
       var entry = normalizeDeskScheduleEntry_({
         id: ["seed", monthKey, day, idx, rule.worker].join("_").replace(/\s+/g, ""),
