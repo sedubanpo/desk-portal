@@ -1540,7 +1540,7 @@ function getFirebaseConfigFromProps_() {
 
 function getFirebaseAccessTokenFromServiceAccount_() {
   var cache = CacheService.getScriptCache();
-  var cached = cache.get("FIREBASE_SA_ACCESS_TOKEN_V1");
+  var cached = cache.get("FIREBASE_SA_ACCESS_TOKEN_V2");
   if (cached) return cached;
 
   var cfg = getFirebaseConfigFromProps_();
@@ -1549,7 +1549,7 @@ function getFirebaseAccessTokenFromServiceAccount_() {
   var header = { alg: "RS256", typ: "JWT" };
   var claim = {
     iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email",
+    scope: "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/userinfo.email",
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600
@@ -1580,7 +1580,7 @@ function getFirebaseAccessTokenFromServiceAccount_() {
   var accessToken = tokenResult.access_token;
   if (!accessToken) throw new Error("Firebase 토큰 응답에 access_token이 없습니다.");
 
-  cache.put("FIREBASE_SA_ACCESS_TOKEN_V1", accessToken, 3300);
+  cache.put("FIREBASE_SA_ACCESS_TOKEN_V2", accessToken, 3300);
   return accessToken;
 }
 
@@ -1607,6 +1607,103 @@ function firebaseRequestWithServiceAccount_(method, path, payload) {
     throw new Error("Firebase 요청 실패(" + code + ") " + cleanPath + ": " + text);
   }
   return text ? JSON.parse(text) : null;
+}
+
+function getFirestoreProjectId_() {
+  var props = PropertiesService.getScriptProperties();
+  var projectId = String(
+    props.getProperty("FIRESTORE_PROJECT_ID") ||
+    props.getProperty("FIREBASE_FIRESTORE_PROJECT_ID") ||
+    props.getProperty("FIREBASE_PROJECT_ID") ||
+    ""
+  ).trim();
+  if (!projectId) throw new Error("스크립트 속성 FIRESTORE_PROJECT_ID 또는 FIREBASE_PROJECT_ID가 비어 있습니다.");
+  return projectId;
+}
+
+function firestoreRequestWithServiceAccount_(method, path, query, payload) {
+  var projectId = getFirestoreProjectId_();
+  var token = getFirebaseAccessTokenFromServiceAccount_();
+  var cleanPath = String(path || "").replace(/^\/+/, "");
+  var queryText = "";
+  if (query && typeof query === "object") {
+    var parts = [];
+    Object.keys(query).forEach(function(key) {
+      if (query[key] === null || typeof query[key] === "undefined" || query[key] === "") return;
+      parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(String(query[key])));
+    });
+    if (parts.length) queryText = "?" + parts.join("&");
+  }
+  var url = "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(projectId) +
+    "/databases/(default)/documents/" + cleanPath + queryText;
+  var options = {
+    method: String(method || "get").toLowerCase(),
+    headers: { Authorization: "Bearer " + token },
+    muteHttpExceptions: true
+  };
+  if (typeof payload !== "undefined") {
+    options.contentType = "application/json";
+    options.payload = JSON.stringify(payload);
+  }
+  var response = UrlFetchApp.fetch(url, options);
+  var code = response.getResponseCode();
+  var text = response.getContentText();
+  if (code < 200 || code >= 300) {
+    throw new Error("Firestore 요청 실패(" + code + ") " + cleanPath + ": " + text);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+function firestoreValueToJs_(value) {
+  if (!value || typeof value !== "object") return null;
+  if (Object.prototype.hasOwnProperty.call(value, "stringValue")) return value.stringValue;
+  if (Object.prototype.hasOwnProperty.call(value, "integerValue")) return Number(value.integerValue || 0);
+  if (Object.prototype.hasOwnProperty.call(value, "doubleValue")) return Number(value.doubleValue || 0);
+  if (Object.prototype.hasOwnProperty.call(value, "booleanValue")) return !!value.booleanValue;
+  if (Object.prototype.hasOwnProperty.call(value, "timestampValue")) return value.timestampValue;
+  if (Object.prototype.hasOwnProperty.call(value, "nullValue")) return null;
+  if (value.arrayValue) {
+    return ((value.arrayValue && value.arrayValue.values) || []).map(function(item) {
+      return firestoreValueToJs_(item);
+    });
+  }
+  if (value.mapValue) {
+    var result = {};
+    var fields = (value.mapValue && value.mapValue.fields) || {};
+    Object.keys(fields).forEach(function(key) {
+      result[key] = firestoreValueToJs_(fields[key]);
+    });
+    return result;
+  }
+  return null;
+}
+
+function firestoreDocumentToObject_(doc) {
+  var fields = (doc && doc.fields) || {};
+  var obj = {};
+  Object.keys(fields).forEach(function(key) {
+    obj[key] = firestoreValueToJs_(fields[key]);
+  });
+  if (doc && doc.name) {
+    var parts = String(doc.name).split("/");
+    obj.id = parts[parts.length - 1] || obj.id || "";
+  }
+  return obj;
+}
+
+function firestoreListCollection_(collectionPath, pageSize) {
+  var rows = [];
+  var pageToken = "";
+  do {
+    var query = { pageSize: pageSize || 500 };
+    if (pageToken) query.pageToken = pageToken;
+    var res = firestoreRequestWithServiceAccount_("get", collectionPath, query);
+    ((res && res.documents) || []).forEach(function(doc) {
+      rows.push(firestoreDocumentToObject_(doc));
+    });
+    pageToken = String((res && res.nextPageToken) || "");
+  } while (pageToken);
+  return rows;
 }
 
 function firebaseSmokeTest() {
@@ -2449,7 +2546,8 @@ function getTuitionMonthSummary(payload) {
       paymentStudentMap[pkey] = true;
     });
     var classStudentMap = loadTuitionClassStudentMapByMonth_(monthName);
-    var studentRows = loadTuitionStudentMaster_();
+    var studentMasterBundle = loadTuitionStudentMasterBundle_();
+    var studentRows = studentMasterBundle.rows || [];
     var followupMap = loadTuitionFollowupMap_(monthName);
 
     var studentMap = {};
@@ -2573,6 +2671,11 @@ function getTuitionMonthSummary(payload) {
       allPayments: summary.allPayments || paymentRows,
       todayPayments: todayRows,
       payments: summary.payments,
+      studentMaster: {
+        source: studentMasterBundle.source || "sheet",
+        count: studentRows.length,
+        fallbackReason: studentMasterBundle.fallbackReason || ""
+      },
       rows: list
     };
   } catch (e) {
@@ -3969,7 +4072,66 @@ function normalizeTuitionHeaderText_(value) {
     .toLowerCase();
 }
 
+function loadTuitionStudentMasterBundle_() {
+  var fallbackReason = "";
+  try {
+    var firestoreRows = loadTuitionStudentMasterFromFirestore_();
+    if (firestoreRows.length) {
+      return { rows: firestoreRows, source: "firestore", fallbackReason: "" };
+    }
+    fallbackReason = "Firestore students 응답이 비어 있습니다.";
+  } catch (e) {
+    fallbackReason = e && e.message ? e.message : String(e);
+  }
+  return {
+    rows: loadTuitionStudentMasterFromSheet_(),
+    source: "sheet",
+    fallbackReason: fallbackReason
+  };
+}
+
 function loadTuitionStudentMaster_() {
+  return loadTuitionStudentMasterBundle_().rows || [];
+}
+
+function loadTuitionStudentMasterFromFirestore_() {
+  var docs = firestoreListCollection_("students", 500);
+  var rows = [];
+  var seen = {};
+  docs.forEach(function(doc) {
+    if (!isTuitionFirestoreStudentRegistered_(doc)) return;
+    var name = normalizeTuitionStudentName_(doc.studentName || doc.name || doc.displayName);
+    if (!name) return;
+    var school = String(doc.school || doc.schoolName || "").trim();
+    var grade = String(doc.grade || doc.gradeName || "").trim();
+    var key = [name, school, grade].join("|");
+    if (seen[key]) return;
+    seen[key] = true;
+    rows.push({
+      id: String(doc.studentId || doc.id || "").trim(),
+      name: name,
+      school: school,
+      grade: grade,
+      registrationStatus: String(doc.status || "").trim() || (doc.active === true ? "ACTIVE" : "")
+    });
+  });
+  rows.sort(function(a, b) {
+    return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+  });
+  return rows;
+}
+
+function isTuitionFirestoreStudentRegistered_(doc) {
+  if (!doc || typeof doc !== "object") return false;
+  if (doc.active === false || doc.isActive === false) return false;
+  var status = String(doc.status || doc.registrationStatus || doc.enrollmentStatus || "").trim().toUpperCase();
+  if (!status) return doc.active === true || doc.isActive === true;
+  if (/^(ACTIVE|REGISTERED|ENROLLED|재원|등록|활성)$/.test(status)) return true;
+  if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|퇴원|비활성|삭제)$/.test(status)) return false;
+  return doc.active === true || doc.isActive === true;
+}
+
+function loadTuitionStudentMasterFromSheet_() {
   var ss = SpreadsheetApp.openById(TEACHER_SS_ID);
   var sheet = ss.getSheetByName("student");
   if (!sheet) return [];
