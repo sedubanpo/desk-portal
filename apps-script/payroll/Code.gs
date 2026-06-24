@@ -1265,15 +1265,26 @@ function getDeskDailyJournalPendingTasks(payload) {
     });
 
     var legacyScanDays = Math.min(14, Math.max(0, Number(req.legacyScanDays || 7)));
+    var legacyPaths = [];
     for (var offset = 1; offset <= legacyScanDays; offset += 1) {
       var normalizedDateKey = shiftDeskDateKey_(beforeDateKey, -offset);
       if (!normalizedDateKey) continue;
-      var dayData = firebaseRequestWithServiceAccount_("get", buildDeskDailyJournalPath_(normalizedDateKey) + "/tasks") || {};
+      legacyPaths.push({
+        dateKey: normalizedDateKey,
+        path: buildDeskDailyJournalPath_(normalizedDateKey) + "/tasks"
+      });
+    }
+    var legacyDataByPath = firebaseBatchGetWithServiceAccount_(legacyPaths.map(function(item) {
+      return item.path;
+    }));
+    legacyPaths.forEach(function(item) {
+      var normalizedDateKey = item.dateKey;
+      var dayData = legacyDataByPath[item.path] || {};
       var tasksMap = dayData && typeof dayData === "object" ? dayData : {};
       Object.keys(tasksMap).forEach(function(id) {
         addPendingTask_(tasksMap[id], id, normalizedDateKey);
       });
-    }
+    });
     tasks.sort(compareDeskDailyJournalTasks_);
     return { success: true, beforeDateKey: beforeDateKey, includeSharedCarryover: true, tasks: tasks };
   } catch (e) {
@@ -1609,15 +1620,44 @@ function firebaseRequestWithServiceAccount_(method, path, payload) {
   return text ? JSON.parse(text) : null;
 }
 
+function firebaseBatchGetWithServiceAccount_(paths) {
+  var cleanPaths = (paths || []).map(function(path) {
+    return String(path || "").replace(/^\/+/, "");
+  }).filter(Boolean);
+  if (!cleanPaths.length) return {};
+
+  var cfg = getFirebaseConfigFromProps_();
+  var token = getFirebaseAccessTokenFromServiceAccount_();
+  var requests = cleanPaths.map(function(cleanPath) {
+    return {
+      url: cfg.dbUrl + "/" + cleanPath + ".json",
+      method: "get",
+      headers: { Authorization: "Bearer " + token },
+      muteHttpExceptions: true
+    };
+  });
+  var responses = UrlFetchApp.fetchAll(requests);
+  var result = {};
+  responses.forEach(function(response, index) {
+    var cleanPath = cleanPaths[index];
+    var code = response.getResponseCode();
+    var text = response.getContentText();
+    if (code < 200 || code >= 300) {
+      throw new Error("Firebase 일괄 조회 실패(" + code + ") " + cleanPath + ": " + text);
+    }
+    result[cleanPath] = text ? JSON.parse(text) : null;
+  });
+  return result;
+}
+
 function getFirestoreProjectId_() {
   var props = PropertiesService.getScriptProperties();
   var projectId = String(
     props.getProperty("FIRESTORE_PROJECT_ID") ||
     props.getProperty("FIREBASE_FIRESTORE_PROJECT_ID") ||
-    props.getProperty("FIREBASE_PROJECT_ID") ||
     ""
   ).trim();
-  if (!projectId) throw new Error("스크립트 속성 FIRESTORE_PROJECT_ID 또는 FIREBASE_PROJECT_ID가 비어 있습니다.");
+  if (!projectId) throw new Error("스크립트 속성 FIRESTORE_PROJECT_ID가 비어 있습니다.");
   return projectId;
 }
 
@@ -4073,6 +4113,16 @@ function normalizeTuitionHeaderText_(value) {
 }
 
 function loadTuitionStudentMasterBundle_() {
+  var cache = CacheService.getScriptCache();
+  var failureCacheKey = "TUITION_FIRESTORE_STUDENTS_FAILURE_V2";
+  var cachedFailure = cache.get(failureCacheKey);
+  if (cachedFailure) {
+    return {
+      rows: loadTuitionStudentMasterFromSheet_(),
+      source: "sheet",
+      fallbackReason: cachedFailure
+    };
+  }
   var fallbackReason = "";
   try {
     var firestoreRows = loadTuitionStudentMasterFromFirestore_();
@@ -4083,6 +4133,9 @@ function loadTuitionStudentMasterBundle_() {
   } catch (e) {
     fallbackReason = e && e.message ? e.message : String(e);
   }
+  try {
+    cache.put(failureCacheKey, fallbackReason || "Firestore students 응답이 비어 있습니다.", 300);
+  } catch (e0) {}
   return {
     rows: loadTuitionStudentMasterFromSheet_(),
     source: "sheet",
@@ -4095,6 +4148,15 @@ function loadTuitionStudentMaster_() {
 }
 
 function loadTuitionStudentMasterFromFirestore_() {
+  var cache = CacheService.getScriptCache();
+  var cacheKey = "TUITION_FIRESTORE_STUDENTS_V1";
+  var cached = cache.get(cacheKey);
+  if (cached) {
+    try {
+      var cachedRows = JSON.parse(cached);
+      if (Array.isArray(cachedRows)) return cachedRows;
+    } catch (e0) {}
+  }
   var docs = firestoreListCollection_("students", 500);
   var rows = [];
   var seen = {};
@@ -4118,6 +4180,9 @@ function loadTuitionStudentMasterFromFirestore_() {
   rows.sort(function(a, b) {
     return String(a.name || "").localeCompare(String(b.name || ""), "ko");
   });
+  try {
+    cache.put(cacheKey, JSON.stringify(rows), 60);
+  } catch (e1) {}
   return rows;
 }
 

@@ -16709,6 +16709,7 @@
     var DESK_DAILY_SERVER_POLL_MS = 12000;
     var DESK_MEMO_TYPES_POLL_MS = 5000;
     var DESK_DAILY_POLL_ERROR_BACKOFF_MS = 30000;
+    var DESK_TASK_ASSIGN_ALERT_POLL_FRESH_MS = 25000;
     var DESK_LIVE_FEED_HISTORY_DAYS = 14;
     var DESK_LIVE_FEED_INITIAL_LOAD_DAYS = 3;
     var DESK_LIVE_FEED_LOAD_DAYS_PER_PAGE = 3;
@@ -17617,7 +17618,9 @@
     var deskDailyJournalRoutinePollTick_ = 0;
     var deskDailyJournalNextPollAt_ = 0;
     var deskDailyJournalPollErrorDelayMs_ = 0;
+    var deskDailyJournalLastSuccessfulPollAt_ = 0;
     var deskDailyMemoLocalSeq_ = 0;
+    var runServerReadInFlight_ = {};
     var entryGateEl = document.getElementById("entryGate");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
     var entrySubmitBtnEl = document.getElementById("entrySubmitBtn");
@@ -17665,6 +17668,12 @@
 
     function shouldDeferPortalDataLoad_() {
       return !canUseGoogleScript() && !state.portalAccessKey;
+    }
+
+    function shouldPausePortalBackgroundSync_() {
+      if (shouldDeferPortalDataLoad_()) return true;
+      if (typeof document !== "undefined" && document.hidden) return true;
+      return typeof navigator !== "undefined" && navigator.onLine === false;
     }
 
     function renderSidebarLayout_() {
@@ -26685,6 +26694,7 @@
           mergeDeskDailyPendingMemosForDate_(key);
           refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
+          deskDailyJournalLastSuccessfulPollAt_ = Date.now();
           flushDeskDailyPendingMemoWrites_();
           startDeskDailyJournalRealtime_(key);
           setDeskDailySyncStatus_(state.desk.daily.realtimeEnabled ? "idle" : "stopped");
@@ -27158,8 +27168,11 @@
     }
 
     function pollDeskTaskAssignmentAlerts_() {
-      if (shouldDeferPortalDataLoad_()) return;
+      if (shouldPausePortalBackgroundSync_()) return;
       if (state.activeModule !== "expense" || state.desk.activeTab !== "dailyJournal") return;
+      if (deskDailyJournalPollInFlight_) return;
+      if (deskDailyJournalLastSuccessfulPollAt_ &&
+          Date.now() - deskDailyJournalLastSuccessfulPollAt_ < DESK_TASK_ASSIGN_ALERT_POLL_FRESH_MS) return;
       var worker = getDeskTaskAssignAlertWorker_();
       if (!worker || state.desk.daily.assignmentAlertLoading) return;
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
@@ -27190,6 +27203,7 @@
           state.desk.daily.loadedDates[pollDateKey] = true;
         });
       }, Promise.resolve()).then(function() {
+        deskDailyJournalLastSuccessfulPollAt_ = Date.now();
         refreshDeskDailyCarryoverTasksFromLoadedDates_(pollDateKeys);
         var afterSignature = buildDeskDailyJournalSignature_(pollDateKeys);
         var shouldRender = beforeSignature !== afterSignature;
@@ -27210,7 +27224,7 @@
     }
 
     function pollDeskDailyJournalServerUpdates_() {
-      if (shouldDeferPortalDataLoad_()) return;
+      if (shouldPausePortalBackgroundSync_()) return;
       if (state.activeModule !== "expense") return;
       if (deskDailyJournalPollInFlight_) return;
       if ((state.desk.daily.syncStatus || "") === "pending") return;
@@ -27238,6 +27252,8 @@
       if (shouldPollRoutine) dateKeys.push(DESK_ROUTINE_TEMPLATE_KEY);
       var viewKeyAtStart = dateKey;
       var beforeSignature = buildDeskDailyJournalSignature_(dateKeys);
+      var alertWorker = state.desk.activeTab === "dailyJournal" ? getDeskTaskAssignAlertWorker_() : "";
+      var newAssignedTasks = [];
       deskDailyJournalPollInFlight_ = true;
       dateKeys.reduce(function(chain, pollDateKey) {
         return chain.then(function() {
@@ -27245,6 +27261,12 @@
         }).then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "일일 업무일지 동기화 실패");
+          }
+          if (alertWorker && pollDateKey === dateKey) {
+            Array.prototype.push.apply(newAssignedTasks, (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
+              return task && task.id && !task.completed && isSameDeskWorkerName_(task.worker, alertWorker) &&
+                !(state.desk.daily.assignmentAlertSeen || {})[buildDeskTaskAssignAlertKey_(pollDateKey, alertWorker, task.id)];
+            }));
           }
           mergeDeskDailyJournalData_(pollDateKey, res.tasks || [], res.memos || []);
           refreshDeskDailyJournalSnapshotForDate_(pollDateKey);
@@ -27255,6 +27277,10 @@
           var afterSignature = buildDeskDailyJournalSignature_(dateKeys);
           deskDailyJournalPollErrorDelayMs_ = 0;
           deskDailyJournalNextPollAt_ = 0;
+          deskDailyJournalLastSuccessfulPollAt_ = Date.now();
+          if (newAssignedTasks.length) {
+            showDeskTaskAssignAlerts_(dateKey, alertWorker, newAssignedTasks, false);
+          }
           setDeskDailySyncStatus_("idle");
           if (beforeSignature !== afterSignature && state.activeModule === "expense" && state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === viewKeyAtStart) {
             renderDeskDailyJournal_();
@@ -27279,7 +27305,7 @@
     }
 
     function pollDeskMemoTypesRemote_() {
-      if (shouldDeferPortalDataLoad_()) return;
+      if (shouldPausePortalBackgroundSync_()) return;
       if (state.activeModule !== "expense" || state.desk.activeTab !== "dailyJournal") return;
       if (state.desk.daily.memoTypeSettingsOpen) return;
       if (state.desk.daily.memoTypesLoading || deskMemoTypesPollInFlight_ || deskMemoTypesSaving_) return;
@@ -36040,17 +36066,40 @@
     }
 
     function runServer(fnName, payload) {
+      var isRead = shouldRetryRunServer_(fnName);
+      var requestKey = "";
+      if (isRead) {
+        try {
+          requestKey = String(fnName || "") + "::" + JSON.stringify(typeof payload === "undefined" ? null : payload);
+        } catch (e) {
+          requestKey = "";
+        }
+        if (requestKey && runServerReadInFlight_[requestKey]) {
+          return runServerReadInFlight_[requestKey];
+        }
+      }
       var attempts = shouldRetryRunServer_(fnName) ? RUN_SERVER_READ_RETRY_ATTEMPTS : 1;
       var timeoutMs = getRunServerTimeoutMs_(fnName);
       var attemptNo = 0;
       function runAttempt() {
         attemptNo += 1;
         return runServerAttempt_(fnName, payload, timeoutMs).catch(function(err) {
-          if (attemptNo >= attempts) throw err;
+          if (attemptNo >= attempts || isRunServerTimeoutError_(err)) throw err;
           return delay_(RUN_SERVER_READ_RETRY_BASE_DELAY_MS * attemptNo).then(runAttempt);
         });
       }
-      return runAttempt();
+      var request = runAttempt();
+      if (requestKey) {
+        runServerReadInFlight_[requestKey] = request.finally(function() {
+          delete runServerReadInFlight_[requestKey];
+        });
+        return runServerReadInFlight_[requestKey];
+      }
+      return request;
+    }
+
+    function isRunServerTimeoutError_(err) {
+      return /시간 초과|timeout/i.test(String(err && err.message ? err.message : err || ""));
     }
 
     function runServerAttempt_(fnName, payload, timeoutMs) {
