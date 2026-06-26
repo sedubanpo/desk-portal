@@ -9,6 +9,8 @@ const PAYROLL_SUSPICION_SETTINGS_KEY = "__suspicionRules";
 const TUITION_FOLLOWUP_SHEET_NAME = "수강료_관리";
 const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
+const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
+const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_DAILY_PENDING_TASKS_ROOT_PATH = "desk_portal/daily_pending_tasks";
@@ -1718,6 +1720,43 @@ function firestoreValueToJs_(value) {
   return null;
 }
 
+function jsValueToFirestoreValue_(value) {
+  if (value === null || typeof value === "undefined") return { nullValue: null };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    if (Math.floor(value) === value) return { integerValue: String(value) };
+    return { doubleValue: value };
+  }
+  if (Object.prototype.toString.call(value) === "[object Date]") {
+    return { timestampValue: value.toISOString() };
+  }
+  if (Array.isArray(value)) {
+    return {
+      arrayValue: {
+        values: value.map(function(item) {
+          return jsValueToFirestoreValue_(item);
+        })
+      }
+    };
+  }
+  if (typeof value === "object") {
+    var fields = {};
+    Object.keys(value).forEach(function(key) {
+      fields[key] = jsValueToFirestoreValue_(value[key]);
+    });
+    return { mapValue: { fields: fields } };
+  }
+  return { stringValue: String(value) };
+}
+
+function firestoreFieldsFromObject_(obj) {
+  var fields = {};
+  Object.keys(obj || {}).forEach(function(key) {
+    fields[key] = jsValueToFirestoreValue_(obj[key]);
+  });
+  return fields;
+}
+
 function firestoreDocumentToObject_(doc) {
   var fields = (doc && doc.fields) || {};
   var obj = {};
@@ -1744,6 +1783,15 @@ function firestoreListCollection_(collectionPath, pageSize) {
     pageToken = String((res && res.nextPageToken) || "");
   } while (pageToken);
   return rows;
+}
+
+function firestoreSetDocument_(collectionPath, docId, obj) {
+  var cleanCollection = String(collectionPath || "").replace(/^\/+|\/+$/g, "");
+  var cleanId = String(docId || "").replace(/^\/+|\/+$/g, "");
+  if (!cleanCollection || !cleanId) throw new Error("Firestore 문서 경로가 비어 있습니다.");
+  return firestoreRequestWithServiceAccount_("patch", cleanCollection + "/" + cleanId, null, {
+    fields: firestoreFieldsFromObject_(obj || {})
+  });
 }
 
 function firebaseSmokeTest() {
@@ -2758,6 +2806,86 @@ function normalizeTuitionClientRequestId_(value) {
     .trim();
 }
 
+function buildTuitionFirestoreDocId_(monthName, studentName) {
+  var raw = [String(monthName || "").trim(), normalizeTuitionStudentName_(studentName)].join("|");
+  return "tf_" + Utilities.base64EncodeWebSafe(raw).replace(/=+$/g, "").slice(0, 120);
+}
+
+function buildTuitionContactLogFirestoreDocId_(requestId) {
+  var id = normalizeTuitionClientRequestId_(requestId);
+  if (id) return "tl_" + id;
+  return "tl_" + Utilities.getUuid().replace(/-/g, "");
+}
+
+function normalizeTuitionFollowupRecord_(source) {
+  var row = source || {};
+  var monthName = String(row.monthName || row.month || "").trim();
+  var studentName = normalizeTuitionStudentName_(row.studentName || row.name);
+  if (!monthName || !studentName) return null;
+  return {
+    monthName: monthName,
+    studentName: studentName,
+    guideAmount: Math.max(0, Math.round(toPayrollNumber_(row.guideAmount))),
+    unpaidStatus: normalizeTuitionUnpaidStatus_(row.unpaidStatus),
+    lastContactAt: String(row.lastContactAt || ""),
+    lastContactMemo: String(row.lastContactMemo || ""),
+    contactCount: Math.max(0, parseInt(row.contactCount || 0, 10) || 0),
+    lastUpdatedAt: String(row.lastUpdatedAt || "")
+  };
+}
+
+function writeTuitionFollowupToFirestore_(record) {
+  var row = normalizeTuitionFollowupRecord_(record);
+  if (!row) return { success: false, message: "Firestore 저장 대상이 비어 있습니다." };
+  var nowIso = new Date().toISOString();
+  var docId = buildTuitionFirestoreDocId_(row.monthName, row.studentName);
+  firestoreSetDocument_(TUITION_FOLLOWUP_FIRESTORE_COLLECTION, docId, {
+    monthName: row.monthName,
+    studentName: row.studentName,
+    guideAmount: row.guideAmount,
+    unpaidStatus: row.unpaidStatus,
+    lastContactAt: row.lastContactAt,
+    lastContactMemo: row.lastContactMemo,
+    contactCount: row.contactCount,
+    lastUpdatedAt: row.lastUpdatedAt,
+    updatedAt: nowIso,
+    source: "desk_portal"
+  });
+  return { success: true, id: docId };
+}
+
+function writeTuitionContactLogToFirestore_(record) {
+  var row = record || {};
+  var monthName = String(row.monthName || "").trim();
+  var studentName = normalizeTuitionStudentName_(row.studentName);
+  if (!monthName || !studentName) return { success: false, message: "Firestore 연락 로그 대상이 비어 있습니다." };
+  var docId = buildTuitionContactLogFirestoreDocId_(row.requestId);
+  firestoreSetDocument_(TUITION_CONTACT_LOG_FIRESTORE_COLLECTION, docId, {
+    monthName: monthName,
+    studentName: studentName,
+    guideAmount: Math.max(0, Math.round(toPayrollNumber_(row.guideAmount))),
+    unpaidStatus: normalizeTuitionUnpaidStatus_(row.unpaidStatus),
+    memo: String(row.memo || "").trim(),
+    contactAt: String(row.contactAt || ""),
+    requestId: normalizeTuitionClientRequestId_(row.requestId),
+    createdAt: new Date().toISOString(),
+    source: "desk_portal"
+  });
+  return { success: true, id: docId };
+}
+
+function loadTuitionFollowupRowsFromFirestore_() {
+  try {
+    return firestoreListCollection_(TUITION_FOLLOWUP_FIRESTORE_COLLECTION, 500).map(function(doc) {
+      return normalizeTuitionFollowupRecord_(doc);
+    }).filter(function(row) {
+      return !!row;
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
 function findTuitionRequestRow_(sheet, requestId, requestIndex) {
   var id = normalizeTuitionClientRequestId_(requestId);
   if (!sheet || !id || requestIndex < 0 || sheet.getLastRow() < 2) return -1;
@@ -2910,9 +3038,33 @@ function saveTuitionFollowup(payload) {
       if (typeof logWrite[lc] === "undefined") logWrite[lc] = "";
     }
     logSheet.getRange(logSheet.getLastRow() + 1, 1, 1, logSheet.getLastColumn()).setValues([logWrite]);
+    var firestoreWarning = "";
+    try {
+      writeTuitionFollowupToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        guideAmount: guideAmount,
+        unpaidStatus: unpaidStatus,
+        lastContactAt: nowIso,
+        lastContactMemo: memo,
+        contactCount: contactCount,
+        lastUpdatedAt: nowIso
+      });
+      writeTuitionContactLogToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        guideAmount: guideAmount,
+        unpaidStatus: unpaidStatus,
+        memo: memo,
+        contactAt: nowIso,
+        requestId: requestId
+      });
+    } catch (firestoreError) {
+      firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
+    }
     SpreadsheetApp.flush();
 
-    return { success: true, contactAt: nowIso, contactCount: contactCount };
+    return { success: true, contactAt: nowIso, contactCount: contactCount, firestoreWarning: firestoreWarning };
   } catch (e) {
     return { success: false, message: "연락기록 저장 오류: " + e.message };
   }
@@ -2984,8 +3136,23 @@ function saveTuitionStatusOnly(payload) {
       if (typeof write[c] === "undefined") write[c] = "";
     }
     sheet.getRange(rowNo, 1, 1, sheet.getLastColumn()).setValues([write]);
+    var firestoreWarning = "";
+    try {
+      writeTuitionFollowupToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        guideAmount: guideAmount,
+        unpaidStatus: unpaidStatus,
+        lastContactAt: lastContactAt,
+        lastContactMemo: lastContactMemo,
+        contactCount: contactCount,
+        lastUpdatedAt: nowIso
+      });
+    } catch (firestoreError) {
+      firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
+    }
     SpreadsheetApp.flush();
-    return { success: true, status: unpaidStatus };
+    return { success: true, status: unpaidStatus, firestoreWarning: firestoreWarning };
   } catch (e) {
     return { success: false, message: "상태 저장 오류: " + e.message };
   }
@@ -3232,8 +3399,6 @@ function getTuitionGuideDashboard(payload) {
       };
     });
 
-    var ss = getPayrollSpreadsheet_();
-    var sheet = ss.getSheetByName(TUITION_FOLLOWUP_SHEET_NAME);
     var studentMap = {};
     var overview = {
       totalMonths: 0,
@@ -3245,84 +3410,69 @@ function getTuitionGuideDashboard(payload) {
       maxStudentName: ""
     };
 
-    if (sheet && sheet.getLastRow() >= 2) {
-      var values = sheet.getDataRange().getDisplayValues();
-      var headers = values[0] || [];
-      var index = buildTuitionHeaderIndex_(headers, {
-        monthName: ["월"],
-        studentName: ["학생명"],
-        guideAmount: ["안내금액"],
-        unpaidStatus: ["미납상태"],
-        lastContactAt: ["마지막연락일시"],
-        lastContactMemo: ["마지막연락메모"],
-        contactCount: ["연락횟수"]
+    loadTuitionAllFollowupRecords_().forEach(function(row) {
+      var monthName = String(row.monthName || "").trim();
+      var studentName = normalizeTuitionStudentName_(row.studentName);
+      if (!monthName || !studentName) return;
+      if (!monthMap[monthName]) {
+        monthMap[monthName] = {
+          monthName: monthName,
+          trackedStudents: 0,
+          contactedStudents: 0,
+          totalContacts: 0,
+          totalGuideAmount: 0,
+          maxContacts: 0,
+          topStudents: []
+        };
+      }
+
+      var guideAmount = Math.max(0, toPayrollNumber_(row.guideAmount));
+      var contactCount = Math.max(0, parseInt(row.contactCount || "0", 10) || 0);
+      var unpaidStatus = normalizeTuitionUnpaidStatus_(row.unpaidStatus);
+      var lastContactAt = String(row.lastContactAt || "");
+      var lastContactMemo = String(row.lastContactMemo || "");
+      var monthBucket = monthMap[monthName];
+
+      monthBucket.trackedStudents += 1;
+      monthBucket.totalGuideAmount += guideAmount;
+      if (contactCount > 0) {
+        monthBucket.contactedStudents += 1;
+        monthBucket.totalContacts += contactCount;
+        if (contactCount > monthBucket.maxContacts) monthBucket.maxContacts = contactCount;
+      }
+      monthBucket.topStudents.push({
+        studentName: studentName,
+        contactCount: contactCount,
+        guideAmount: Math.round(guideAmount),
+        unpaidStatus: unpaidStatus,
+        lastContactAt: lastContactAt,
+        lastContactMemo: lastContactMemo
       });
 
-      for (var i = 1; i < values.length; i++) {
-        var row = values[i] || [];
-        var monthName = String(row[index.monthName] || "").trim();
-        var studentName = normalizeTuitionStudentName_(row[index.studentName]);
-        if (!monthName || !studentName) continue;
-        if (!monthMap[monthName]) {
-          monthMap[monthName] = {
-            monthName: monthName,
-            trackedStudents: 0,
-            contactedStudents: 0,
-            totalContacts: 0,
-            totalGuideAmount: 0,
-            maxContacts: 0,
-            topStudents: []
-          };
-        }
-
-        var guideAmount = Math.max(0, toPayrollNumber_(row[index.guideAmount]));
-        var contactCount = Math.max(0, parseInt(row[index.contactCount] || "0", 10) || 0);
-        var unpaidStatus = normalizeTuitionUnpaidStatus_(row[index.unpaidStatus]);
-        var lastContactAt = String(row[index.lastContactAt] || "");
-        var lastContactMemo = String(row[index.lastContactMemo] || "");
-        var monthBucket = monthMap[monthName];
-
-        monthBucket.trackedStudents += 1;
-        monthBucket.totalGuideAmount += guideAmount;
-        if (contactCount > 0) {
-          monthBucket.contactedStudents += 1;
-          monthBucket.totalContacts += contactCount;
-          if (contactCount > monthBucket.maxContacts) monthBucket.maxContacts = contactCount;
-        }
-        monthBucket.topStudents.push({
+      if (!studentMap[studentName]) {
+        studentMap[studentName] = {
           studentName: studentName,
-          contactCount: contactCount,
-          guideAmount: Math.round(guideAmount),
-          unpaidStatus: unpaidStatus,
-          lastContactAt: lastContactAt,
-          lastContactMemo: lastContactMemo
-        });
-
-        if (!studentMap[studentName]) {
-          studentMap[studentName] = {
-            studentName: studentName,
-            totalContacts: 0,
-            monthsGuided: 0,
-            maxContacts: 0,
-            latestMonthName: ""
-          };
+          totalContacts: 0,
+          monthsGuided: 0,
+          maxContacts: 0,
+          latestMonthName: ""
+        };
+      }
+      if (contactCount > 0) {
+        studentMap[studentName].totalContacts += contactCount;
+        studentMap[studentName].monthsGuided += 1;
+        if (contactCount > studentMap[studentName].maxContacts) {
+          studentMap[studentName].maxContacts = contactCount;
+          studentMap[studentName].latestMonthName = monthName;
         }
-        if (contactCount > 0) {
-          studentMap[studentName].totalContacts += contactCount;
-          studentMap[studentName].monthsGuided += 1;
-          if (contactCount > studentMap[studentName].maxContacts) {
-            studentMap[studentName].maxContacts = contactCount;
-            studentMap[studentName].latestMonthName = monthName;
-          }
-          overview.totalContacts += contactCount;
-          if (contactCount > overview.maxContacts) {
-            overview.maxContacts = contactCount;
-            overview.maxMonthName = monthName;
-            overview.maxStudentName = studentName;
-          }
+        overview.totalContacts += contactCount;
+        if (contactCount > overview.maxContacts) {
+          overview.maxContacts = contactCount;
+          overview.maxMonthName = monthName;
+          overview.maxStudentName = studentName;
         }
       }
-    }
+    });
 
     var monthRows = Object.keys(monthMap).map(function(monthName) {
       var bucket = monthMap[monthName];
@@ -3379,36 +3529,20 @@ function getTuitionGuideDashboard(payload) {
 
 function loadTuitionStudentFollowupByMonth_(studentName) {
   var map = {};
-  var ss = getPayrollSpreadsheet_();
-  var sheet = ss.getSheetByName(TUITION_FOLLOWUP_SHEET_NAME);
-  if (!sheet) return map;
-  var values = sheet.getDataRange().getDisplayValues();
-  if (!values || values.length < 2) return map;
-  var headers = values[0] || [];
-  var index = buildTuitionHeaderIndex_(headers, {
-    monthName: ["월"],
-    studentName: ["학생명"],
-    guideAmount: ["안내금액"],
-    unpaidStatus: ["미납상태"],
-    lastContactAt: ["마지막연락일시"],
-    lastContactMemo: ["마지막연락메모"],
-    contactCount: ["연락횟수"],
-    lastUpdatedAt: ["마지막수정일시"]
-  });
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i] || [];
-    var monthName = String(row[index.monthName] || "").trim();
-    var name = normalizeTuitionStudentName_(row[index.studentName]);
-    if (!monthName || !name || name !== studentName) continue;
+  loadTuitionAllFollowupRecords_().forEach(function(row) {
+    var monthName = String(row.monthName || "").trim();
+    var name = normalizeTuitionStudentName_(row.studentName);
+    if (!monthName || !name || name !== studentName) return;
+    if (!isTuitionFollowupRecordPreferred_(row, map[monthName])) return;
     map[monthName] = {
-      guideAmount: toPayrollNumber_(row[index.guideAmount]),
-      unpaidStatus: String(row[index.unpaidStatus] || "").trim(),
-      lastContactAt: String(row[index.lastContactAt] || ""),
-      lastContactMemo: String(row[index.lastContactMemo] || ""),
-      contactCount: parseInt(row[index.contactCount] || "0", 10) || 0,
-      lastUpdatedAt: String(row[index.lastUpdatedAt] || "")
+      guideAmount: toPayrollNumber_(row.guideAmount),
+      unpaidStatus: String(row.unpaidStatus || "").trim(),
+      lastContactAt: String(row.lastContactAt || ""),
+      lastContactMemo: String(row.lastContactMemo || ""),
+      contactCount: parseInt(row.contactCount || "0", 10) || 0,
+      lastUpdatedAt: String(row.lastUpdatedAt || "")
     };
-  }
+  });
   return map;
 }
 
@@ -4383,13 +4517,27 @@ function ensureTuitionContactLogSheet_(ss) {
   return sheet;
 }
 
-function loadTuitionFollowupMap_(monthName) {
+function getTuitionFollowupRecordSortKey_(record) {
+  if (!record) return -1;
+  var monthName = String(record.monthName || "").trim();
+  var updatedKey = parseTuitionDateTimeMs_(record.lastUpdatedAt, monthName);
+  var contactKey = parseTuitionDateTimeMs_(record.lastContactAt, monthName);
+  return Math.max(updatedKey, contactKey);
+}
+
+function isTuitionFollowupRecordPreferred_(candidate, current) {
+  if (!current) return true;
+  var candidateKey = getTuitionFollowupRecordSortKey_(candidate);
+  var currentKey = getTuitionFollowupRecordSortKey_(current);
+  if (candidateKey !== currentKey) return candidateKey > currentKey;
+  return String(candidate && candidate.lastUpdatedAt || "").localeCompare(String(current && current.lastUpdatedAt || "")) >= 0;
+}
+
+function loadTuitionFollowupRowsFromSheet_() {
   var ss = getPayrollSpreadsheet_();
   var sheet = ss.getSheetByName(TUITION_FOLLOWUP_SHEET_NAME);
-  var map = {};
-  var selectedRows = {};
-  var selectedRowNos = {};
-  if (!sheet || sheet.getLastRow() < 2) return map;
+  var rows = [];
+  if (!sheet || sheet.getLastRow() < 2) return rows;
   var values = sheet.getDataRange().getDisplayValues();
   var headers = values[0] || [];
   var index = buildTuitionHeaderIndex_(headers, {
@@ -4403,25 +4551,60 @@ function loadTuitionFollowupMap_(monthName) {
     lastUpdatedAt: ["마지막수정일시"]
   });
   for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (String(row[index.monthName] || "").trim() !== monthName) continue;
-    var name = normalizeTuitionStudentName_(row[index.studentName]);
-    if (!name) continue;
-    var rowNo = i + 1;
-    if (!isTuitionFollowupRowPreferred_(row, index, monthName, rowNo, selectedRows[name], selectedRowNos[name] || -1)) {
-      continue;
-    }
-    selectedRows[name] = row;
-    selectedRowNos[name] = rowNo;
-    map[name] = {
-      guideAmount: toPayrollNumber_(row[index.guideAmount]),
-      unpaidStatus: normalizeTuitionUnpaidStatus_(row[index.unpaidStatus]),
-      lastContactAt: String(row[index.lastContactAt] || ""),
-      lastContactMemo: String(row[index.lastContactMemo] || ""),
-      contactCount: parseInt(row[index.contactCount] || "0", 10) || 0,
-      lastUpdatedAt: String(row[index.lastUpdatedAt] || "")
-    };
+    var row = values[i] || [];
+    var record = normalizeTuitionFollowupRecord_({
+      monthName: row[index.monthName],
+      studentName: row[index.studentName],
+      guideAmount: row[index.guideAmount],
+      unpaidStatus: row[index.unpaidStatus],
+      lastContactAt: row[index.lastContactAt],
+      lastContactMemo: row[index.lastContactMemo],
+      contactCount: row[index.contactCount],
+      lastUpdatedAt: row[index.lastUpdatedAt]
+    });
+    if (record) rows.push(record);
   }
+  return rows;
+}
+
+function mergeTuitionFollowupRows_(sheetRows, firestoreRows) {
+  var map = {};
+  function add(record) {
+    var row = normalizeTuitionFollowupRecord_(record);
+    if (!row) return;
+    var key = row.monthName + "|" + row.studentName;
+    if (isTuitionFollowupRecordPreferred_(row, map[key])) map[key] = row;
+  }
+  (sheetRows || []).forEach(add);
+  (firestoreRows || []).forEach(add);
+  return Object.keys(map).map(function(key) {
+    return map[key];
+  });
+}
+
+function loadTuitionAllFollowupRecords_() {
+  var sheetRows = loadTuitionFollowupRowsFromSheet_();
+  var firestoreRows = loadTuitionFollowupRowsFromFirestore_();
+  if (!firestoreRows) return sheetRows;
+  return mergeTuitionFollowupRows_(sheetRows, firestoreRows);
+}
+
+function loadTuitionFollowupMap_(monthName) {
+  var map = {};
+  loadTuitionAllFollowupRecords_().forEach(function(row) {
+    if (String(row.monthName || "").trim() !== monthName) return;
+    var name = normalizeTuitionStudentName_(row.studentName);
+    if (!name) return;
+    if (!isTuitionFollowupRecordPreferred_(row, map[name])) return;
+    map[name] = {
+      guideAmount: toPayrollNumber_(row.guideAmount),
+      unpaidStatus: normalizeTuitionUnpaidStatus_(row.unpaidStatus),
+      lastContactAt: String(row.lastContactAt || ""),
+      lastContactMemo: String(row.lastContactMemo || ""),
+      contactCount: parseInt(row.contactCount || "0", 10) || 0,
+      lastUpdatedAt: String(row.lastUpdatedAt || "")
+    };
+  });
   return map;
 }
 
