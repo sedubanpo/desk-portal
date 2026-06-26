@@ -33832,7 +33832,7 @@
 
     function runServerWriteWithRetry_(fnName, payload, options) {
       var requestPayload = Object.assign({}, payload || {});
-      if (/^(saveTuitionFollowup|appendTuitionPaymentEntry)$/.test(fnName) && !requestPayload.clientRequestId) {
+      if (/^(saveTuitionFollowup|saveTuitionStatusOnly|appendTuitionPaymentEntry)$/.test(fnName) && !requestPayload.clientRequestId) {
         requestPayload.clientRequestId = buildClientRequestId_(fnName);
       }
       return withRetry_(function() {

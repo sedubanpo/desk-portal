@@ -11,6 +11,7 @@ const TUITION_CONTACT_LOG_SHEET_NAME = "수강료_연락로그";
 const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
 const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
+const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_DAILY_PENDING_TASKS_ROOT_PATH = "desk_portal/daily_pending_tasks";
@@ -2817,6 +2818,12 @@ function buildTuitionContactLogFirestoreDocId_(requestId) {
   return "tl_" + Utilities.getUuid().replace(/-/g, "");
 }
 
+function buildTuitionStatusHistoryFirestoreDocId_(requestId) {
+  var id = normalizeTuitionClientRequestId_(requestId);
+  if (id) return "ts_" + id;
+  return "ts_" + Utilities.getUuid().replace(/-/g, "");
+}
+
 function normalizeTuitionFollowupRecord_(source) {
   var row = source || {};
   var monthName = String(row.monthName || row.month || "").trim();
@@ -2849,6 +2856,26 @@ function writeTuitionFollowupToFirestore_(record) {
     contactCount: row.contactCount,
     lastUpdatedAt: row.lastUpdatedAt,
     updatedAt: nowIso,
+    source: "desk_portal"
+  });
+  return { success: true, id: docId };
+}
+
+function writeTuitionStatusHistoryToFirestore_(record) {
+  var row = record || {};
+  var monthName = String(row.monthName || "").trim();
+  var studentName = normalizeTuitionStudentName_(row.studentName);
+  if (!monthName || !studentName) return { success: false, message: "Firestore 상태 이력 대상이 비어 있습니다." };
+  var docId = buildTuitionStatusHistoryFirestoreDocId_(row.requestId);
+  firestoreSetDocument_(TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION, docId, {
+    monthName: monthName,
+    studentName: studentName,
+    previousStatus: normalizeTuitionUnpaidStatus_(row.previousStatus || ""),
+    nextStatus: normalizeTuitionUnpaidStatus_(row.nextStatus || row.unpaidStatus),
+    guideAmount: Math.max(0, Math.round(toPayrollNumber_(row.guideAmount))),
+    contactCount: Math.max(0, parseInt(row.contactCount || 0, 10) || 0),
+    changedAt: String(row.changedAt || ""),
+    requestId: normalizeTuitionClientRequestId_(row.requestId),
     source: "desk_portal"
   });
   return { success: true, id: docId };
@@ -2955,6 +2982,7 @@ function saveTuitionFollowup(payload) {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
     var studentName = normalizeTuitionStudentName_(req.studentName);
+    var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     if (!monthName) return { success: false, message: "월 정보가 없습니다." };
     if (!studentName) return { success: false, message: "학생명이 없습니다." };
 
@@ -3119,6 +3147,7 @@ function saveTuitionStatusOnly(payload) {
       guideAmount = Math.max(0, Math.round(toPayrollNumber_(currentRow[index.guideAmount])));
     }
     var unpaidStatus = normalizeTuitionUnpaidStatus_(req.unpaidStatus);
+    var previousStatus = currentRow ? normalizeTuitionUnpaidStatus_(currentRow[index.unpaidStatus]) : "";
     var contactCount = currentRow ? (parseInt(currentRow[index.contactCount] || "0", 10) || 0) : 0;
     var lastContactAt = currentRow ? String(currentRow[index.lastContactAt] || "") : "";
     var lastContactMemo = currentRow ? String(currentRow[index.lastContactMemo] || "") : "";
@@ -3147,6 +3176,16 @@ function saveTuitionStatusOnly(payload) {
         lastContactMemo: lastContactMemo,
         contactCount: contactCount,
         lastUpdatedAt: nowIso
+      });
+      writeTuitionStatusHistoryToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        previousStatus: previousStatus,
+        nextStatus: unpaidStatus,
+        guideAmount: guideAmount,
+        contactCount: contactCount,
+        changedAt: nowIso,
+        requestId: requestId
       });
     } catch (firestoreError) {
       firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
