@@ -2638,11 +2638,9 @@ function getTuitionMonthSummary(payload) {
     var classStudentMap = loadTuitionClassStudentMapByMonth_(monthName);
     var studentMasterBundle = loadTuitionStudentMasterBundle_();
     var studentRows = studentMasterBundle.rows || [];
-    var sheetFollowupRows = loadTuitionFollowupRowsFromSheet_();
-    var firestoreFollowupRows = loadTuitionFollowupRowsFromFirestore_();
-    var allFollowupRows = firestoreFollowupRows ? mergeTuitionFollowupRows_(sheetFollowupRows, firestoreFollowupRows) : sheetFollowupRows;
-    var followupMap = buildTuitionFollowupMapFromRecords_(allFollowupRows, monthName);
-    var guideAmountAudit = buildTuitionGuideAmountAudit_(monthName, sheetFollowupRows, firestoreFollowupRows, allFollowupRows);
+    var followupBundle = loadTuitionFollowupRowsBundle_({ monthName: monthName });
+    var followupMap = buildTuitionFollowupMapFromRecords_(followupBundle.rows, monthName);
+    var guideAmountAudit = buildTuitionGuideAmountAudit_(monthName, followupBundle.sheetRows, followupBundle.firestoreRows, followupBundle.rows);
 
     var studentMap = {};
     studentRows.forEach(function(row) {
@@ -2770,6 +2768,7 @@ function getTuitionMonthSummary(payload) {
         count: studentRows.length,
         fallbackReason: studentMasterBundle.fallbackReason || ""
       },
+      followupSource: followupBundle.source,
       guideAmountAudit: guideAmountAudit,
       rows: list
     };
@@ -3442,7 +3441,8 @@ function getTuitionStudentMonthlyHistory(payload) {
       bucket.routes[route] = true;
     });
 
-    var followup = loadTuitionStudentFollowupByMonth_(studentName);
+    var followupBundle = loadTuitionFollowupRowsBundle_();
+    var followup = loadTuitionStudentFollowupByMonth_(studentName, followupBundle.rows);
     var rows = months.map(function(monthName) {
       var paidInfo = paymentByMonth[monthName] || { collectedAmount: 0, paidDates: {}, routes: {} };
       var followInfo = followup[monthName] || {};
@@ -3539,7 +3539,8 @@ function getTuitionGuideDashboard(payload) {
       maxStudentName: ""
     };
 
-    loadTuitionAllFollowupRecords_().forEach(function(row) {
+    var followupBundle = loadTuitionFollowupRowsBundle_();
+    followupBundle.rows.forEach(function(row) {
       var monthName = String(row.monthName || "").trim();
       var studentName = normalizeTuitionStudentName_(row.studentName);
       if (!monthName || !studentName) return;
@@ -3656,9 +3657,10 @@ function getTuitionGuideDashboard(payload) {
   }
 }
 
-function loadTuitionStudentFollowupByMonth_(studentName) {
+function loadTuitionStudentFollowupByMonth_(studentName, records) {
   var map = {};
-  loadTuitionAllFollowupRecords_().forEach(function(row) {
+  var sourceRows = Array.isArray(records) ? records : loadTuitionFollowupRowsBundle_().rows;
+  sourceRows.forEach(function(row) {
     var monthName = String(row.monthName || "").trim();
     var name = normalizeTuitionStudentName_(row.studentName);
     if (!monthName || !name || name !== studentName) return;
@@ -4711,11 +4713,40 @@ function mergeTuitionFollowupRows_(sheetRows, firestoreRows) {
   });
 }
 
-function loadTuitionAllFollowupRecords_() {
+function hasTuitionFollowupRowsForMonth_(rows, monthName) {
+  var month = String(monthName || "").trim();
+  if (!month) return (rows || []).length > 0;
+  for (var i = 0; i < (rows || []).length; i++) {
+    if (String(rows[i] && rows[i].monthName || "").trim() === month) return true;
+  }
+  return false;
+}
+
+function loadTuitionFollowupRowsBundle_(options) {
+  var opts = options || {};
+  var monthName = String(opts.monthName || "").trim();
   var sheetRows = loadTuitionFollowupRowsFromSheet_();
   var firestoreRows = loadTuitionFollowupRowsFromFirestore_();
-  if (!firestoreRows) return sheetRows;
-  return mergeTuitionFollowupRows_(sheetRows, firestoreRows);
+  var firestoreAvailable = Array.isArray(firestoreRows);
+  var hasFirestoreRows = firestoreAvailable && hasTuitionFollowupRowsForMonth_(firestoreRows, monthName);
+  if (hasFirestoreRows) {
+    return {
+      source: "firestore",
+      rows: firestoreRows,
+      sheetRows: sheetRows,
+      firestoreRows: firestoreRows
+    };
+  }
+  return {
+    source: firestoreAvailable ? "sheet-fallback-empty-firestore" : "sheet-fallback-firestore-error",
+    rows: sheetRows,
+    sheetRows: sheetRows,
+    firestoreRows: firestoreAvailable ? firestoreRows : null
+  };
+}
+
+function loadTuitionAllFollowupRecords_() {
+  return loadTuitionFollowupRowsBundle_().rows;
 }
 
 function buildTuitionFollowupMapFromRecords_(records, monthName) {
