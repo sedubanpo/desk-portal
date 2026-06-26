@@ -12,6 +12,7 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
 const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
 const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
+const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountChanges";
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_DAILY_PENDING_TASKS_ROOT_PATH = "desk_portal/daily_pending_tasks";
@@ -2637,7 +2638,11 @@ function getTuitionMonthSummary(payload) {
     var classStudentMap = loadTuitionClassStudentMapByMonth_(monthName);
     var studentMasterBundle = loadTuitionStudentMasterBundle_();
     var studentRows = studentMasterBundle.rows || [];
-    var followupMap = loadTuitionFollowupMap_(monthName);
+    var sheetFollowupRows = loadTuitionFollowupRowsFromSheet_();
+    var firestoreFollowupRows = loadTuitionFollowupRowsFromFirestore_();
+    var allFollowupRows = firestoreFollowupRows ? mergeTuitionFollowupRows_(sheetFollowupRows, firestoreFollowupRows) : sheetFollowupRows;
+    var followupMap = buildTuitionFollowupMapFromRecords_(allFollowupRows, monthName);
+    var guideAmountAudit = buildTuitionGuideAmountAudit_(monthName, sheetFollowupRows, firestoreFollowupRows, allFollowupRows);
 
     var studentMap = {};
     studentRows.forEach(function(row) {
@@ -2765,6 +2770,7 @@ function getTuitionMonthSummary(payload) {
         count: studentRows.length,
         fallbackReason: studentMasterBundle.fallbackReason || ""
       },
+      guideAmountAudit: guideAmountAudit,
       rows: list
     };
   } catch (e) {
@@ -2809,7 +2815,8 @@ function normalizeTuitionClientRequestId_(value) {
 
 function buildTuitionFirestoreDocId_(monthName, studentName) {
   var raw = [String(monthName || "").trim(), normalizeTuitionStudentName_(studentName)].join("|");
-  return "tf_" + Utilities.base64EncodeWebSafe(raw).replace(/=+$/g, "").slice(0, 120);
+  var bytes = Utilities.newBlob(raw).getBytes();
+  return "tf_" + Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, "").slice(0, 120);
 }
 
 function buildTuitionContactLogFirestoreDocId_(requestId) {
@@ -2822,6 +2829,12 @@ function buildTuitionStatusHistoryFirestoreDocId_(requestId) {
   var id = normalizeTuitionClientRequestId_(requestId);
   if (id) return "ts_" + id;
   return "ts_" + Utilities.getUuid().replace(/-/g, "");
+}
+
+function buildTuitionGuideAmountHistoryFirestoreDocId_(requestId) {
+  var id = normalizeTuitionClientRequestId_(requestId);
+  if (id) return "tg_" + id;
+  return "tg_" + Utilities.getUuid().replace(/-/g, "");
 }
 
 function normalizeTuitionFollowupRecord_(source) {
@@ -2881,6 +2894,31 @@ function writeTuitionStatusHistoryToFirestore_(record) {
   return { success: true, id: docId };
 }
 
+function writeTuitionGuideAmountHistoryToFirestore_(record) {
+  var row = record || {};
+  var monthName = String(row.monthName || "").trim();
+  var studentName = normalizeTuitionStudentName_(row.studentName);
+  if (!monthName || !studentName) return { success: false, message: "Firestore 안내 금액 이력 대상이 비어 있습니다." };
+  var previousAmount = Math.max(0, Math.round(toPayrollNumber_(row.previousGuideAmount)));
+  var nextAmount = Math.max(0, Math.round(toPayrollNumber_(row.nextGuideAmount || row.guideAmount)));
+  if (previousAmount === nextAmount && row.skipUnchanged !== false) {
+    return { success: true, skipped: true };
+  }
+  var docId = buildTuitionGuideAmountHistoryFirestoreDocId_(row.requestId);
+  firestoreSetDocument_(TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION, docId, {
+    monthName: monthName,
+    studentName: studentName,
+    previousGuideAmount: previousAmount,
+    nextGuideAmount: nextAmount,
+    deltaAmount: nextAmount - previousAmount,
+    unpaidStatus: normalizeTuitionUnpaidStatus_(row.unpaidStatus),
+    changedAt: String(row.changedAt || ""),
+    requestId: normalizeTuitionClientRequestId_(row.requestId),
+    source: "desk_portal"
+  });
+  return { success: true, id: docId };
+}
+
 function writeTuitionContactLogToFirestore_(record) {
   var row = record || {};
   var monthName = String(row.monthName || "").trim();
@@ -2911,6 +2949,37 @@ function loadTuitionFollowupRowsFromFirestore_() {
   } catch (e) {
     return null;
   }
+}
+
+function backfillTuitionFollowupsToFirestore(payload) {
+  var req = payload || {};
+  var monthName = String(req.monthName || "").trim();
+  var dryRun = req.dryRun !== false;
+  var rows = loadTuitionFollowupRowsFromSheet_().filter(function(row) {
+    return !monthName || String(row.monthName || "").trim() === monthName;
+  });
+  var stats = {
+    success: true,
+    dryRun: dryRun,
+    monthName: monthName || "all",
+    total: rows.length,
+    written: 0,
+    errors: []
+  };
+  rows.forEach(function(row) {
+    try {
+      if (!dryRun) writeTuitionFollowupToFirestore_(row);
+      stats.written += 1;
+    } catch (e) {
+      stats.errors.push({
+        monthName: row.monthName,
+        studentName: row.studentName,
+        message: e && e.message ? e.message : String(e)
+      });
+    }
+  });
+  stats.success = stats.errors.length === 0;
+  return stats;
 }
 
 function findTuitionRequestRow_(sheet, requestId, requestIndex) {
@@ -2989,7 +3058,6 @@ function saveTuitionFollowup(payload) {
     var guideAmount = Math.max(0, Math.round(toPayrollNumber_(req.guideAmount)));
     var unpaidStatus = normalizeTuitionUnpaidStatus_(req.unpaidStatus);
     var memo = String(req.memo || "").trim();
-    var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     var now = new Date();
     var nowIso = now.toISOString();
 
@@ -3017,6 +3085,7 @@ function saveTuitionFollowup(payload) {
     var rowNo = -1;
     var selectedRow = null;
     var currentContactCount = 0;
+    var previousGuideAmount = 0;
     if (lastRow >= 2) {
       var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getDisplayValues();
       for (var i = 0; i < data.length; i++) {
@@ -3028,6 +3097,7 @@ function saveTuitionFollowup(payload) {
             rowNo = candidateRowNo;
             selectedRow = data[i];
             currentContactCount = parseInt(data[i][index.contactCount] || "0", 10) || 0;
+            previousGuideAmount = Math.max(0, Math.round(toPayrollNumber_(data[i][index.guideAmount])));
           }
         }
       }
@@ -3087,6 +3157,15 @@ function saveTuitionFollowup(payload) {
         contactAt: nowIso,
         requestId: requestId
       });
+      writeTuitionGuideAmountHistoryToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        previousGuideAmount: previousGuideAmount,
+        nextGuideAmount: guideAmount,
+        unpaidStatus: unpaidStatus,
+        changedAt: nowIso,
+        requestId: requestId
+      });
     } catch (firestoreError) {
       firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
     }
@@ -3105,6 +3184,7 @@ function saveTuitionStatusOnly(payload) {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
     var studentName = normalizeTuitionStudentName_(req.studentName);
+    var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     if (!monthName) return { success: false, message: "월 정보가 없습니다." };
     if (!studentName) return { success: false, message: "학생명이 없습니다." };
 
@@ -3146,6 +3226,7 @@ function saveTuitionStatusOnly(payload) {
     if ((!guideAmount || guideAmount < 0) && currentRow) {
       guideAmount = Math.max(0, Math.round(toPayrollNumber_(currentRow[index.guideAmount])));
     }
+    var previousGuideAmount = currentRow ? Math.max(0, Math.round(toPayrollNumber_(currentRow[index.guideAmount]))) : 0;
     var unpaidStatus = normalizeTuitionUnpaidStatus_(req.unpaidStatus);
     var previousStatus = currentRow ? normalizeTuitionUnpaidStatus_(currentRow[index.unpaidStatus]) : "";
     var contactCount = currentRow ? (parseInt(currentRow[index.contactCount] || "0", 10) || 0) : 0;
@@ -3184,6 +3265,15 @@ function saveTuitionStatusOnly(payload) {
         nextStatus: unpaidStatus,
         guideAmount: guideAmount,
         contactCount: contactCount,
+        changedAt: nowIso,
+        requestId: requestId
+      });
+      writeTuitionGuideAmountHistoryToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        previousGuideAmount: previousGuideAmount,
+        nextGuideAmount: guideAmount,
+        unpaidStatus: unpaidStatus,
         changedAt: nowIso,
         requestId: requestId
       });
@@ -4628,9 +4718,9 @@ function loadTuitionAllFollowupRecords_() {
   return mergeTuitionFollowupRows_(sheetRows, firestoreRows);
 }
 
-function loadTuitionFollowupMap_(monthName) {
+function buildTuitionFollowupMapFromRecords_(records, monthName) {
   var map = {};
-  loadTuitionAllFollowupRecords_().forEach(function(row) {
+  (records || []).forEach(function(row) {
     if (String(row.monthName || "").trim() !== monthName) return;
     var name = normalizeTuitionStudentName_(row.studentName);
     if (!name) return;
@@ -4645,6 +4735,69 @@ function loadTuitionFollowupMap_(monthName) {
     };
   });
   return map;
+}
+
+function loadTuitionFollowupMap_(monthName) {
+  return buildTuitionFollowupMapFromRecords_(loadTuitionAllFollowupRecords_(), monthName);
+}
+
+function selectTuitionFollowupRowsByMonth_(rows, monthName) {
+  var map = {};
+  (rows || []).forEach(function(row) {
+    var record = normalizeTuitionFollowupRecord_(row);
+    if (!record || record.monthName !== monthName) return;
+    var name = normalizeTuitionStudentName_(record.studentName);
+    if (!name) return;
+    if (isTuitionFollowupRecordPreferred_(record, map[name])) map[name] = record;
+  });
+  return map;
+}
+
+function summarizeTuitionGuideAmountMap_(map) {
+  var names = Object.keys(map || {});
+  var total = 0;
+  names.forEach(function(name) {
+    total += Math.max(0, Math.round(toPayrollNumber_(map[name] && map[name].guideAmount)));
+  });
+  return {
+    students: names.length,
+    totalGuideAmount: Math.round(total)
+  };
+}
+
+function buildTuitionGuideAmountAudit_(monthName, sheetRows, firestoreRows, mergedRows) {
+  var sheetMap = selectTuitionFollowupRowsByMonth_(sheetRows, monthName);
+  var firestoreAvailable = Array.isArray(firestoreRows);
+  var firestoreMap = firestoreAvailable ? selectTuitionFollowupRowsByMonth_(firestoreRows, monthName) : {};
+  var mergedMap = selectTuitionFollowupRowsByMonth_(mergedRows, monthName);
+  var missingInFirestore = 0;
+  var missingInSheet = 0;
+  var amountMismatchCount = 0;
+
+  Object.keys(sheetMap).forEach(function(name) {
+    if (!firestoreMap[name]) {
+      missingInFirestore += 1;
+      return;
+    }
+    var sheetAmount = Math.max(0, Math.round(toPayrollNumber_(sheetMap[name].guideAmount)));
+    var firestoreAmount = Math.max(0, Math.round(toPayrollNumber_(firestoreMap[name].guideAmount)));
+    if (sheetAmount !== firestoreAmount) amountMismatchCount += 1;
+  });
+  Object.keys(firestoreMap).forEach(function(name) {
+    if (!sheetMap[name]) missingInSheet += 1;
+  });
+
+  return {
+    monthName: monthName,
+    source: firestoreAvailable ? "sheet+firestore" : "sheet",
+    sheet: summarizeTuitionGuideAmountMap_(sheetMap),
+    firestore: Object.assign({ available: firestoreAvailable }, summarizeTuitionGuideAmountMap_(firestoreMap)),
+    merged: summarizeTuitionGuideAmountMap_(mergedMap),
+    missingInFirestore: missingInFirestore,
+    missingInSheet: missingInSheet,
+    amountMismatchCount: amountMismatchCount,
+    checkedAt: new Date().toISOString()
+  };
 }
 
 function getTuitionFollowupRowSortKey_(row, index, monthName) {
