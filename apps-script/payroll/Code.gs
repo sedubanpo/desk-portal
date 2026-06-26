@@ -4114,7 +4114,7 @@ function normalizeTuitionHeaderText_(value) {
 
 function loadTuitionStudentMasterBundle_() {
   var cache = CacheService.getScriptCache();
-  var failureCacheKey = "TUITION_FIRESTORE_STUDENTS_FAILURE_V2";
+  var failureCacheKey = "TUITION_FIRESTORE_STUDENTS_FAILURE_V3";
   var cachedFailure = cache.get(failureCacheKey);
   if (cachedFailure) {
     return {
