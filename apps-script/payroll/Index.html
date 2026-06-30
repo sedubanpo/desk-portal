@@ -16662,9 +16662,15 @@
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbwXTWtznXXr8cF_x7BhyNWKb6KkfYFzUHbnWFLwdyZhmIgAHkOFvHYtmHMPJ-Rdv2kn/exec";
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
+    var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
+    var DESK_DAILY_PENDING_TASKS_RT_PATH = "desk_portal/daily_pending_tasks";
     var DESK_DAILY_CONFIG_RT_PATH = "desk_portal/daily_config";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
+    var DESK_SCHEDULE_DIRECT_RTDB_ENABLED = true;
+    var DESK_DAILY_DIRECT_TASK_WRITE_ENABLED = true;
+    var DESK_DAILY_DIRECT_TASK_READ_ENABLED = true;
+    var DESK_DAILY_DIRECT_TASK_STREAM_ENABLED = true;
     var DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = true;
     var DESK_DAILY_DIRECT_MEMO_READ_ENABLED = true;
     var DESK_DAILY_DIRECT_MEMO_STREAM_ENABLED = true;
@@ -23026,6 +23032,156 @@
       }).join("");
     }
 
+    function buildDeskScheduleRealtimeUrl_(monthKey, childPath) {
+      var safeMonthKey = String(monthKey || "").trim();
+      if (!safeMonthKey) return "";
+      var path = DESK_SCHEDULE_RT_PATH + "/" + encodeURIComponent(safeMonthKey);
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
+    function normalizeDeskScheduleEntriesMap_(snapshot) {
+      var source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+      return source.entries && typeof source.entries === "object" && !Array.isArray(source.entries)
+        ? source.entries
+        : source;
+    }
+
+    function getDeskMonthSeedForMonth_(monthKey) {
+      var parts = String(monthKey || "").split("-");
+      var year = Number(parts[0] || 0);
+      var month = Number(parts[1] || 0);
+      if (!year || !month) return [];
+      return buildDeskMonthSeed_(new Date(year, month - 1, 1)).map(normalizeDeskShift_).filter(function(item) {
+        return item && item.date && item.date.slice(0, 7) === monthKey && !isDeskRetiredWorker_(item.worker);
+      }).sort(compareDeskShift_);
+    }
+
+    function fetchDeskScheduleMonthRealtime_(monthKey) {
+      var safeMonthKey = String(monthKey || "").trim();
+      if (!safeMonthKey || !DESK_SCHEDULE_DIRECT_RTDB_ENABLED) return Promise.reject(new Error("근무표 직접 연결이 꺼져 있습니다."));
+      return deskRealtimeFetchJson_("GET", buildDeskScheduleRealtimeUrl_(safeMonthKey), null).then(function(snapshot) {
+        var hasWrappedEntries = !!(snapshot && snapshot.entries && typeof snapshot.entries === "object" && !Array.isArray(snapshot.entries));
+        var entriesMap = normalizeDeskScheduleEntriesMap_(snapshot);
+        var entries = Object.keys(entriesMap || {}).map(function(id) {
+          return normalizeDeskShift_(Object.assign({}, entriesMap[id], { id: id }));
+        }).filter(function(item) {
+          return item && item.id && item.date && item.date.slice(0, 7) === safeMonthKey && !isDeskRetiredWorker_(item.worker);
+        }).sort(compareDeskShift_);
+        if (!entries.length) {
+          entries = getDeskMonthSeedForMonth_(safeMonthKey);
+          var seedMap = {};
+          entries.forEach(function(item) {
+            seedMap[item.id] = item;
+          });
+          return deskRealtimeFetchJson_("PUT", buildDeskScheduleRealtimeUrl_(safeMonthKey), {
+            monthKey: safeMonthKey,
+            seededAt: new Date().toISOString(),
+            entries: seedMap
+          }).then(function() {
+            return { success: true, source: "firebase", monthKey: safeMonthKey, seeded: true, entries: entries };
+          });
+        }
+        var retiredUpdates = {};
+        Object.keys(entriesMap || {}).forEach(function(id) {
+          if (isDeskRetiredWorker_(entriesMap[id] && entriesMap[id].worker)) retiredUpdates[id] = null;
+        });
+        var cleanup = Object.keys(retiredUpdates).length
+          ? deskRealtimeFetchJson_("PATCH", buildDeskScheduleRealtimeUrl_(safeMonthKey, hasWrappedEntries ? "entries" : ""), retiredUpdates).catch(function() { return null; })
+          : Promise.resolve(null);
+        return cleanup.then(function() {
+          return { success: true, source: "firebase", monthKey: safeMonthKey, seeded: false, entries: entries };
+        });
+      });
+    }
+
+    function validateDeskScheduleEntry_(entry, monthKey) {
+      var item = normalizeDeskShift_(entry);
+      var safeMonthKey = String(monthKey || (item.date || "").slice(0, 7)).trim();
+      if (!safeMonthKey || !item.date || item.date.slice(0, 7) !== safeMonthKey) throw new Error("근무일과 monthKey가 일치하지 않습니다.");
+      if (!item.worker) throw new Error("근무자 이름이 필요합니다.");
+      if (isDeskRetiredWorker_(item.worker)) throw new Error("퇴사자는 근무표에 저장할 수 없습니다.");
+      if (!item.resident && !item.unavailable && (!item.start || !item.end)) throw new Error("시작/종료 시간이 필요합니다.");
+      return item;
+    }
+
+    function saveDeskScheduleEntryRemote_(entry, monthKey) {
+      var safeMonthKey = String(monthKey || (entry && entry.date || "").slice(0, 7)).trim();
+      var item;
+      try {
+        item = validateDeskScheduleEntry_(entry, safeMonthKey);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      if (DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
+        return deskRealtimeFetchJson_("PUT", buildDeskScheduleRealtimeUrl_(safeMonthKey, "entries/" + item.id), item)
+          .then(function() {
+            return { success: true, source: "firebase", monthKey: safeMonthKey, entry: item };
+          })
+          .catch(function(err) {
+            console.warn("desk schedule direct save fallback", err && err.message ? err.message : err);
+            return runServer("saveDeskScheduleEntry", { monthKey: safeMonthKey, entry: item });
+          });
+      }
+      return runServer("saveDeskScheduleEntry", { monthKey: safeMonthKey, entry: item });
+    }
+
+    function deleteDeskScheduleEntryRemote_(monthKey, id) {
+      var safeMonthKey = String(monthKey || "").trim();
+      var safeId = String(id || "").trim();
+      if (!safeMonthKey || !safeId) return Promise.reject(new Error("삭제할 근무 일정 정보가 부족합니다."));
+      if (DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
+        return deskRealtimeFetchJson_("DELETE", buildDeskScheduleRealtimeUrl_(safeMonthKey, "entries/" + safeId), null)
+          .then(function() {
+            return { success: true, source: "firebase", monthKey: safeMonthKey, id: safeId };
+          })
+          .catch(function(err) {
+            console.warn("desk schedule direct delete fallback", err && err.message ? err.message : err);
+            return runServer("deleteDeskScheduleEntry", { monthKey: safeMonthKey, id: safeId });
+          });
+      }
+      return runServer("deleteDeskScheduleEntry", { monthKey: safeMonthKey, id: safeId });
+    }
+
+    function batchUpdateDeskScheduleEntriesRemote_(monthKey, deleteIds, entries) {
+      var safeMonthKey = String(monthKey || "").trim();
+      if (!safeMonthKey) return Promise.reject(new Error("monthKey가 올바르지 않습니다."));
+      var safeDeleteIds = (deleteIds || []).map(function(id) { return String(id || "").trim(); }).filter(Boolean);
+      var safeEntries;
+      try {
+        safeEntries = (entries || []).map(function(item) {
+          return validateDeskScheduleEntry_(item, safeMonthKey);
+        });
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      if (!DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
+        return runServer("batchUpdateDeskScheduleEntries", { monthKey: safeMonthKey, deleteIds: safeDeleteIds, entries: safeEntries });
+      }
+      var updates = {};
+      safeDeleteIds.forEach(function(id) {
+        updates[id] = null;
+      });
+      safeEntries.forEach(function(item) {
+        updates[item.id] = item;
+      });
+      if (!Object.keys(updates).length) {
+        return Promise.resolve({ success: true, source: "firebase", monthKey: safeMonthKey, entries: [], deletedIds: [] });
+      }
+      return deskRealtimeFetchJson_("PATCH", buildDeskScheduleRealtimeUrl_(safeMonthKey, "entries"), updates)
+        .then(function() {
+          return { success: true, source: "firebase", monthKey: safeMonthKey, entries: safeEntries, deletedIds: safeDeleteIds };
+        })
+        .catch(function(err) {
+          console.warn("desk schedule direct batch fallback", err && err.message ? err.message : err);
+          return runServer("batchUpdateDeskScheduleEntries", { monthKey: safeMonthKey, deleteIds: safeDeleteIds, entries: safeEntries });
+        });
+    }
+
     function ensureDeskMonthLoaded_(monthKey, force) {
       var key = String(monthKey || "").trim();
       if (!key) return Promise.resolve();
@@ -23033,7 +23189,11 @@
       if (!force && state.desk.loadedMonths[key]) return Promise.resolve();
       if (state.desk.loadingMonths[key]) return state.desk.loadingMonths[key];
 
-      var request = runServer("getDeskScheduleMonthData", { monthKey: key })
+      var request = fetchDeskScheduleMonthRealtime_(key)
+        .catch(function(err) {
+          console.warn("desk schedule direct load fallback", err && err.message ? err.message : err);
+          return runServer("getDeskScheduleMonthData", { monthKey: key });
+        })
         .then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "근무표 데이터를 불러오지 못했습니다.");
@@ -24244,10 +24404,7 @@
         var chain = Promise.resolve();
         pendingEntries.forEach(function(entry) {
           chain = chain.then(function() {
-            return runServer("saveDeskScheduleEntry", {
-              monthKey: targetMonthKey,
-              entry: entry
-            }).then(function(res) {
+            return saveDeskScheduleEntryRemote_(entry, targetMonthKey).then(function(res) {
               if (!res || !res.success) {
                 throw new Error(res && res.message ? res.message : "고정 스케줄 저장 실패");
               }
@@ -25123,10 +25280,7 @@
         note: note
       });
       setLoading(true, "근무 일정을 서버에 저장하는 중입니다...");
-      runServer("saveDeskScheduleEntry", {
-        monthKey: item.date.slice(0, 7),
-        entry: item
-      }).then(function(res) {
+      saveDeskScheduleEntryRemote_(item, item.date.slice(0, 7)).then(function(res) {
         if (!res || !res.success) {
           throw new Error(res && res.message ? res.message : "근무표 저장 실패");
         }
@@ -25160,10 +25314,7 @@
     function deleteDeskShiftById_(deleteId, monthKey, done) {
       if (!deleteId || !monthKey) return;
       setLoading(true, "근무 일정을 서버에서 삭제하는 중입니다...");
-      runServer("deleteDeskScheduleEntry", {
-        monthKey: monthKey,
-        id: deleteId
-      }).then(function(res) {
+      deleteDeskScheduleEntryRemote_(monthKey, deleteId).then(function(res) {
         if (!res || !res.success) {
           throw new Error(res && res.message ? res.message : "근무표 삭제 실패");
         }
@@ -25274,10 +25425,7 @@
         note: note
       });
       setLoading(true, "근무 일정을 서버에 저장하는 중입니다...");
-      runServer("saveDeskScheduleEntry", {
-        monthKey: item.date.slice(0, 7),
-        entry: item
-      }).then(function(res) {
+      saveDeskScheduleEntryRemote_(item, item.date.slice(0, 7)).then(function(res) {
         if (!res || !res.success) {
           throw new Error(res && res.message ? res.message : "근무표 저장 실패");
         }
@@ -25716,13 +25864,29 @@
       return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + DESK_DAILY_JOURNAL_RT_PATH + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
     }
 
+    function buildDeskDailyPendingTasksRealtimeUrl_(childPath) {
+      var path = DESK_DAILY_PENDING_TASKS_RT_PATH;
+      if (childPath) {
+        path += "/" + String(childPath || "").split("/").map(function(part) {
+          return encodeURIComponent(String(part || ""));
+        }).join("/");
+      }
+      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    }
+
     function isDeskDailyJournalRealtimeRequestAllowed_(method, url) {
       var target = String(url || "");
       if (target.indexOf(DESK_DAILY_JOURNAL_RT_PATH) === -1) return true;
       if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) return true;
       var verb = String(method || "GET").toUpperCase();
+      var isDailyRootPath = /\/daily_journal\/[^/?]+\.json(?:\?|$)/.test(target);
+      var isTaskItemPath = /\/tasks\/[^/?]+\.json(?:\?|$)/.test(target);
+      var isTaskListPath = /\/tasks\.json(?:\?|$)/.test(target);
       var isMemoItemPath = /\/memos\/[^/?]+\.json(?:\?|$)/.test(target);
       var isMemoListPath = /\/memos\.json(?:\?|$)/.test(target);
+      if ((DESK_DAILY_DIRECT_TASK_READ_ENABLED || DESK_DAILY_DIRECT_MEMO_READ_ENABLED) && verb === "GET" && isDailyRootPath) return true;
+      if (DESK_DAILY_DIRECT_TASK_READ_ENABLED && verb === "GET" && (isTaskListPath || isTaskItemPath)) return true;
+      if (DESK_DAILY_DIRECT_TASK_WRITE_ENABLED && /^(PUT|PATCH|DELETE)$/.test(verb) && isTaskItemPath) return true;
       if (DESK_DAILY_DIRECT_MEMO_READ_ENABLED && verb === "GET" && (isMemoListPath || isMemoItemPath)) return true;
       if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED && /^(PUT|PATCH|DELETE)$/.test(verb) && isMemoItemPath) return true;
       return false;
@@ -25771,6 +25935,31 @@
       return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalMemo", { dateKey: dateKey, id: memoId });
     }
 
+    function fetchDeskDailyJournalDataServer_(dateKey) {
+      return runServer("getDeskDailyJournalData", { dateKey: dateKey }).then(function(res) {
+        if (!res || !res.success) {
+          throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
+        }
+        return {
+          success: true,
+          source: "apps-script",
+          dateKey: dateKey,
+          tasks: (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_),
+          memos: (res.memos || []).map(normalizeDeskDailyMemo_).sort(compareDeskDailyMemo_)
+        };
+      });
+    }
+
+    function normalizeDeskDailyTaskMap_(dateKey, snapshot) {
+      var safeDateKey = String(dateKey || "").trim();
+      var map = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+      return Object.keys(map).map(function(id) {
+        return normalizeDeskDailyTask_(Object.assign({}, map[id], { id: id, dateKey: safeDateKey || map[id] && map[id].dateKey }));
+      }).filter(function(item) {
+        return item.id && item.dateKey && item.worker && item.title;
+      }).sort(compareDeskDailyTask_);
+    }
+
     function normalizeDeskDailyMemoMap_(dateKey, snapshot) {
       var safeDateKey = String(dateKey || "").trim();
       var map = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
@@ -25786,8 +25975,38 @@
       if (!safeDateKey || !DESK_DAILY_DIRECT_MEMO_READ_ENABLED) return Promise.resolve(null);
       return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "memos"), null)
         .then(function(snapshot) {
-          return normalizeDeskDailyMemoMap_(safeDateKey, snapshot || {});
+        return normalizeDeskDailyMemoMap_(safeDateKey, snapshot || {});
+      });
+    }
+
+    function fetchDeskDailyJournalDataRealtime_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey || !(DESK_DAILY_DIRECT_TASK_READ_ENABLED || DESK_DAILY_DIRECT_MEMO_READ_ENABLED)) {
+        return Promise.reject(new Error("일일 업무일지 직접 읽기가 꺼져 있습니다."));
+      }
+      return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(safeDateKey), null)
+        .then(function(snapshot) {
+          var source = snapshot && typeof snapshot === "object" ? snapshot : {};
+          return {
+            success: true,
+            source: "firebase",
+            dateKey: safeDateKey,
+            tasks: normalizeDeskDailyTaskMap_(safeDateKey, source.tasks || {}),
+            memos: normalizeDeskDailyMemoMap_(safeDateKey, source.memos || {})
+          };
         });
+    }
+
+    function fetchDeskDailyJournalDataRemote_(dateKey) {
+      var safeDateKey = String(dateKey || "").trim();
+      if (!safeDateKey) return Promise.reject(new Error("dateKey가 올바르지 않습니다."));
+      if (DESK_DAILY_DIRECT_TASK_READ_ENABLED || DESK_DAILY_DIRECT_MEMO_READ_ENABLED) {
+        return fetchDeskDailyJournalDataRealtime_(safeDateKey).catch(function(err) {
+          console.warn("desk daily direct load fallback", err && err.message ? err.message : err);
+          return fetchDeskDailyJournalDataServer_(safeDateKey);
+        });
+      }
+      return fetchDeskDailyJournalDataServer_(safeDateKey);
     }
 
     function mergeDeskDailyMemosForDate_(dateKey, memos) {
@@ -25818,18 +26037,47 @@
     }
 
     function saveDeskDailyTaskRemote_(item) {
-      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: item.dateKey, task: item })
+      var safeItem = normalizeDeskDailyTask_(item);
+      if (DESK_DAILY_DIRECT_TASK_WRITE_ENABLED) {
+        return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(safeItem.dateKey, "tasks/" + safeItem.id), safeItem)
+          .then(function() {
+            var indexRequest = safeItem.completed
+              ? deskRealtimeFetchJson_("DELETE", buildDeskDailyPendingTasksRealtimeUrl_(safeItem.id), null)
+              : deskRealtimeFetchJson_("PUT", buildDeskDailyPendingTasksRealtimeUrl_(safeItem.id), safeItem);
+            return indexRequest.then(function() {
+              return { success: true, source: "firebase", dateKey: safeItem.dateKey, task: safeItem };
+            });
+          })
+          .catch(function(err) {
+            console.warn("desk daily direct task save fallback", err && err.message ? err.message : err);
+            return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: safeItem.dateKey, task: safeItem });
+          });
+      }
+      return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: safeItem.dateKey, task: safeItem })
         .catch(function(err) {
           if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
-          return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(item.dateKey, "tasks/" + item.id), item);
+          return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(safeItem.dateKey, "tasks/" + safeItem.id), safeItem);
         });
     }
 
     function deleteDeskDailyTaskRemote_(dateKey, taskId) {
-      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: dateKey, id: taskId })
+      var safeDateKey = String(dateKey || "").trim();
+      var safeTaskId = String(taskId || "").trim();
+      if (DESK_DAILY_DIRECT_TASK_WRITE_ENABLED) {
+        return Promise.all([
+          deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "tasks/" + safeTaskId), null),
+          deskRealtimeFetchJson_("DELETE", buildDeskDailyPendingTasksRealtimeUrl_(safeTaskId), null)
+        ]).then(function() {
+          return { success: true, source: "firebase", dateKey: safeDateKey, id: safeTaskId };
+        }).catch(function(err) {
+          console.warn("desk daily direct task delete fallback", err && err.message ? err.message : err);
+          return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: safeDateKey, id: safeTaskId });
+        });
+      }
+      return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: safeDateKey, id: safeTaskId })
         .catch(function(err) {
           if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) throw err;
-          return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(dateKey, "tasks/" + taskId), null);
+          return deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "tasks/" + safeTaskId), null);
         });
     }
 
@@ -26040,7 +26288,8 @@
         setDeskDailySyncStatus_("stopped");
         return;
       }
-      if (!DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || typeof EventSource === "undefined") {
+      var canUseFullJournalStream = DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED || DESK_DAILY_DIRECT_TASK_STREAM_ENABLED;
+      if (!canUseFullJournalStream || typeof EventSource === "undefined") {
         if (startDeskDailyMemoRealtime_(safeDateKey)) {
           setDeskDailySyncStatus_("idle");
           return;
@@ -26440,11 +26689,7 @@
         });
         var deleteIds = targetReplaceItems.map(function(item) { return item.id; }).filter(Boolean);
         setLoading(true, loadingMessage || "근무표를 복사하는 중입니다...");
-        runServer("batchUpdateDeskScheduleEntries", {
-          monthKey: targetMonthKey,
-          deleteIds: deleteIds,
-          entries: pendingEntries
-        }).then(function(res) {
+        batchUpdateDeskScheduleEntriesRemote_(targetMonthKey, deleteIds, pendingEntries).then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "근무표 복사 실패");
           }
@@ -26482,11 +26727,7 @@
           return;
         }
         setLoading(true, "선택 날짜 근무자를 모두 삭제하는 중입니다...");
-        runServer("batchUpdateDeskScheduleEntries", {
-          monthKey: monthKey,
-          deleteIds: dayItems.map(function(item) { return item.id; }).filter(Boolean),
-          entries: []
-        }).then(function(res) {
+        batchUpdateDeskScheduleEntriesRemote_(monthKey, dayItems.map(function(item) { return item.id; }).filter(Boolean), []).then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "근무표 삭제 실패");
           }
@@ -26557,10 +26798,7 @@
           return;
         }
         setLoading(true, "선택한 근무 셀을 다음 날짜로 복사하는 중입니다...");
-        runServer("saveDeskScheduleEntry", {
-          monthKey: targetMonthKey,
-          entry: entry
-        }).then(function(res) {
+        saveDeskScheduleEntryRemote_(entry, targetMonthKey).then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "다음 날짜 복사 실패");
           }
@@ -26676,22 +26914,9 @@
         return Promise.resolve();
       }
       if (state.desk.daily.loadingDates[key]) return state.desk.daily.loadingDates[key];
-      var request;
-      var directMemoRequest = fetchDeskDailyMemosRealtime_(key).catch(function(err) {
-        console.warn("desk daily direct memo load fallback", err && err.message ? err.message : err);
-        return null;
-      });
-      request = Promise.all([
-        runServer("getDeskDailyJournalData", { dateKey: key }),
-        directMemoRequest
-      ])
-        .then(function(results) {
-          var res = results[0];
-          var directMemos = results[1];
-          if (!res || !res.success) {
-            throw new Error(res && res.message ? res.message : "일일 업무일지를 불러오지 못했습니다.");
-          }
-          mergeDeskDailyJournalData_(key, res.tasks || [], Array.isArray(directMemos) ? directMemos : (res.memos || []));
+      var request = fetchDeskDailyJournalDataRemote_(key)
+        .then(function(res) {
+          mergeDeskDailyJournalData_(key, res.tasks || [], res.memos || []);
           mergeDeskDailyPendingMemosForDate_(key);
           refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
@@ -26713,23 +26938,6 @@
               renderDeskDailyJournal_();
             }
           }
-        })
-        .catch(function(err) {
-          if (!state.desk.daily.realtimeEnabled || !DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
-            setDeskDailySyncStatus_("stopped");
-            throw err;
-          }
-          console.warn("desk daily server load fallback", err);
-          return deskRealtimeFetchJson_("GET", buildDeskDailyJournalRealtimeUrl_(key), null)
-            .then(function(snapshot) {
-              applyDeskDailyJournalSnapshot_(key, snapshot || {});
-              startDeskDailyJournalRealtime_(key);
-              setDeskDailySyncStatus_("idle");
-            })
-            .catch(function(realtimeErr) {
-              setDeskDailySyncStatus_("error");
-              throw realtimeErr;
-            });
         });
       request = request
         .catch(function(err) {
@@ -26828,6 +27036,19 @@
       });
     }
 
+    function fetchDeskDailyPendingTasksRealtime_(beforeDateKey, workerNames) {
+      var safeDateKey = String(beforeDateKey || "").trim();
+      if (!safeDateKey) return Promise.resolve([]);
+      return deskRealtimeFetchJson_("GET", buildDeskDailyPendingTasksRealtimeUrl_(""), null).then(function(snapshot) {
+        var source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
+        return Object.keys(source).map(function(id) {
+          return normalizeDeskDailyTask_(Object.assign({}, source[id], { id: id }));
+        }).filter(function(task) {
+          return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames || []);
+        }).sort(compareDeskDailyTask_);
+      });
+    }
+
     function ensureDeskDailyCarryoverTasksLoaded_(dateKey, workers) {
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return;
@@ -26846,27 +27067,15 @@
         return [];
       });
 
-      var serverScan = withDeskTimeout_(runServer("getDeskDailyJournalPendingTasks", {
-        beforeDateKey: safeDateKey,
-        workers: workerNames,
-        legacyScanDays: DESK_DAILY_CARRYOVER_LEGACY_SCAN_DAYS
-      }), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS).then(function(res) {
-        if (!res || res.success === false) {
-          throw new Error(res && res.message ? res.message : "이월 업무 조회 실패");
-        }
-        var serverTasks = (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
-          return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames);
+      var serverScan = withDeskTimeout_(fetchDeskDailyPendingTasksRealtime_(safeDateKey, workerNames), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS)
+        .catch(function() {
+          if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
+            return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
+              return items;
+            });
+          }
+          return [];
         });
-        if (res.includeSharedCarryover) return serverTasks;
-        return serverTasks;
-      }).catch(function() {
-        if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
-          return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
-            return items;
-          });
-        }
-        return [];
-      });
 
       Promise.all([quickScan, serverScan]).then(function(groups) {
         var merged = mergeDeskCarryoverTaskLists_(groups[0], groups[1]);
@@ -26922,8 +27131,7 @@
       return batches.reduce(function(chain, batch) {
         return chain.then(function() {
           return Promise.all(batch.map(function(dayKey) {
-            return runServer("getDeskDailyJournalData", { dateKey: dayKey }).then(function(res) {
-              if (!res || res.success === false) return [];
+            return fetchDeskDailyJournalDataRemote_(dayKey).then(function(res) {
               return (res.tasks || []).map(normalizeDeskDailyTask_).filter(function(task) {
                 return shouldShowDeskCarryoverTask_(task, safeDateKey, workerNames);
               });
@@ -27188,7 +27396,7 @@
       var newTasks = [];
       pollDateKeys.reduce(function(chain, pollDateKey) {
         return chain.then(function() {
-          return runServer("getDeskDailyJournalData", { dateKey: pollDateKey });
+          return fetchDeskDailyJournalDataRemote_(pollDateKey);
         }).then(function(res) {
           if (!res || !res.success) return;
           var tasks = (res.tasks || []).map(normalizeDeskDailyTask_);
@@ -27258,7 +27466,7 @@
       deskDailyJournalPollInFlight_ = true;
       dateKeys.reduce(function(chain, pollDateKey) {
         return chain.then(function() {
-          return runServer("getDeskDailyJournalData", { dateKey: pollDateKey });
+          return fetchDeskDailyJournalDataRemote_(pollDateKey);
         }).then(function(res) {
           if (!res || !res.success) {
             throw new Error(res && res.message ? res.message : "일일 업무일지 동기화 실패");
