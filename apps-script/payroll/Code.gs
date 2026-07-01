@@ -492,11 +492,6 @@ function getDeskScheduleMonthData(payload) {
       buildDefaultDeskScheduleMonthSeed_(monthKey).forEach(function(item) {
         entriesMap[item.id] = item;
       });
-      firebaseRequestWithServiceAccount_("put", basePath, {
-        monthKey: monthKey,
-        seededAt: new Date().toISOString(),
-        entries: entriesMap
-      });
       seeded = true;
     }
 

@@ -23074,17 +23074,7 @@
         }).sort(compareDeskShift_);
         if (!entries.length) {
           entries = getDeskMonthSeedForMonth_(safeMonthKey);
-          var seedMap = {};
-          entries.forEach(function(item) {
-            seedMap[item.id] = item;
-          });
-          return deskRealtimeFetchJson_("PUT", buildDeskScheduleRealtimeUrl_(safeMonthKey), {
-            monthKey: safeMonthKey,
-            seededAt: new Date().toISOString(),
-            entries: seedMap
-          }).then(function() {
-            return { success: true, source: "firebase", monthKey: safeMonthKey, seeded: true, entries: entries };
-          });
+          return { success: true, source: "local-seed", monthKey: safeMonthKey, seeded: true, entries: entries };
         }
         var retiredUpdates = {};
         Object.keys(entriesMap || {}).forEach(function(id) {
