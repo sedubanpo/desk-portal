@@ -2609,7 +2609,7 @@ function getTuitionMonthSummary(payload) {
     var monthName = String(req.monthName || months[0]).trim();
     var statusFilter = String(req.statusFilter || "").trim();
     var keyword = String(req.keyword || "").trim().toLowerCase();
-    var allPaymentRows = getAllTuitionPaymentRows_(months);
+    var allPaymentRows = getTuitionPaymentRowsForMonth_(monthName);
     var paymentRows = [];
     var todayRows = [];
     var now = new Date();
@@ -2635,7 +2635,7 @@ function getTuitionMonthSummary(payload) {
     var studentRows = studentMasterBundle.rows || [];
     var followupBundle = loadTuitionFollowupRowsBundle_({ monthName: monthName });
     var followupMap = buildTuitionFollowupMapFromRecords_(followupBundle.rows, monthName);
-    var guideAmountAudit = buildTuitionGuideAmountAudit_(monthName, followupBundle.sheetRows, followupBundle.firestoreRows, followupBundle.rows);
+    var guideAmountAudit = buildTuitionGuideAmountAudit_(monthName, followupBundle.sheetRows, followupBundle.firestoreRows, followupBundle.rows, followupBundle.skippedSheetRows);
 
     var studentMap = {};
     studentRows.forEach(function(row) {
@@ -3002,6 +3002,43 @@ function withTuitionWriteLock_(workFn) {
       } catch (err) {}
     }
   }
+}
+
+function getTuitionPaymentRowsForMonth_(monthName) {
+  var safeMonth = String(monthName || "").trim();
+  if (!safeMonth) return [];
+  var ss = getPayrollSpreadsheet_();
+  var rows = [];
+
+  var sheet = ss.getSheetByName(safeMonth);
+  if (sheet) {
+    parseTuitionRows_(sheet).forEach(function(row) {
+      var copy = {};
+      Object.keys(row).forEach(function(key) {
+        copy[key] = row[key];
+      });
+      copy.sourceMonth = safeMonth;
+      copy.sourceDueMonth = parseTuitionDueMonthName_(row.dueDate);
+      rows.push(copy);
+    });
+  }
+
+  var portalSheet = ss.getSheetByName(TUITION_PORTAL_PAYMENT_SHEET_NAME);
+  if (portalSheet) {
+    parseTuitionRows_(portalSheet).forEach(function(row) {
+      var copy = {};
+      Object.keys(row).forEach(function(key) {
+        copy[key] = row[key];
+      });
+      var originMonth = String(row.originMonth || "").trim();
+      copy.sourceMonth = originMonth || parseTuitionDueMonthName_(row.dueDate);
+      copy.sourceDueMonth = originMonth || parseTuitionDueMonthName_(row.dueDate);
+      if (copy.sourceDueMonth !== safeMonth && copy.sourceMonth !== safeMonth) return;
+      rows.push(copy);
+    });
+  }
+
+  return rows;
 }
 
 function getAllTuitionPaymentRows_(months) {
@@ -4720,7 +4757,6 @@ function hasTuitionFollowupRowsForMonth_(rows, monthName) {
 function loadTuitionFollowupRowsBundle_(options) {
   var opts = options || {};
   var monthName = String(opts.monthName || "").trim();
-  var sheetRows = loadTuitionFollowupRowsFromSheet_();
   var firestoreRows = loadTuitionFollowupRowsFromFirestore_();
   var firestoreAvailable = Array.isArray(firestoreRows);
   var hasFirestoreRows = firestoreAvailable && hasTuitionFollowupRowsForMonth_(firestoreRows, monthName);
@@ -4728,10 +4764,12 @@ function loadTuitionFollowupRowsBundle_(options) {
     return {
       source: "firestore",
       rows: firestoreRows,
-      sheetRows: sheetRows,
-      firestoreRows: firestoreRows
+      sheetRows: [],
+      firestoreRows: firestoreRows,
+      skippedSheetRows: true
     };
   }
+  var sheetRows = loadTuitionFollowupRowsFromSheet_();
   return {
     source: firestoreAvailable ? "sheet-fallback-empty-firestore" : "sheet-fallback-firestore-error",
     rows: sheetRows,
@@ -4791,7 +4829,7 @@ function summarizeTuitionGuideAmountMap_(map) {
   };
 }
 
-function buildTuitionGuideAmountAudit_(monthName, sheetRows, firestoreRows, mergedRows) {
+function buildTuitionGuideAmountAudit_(monthName, sheetRows, firestoreRows, mergedRows, skippedSheetRows) {
   var sheetMap = selectTuitionFollowupRowsByMonth_(sheetRows, monthName);
   var firestoreAvailable = Array.isArray(firestoreRows);
   var firestoreMap = firestoreAvailable ? selectTuitionFollowupRowsByMonth_(firestoreRows, monthName) : {};
@@ -4815,7 +4853,8 @@ function buildTuitionGuideAmountAudit_(monthName, sheetRows, firestoreRows, merg
 
   return {
     monthName: monthName,
-    source: firestoreAvailable ? "sheet+firestore" : "sheet",
+    source: skippedSheetRows ? "firestore-fast" : (firestoreAvailable ? "sheet+firestore" : "sheet"),
+    skippedSheetRows: !!skippedSheetRows,
     sheet: summarizeTuitionGuideAmountMap_(sheetMap),
     firestore: Object.assign({ available: firestoreAvailable }, summarizeTuitionGuideAmountMap_(firestoreMap)),
     merged: summarizeTuitionGuideAmountMap_(mergedMap),
