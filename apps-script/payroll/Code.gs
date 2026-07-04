@@ -4410,16 +4410,6 @@ function normalizeTuitionHeaderText_(value) {
 }
 
 function loadTuitionStudentMasterBundle_() {
-  var cache = CacheService.getScriptCache();
-  var failureCacheKey = "TUITION_FIRESTORE_STUDENTS_FAILURE_V3";
-  var cachedFailure = cache.get(failureCacheKey);
-  if (cachedFailure) {
-    return {
-      rows: loadTuitionStudentMasterFromSheet_(),
-      source: "sheet",
-      fallbackReason: cachedFailure
-    };
-  }
   var fallbackReason = "";
   try {
     var firestoreRows = loadTuitionStudentMasterFromFirestore_();
@@ -4430,9 +4420,6 @@ function loadTuitionStudentMasterBundle_() {
   } catch (e) {
     fallbackReason = e && e.message ? e.message : String(e);
   }
-  try {
-    cache.put(failureCacheKey, fallbackReason || "Firestore students 응답이 비어 있습니다.", 300);
-  } catch (e0) {}
   return {
     rows: loadTuitionStudentMasterFromSheet_(),
     source: "sheet",
