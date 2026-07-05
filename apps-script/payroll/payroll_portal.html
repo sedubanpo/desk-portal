@@ -27,6 +27,35 @@
       --warn: #b85f07;
       --muted: #9ca3af;
       --accent: #1f8d5f;
+      --ds-bg-app: #e8f0eb;
+      --ds-bg-panel: #ffffff;
+      --ds-bg-subtle: #f7fbf8;
+      --ds-bg-warm: #fffcf4;
+      --ds-fg: #102133;
+      --ds-fg-soft: #334155;
+      --ds-muted: #667789;
+      --ds-primary: #0d684d;
+      --ds-primary-strong: #064e3b;
+      --ds-on-primary: #ffffff;
+      --ds-border: #d8e4de;
+      --ds-border-soft: #edf2ef;
+      --ds-ring: rgba(13, 104, 77, 0.16);
+      --ds-danger: #b91c1c;
+      --ds-danger-bg: #fff1f2;
+      --ds-warning: #c2410c;
+      --ds-warning-bg: #fff7ed;
+      --ds-blue: #2563eb;
+      --ds-dim-strong: #334155;
+      --ds-dim-deep: #1f2937;
+      --ds-control-height: 40px;
+      --ds-control-radius: 8px;
+      --ds-shadow-panel: 0 10px 24px rgba(15, 23, 42, 0.035);
+      --ds-space-1: 4px;
+      --ds-space-2: 8px;
+      --ds-space-3: 12px;
+      --ds-space-4: 16px;
+      --ds-space-5: 20px;
+      --ds-space-6: 24px;
     }
 
     * { box-sizing: border-box; }
@@ -13608,6 +13637,262 @@
     .folder-tab,
     .folder-body { border-radius: 8px; }
 
+    .desk-polish-scope,
+    .desk-shell,
+    .tuition-shell {
+      color: var(--ds-fg);
+    }
+
+    .module-tab,
+    .desk-subtab,
+    .desk-worker-tab,
+    .desk-nav-btn,
+    .desk-view-tab,
+    .desk-primary-btn,
+    .desk-ghost-btn,
+    .desk-day-empty-slot,
+    .desk-day-copy-btn,
+    .desk-day-delete-btn,
+    .desk-week-collapse-btn,
+    .desk-week-summary-trigger,
+    .desk-time-preset-btn,
+    .desk-insight-tab,
+    .desk-insight-worker-btn,
+    .desk-shared-more-btn,
+    .desk-task-more-btn,
+    .desk-task-filter-row button,
+    .desk-report-preview-card .desk-report-actions .modal-action,
+    .desk-task-actions .modal-action,
+    .desk-note-icon-actions button,
+    .modal-action,
+    .refresh-btn,
+    .tuition-action-btn,
+    .tuition-assistant-btn,
+    .tuition-log-page-btn,
+    .tuition-carryover-hide-btn,
+    .status-edit-btn,
+    .act-btn {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: 0;
+      word-break: keep-all;
+      overflow-wrap: normal;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .module-tab,
+    .desk-subtab,
+    .desk-worker-tab,
+    .desk-nav-btn,
+    .desk-view-tab,
+    .desk-primary-btn,
+    .desk-ghost-btn,
+    .modal-action,
+    .refresh-btn,
+    .tuition-action-btn,
+    .tuition-assistant-btn {
+      min-height: var(--ds-control-height);
+      border-radius: var(--ds-control-radius);
+    }
+
+    .module-tab svg,
+    .desk-subtab svg,
+    .desk-worker-tab svg,
+    .desk-nav-btn svg,
+    .desk-view-tab svg,
+    .desk-primary-btn svg,
+    .desk-ghost-btn svg,
+    .modal-action svg,
+    .refresh-btn svg,
+    .tuition-action-btn svg,
+    .tuition-assistant-btn svg,
+    .desk-note-icon-actions svg {
+      flex: 0 0 auto;
+    }
+
+    .desk-subtab,
+    .desk-worker-tab,
+    .desk-nav-btn,
+    .desk-view-tab,
+    .desk-primary-btn,
+    .desk-ghost-btn,
+    .modal-action,
+    .refresh-btn,
+    .tuition-action-btn,
+    .tuition-assistant-btn {
+      display: inline-flex;
+      gap: var(--ds-space-2);
+    }
+
+    .desk-subtab:focus-visible,
+    .desk-worker-tab:focus-visible,
+    .desk-nav-btn:focus-visible,
+    .desk-view-tab:focus-visible,
+    .desk-primary-btn:focus-visible,
+    .desk-ghost-btn:focus-visible,
+    .modal-action:focus-visible,
+    .refresh-btn:focus-visible,
+    .tuition-action-btn:focus-visible,
+    .tuition-assistant-btn:focus-visible,
+    .desk-note-icon-actions button:focus-visible {
+      outline: 3px solid var(--ds-ring);
+      outline-offset: 2px;
+    }
+
+    .tuition-topbar {
+      grid-template-columns: minmax(164px, 0.72fr) minmax(164px, 0.72fr) minmax(260px, 1.35fr) minmax(172px, auto);
+    }
+
+    .tuition-cards {
+      grid-template-columns: minmax(260px, 0.92fr) minmax(260px, 0.92fr) minmax(360px, 1.65fr);
+    }
+
+    .tuition-metric-card {
+      min-width: 0;
+      padding: var(--ds-space-4);
+    }
+
+    .tuition-metric-card .value,
+    .tuition-metric-card .meta {
+      overflow-wrap: anywhere;
+    }
+
+    .tuition-action-frame {
+      grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+      gap: 0;
+    }
+
+    .tuition-action-btn {
+      min-width: 0;
+      padding: 12px 14px;
+      white-space: normal;
+      min-height: 54px;
+    }
+
+    .tuition-action-btn .step {
+      flex: 0 0 auto;
+    }
+
+    .tuition-layout {
+      grid-template-columns: minmax(300px, 0.95fr) minmax(300px, 0.95fr) minmax(360px, 1.3fr);
+    }
+
+    .tuition-status-item {
+      min-height: 72px;
+    }
+
+    .tuition-status-item .row,
+    .tuition-status-list-item,
+    .tuition-unpaid-item {
+      align-items: flex-start;
+    }
+
+    .tuition-status-item .name,
+    .tuition-status-list-name,
+    .tuition-status-list-meta,
+    .tuition-unpaid-item .nm {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .tuition-status-list-side,
+    .tuition-unpaid-item .amt {
+      min-width: 128px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tuition-table {
+      min-width: 1160px;
+    }
+
+    .tuition-table th,
+    .tuition-table td {
+      line-height: 1.35;
+    }
+
+    .tuition-amount-cell {
+      min-width: 108px;
+    }
+
+    .tuition-amount-cell .v {
+      font-variant-numeric: tabular-nums;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .desk-daily-journal-mode .desk-journal-status-cards {
+      grid-template-columns: repeat(4, minmax(150px, 1fr)) minmax(128px, auto);
+    }
+
+    .desk-daily-journal-mode .desk-composer-row {
+      grid-template-columns: minmax(132px, 0.5fr) minmax(380px, 1.15fr) minmax(280px, 0.72fr) minmax(112px, 0.3fr);
+    }
+
+    .desk-daily-journal-mode .desk-template-panel .desk-chip-row {
+      grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    }
+
+    .desk-daily-journal-mode .desk-template-chip {
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .desk-daily-journal-mode .desk-memo-submit-btn,
+    .desk-daily-journal-mode .desk-journal-report-shortcut {
+      line-height: 1.2;
+      gap: var(--ds-space-2);
+    }
+
+    .desk-daily-journal-mode .desk-queue-top {
+      grid-template-columns: 30px minmax(0, 1fr) minmax(86px, auto) 32px;
+    }
+
+    .desk-daily-journal-mode .desk-queue-summary .desk-task-title,
+    .desk-daily-journal-mode .desk-journal-side .desk-note-text {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .desk-day-report-worker-card {
+      grid-template-columns: minmax(172px, 0.42fr) minmax(0, 1fr);
+      gap: var(--ds-space-3);
+    }
+
+    .desk-day-report-time {
+      min-width: 0;
+    }
+
+    .desk-day-report-time strong {
+      font-size: clamp(15px, 1.05vw, 18px);
+      line-height: 1.32;
+    }
+
+    .desk-day-report-worker-main {
+      min-width: 0;
+    }
+
+    .desk-day-report-worker-name,
+    .desk-day-report-worker-main p {
+      overflow-wrap: anywhere;
+    }
+
+    .desk-day-report-worker-card.is-unavailable {
+      opacity: 0.78;
+      filter: grayscale(0.72) saturate(0.42);
+    }
+
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-time {
+      background: linear-gradient(180deg, var(--ds-dim-strong) 0%, var(--ds-dim-deep) 100%);
+    }
+
+    .desk-report-preview-card .desk-report-actions {
+      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    }
+
     @media (max-width: 1800px) {
       .main,
       .main.expense-live-mode {
@@ -13709,6 +13994,41 @@
       }
     }
 
+    @media (max-width: 1540px) {
+      .desk-toolbar {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-toolbar-right {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .desk-daily-journal-mode .desk-composer-row {
+        grid-template-columns: minmax(132px, 0.46fr) minmax(360px, 1fr) minmax(250px, 0.66fr) minmax(108px, 0.28fr);
+      }
+      .tuition-topbar {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+      .tuition-topbar .field:nth-child(3) {
+        grid-column: 1 / -1;
+      }
+      .tuition-topbar .refresh-btn {
+        width: 100%;
+      }
+      .tuition-cards {
+        grid-template-columns: 1fr;
+      }
+      .tuition-metric-group,
+      .tuition-metric-card {
+        border-right: 0;
+      }
+      .tuition-metric-group {
+        border-bottom: 1px solid var(--ds-border-soft);
+      }
+      .tuition-metric-group:last-child {
+        border-bottom: 0;
+      }
+    }
+
     @media (max-width: 1360px) {
       .app-shell { grid-template-columns: 1fr; }
       .sidebar { display: none; }
@@ -13783,9 +14103,9 @@
       .teacher-bar { grid-template-columns: 1fr 1fr; }
       .day-detail-summary { grid-template-columns: 1fr 1fr; }
       .tracker-summary { grid-template-columns: 1fr 1fr; }
-      .tuition-topbar { grid-template-columns: 0.8fr 0.8fr minmax(220px, 1fr) auto; }
-      .tuition-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .tuition-action-frame { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .tuition-topbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tuition-cards { grid-template-columns: 1fr; }
+      .tuition-action-frame { grid-template-columns: repeat(auto-fit, minmax(156px, 1fr)); }
       .tuition-layout { grid-template-columns: 1fr 1fr; }
       .tuition-layout .tuition-panel-soft:last-child { grid-column: 1 / -1; }
       .tuition-history-kpis { grid-template-columns: 1fr 1fr; }
@@ -13850,6 +14170,36 @@
       }
       .desk-report-donut {
         width: 118px;
+      }
+      .desk-daily-journal-mode .desk-journal-status-cards,
+      .desk-daily-journal-mode .desk-composer-row,
+      .desk-daily-journal-mode .desk-memo-compose-row,
+      .desk-daily-journal-mode .desk-queue-top,
+      .desk-day-report-worker-card {
+        grid-template-columns: 1fr;
+      }
+      .desk-daily-journal-mode .desk-composer-row {
+        grid-template-areas:
+          "types"
+          "templates"
+          "input"
+          "actions";
+      }
+      .desk-daily-journal-mode .desk-memo-compose-row,
+      .desk-daily-journal-mode .desk-memo-action-stack {
+        grid-column: auto;
+      }
+      .desk-daily-journal-mode .desk-memo-action-stack,
+      .desk-report-preview-card .desk-report-actions {
+        grid-template-columns: 1fr;
+      }
+      .tuition-topbar .field {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+      .tuition-action-btn {
+        justify-content: flex-start;
+        text-align: left;
       }
     }
   </style>
