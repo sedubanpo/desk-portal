@@ -24,7 +24,7 @@ const DESK_REPORT_CALENDAR_ICS_BASE_URL = "https://calendar.google.com/calendar/
 const DESK_IMPORTANT_CATEGORY_PREFIX = "__important__::";
 const DESK_SHARED_CATEGORY_PREFIX = "__shared__::";
 const DESK_SHARED_WORKER_NAME = "공동업무";
-const DESK_RETIRED_SCHEDULE_WORKERS = ["인유빈", "유지연"];
+const DESK_RETIRED_SCHEDULE_WORKERS = ["인유빈", "유지연", "이창연"];
 const DESK_HR_STATUSES = ["이력서 검토", "추천", "면접 조율", "면접 진행", "합격 안내", "불합격 안내"];
 const DESK_HR_STATUS_ALIASES = {
   "미연락": "이력서 검토",
@@ -527,17 +527,18 @@ function getDeskCalendarEvents(payload) {
     if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
 
     var range = buildDeskCalendarDateRange_(dateKey);
-    var calendarEvents = getDeskReportCalendarEvents_(range.start, range.end);
-    var events = calendarEvents.sort(compareDeskReportEvents_);
+    var calendarResult = getDeskReportCalendarEvents_(range.start, range.end);
+    var calendarEvents = (calendarResult && calendarResult.events ? calendarResult.events : []).sort(compareDeskReportEvents_);
 
     return {
       success: true,
       dateKey: dateKey,
       sources: {
-        calendar: calendarEvents.length
+        calendar: calendarEvents.length,
+        source: calendarResult && calendarResult.source ? calendarResult.source : "unknown"
       },
-      warnings: [],
-      events: events
+      warnings: calendarResult && calendarResult.warnings ? calendarResult.warnings : [],
+      events: calendarEvents
     };
   } catch (e) {
     return { success: false, message: "캘린더 조회 오류: " + e.message };
@@ -547,7 +548,12 @@ function getDeskCalendarEvents(payload) {
 function getDeskReportCalendarEvents_(start, end) {
   var props = PropertiesService.getScriptProperties();
   var calendarId = String(props.getProperty(DESK_REPORT_CALENDAR_ID_PROP) || DESK_REPORT_CALENDAR_ID).trim();
-  if (!calendarId) return [];
+  if (!calendarId) return { events: [], warnings: ["캘린더 ID가 설정되어 있지 않습니다."], source: "none" };
+
+  var calendarAppEvents = getDeskReportCalendarAppEvents_(calendarId, start, end);
+  if (calendarAppEvents) {
+    return { events: calendarAppEvents, warnings: [], source: "calendarApp" };
+  }
 
   var url = DESK_REPORT_CALENDAR_ICS_BASE_URL + encodeURIComponent(calendarId) + "/public/basic.ics?deskPortalCacheBust=" + new Date().getTime();
   var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
@@ -556,11 +562,46 @@ function getDeskReportCalendarEvents_(start, end) {
     throw new Error("반포관 데스크 공개 캘린더를 읽을 수 없습니다. 상태 코드: " + status);
   }
 
-  return parseDeskReportCalendarIcs_(response.getContentText(), start, end).map(function(event) {
+  var icsText = response.getContentText();
+  var parsedEvents = parseDeskReportCalendarIcs_(icsText, start, end);
+  var warnings = buildDeskReportCalendarIcsWarnings_(icsText, start, parsedEvents);
+  var events = parsedEvents.map(function(event) {
     return normalizeDeskReportCalendarIcsEvent_(event);
   }).filter(function(item) {
     return item && item.title && !/에스학원\s*대치관/.test(item.title);
   });
+  return { events: events, warnings: warnings, source: "publicIcs" };
+}
+
+function getDeskReportCalendarAppEvents_(calendarId, start, end) {
+  try {
+    var calendar = CalendarApp.getCalendarById(calendarId);
+    if (!calendar) return null;
+    return calendar.getEvents(start, end).map(function(event) {
+      return normalizeDeskReportCalendarAppEvent_(event);
+    }).filter(function(item) {
+      return item && item.title && !/에스학원\s*대치관/.test(item.title);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+function normalizeDeskReportCalendarAppEvent_(event) {
+  if (!event) return null;
+  var start = event.getStartTime();
+  var end = event.getEndTime();
+  var allDay = !!event.isAllDayEvent();
+  return {
+    id: "calendar_" + String(event.getId() || Utilities.getUuid()).replace(/[^\w-]/g, "_"),
+    source: "calendar",
+    sourceLabel: "반포관 데스크",
+    title: String(event.getTitle() || "제목 없음").trim(),
+    start: start ? start.toISOString() : "",
+    end: end ? end.toISOString() : "",
+    allDay: allDay,
+    timeLabel: allDay ? "종일" : (formatDeskReportClock_(start) + " - " + formatDeskReportClock_(end))
+  };
 }
 
 function buildDeskCalendarDateRange_(dateKey) {
@@ -647,8 +688,8 @@ function parseDeskReportIcsLine_(line) {
 function buildDeskReportIcsEvent_(raw) {
   if (!raw || !raw.startField) return null;
   var allDay = String(raw.startField.params.VALUE || "").toUpperCase() === "DATE";
-  var start = parseDeskReportIcsDate_(raw.startField.value, allDay);
-  var end = raw.endField ? parseDeskReportIcsDate_(raw.endField.value, allDay) : null;
+  var start = parseDeskReportIcsDate_(raw.startField.value, allDay, raw.startField.params);
+  var end = raw.endField ? parseDeskReportIcsDate_(raw.endField.value, allDay, raw.endField.params) : null;
   if (!start) return null;
   if (!end) {
     end = new Date(start.getTime());
@@ -663,7 +704,7 @@ function buildDeskReportIcsEvent_(raw) {
   };
 }
 
-function parseDeskReportIcsDate_(value, allDay) {
+function parseDeskReportIcsDate_(value, allDay, params) {
   var text = String(value || "").trim();
   if (!text) return null;
   if (allDay || /^\d{8}$/.test(text)) {
@@ -676,6 +717,33 @@ function parseDeskReportIcsDate_(value, allDay) {
     return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6])));
   }
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]), 0);
+}
+
+function buildDeskReportCalendarIcsWarnings_(icsText, requestedStart, matchedEvents) {
+  if (matchedEvents && matchedEvents.length) return [];
+  var latest = getLatestDeskReportIcsStartDate_(icsText);
+  if (latest && requestedStart && requestedStart.getTime && requestedStart.getTime() > latest.getTime() + 24 * 60 * 60 * 1000) {
+    return ["공개 캘린더 피드가 " + formatDeskReportDate_(latest) + "까지만 포함되어 있습니다. 캘린더 직접 조회 권한을 확인하세요."];
+  }
+  return [];
+}
+
+function getLatestDeskReportIcsStartDate_(icsText) {
+  var lines = unfoldDeskReportIcsLines_(icsText);
+  var latest = null;
+  lines.forEach(function(line) {
+    var parsed = parseDeskReportIcsLine_(line);
+    if (!parsed || parsed.name !== "DTSTART") return;
+    var allDay = String(parsed.params.VALUE || "").toUpperCase() === "DATE";
+    var date = parseDeskReportIcsDate_(parsed.value, allDay, parsed.params);
+    if (date && (!latest || date > latest)) latest = date;
+  });
+  return latest;
+}
+
+function formatDeskReportDate_(date) {
+  if (!date || isNaN(date.getTime())) return "";
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), "yyyy-MM-dd");
 }
 
 function doesDeskReportEventOverlap_(event, start, end) {

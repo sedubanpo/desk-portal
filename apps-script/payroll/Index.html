@@ -4622,7 +4622,8 @@
       gap: 8px;
       flex-wrap: wrap;
     }
-    .desk-week-collapse-btn {
+    .desk-week-collapse-btn,
+    .desk-week-delete-btn {
       border: 1px solid #cfe0d7;
       background: #fff;
       color: #315268;
@@ -4632,10 +4633,28 @@
       font-weight: 900;
       cursor: pointer;
     }
-    .desk-week-collapse-btn:hover {
+    .desk-week-collapse-btn:hover,
+    .desk-week-delete-btn:hover {
       border-color: #0d684d;
       color: #0d684d;
       background: #eef8f3;
+    }
+    .desk-week-delete-btn {
+      border-color: #f2c7c7;
+      color: #b42318;
+      background: #fff8f8;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .desk-week-delete-btn:hover {
+      border-color: #dc2626;
+      color: #991b1b;
+      background: #fff1f1;
+    }
+    .desk-week-delete-btn svg {
+      width: 13px;
+      height: 13px;
     }
     .desk-calendar-week-row {
       display: grid;
@@ -17091,7 +17110,7 @@
     var DESK_WORKER_NAME_ALIASES = {
       "이미현": "이민현"
     };
-    var DESK_RETIRED_WORKERS = ["인유빈", "유지연"];
+    var DESK_RETIRED_WORKERS = ["인유빈", "유지연", "이창연"];
     var DESK_HR_STATUSES = ["이력서 검토", "추천", "면접 조율", "면접 진행", "합격 안내", "불합격 안내"];
     var DESK_HR_STATUS_ALIASES = {
       "미연락": "이력서 검토",
@@ -23679,6 +23698,7 @@
               '</div>' +
               '<div class="desk-calendar-week-head-actions">' +
                 renderDeskWeekSummaryTrigger_(week + 1, weekSummary, weekSummaryKey) +
+                (weekShiftCount ? '<button type="button" class="desk-week-delete-btn" data-desk-week-delete="' + escapeHtml(weekSummaryKey) + '"><i data-lucide="trash-2"></i><span>이 주 전체 삭제</span></button>' : '') +
                 '<button type="button" class="desk-week-collapse-btn" data-desk-week-toggle="' + escapeHtml(weekSummaryKey) + '">' + (isCollapsed ? '펼치기' : '접기') + '</button>' +
               '</div>' +
             '</div>' +
@@ -27083,6 +27103,52 @@
           renderDeskMonthlySchedule_();
         }).catch(function(err) {
           alert("선택 날짜 근무표 삭제 오류: " + (err.message || String(err)));
+        }).finally(function() {
+          setLoading(false);
+        });
+      });
+    }
+
+    function deleteDeskWeekSchedule_(weekKey) {
+      var safeWeekKey = String(weekKey || "").trim();
+      var weekMatch = safeWeekKey.match(/^(\d{4}-\d{2})_week_(\d+)$/);
+      if (!weekMatch) return;
+      var monthKey = weekMatch[1];
+      var weekIndex = Number(weekMatch[2] || 0);
+      if (!monthKey || !weekIndex) return;
+      ensureDeskMonthLoaded_(monthKey).then(function() {
+        var cells = buildDeskCalendarCells_(monthKey).slice((weekIndex - 1) * 7, weekIndex * 7);
+        var weekDates = cells.map(function(cell) { return cell.date; });
+        var weekItems = state.desk.scheduleItems.filter(function(item) {
+          return item && String(item.date || "").slice(0, 7) === monthKey && weekDates.indexOf(item.date) !== -1;
+        });
+        if (!weekItems.length) {
+          alert("삭제할 주간 근무 일정이 없습니다.");
+          return;
+        }
+        var rangeText = formatDeskWeekRange_(cells);
+        if (!confirm(monthKey + " " + weekIndex + "주차(" + rangeText + ") 근무자 " + weekItems.length + "건을 모두 삭제할까요?")) {
+          return;
+        }
+        setLoading(true, weekIndex + "주차 근무자를 모두 삭제하는 중입니다...");
+        var deleteIds = weekItems.map(function(item) { return item.id; }).filter(Boolean);
+        batchUpdateDeskScheduleEntriesRemote_(monthKey, deleteIds, []).then(function(res) {
+          if (!res || !res.success) {
+            throw new Error(res && res.message ? res.message : "주간 근무표 삭제 실패");
+          }
+          mergeDeskMonthItems_(monthKey, getDeskMonthItems_(monthKey).filter(function(item) {
+            return weekDates.indexOf(item.date) === -1;
+          }));
+          state.desk.loadedMonths[monthKey] = true;
+          state.desk.currentMonth = monthKey;
+          var firstMonthDate = weekDates.filter(function(dateKey) { return String(dateKey || "").slice(0, 7) === monthKey; })[0] || monthKey + "-01";
+          state.desk.selectedDateKey = firstMonthDate;
+          if (weekItems.some(function(item) { return item.id === state.desk.selectedShiftId; })) {
+            state.desk.selectedShiftId = "";
+          }
+          renderDeskMonthlySchedule_();
+        }).catch(function(err) {
+          alert("주간 근무표 삭제 오류: " + (err.message || String(err)));
         }).finally(function() {
           setLoading(false);
         });
@@ -31178,6 +31244,12 @@
           if (copyPrevWeekBtn) {
             event.stopPropagation();
             copyDeskPreviousWeekSchedule_(copyPrevWeekBtn.getAttribute("data-desk-copy-prev-week") || "");
+            return;
+          }
+          var deleteWeekBtn = event.target.closest("[data-desk-week-delete]");
+          if (deleteWeekBtn) {
+            event.stopPropagation();
+            deleteDeskWeekSchedule_(deleteWeekBtn.getAttribute("data-desk-week-delete") || "");
             return;
           }
           var deleteDateBtn = event.target.closest("[data-desk-delete-date]");
