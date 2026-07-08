@@ -13,6 +13,10 @@ const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
 const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
 const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
 const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountChanges";
+const TUITION_MONTH_NAMES_CACHE_KEY = "TUITION_MONTH_NAMES_V1";
+const TUITION_MONTH_NAMES_CACHE_TTL_SECONDS = 180;
+const TUITION_MONTH_SUMMARY_CACHE_PREFIX = "TUITION_MONTH_SUMMARY_V2_";
+const TUITION_MONTH_SUMMARY_CACHE_TTL_SECONDS = 90;
 const DESK_SCHEDULE_ROOT_PATH = "desk_portal/monthly_schedule";
 const DESK_DAILY_JOURNAL_ROOT_PATH = "desk_portal/daily_journal";
 const DESK_DAILY_PENDING_TASKS_ROOT_PATH = "desk_portal/daily_pending_tasks";
@@ -2667,6 +2671,36 @@ function getTuitionBootstrapData() {
   }
 }
 
+function getTuitionSummaryCacheKey_(monthName) {
+  return TUITION_MONTH_SUMMARY_CACHE_PREFIX + String(monthName || "").trim();
+}
+
+function readTuitionJsonCache_(cacheKey) {
+  if (!cacheKey) return null;
+  try {
+    var raw = CacheService.getScriptCache().get(cacheKey);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeTuitionJsonCache_(cacheKey, value, ttlSeconds) {
+  if (!cacheKey || !value) return;
+  try {
+    CacheService.getScriptCache().put(cacheKey, JSON.stringify(value), ttlSeconds || 60);
+  } catch (e) {}
+}
+
+function invalidateTuitionSummaryCache_(monthName) {
+  var month = String(monthName || "").trim();
+  if (!month) return;
+  try {
+    CacheService.getScriptCache().remove(getTuitionSummaryCacheKey_(month));
+  } catch (e) {}
+}
+
 function getTuitionMonthSummary(payload) {
   try {
     var req = payload || {};
@@ -2677,6 +2711,16 @@ function getTuitionMonthSummary(payload) {
     var monthName = String(req.monthName || months[0]).trim();
     var statusFilter = String(req.statusFilter || "").trim();
     var keyword = String(req.keyword || "").trim().toLowerCase();
+    var canUseSummaryCache = !!monthName && !statusFilter && !keyword;
+    var summaryCacheKey = canUseSummaryCache ? getTuitionSummaryCacheKey_(monthName) : "";
+    var cachedSummary = canUseSummaryCache ? readTuitionJsonCache_(summaryCacheKey) : null;
+    if (cachedSummary && cachedSummary.success) {
+      cachedSummary.cache = {
+        source: "script-cache",
+        key: summaryCacheKey
+      };
+      return cachedSummary;
+    }
     var allPaymentRows = getTuitionPaymentRowsForMonth_(monthName);
     var paymentRows = [];
     var todayRows = [];
@@ -2817,7 +2861,7 @@ function getTuitionMonthSummary(payload) {
     });
 
     var summary = buildTuitionSummaryStats_(list, paymentRows);
-    return {
+    var result = {
       success: true,
       selectedMonth: monthName,
       months: months,
@@ -2835,6 +2879,10 @@ function getTuitionMonthSummary(payload) {
       guideAmountAudit: guideAmountAudit,
       rows: list
     };
+    if (canUseSummaryCache) {
+      writeTuitionJsonCache_(summaryCacheKey, result, TUITION_MONTH_SUMMARY_CACHE_TTL_SECONDS);
+    }
+    return result;
   } catch (e) {
     return { success: false, message: "수강료 데이터 계산 오류: " + e.message };
   }
@@ -3269,6 +3317,7 @@ function saveTuitionFollowup(payload) {
       firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
     }
     SpreadsheetApp.flush();
+    invalidateTuitionSummaryCache_(monthName);
 
     return { success: true, contactAt: nowIso, contactCount: contactCount, firestoreWarning: firestoreWarning };
   } catch (e) {
@@ -3380,6 +3429,7 @@ function saveTuitionStatusOnly(payload) {
       firestoreWarning = firestoreError && firestoreError.message ? firestoreError.message : String(firestoreError);
     }
     SpreadsheetApp.flush();
+    invalidateTuitionSummaryCache_(monthName);
     return { success: true, status: unpaidStatus, firestoreWarning: firestoreWarning };
   } catch (e) {
     return { success: false, message: "상태 저장 오류: " + e.message };
@@ -3433,6 +3483,7 @@ function appendTuitionPaymentEntry(payload) {
     }
     sheet.getRange(sheet.getLastRow() + 1, 1, 1, sheet.getLastColumn()).setValues([write]);
     SpreadsheetApp.flush();
+    invalidateTuitionSummaryCache_(monthName);
     return { success: true };
   } catch (e) {
     return { success: false, message: "수납 입력 오류: " + e.message };
@@ -4278,6 +4329,8 @@ function buildPayrollSourceVersion_(source) {
 }
 
 function getTuitionMonthSheetNames_() {
+  var cached = readTuitionJsonCache_(TUITION_MONTH_NAMES_CACHE_KEY);
+  if (Array.isArray(cached) && cached.length) return cached;
   var ss = getPayrollSpreadsheet_();
   var names = ss.getSheets().map(function(sheet) { return sheet.getName(); });
   var valid = names.filter(function(name) {
@@ -4290,6 +4343,7 @@ function getTuitionMonthSheetNames_() {
     if (ma.year !== mb.year) return mb.year - ma.year;
     return mb.month - ma.month;
   });
+  writeTuitionJsonCache_(TUITION_MONTH_NAMES_CACHE_KEY, valid, TUITION_MONTH_NAMES_CACHE_TTL_SECONDS);
   return valid;
 }
 

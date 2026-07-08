@@ -36883,7 +36883,7 @@
 
     function getRunServerTimeoutMs_(fnName) {
       var name = String(fnName || "");
-      if (/^(getPayrollBootstrapData|getPayrollMonthSummary)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
+      if (/^(getPayrollBootstrapData|getPayrollMonthSummary|getTuitionBootstrapData|getTuitionMonthSummary)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
       if (isRunServerWriteApi_(name)) return RUN_SERVER_WRITE_TIMEOUT_MS;
       return RUN_SERVER_DEFAULT_TIMEOUT_MS;
     }
