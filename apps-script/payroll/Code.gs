@@ -4344,7 +4344,6 @@ function saveTuitionStatusOnly(payload) {
 }
 
 function appendTuitionPaymentEntry(payload) {
-  return withTuitionWriteLock_(function() {
   try {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
@@ -4364,9 +4363,6 @@ function appendTuitionPaymentEntry(payload) {
     var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     var nowText = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "M/d HH:mm");
     var mirrorSheets = isTuitionSheetMirrorWritesEnabled_();
-    if (requestId && hasTuitionPaymentRequestInFirestore_(requestId)) {
-      return { success: true, duplicate: true };
-    }
 
     var paymentRecord = {
       rowNumber: 0,
@@ -4390,33 +4386,42 @@ function appendTuitionPaymentEntry(payload) {
     writeTuitionPaymentToFirestore_(paymentRecord);
     var sheetMirrorWarning = "";
     if (mirrorSheets) {
-      try {
-        var ss = getPayrollSpreadsheet_();
-        var sheet = ensureTuitionPortalPaymentSheet_(ss);
-        var requestIndex = ensureSheetHeaderColumn_(sheet, "요청ID");
-        if (!(requestId && findTuitionRequestRow_(sheet, requestId, requestIndex) > 0)) {
-          var write = [];
-          write[0] = dueDate;
-          write[1] = studentName;
-          write[2] = itemName || "납부금액";
-          write[3] = amount;
-          write[4] = paidAt;
-          write[5] = business;
-          write[6] = paymentType;
-          write[7] = approvalNo;
-          write[8] = nowText;
-          write[9] = issueMemo;
-          write[10] = monthName;
-          write[requestIndex] = requestId;
-          for (var c = 0; c < sheet.getLastColumn(); c++) {
-            if (typeof write[c] === "undefined") write[c] = "";
+      var mirrorResult = withTuitionWriteLock_(function() {
+        try {
+          var ss = getPayrollSpreadsheet_();
+          var sheet = ensureTuitionPortalPaymentSheet_(ss);
+          var requestIndex = ensureSheetHeaderColumn_(sheet, "요청ID");
+          if (!(requestId && findTuitionRequestRow_(sheet, requestId, requestIndex) > 0)) {
+            var write = [];
+            write[0] = dueDate;
+            write[1] = studentName;
+            write[2] = itemName || "납부금액";
+            write[3] = amount;
+            write[4] = paidAt;
+            write[5] = business;
+            write[6] = paymentType;
+            write[7] = approvalNo;
+            write[8] = nowText;
+            write[9] = issueMemo;
+            write[10] = monthName;
+            write[requestIndex] = requestId;
+            for (var c = 0; c < sheet.getLastColumn(); c++) {
+              if (typeof write[c] === "undefined") write[c] = "";
+            }
+            sheet.getRange(sheet.getLastRow() + 1, 1, 1, sheet.getLastColumn()).setValues([write]);
+            SpreadsheetApp.flush();
           }
-          sheet.getRange(sheet.getLastRow() + 1, 1, 1, sheet.getLastColumn()).setValues([write]);
-          SpreadsheetApp.flush();
+          return { success: true, sheetMirrorWarning: "" };
+        } catch (sheetError) {
+          return {
+            success: true,
+            sheetMirrorWarning: sheetError && sheetError.message ? sheetError.message : String(sheetError)
+          };
         }
-      } catch (sheetError) {
-        sheetMirrorWarning = sheetError && sheetError.message ? sheetError.message : String(sheetError);
-      }
+      });
+      sheetMirrorWarning = mirrorResult && mirrorResult.sheetMirrorWarning
+        ? mirrorResult.sheetMirrorWarning
+        : (mirrorResult && mirrorResult.success === false ? mirrorResult.message || "시트 미러링 대기 오류" : "");
     }
     invalidateTuitionSummaryCache_(monthName);
     return {
@@ -4433,7 +4438,6 @@ function appendTuitionPaymentEntry(payload) {
   } catch (e) {
     return { success: false, message: "수납 입력 오류: " + e.message };
   }
-  });
 }
 
 function getTuitionMonthlySalesOverview(payload) {
@@ -5330,12 +5334,19 @@ function buildTuitionMonthIndexDocId_(monthName) {
 function markTuitionMonthInFirestoreIndex_(monthName, source) {
   var safeMonth = normalizeTuitionMonthName_(monthName);
   if (!safeMonth) return;
+  var cacheKey = "tuition_month_index_marked_" + safeMonth;
+  var cache = null;
+  try {
+    cache = CacheService.getScriptCache();
+    if (cache.get(cacheKey)) return;
+  } catch (cacheError) {}
   try {
     firestoreSetDocument_(TUITION_MONTH_INDEX_FIRESTORE_COLLECTION, buildTuitionMonthIndexDocId_(safeMonth), {
       monthName: safeMonth,
       updatedAt: new Date().toISOString(),
       source: String(source || "desk_portal").trim()
     });
+    if (cache) cache.put(cacheKey, "1", 21600);
   } catch (e) {}
   try {
     CacheService.getScriptCache().remove(TUITION_MONTH_NAMES_CACHE_KEY);
