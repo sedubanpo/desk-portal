@@ -32565,21 +32565,6 @@
       }
       state.tuition.calendarSelectedDateKey = state.tuition.dailyCursorDateKey || "";
       applyTuitionLocalFilters_();
-      var monthAtRender = state.tuition.selectedMonth || "";
-      Promise.all([
-        ensureTuitionPreviousMonthUnpaidCache_(monthAtRender),
-        ensureTuitionCarryoverHiddenCache_(monthAtRender)
-      ])
-        .then(function() {
-          if (state.tuition.selectedMonth !== monthAtRender) return;
-          renderTuitionStudentRows();
-          if (tuitionStatusListModalEl && tuitionStatusListModalEl.style.display !== "none") {
-            renderTuitionStatusListModal_();
-          } else {
-            syncTuitionStatusCardSelection_();
-          }
-        })
-        .catch(function() {});
     }
 
     function applyTuitionLocalFilters_() {
@@ -34895,7 +34880,7 @@
         .then(function(res) {
           cleanup();
           tuitionPaymentModalEl.style.display = "none";
-          refreshTuitionSummary(true);
+          refreshTuitionSummary(false);
         })
         .catch(function(err) {
           cleanup();

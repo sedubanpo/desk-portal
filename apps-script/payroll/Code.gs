@@ -2743,12 +2743,71 @@ function writeTuitionJsonCache_(cacheKey, value, ttlSeconds) {
 function invalidateTuitionSummaryCache_(monthName) {
   var month = String(monthName || "").trim();
   if (!month) return;
-  try {
-    CacheService.getScriptCache().remove(getTuitionSummaryCacheKey_(month));
-  } catch (e) {}
+  invalidateTuitionScriptCacheOnly_(month);
   try {
     firestoreDeleteDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month));
   } catch (e2) {}
+}
+
+function invalidateTuitionScriptCacheOnly_(monthName) {
+  var month = String(monthName || "").trim();
+  if (!month) return;
+  try {
+    CacheService.getScriptCache().remove(getTuitionSummaryCacheKey_(month));
+  } catch (e) {}
+}
+
+function updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord) {
+  var month = String(monthName || "").trim();
+  if (!month || !paymentRecord) return false;
+  var snapshot = readTuitionMonthSnapshotFromFirestore_(month);
+  if (!snapshot || snapshot.success !== true || !Array.isArray(snapshot.rows)) return false;
+  var payment = normalizeTuitionPaymentRecord_(paymentRecord);
+  if (!payment) return false;
+  var paymentKey = getTuitionPaymentRowMergeKey_(payment);
+  function hasPayment(row) {
+    return getTuitionPaymentRowMergeKey_(row) === paymentKey;
+  }
+  snapshot.allPayments = Array.isArray(snapshot.allPayments) ? snapshot.allPayments.slice() : [];
+  snapshot.payments = Array.isArray(snapshot.payments) ? snapshot.payments.slice() : [];
+  if (!snapshot.allPayments.some(hasPayment)) snapshot.allPayments.push(payment);
+  if (!snapshot.payments.some(hasPayment)) snapshot.payments.push(payment);
+  snapshot.allPayments.sort(compareTuitionPaymentRowsDesc_);
+  snapshot.payments.sort(compareTuitionPaymentRowsDesc_);
+
+  var studentKey = normalizeTuitionStudentName_(payment.studentName);
+  var paidAmount = 0 - toPayrollNumber_(payment.amount);
+  snapshot.rows = snapshot.rows.map(function(row) {
+    if (normalizeTuitionStudentName_(row.studentName) !== studentKey) return row;
+    var copy = cloneTuitionJson_(row);
+    copy.collectedAmount = Math.round(toPayrollNumber_(copy.collectedAmount) + paidAmount);
+    copy.paymentCount = Math.max(0, parseInt(copy.paymentCount || 0, 10) || 0) + 1;
+    copy.latestPaidAt = payment.paidAt || copy.latestPaidAt || "";
+    copy.latestBusiness = payment.business || copy.latestBusiness || "";
+    copy.latestMethod = payment.paymentType || copy.latestMethod || "";
+    copy.latestApprovalNo = payment.approvalNo || copy.latestApprovalNo || "";
+    copy.outstandingAmount = Math.max(0, Math.round(toPayrollNumber_(copy.guideAmount) - toPayrollNumber_(copy.collectedAmount)));
+    if (
+      (toPayrollNumber_(copy.guideAmount) > 0 && toPayrollNumber_(copy.collectedAmount) >= toPayrollNumber_(copy.guideAmount)) ||
+      (toPayrollNumber_(copy.guideAmount) <= 0 && toPayrollNumber_(copy.collectedAmount) > 0)
+    ) {
+      copy.unpaidStatus = "납부완료";
+    } else if (toPayrollNumber_(copy.guideAmount) > 0 && toPayrollNumber_(copy.collectedAmount) > 0 && copy.outstandingAmount > 0) {
+      copy.unpaidStatus = "일부완료";
+    }
+    return copy;
+  });
+  var stats = buildTuitionSummaryStats_(snapshot.rows, snapshot.payments);
+  snapshot.kpi = stats.kpi;
+  snapshot.chart = stats.chart;
+  snapshot.todayPayments = (snapshot.allPayments || []).filter(function(row) {
+    var now = new Date();
+    var todayMonthDay = ("0" + (now.getMonth() + 1)).slice(-2) + "-" + ("0" + now.getDate()).slice(-2);
+    return extractTuitionMonthDay_(row.paidAt) === todayMonthDay;
+  });
+  writeTuitionMonthSnapshotToFirestore_(month, snapshot);
+  invalidateTuitionScriptCacheOnly_(month);
+  return true;
 }
 
 function readTuitionMonthSnapshotFromFirestore_(monthName) {
@@ -4306,8 +4365,20 @@ function appendTuitionPaymentEntry(payload) {
         sheetMirrorWarning = sheetError && sheetError.message ? sheetError.message : String(sheetError);
       }
     }
-    invalidateTuitionSummaryCache_(monthName);
-    return { success: true, sheetMirrorWarning: sheetMirrorWarning };
+    var snapshotUpdated = updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord);
+    if (!snapshotUpdated) {
+      invalidateTuitionSummaryCache_(monthName);
+    }
+    return {
+      success: true,
+      sheetMirrorWarning: sheetMirrorWarning,
+      storage: {
+        firestore: true,
+        sheetMirror: !!mirrorSheets && !sheetMirrorWarning,
+        snapshotUpdated: snapshotUpdated
+      },
+      payment: paymentRecord
+    };
   } catch (e) {
     return { success: false, message: "수납 입력 오류: " + e.message };
   }
