@@ -33573,8 +33573,7 @@
       if (!(options && options.ignoreHidden) && isTuitionCarryoverHidden_(studentName, currentMonthName)) return null;
       var currentRow = options && options.currentRow;
       if (currentRow) {
-        if (isTuitionPaidStatus_(currentRow.unpaidStatus)) return null;
-        if (toNumber(currentRow.collectedAmount, 0) > 0) return null;
+        return null;
       }
       var prevMonth = getTuitionPrevMonthName_(currentMonthName);
       var cache = state.tuition.unpaidCacheByMonth[prevMonth];

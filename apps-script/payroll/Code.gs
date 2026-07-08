@@ -2805,7 +2805,10 @@ function applyTuitionSummaryFilters_(summary, statusFilter, keyword) {
 
 function enrichTuitionSummaryRecentPayments_(summary, months, selectedMonth, fallbackRows) {
   if (!summary || summary.success !== true) return summary;
-  var recentRows = getAllTuitionPaymentRows_(months || [], { allowSheetFallback: false });
+  var recentRows = loadTuitionPaymentRowsFromFirestore_("");
+  if (!Array.isArray(recentRows)) {
+    recentRows = getAllTuitionPaymentRows_(months || [], { allowSheetFallback: false });
+  }
   if (!recentRows.length && Array.isArray(fallbackRows)) {
     recentRows = fallbackRows.slice();
   }
