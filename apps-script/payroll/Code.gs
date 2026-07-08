@@ -2803,6 +2803,35 @@ function applyTuitionSummaryFilters_(summary, statusFilter, keyword) {
   return result;
 }
 
+function enrichTuitionSummaryRecentPayments_(summary, months, selectedMonth, fallbackRows) {
+  if (!summary || summary.success !== true) return summary;
+  var recentRows = getAllTuitionPaymentRows_(months || [], { allowSheetFallback: false });
+  if (!recentRows.length && Array.isArray(fallbackRows)) {
+    recentRows = fallbackRows.slice();
+  }
+  recentRows.sort(compareTuitionPaymentRowsDesc_);
+  var todayRows = [];
+  var now = new Date();
+  var todayMonthDay = ("0" + (now.getMonth() + 1)).slice(-2) + "-" + ("0" + now.getDate()).slice(-2);
+  recentRows.forEach(function(row) {
+    var paidMonthDay = extractTuitionMonthDay_(row.paidAt);
+    if (paidMonthDay && paidMonthDay === todayMonthDay) {
+      todayRows.push(row);
+    }
+  });
+  summary.allPayments = recentRows;
+  summary.todayPayments = todayRows;
+  if (!Array.isArray(summary.payments) || !summary.payments.length) {
+    var monthName = String(selectedMonth || summary.selectedMonth || "").trim();
+    summary.payments = recentRows.filter(function(row) {
+      var sourceMonth = String(row.sourceMonth || "").trim();
+      var dueMonth = String(row.sourceDueMonth || parseTuitionDueMonthName_(row.dueDate)).trim();
+      return (sourceMonth && sourceMonth === monthName) || (dueMonth && dueMonth === monthName);
+    }).sort(compareTuitionPaymentRowsDesc_);
+  }
+  return summary;
+}
+
 function getTuitionMonthSummary(payload) {
   try {
     var req = payload || {};
@@ -2821,6 +2850,7 @@ function getTuitionMonthSummary(payload) {
     var summaryCacheKey = canUseSummaryCache ? getTuitionSummaryCacheKey_(monthName) : "";
     var cachedSummary = canUseSummaryCache ? readTuitionJsonCache_(summaryCacheKey) : null;
     if (cachedSummary && cachedSummary.success) {
+      enrichTuitionSummaryRecentPayments_(cachedSummary, months, monthName, cachedSummary.allPayments || cachedSummary.payments || []);
       cachedSummary.cache = {
         source: "script-cache",
         key: summaryCacheKey
@@ -2830,6 +2860,7 @@ function getTuitionMonthSummary(payload) {
     if (!forceRefresh && monthName) {
       var firestoreSnapshot = readTuitionMonthSnapshotFromFirestore_(monthName);
       if (firestoreSnapshot && firestoreSnapshot.success) {
+        enrichTuitionSummaryRecentPayments_(firestoreSnapshot, months, monthName, firestoreSnapshot.allPayments || firestoreSnapshot.payments || []);
         firestoreSnapshot.months = months;
         firestoreSnapshot.selectedMonth = monthName;
         firestoreSnapshot.cache = {
@@ -2845,6 +2876,9 @@ function getTuitionMonthSummary(payload) {
       }
     }
     var allPaymentRows = getTuitionPaymentRowsForMonth_(monthName, { allowSheetFallback: allowSheetFallback });
+    var recentPaymentRows = getAllTuitionPaymentRows_(months, { allowSheetFallback: false });
+    if (!recentPaymentRows.length) recentPaymentRows = allPaymentRows.slice();
+    recentPaymentRows.sort(compareTuitionPaymentRowsDesc_);
     var paymentRows = [];
     var todayRows = [];
     var now = new Date();
@@ -2854,6 +2888,8 @@ function getTuitionMonthSummary(payload) {
       if (dueMonth && dueMonth === monthName) {
         paymentRows.push(row);
       }
+    });
+    recentPaymentRows.forEach(function(row) {
       var paidMonthDay = extractTuitionMonthDay_(row.paidAt);
       if (paidMonthDay && paidMonthDay === todayMonthDay) {
         todayRows.push(row);
@@ -3003,7 +3039,7 @@ function getTuitionMonthSummary(payload) {
       months: months,
       kpi: summary.kpi,
       chart: summary.chart,
-      allPayments: summary.allPayments || paymentRows,
+      allPayments: recentPaymentRows,
       todayPayments: todayRows,
       payments: summary.payments,
       studentMaster: {

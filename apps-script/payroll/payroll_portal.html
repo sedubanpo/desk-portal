@@ -8127,6 +8127,101 @@
       font-family: inherit;
       box-sizing: border-box;
     }
+    .tuition-brief-detail {
+      margin-top: 10px;
+      border: 1px solid #d7e3db;
+      border-radius: 12px;
+      background: #f8fcf9;
+      padding: 8px;
+    }
+    .tuition-brief-detail-toggle {
+      width: 100%;
+      border: 1px solid #bcd3c7;
+      border-radius: 10px;
+      background: #fff;
+      color: #0d684d;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+    .tuition-brief-detail-panel {
+      margin-top: 8px;
+    }
+    .tuition-brief-detail-panel[hidden] {
+      display: none;
+    }
+    .tuition-brief-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .tuition-brief-detail-card {
+      border: 1px solid #dbe7e0;
+      border-radius: 10px;
+      background: #fff;
+      padding: 9px;
+      min-width: 0;
+    }
+    .tuition-brief-detail-card h4 {
+      margin: 0 0 6px;
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .tuition-brief-detail-card .meta {
+      margin-bottom: 7px;
+      color: #45617a;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+    .tuition-brief-detail-list {
+      max-height: 160px;
+      overflow: auto;
+      display: grid;
+      gap: 5px;
+    }
+    .tuition-brief-detail-row {
+      border: 1px solid #eef4f0;
+      border-radius: 8px;
+      background: #fbfefd;
+      padding: 6px;
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .tuition-brief-detail-row strong,
+    .tuition-brief-detail-row span,
+    .tuition-brief-detail-row em {
+      display: block;
+    }
+    .tuition-brief-detail-row strong {
+      color: #102033;
+      font-weight: 900;
+    }
+    .tuition-brief-detail-row span {
+      color: #0d684d;
+      font-weight: 900;
+    }
+    .tuition-brief-detail-row em {
+      color: #64748b;
+      font-style: normal;
+      font-weight: 800;
+    }
+    .tuition-brief-detail-empty {
+      border: 1px dashed #cddad2;
+      border-radius: 8px;
+      padding: 10px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+    @media (max-width: 760px) {
+      .tuition-brief-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
     .tuition-wide-modal {
       width: min(1240px, 96vw);
       max-height: 92vh;
@@ -16581,6 +16676,10 @@
         <label style="display:block; font-size:12px; font-weight:900; color:#1f2937; margin-bottom:6px;">자동 보고 텍스트</label>
         <textarea id="tuitionBriefText" class="tuition-brief-text" readonly></textarea>
       </div>
+      <div class="tuition-brief-detail" data-tuition-copy-hide="true">
+        <button class="tuition-brief-detail-toggle" id="tuitionBriefDetailToggleBtn" type="button">납입일/입력일 데이터 보기</button>
+        <div class="tuition-brief-detail-panel" id="tuitionBriefDetailPanel" hidden></div>
+      </div>
       <div class="tuition-brief-copy-row">
         <span class="tuition-brief-copy-msg" id="tuitionBriefCopyMsg"></span>
         <button class="tuition-brief-copy-btn" id="copyTuitionBriefImageBtn" type="button">이미지 복사</button>
@@ -17360,6 +17459,7 @@
           endDate: "",
           weekdays: [0, 1, 2, 3, 4, 5, 6]
         },
+        briefDetailOpen: false,
         rows: [],
         payments: [],
         paymentPage: 1,
@@ -17915,6 +18015,8 @@
     var tuitionBriefFootEl = document.getElementById("tuitionBriefFoot");
     var tuitionBriefRouteWrapEl = document.getElementById("tuitionBriefRouteWrap");
     var tuitionBriefTextEl = document.getElementById("tuitionBriefText");
+    var tuitionBriefDetailToggleBtnEl = document.getElementById("tuitionBriefDetailToggleBtn");
+    var tuitionBriefDetailPanelEl = document.getElementById("tuitionBriefDetailPanel");
     var tuitionBriefBasisEl = document.getElementById("tuitionBriefBasis");
     var tuitionBriefStartDateEl = document.getElementById("tuitionBriefStartDate");
     var tuitionBriefEndDateEl = document.getElementById("tuitionBriefEndDate");
@@ -32234,6 +32336,12 @@
       if (tuitionBriefStartDateEl) tuitionBriefStartDateEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
       if (tuitionBriefEndDateEl) tuitionBriefEndDateEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
       if (tuitionBriefWeekdaysEl) tuitionBriefWeekdaysEl.addEventListener("change", readTuitionBriefFiltersFromControls_);
+      if (tuitionBriefDetailToggleBtnEl) {
+        tuitionBriefDetailToggleBtnEl.addEventListener("click", function() {
+          state.tuition.briefDetailOpen = !state.tuition.briefDetailOpen;
+          renderTuitionBriefPopup_();
+        });
+      }
       copyTuitionBriefTextBtnEl.addEventListener("click", copyTuitionBriefMessage_);
       if (copyTuitionBriefImageBtnEl) copyTuitionBriefImageBtnEl.addEventListener("click", copyTuitionBriefImage_);
       tuitionBriefPopupEl.addEventListener("click", function(event) {
@@ -32971,7 +33079,7 @@
         if (row.__group) {
           return '<tr class="tuition-group-row"><td colspan="10">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
         }
-        var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth);
+        var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth, { currentRow: row });
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
         else if (row.unpaidStatus === "안내완료") rowClass = "tuition-row-guided";
@@ -33463,6 +33571,11 @@
 
     function getTuitionPreviousMonthCarryInfo_(studentName, currentMonthName, options) {
       if (!(options && options.ignoreHidden) && isTuitionCarryoverHidden_(studentName, currentMonthName)) return null;
+      var currentRow = options && options.currentRow;
+      if (currentRow) {
+        if (isTuitionPaidStatus_(currentRow.unpaidStatus)) return null;
+        if (toNumber(currentRow.collectedAmount, 0) > 0) return null;
+      }
       var prevMonth = getTuitionPrevMonthName_(currentMonthName);
       var cache = state.tuition.unpaidCacheByMonth[prevMonth];
       if (!cache || !cache.loaded) return null;
@@ -33845,6 +33958,49 @@
       return lines.join("\n");
     }
 
+    function buildTuitionBriefBasisDetailListHtml_(daily) {
+      var list = (daily && daily.list || []).slice().sort(compareTuitionPaymentRowsDesc_);
+      if (!list.length) {
+        return '<div class="tuition-brief-detail-empty">해당 기준으로 잡히는 수납 데이터가 없습니다.</div>';
+      }
+      var rows = list.slice(0, 30).map(function(row) {
+        var rawAmount = toNumber(row.amount, 0);
+        var displayAmount = 0 - rawAmount;
+        var paidKey = getTuitionBriefDateKeyForRow_(row, "paid") || "-";
+        var inputKey = getTuitionBriefDateKeyForRow_(row, "input") || "-";
+        var route = normalizeTuitionRoute_(row.paymentType, row.issueMemo);
+        var memo = [row.business || "반포", route, row.approvalNo || ""].filter(Boolean).join(" · ");
+        return '<div class="tuition-brief-detail-row">' +
+          '<strong>' + escapeHtml(row.studentName || "학생명 없음") + '</strong>' +
+          '<span>' + escapeHtml(formatWon(displayAmount)) + '</span>' +
+          '<em>납입 ' + escapeHtml(paidKey) + ' · 입력 ' + escapeHtml(inputKey) + (memo ? (' · ' + escapeHtml(memo)) : '') + '</em>' +
+        '</div>';
+      });
+      if (list.length > rows.length) {
+        rows.push('<div class="tuition-brief-detail-empty">외 ' + (list.length - rows.length) + '건이 더 있습니다.</div>');
+      }
+      return '<div class="tuition-brief-detail-list">' + rows.join("") + '</div>';
+    }
+
+    function buildTuitionBriefBasisDetailsHtml_(filters) {
+      var safe = filters || normalizeTuitionBriefFilters_();
+      var paidFilters = Object.assign({}, safe, { basis: "paid" });
+      var inputFilters = Object.assign({}, safe, { basis: "input" });
+      var paidDaily = buildTuitionDailyBreakdown_(paidFilters.startDate || state.tuition.dailyCursorDateKey, paidFilters);
+      var inputDaily = buildTuitionDailyBreakdown_(inputFilters.startDate || state.tuition.dailyCursorDateKey, inputFilters);
+      function card(title, daily) {
+        return '<section class="tuition-brief-detail-card">' +
+          '<h4>' + escapeHtml(title) + '</h4>' +
+          '<div class="meta">건수 ' + toNumber(daily.count, 0) + '건 · 순수납 ' + escapeHtml(formatWon(daily.netAmount || 0)) + ' · 안내 ' + toNumber(daily.guideCount, 0) + '명</div>' +
+          buildTuitionBriefBasisDetailListHtml_(daily) +
+        '</section>';
+      }
+      return '<div class="tuition-brief-detail-grid">' +
+        card("납입일 기준", paidDaily) +
+        card("입력일 기준", inputDaily) +
+      '</div>';
+    }
+
     function renderTuitionDailyReport_() {
       var keys = state.tuition.dailyDateKeys || [];
       var currentKey = state.tuition.dailyCursorDateKey || "";
@@ -33870,6 +34026,7 @@
 
     function openTuitionBriefPopup_() {
       tuitionBriefCopyMsgEl.textContent = "";
+      state.tuition.briefDetailOpen = false;
       if (!state.tuition.briefFilters || !state.tuition.briefFilters.startDate) {
         setTuitionBriefSingleDate_(state.tuition.dailyCursorDateKey || (state.tuition.dailyDateKeys || [])[0] || getTodayDateKey_());
       }
@@ -33911,6 +34068,17 @@
       }
       tuitionBriefRouteWrapEl.innerHTML = buildTuitionDailyBusinessesHtml_(daily);
       tuitionBriefTextEl.value = buildTuitionBriefMessage_(daily);
+      if (tuitionBriefDetailToggleBtnEl) {
+        tuitionBriefDetailToggleBtnEl.textContent = state.tuition.briefDetailOpen
+          ? "납입일/입력일 데이터 숨기기"
+          : "납입일/입력일 데이터 보기";
+      }
+      if (tuitionBriefDetailPanelEl) {
+        tuitionBriefDetailPanelEl.hidden = !state.tuition.briefDetailOpen;
+        tuitionBriefDetailPanelEl.innerHTML = state.tuition.briefDetailOpen
+          ? buildTuitionBriefBasisDetailsHtml_(filters)
+          : "";
+      }
     }
 
     async function copyTuitionBriefImage_() {
