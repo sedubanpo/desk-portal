@@ -2917,8 +2917,6 @@ function getTuitionMonthSummary(payload) {
     var summaryCacheKey = canUseSummaryCache ? getTuitionSummaryCacheKey_(monthName) : "";
     var cachedSummary = canUseSummaryCache ? readTuitionJsonCache_(summaryCacheKey) : null;
     if (cachedSummary && cachedSummary.success) {
-      enrichTuitionSummaryRecentPayments_(cachedSummary, months, monthName, cachedSummary.allPayments || cachedSummary.payments || []);
-      enrichTuitionInactiveStudents_(cachedSummary);
       cachedSummary.cache = {
         source: "script-cache",
         key: summaryCacheKey
@@ -2928,8 +2926,6 @@ function getTuitionMonthSummary(payload) {
     if (!forceRefresh && monthName) {
       var firestoreSnapshot = readTuitionMonthSnapshotFromFirestore_(monthName);
       if (firestoreSnapshot && firestoreSnapshot.success) {
-        enrichTuitionSummaryRecentPayments_(firestoreSnapshot, months, monthName, firestoreSnapshot.allPayments || firestoreSnapshot.payments || []);
-        enrichTuitionInactiveStudents_(firestoreSnapshot);
         firestoreSnapshot.months = months;
         firestoreSnapshot.selectedMonth = monthName;
         firestoreSnapshot.cache = {
@@ -3119,7 +3115,6 @@ function getTuitionMonthSummary(payload) {
       followupSource: followupBundle.source,
       guideAmountAudit: guideAmountAudit,
       portalPaymentSync: portalPaymentSync,
-      inactiveStudents: loadTuitionInactiveStudentMasterFromFirestore_(),
       rows: list
     };
     if (canUseSummaryCache) {
@@ -5764,6 +5759,26 @@ function enrichTuitionInactiveStudents_(summary) {
   return summary;
 }
 
+function getTuitionInactiveStudentCandidates(payload) {
+  try {
+    var req = payload || {};
+    var keyword = normalizeTuitionSearchKey_(req.keyword || req.studentName || "");
+    if (!keyword) return { success: true, rows: [] };
+    var rows = loadTuitionInactiveStudentMasterFromFirestore_().filter(function(row) {
+      var blob = normalizeTuitionSearchKey_([
+        row.name || row.studentName || "",
+        row.school || "",
+        row.grade || "",
+        row.registrationStatus || ""
+      ].join(" "));
+      return blob.indexOf(keyword) !== -1;
+    }).slice(0, 8);
+    return { success: true, rows: rows };
+  } catch (e) {
+    return { success: false, message: "중지/퇴원생 조회 오류: " + e.message };
+  }
+}
+
 function loadTuitionStudentMasterFromSheet_() {
   var ss = SpreadsheetApp.openById(TEACHER_SS_ID);
   var sheet = ss.getSheetByName("student");
@@ -5849,6 +5864,13 @@ function isTuitionStudentRegistered_(rawValue, displayValue, validation) {
 
 function normalizeTuitionStudentName_(name) {
   return String(name || "").replace(/^\//, "").trim();
+}
+
+function normalizeTuitionSearchKey_(value) {
+  return String(value || "")
+    .replace(/\s+/g, "")
+    .replace(/[^\u3131-\uD79D0-9A-Za-z]/g, "")
+    .toLowerCase();
 }
 
 function normalizeTuitionUnpaidStatus_(status) {

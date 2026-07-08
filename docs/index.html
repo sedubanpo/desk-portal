@@ -17482,6 +17482,8 @@
         allRows: [],
         allPayments: [],
         inactiveStudents: [],
+        inactiveSearchKey: "",
+        inactiveSearchLoading: false,
         todayPayments: [],
         dailyDateKeys: [],
         dailyCursorDateKey: "",
@@ -32586,6 +32588,8 @@
       state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
+      state.tuition.inactiveSearchKey = "";
+      state.tuition.inactiveSearchLoading = false;
       state.tuition.todayPayments = (data.todayPayments || []).slice();
       state.tuition.dailyDateKeys = buildTuitionDailyDateKeys_(state.tuition.allPayments, state.tuition.selectedMonth, state.tuition.todayPayments);
       state.tuition.calendarMonth = state.tuition.selectedMonth;
@@ -33090,6 +33094,32 @@
       }).slice(0, 6);
     }
 
+    function loadTuitionInactiveStudentMatches_(keyword) {
+      var key = normalizeTuitionSearchText_(keyword || "");
+      if (!key || state.tuition.inactiveSearchLoading || state.tuition.inactiveSearchKey === key) return;
+      state.tuition.inactiveSearchLoading = true;
+      state.tuition.inactiveSearchKey = key;
+      runServer("getTuitionInactiveStudentCandidates", { keyword: keyword || "" })
+        .then(function(res) {
+          if (!res || res.success === false) throw new Error(res && res.message ? res.message : "중지/퇴원생 조회 실패");
+          if (state.tuition.inactiveSearchKey === key) {
+            state.tuition.inactiveStudents = (res.rows || []).slice();
+            renderTuitionStudentRows();
+          }
+        })
+        .catch(function() {
+          if (state.tuition.inactiveSearchKey === key) {
+            state.tuition.inactiveStudents = [];
+          }
+        })
+        .finally(function() {
+          if (state.tuition.inactiveSearchKey === key) {
+            state.tuition.inactiveSearchLoading = false;
+            renderTuitionStudentRows();
+          }
+        });
+    }
+
     function buildTuitionInactivePaymentTarget_(studentName, sourceRow) {
       var name = formatStudentName(studentName || sourceRow && (sourceRow.name || sourceRow.studentName));
       if (!name) return null;
@@ -33110,7 +33140,9 @@
       var keyword = String(state.tuition.keyword || "").trim();
       if (!keyword) return "";
       var matches = getTuitionInactiveStudentMatches_();
-      var chips = matches.length
+      var chips = state.tuition.inactiveSearchLoading
+        ? '<span class="muted">중지/퇴원생 후보를 확인하는 중입니다...</span>'
+        : matches.length
         ? matches.map(function(row, index) {
           var label = formatStudentName(row.name || row.studentName);
           var meta = [row.registrationStatus || "중지/퇴원", row.school || "", row.grade || ""].filter(Boolean).join(" · ");
@@ -33150,6 +33182,7 @@
       if (!rows.length) {
         tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
         bindTuitionInactiveSearchActions_();
+        if (state.tuition.keyword) loadTuitionInactiveStudentMatches_(state.tuition.keyword);
         return;
       }
       var groupOrder = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
