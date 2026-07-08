@@ -2908,7 +2908,10 @@ function getTuitionMonthSummary(payload) {
     var statusFilter = String(req.statusFilter || "").trim();
     var keyword = String(req.keyword || "").trim().toLowerCase();
     var forceRefresh = req.forceRefresh === true;
-    var portalPaymentSync = syncMissingTuitionPortalPaymentsToFirestore_(monthName);
+    var portalPaymentSync = null;
+    if (forceRefresh || req.syncPortalPayments === true) {
+      portalPaymentSync = syncMissingTuitionPortalPaymentsToFirestore_(monthName);
+    }
     if (portalPaymentSync && portalPaymentSync.written > 0) forceRefresh = true;
     var canUseSummaryCache = !!monthName && !statusFilter && !keyword && !forceRefresh;
     var summaryCacheKey = canUseSummaryCache ? getTuitionSummaryCacheKey_(monthName) : "";
@@ -4415,17 +4418,15 @@ function appendTuitionPaymentEntry(payload) {
         sheetMirrorWarning = sheetError && sheetError.message ? sheetError.message : String(sheetError);
       }
     }
-    var snapshotUpdated = updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord);
-    if (!snapshotUpdated) {
-      invalidateTuitionSummaryCache_(monthName);
-    }
+    invalidateTuitionSummaryCache_(monthName);
     return {
       success: true,
       sheetMirrorWarning: sheetMirrorWarning,
       storage: {
         firestore: true,
         sheetMirror: !!mirrorSheets && !sheetMirrorWarning,
-        snapshotUpdated: snapshotUpdated
+        snapshotUpdated: false,
+        snapshotDeferred: true
       },
       payment: paymentRecord
     };

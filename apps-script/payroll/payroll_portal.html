@@ -34810,6 +34810,72 @@
       return null;
     }
 
+    function getTuitionPaymentClientMergeKey_(row) {
+      if (!row) return "";
+      var requestId = String(row.requestId || row.clientRequestId || "").trim();
+      if (requestId) return "request:" + requestId;
+      return [
+        "row",
+        String(row.sourceDueMonth || row.sourceMonth || state.tuition.selectedMonth || "").trim(),
+        String(row.dueDate || "").trim(),
+        formatStudentName(row.studentName),
+        toNumber(row.amount, 0),
+        String(row.paidAt || "").trim(),
+        String(row.paymentType || "").trim(),
+        String(row.approvalNo || "").trim(),
+        String(row.inputAt || "").trim()
+      ].join("|");
+    }
+
+    function upsertTuitionPaymentLocal_(payment) {
+      if (!payment || !formatStudentName(payment.studentName)) return;
+      var normalized = Object.assign({}, payment);
+      normalized.studentName = formatStudentName(normalized.studentName);
+      normalized.amount = toNumber(normalized.amount, 0);
+      normalized.sourceMonth = normalized.sourceMonth || normalized.originMonth || state.tuition.selectedMonth;
+      normalized.sourceDueMonth = normalized.sourceDueMonth || normalized.sourceMonth || state.tuition.selectedMonth;
+      var key = getTuitionPaymentClientMergeKey_(normalized);
+      var rows = (state.tuition.allPayments || []).slice();
+      var replaced = false;
+      rows = rows.map(function(row) {
+        if (getTuitionPaymentClientMergeKey_(row) !== key) return row;
+        replaced = true;
+        return normalized;
+      });
+      if (!replaced) rows.push(normalized);
+      rows.sort(compareTuitionPaymentRowsDesc_);
+      state.tuition.allPayments = rows;
+
+      var targetName = formatStudentName(normalized.studentName);
+      var paidAmount = 0 - toNumber(normalized.amount, 0);
+      state.tuition.allRows = (state.tuition.allRows || []).map(function(row) {
+        if (formatStudentName(row.studentName) !== targetName) return row;
+        var copy = Object.assign({}, row);
+        copy.collectedAmount = Math.round(toNumber(copy.collectedAmount, 0) + paidAmount);
+        copy.paymentCount = Math.max(0, parseInt(copy.paymentCount || 0, 10) || 0) + 1;
+        copy.latestPaidAt = normalized.paidAt || copy.latestPaidAt || "";
+        copy.latestBusiness = normalized.business || copy.latestBusiness || "";
+        copy.latestMethod = normalized.paymentType || copy.latestMethod || "";
+        copy.latestApprovalNo = normalized.approvalNo || copy.latestApprovalNo || "";
+        copy.outstandingAmount = Math.max(0, Math.round(toNumber(copy.guideAmount, 0) - toNumber(copy.collectedAmount, 0)));
+        if (
+          (toNumber(copy.guideAmount, 0) > 0 && toNumber(copy.collectedAmount, 0) >= toNumber(copy.guideAmount, 0)) ||
+          (toNumber(copy.guideAmount, 0) <= 0 && toNumber(copy.collectedAmount, 0) > 0)
+        ) {
+          copy.unpaidStatus = "납부완료";
+        } else if (toNumber(copy.guideAmount, 0) > 0 && toNumber(copy.collectedAmount, 0) > 0 && copy.outstandingAmount > 0) {
+          copy.unpaidStatus = "일부완료";
+        }
+        return copy;
+      });
+      state.tuition.todayPayments = rows.filter(function(row) {
+        return parseTuitionPaidDateKey_(row && row.paidAt, getTuitionPaymentBaseMonth_(row)) === getTodayDateKey_();
+      });
+      state.tuition.monthlySales = null;
+      state.tuition.guideDashboard = null;
+      applyTuitionLocalFilters_();
+    }
+
     function saveTuitionContactRecord() {
       var target = state.tuition.contactTarget;
       if (!target || state.tuition.savingContact) return;
@@ -34880,7 +34946,11 @@
         .then(function(res) {
           cleanup();
           tuitionPaymentModalEl.style.display = "none";
-          refreshTuitionSummary(false);
+          if (res && res.payment) {
+            upsertTuitionPaymentLocal_(res.payment);
+          } else {
+            refreshTuitionSummary(false);
+          }
         })
         .catch(function(err) {
           cleanup();
