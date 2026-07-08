@@ -3512,10 +3512,43 @@ function getTuitionPaymentRowsForMonthFromSheet_(monthName) {
 }
 
 function getAllTuitionPaymentRows_(months) {
-  var ss = getPayrollSpreadsheet_();
+  var monthList = (months || []).map(function(monthName) {
+    return String(monthName || "").trim();
+  }).filter(Boolean);
+  var monthMap = {};
+  monthList.forEach(function(monthName) {
+    monthMap[monthName] = true;
+  });
   var rows = [];
+  var fallbackMonthMap = {};
 
-  (months || []).forEach(function(srcMonth) {
+  var firestoreRows = loadTuitionPaymentRowsFromFirestore_("");
+  var canUseFirestore = Array.isArray(firestoreRows);
+  monthList.forEach(function(monthName) {
+    if (!canUseFirestore || !isTuitionPaymentMonthFirestoreReady_(monthName)) {
+      fallbackMonthMap[monthName] = true;
+    }
+  });
+
+  if (canUseFirestore) {
+    firestoreRows.forEach(function(row) {
+      var sourceMonth = String(row.sourceMonth || "").trim();
+      var dueMonth = String(row.sourceDueMonth || parseTuitionDueMonthName_(row.dueDate)).trim();
+      if ((sourceMonth && monthMap[sourceMonth] && !fallbackMonthMap[sourceMonth]) ||
+        (dueMonth && monthMap[dueMonth] && !fallbackMonthMap[dueMonth])) {
+        rows.push(row);
+      }
+    });
+  }
+
+  var fallbackMonths = Object.keys(fallbackMonthMap);
+  if (!fallbackMonths.length) {
+    rows.sort(compareTuitionPaymentRowsDesc_);
+    return rows;
+  }
+
+  var ss = getPayrollSpreadsheet_();
+  fallbackMonths.forEach(function(srcMonth) {
     var sheet = ss.getSheetByName(srcMonth);
     if (!sheet) return;
     parseTuitionRows_(sheet).forEach(function(row) {
@@ -3539,10 +3572,12 @@ function getAllTuitionPaymentRows_(months) {
       var originMonth = String(row.originMonth || "").trim();
       copy.sourceMonth = originMonth || parseTuitionDueMonthName_(row.dueDate);
       copy.sourceDueMonth = originMonth || parseTuitionDueMonthName_(row.dueDate);
+      if (!fallbackMonthMap[copy.sourceMonth] && !fallbackMonthMap[copy.sourceDueMonth]) return;
       rows.push(copy);
     });
   }
 
+  rows.sort(compareTuitionPaymentRowsDesc_);
   return rows;
 }
 
