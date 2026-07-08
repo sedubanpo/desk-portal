@@ -16,6 +16,8 @@ const TUITION_PAYMENT_META_FIRESTORE_COLLECTION = "tuitionPaymentMeta";
 const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
 const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountChanges";
 const TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION = "tuitionMonthSnapshots";
+const TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION = "tuitionMonthCharges";
+const TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION = "tuitionMonthChargeMeta";
 const TUITION_MONTH_NAMES_CACHE_KEY = "TUITION_MONTH_NAMES_V1";
 const TUITION_MONTH_NAMES_CACHE_TTL_SECONDS = 180;
 const TUITION_MONTH_SUMMARY_CACHE_PREFIX = "TUITION_MONTH_SUMMARY_V2_";
@@ -60,6 +62,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   backfillTuitionMonthSnapshots: true,
   backfillTuitionPaymentsToFirestore: true,
   backfillTuitionFollowupsToFirestore: true,
+  backfillTuitionMonthChargesToFirestore: true,
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
   appendTuitionPaymentEntry: true,
@@ -147,6 +150,7 @@ function handlePayrollApiRequest_(params) {
       backfillTuitionMonthSnapshots: backfillTuitionMonthSnapshots,
       backfillTuitionPaymentsToFirestore: backfillTuitionPaymentsToFirestore,
       backfillTuitionFollowupsToFirestore: backfillTuitionFollowupsToFirestore,
+      backfillTuitionMonthChargesToFirestore: backfillTuitionMonthChargesToFirestore,
       saveTuitionStatusOnly: saveTuitionStatusOnly,
       saveTuitionFollowup: saveTuitionFollowup,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
@@ -3099,6 +3103,67 @@ function backfillTuitionPaymentsToFirestore(payload) {
   }
 }
 
+function backfillTuitionMonthChargesToFirestore(payload) {
+  try {
+    var req = payload || {};
+    var months = getTuitionMonthSheetNames_();
+    var targetMonths = [];
+    if (req.monthName) {
+      targetMonths = [String(req.monthName || "").trim()];
+    } else if (Array.isArray(req.months) && req.months.length) {
+      targetMonths = req.months.map(function(monthName) {
+        return String(monthName || "").trim();
+      }).filter(Boolean);
+    } else {
+      var limit = Math.max(1, Math.min(12, parseInt(req.limit || 3, 10) || 3));
+      targetMonths = months.slice(0, limit);
+    }
+
+    var results = [];
+    targetMonths.forEach(function(monthName) {
+      var rows = loadTuitionMonthChargeRowsFromSheet_(monthName);
+      var written = 0;
+      var errors = [];
+      rows.forEach(function(row) {
+        try {
+          var result = writeTuitionMonthChargeToFirestore_(row);
+          if (result && result.success) written++;
+        } catch (e) {
+          errors.push({
+            studentName: row && row.studentName || "",
+            message: e && e.message ? e.message : String(e)
+          });
+        }
+      });
+      if (errors.length === 0) {
+        try {
+          markTuitionMonthChargeFirestoreReady_(monthName, rows.length, written);
+          invalidateTuitionSummaryCache_(monthName);
+        } catch (metaError) {
+          errors.push({
+            studentName: "",
+            message: metaError && metaError.message ? metaError.message : String(metaError)
+          });
+        }
+      }
+      results.push({
+        monthName: monthName,
+        success: errors.length === 0,
+        total: rows.length,
+        written: written,
+        errors: errors.slice(0, 5)
+      });
+    });
+
+    return {
+      success: results.every(function(item) { return item.success; }),
+      months: results
+    };
+  } catch (e) {
+    return { success: false, message: "월별 수강료 대상 Firestore 백필 오류: " + e.message };
+  }
+}
+
 function ensureTuitionPortalPaymentSheet_(ss) {
   var sheet = ss.getSheetByName(TUITION_PORTAL_PAYMENT_SHEET_NAME);
   if (!sheet) {
@@ -3163,6 +3228,18 @@ function buildTuitionPaymentMetaDocId_(monthName) {
   var raw = String(monthName || "").trim();
   var bytes = Utilities.newBlob(raw).getBytes();
   return "tpm_" + Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, "").slice(0, 80);
+}
+
+function buildTuitionMonthChargeFirestoreDocId_(monthName, studentName) {
+  var raw = [String(monthName || "").trim(), normalizeTuitionStudentName_(studentName)].join("|");
+  var bytes = Utilities.newBlob(raw).getBytes();
+  return "tmc_" + Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, "").slice(0, 120);
+}
+
+function buildTuitionMonthChargeMetaDocId_(monthName) {
+  var raw = String(monthName || "").trim();
+  var bytes = Utilities.newBlob(raw).getBytes();
+  return "tmcm_" + Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, "").slice(0, 80);
 }
 
 function buildTuitionContactLogFirestoreDocId_(requestId) {
@@ -3320,6 +3397,79 @@ function markTuitionPaymentMonthFirestoreReady_(monthName, totalRows, writtenRow
   if (!safeMonth) return;
   firestoreSetDocument_(TUITION_PAYMENT_META_FIRESTORE_COLLECTION, buildTuitionPaymentMetaDocId_(safeMonth), {
     monthName: safeMonth,
+    complete: true,
+    totalRows: Math.max(0, parseInt(totalRows || 0, 10) || 0),
+    writtenRows: Math.max(0, parseInt(writtenRows || 0, 10) || 0),
+    updatedAt: new Date().toISOString(),
+    source: "desk_portal_backfill"
+  });
+}
+
+function normalizeTuitionMonthChargeRecord_(source) {
+  var row = source || {};
+  var monthName = String(row.monthName || row.tuitionMonthName || "").trim();
+  var studentName = normalizeTuitionStudentName_(row.studentName || row.name);
+  if (!monthName || !studentName) return null;
+  return {
+    monthName: monthName,
+    classMonthName: String(row.classMonthName || monthName.replace(/s$/i, "")).trim(),
+    studentName: studentName,
+    rowNumber: Math.max(0, parseInt(row.rowNumber || 0, 10) || 0),
+    guideAmount: Math.max(0, Math.round(toPayrollNumber_(row.guideAmount))),
+    active: row.active === false ? false : true,
+    source: String(row.source || "").trim(),
+    updatedAt: String(row.updatedAt || "")
+  };
+}
+
+function writeTuitionMonthChargeToFirestore_(record) {
+  var row = normalizeTuitionMonthChargeRecord_(record);
+  if (!row) return { success: false, message: "Firestore 월별 수강료 대상이 비어 있습니다." };
+  var nowIso = new Date().toISOString();
+  var docId = buildTuitionMonthChargeFirestoreDocId_(row.monthName, row.studentName);
+  firestoreSetDocument_(TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION, docId, {
+    monthName: row.monthName,
+    classMonthName: row.classMonthName,
+    studentName: row.studentName,
+    rowNumber: row.rowNumber,
+    guideAmount: row.guideAmount,
+    active: row.active,
+    source: row.source || "tuition_month_sheet",
+    updatedAt: nowIso
+  });
+  return { success: true, id: docId };
+}
+
+function loadTuitionMonthChargeRowsFromFirestore_(monthName) {
+  var safeMonth = String(monthName || "").trim();
+  try {
+    return firestoreListCollection_(TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION, 1000)
+      .map(normalizeTuitionMonthChargeRecord_)
+      .filter(function(row) {
+        return !!row && row.active !== false && (!safeMonth || row.monthName === safeMonth);
+      });
+  } catch (e) {
+    return null;
+  }
+}
+
+function isTuitionMonthChargeFirestoreReady_(monthName) {
+  var safeMonth = String(monthName || "").trim();
+  if (!safeMonth) return false;
+  try {
+    var doc = firestoreGetDocument_(TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION, buildTuitionMonthChargeMetaDocId_(safeMonth));
+    return !!(doc && doc.monthName === safeMonth && doc.complete === true);
+  } catch (e) {
+    return false;
+  }
+}
+
+function markTuitionMonthChargeFirestoreReady_(monthName, totalRows, writtenRows) {
+  var safeMonth = String(monthName || "").trim();
+  if (!safeMonth) return;
+  firestoreSetDocument_(TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION, buildTuitionMonthChargeMetaDocId_(safeMonth), {
+    monthName: safeMonth,
+    classMonthName: safeMonth.replace(/s$/i, ""),
     complete: true,
     totalRows: Math.max(0, parseInt(totalRows || 0, 10) || 0),
     writtenRows: Math.max(0, parseInt(writtenRows || 0, 10) || 0),
@@ -4939,22 +5089,56 @@ function extractTuitionMonthDay_(dateText) {
 }
 
 function loadTuitionClassStudentMapByMonth_(tuitionMonthName) {
-  var classMonthName = String(tuitionMonthName || "").trim().replace(/s$/i, "");
-  if (!/^\d{2}-\d{2}$/.test(classMonthName)) return null;
+  var tuitionMonth = String(tuitionMonthName || "").trim();
+  if (!tuitionMonth) return null;
+  if (isTuitionMonthChargeFirestoreReady_(tuitionMonth)) {
+    var firestoreRows = loadTuitionMonthChargeRowsFromFirestore_(tuitionMonth);
+    if (Array.isArray(firestoreRows)) {
+      var firestoreMap = {};
+      firestoreRows.forEach(function(row) {
+        var name = normalizeTuitionStudentName_(row.studentName);
+        if (!name) return;
+        firestoreMap[name] = true;
+      });
+      return firestoreMap;
+    }
+  }
+  var sheetRows = loadTuitionMonthChargeRowsFromSheet_(tuitionMonth);
+  var map = {};
+  sheetRows.forEach(function(row) {
+    var name = normalizeTuitionStudentName_(row.studentName);
+    if (!name) return;
+    map[name] = true;
+  });
+  return map;
+}
+
+function loadTuitionMonthChargeRowsFromSheet_(tuitionMonthName) {
+  var tuitionMonth = String(tuitionMonthName || "").trim();
+  var classMonthName = tuitionMonth.replace(/s$/i, "");
+  if (!/^\d{2}-\d{2}$/.test(classMonthName)) return [];
   var ss = getPayrollSpreadsheet_();
   var sheet = ss.getSheetByName(classMonthName);
-  if (!sheet) return null;
+  if (!sheet) return [];
 
   var values = sheet.getDataRange().getDisplayValues();
-  if (!values || values.length < 2) return {};
-  var map = {};
+  if (!values || values.length < 2) return [];
+  var rows = [];
   for (var i = 1; i < values.length; i++) {
     var row = values[i] || [];
     var name = normalizeTuitionStudentName_(row[0]);
     if (!name) continue;
-    map[name] = true;
+    rows.push({
+      monthName: tuitionMonth,
+      classMonthName: classMonthName,
+      studentName: name,
+      rowNumber: i + 1,
+      guideAmount: 0,
+      active: true,
+      source: "tuition_month_sheet"
+    });
   }
-  return map;
+  return rows;
 }
 
 function ensureTuitionPaymentMemoColumn_(sheet) {
