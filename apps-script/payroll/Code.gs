@@ -2918,6 +2918,7 @@ function getTuitionMonthSummary(payload) {
     var cachedSummary = canUseSummaryCache ? readTuitionJsonCache_(summaryCacheKey) : null;
     if (cachedSummary && cachedSummary.success) {
       enrichTuitionSummaryRecentPayments_(cachedSummary, months, monthName, cachedSummary.allPayments || cachedSummary.payments || []);
+      enrichTuitionInactiveStudents_(cachedSummary);
       cachedSummary.cache = {
         source: "script-cache",
         key: summaryCacheKey
@@ -2928,6 +2929,7 @@ function getTuitionMonthSummary(payload) {
       var firestoreSnapshot = readTuitionMonthSnapshotFromFirestore_(monthName);
       if (firestoreSnapshot && firestoreSnapshot.success) {
         enrichTuitionSummaryRecentPayments_(firestoreSnapshot, months, monthName, firestoreSnapshot.allPayments || firestoreSnapshot.payments || []);
+        enrichTuitionInactiveStudents_(firestoreSnapshot);
         firestoreSnapshot.months = months;
         firestoreSnapshot.selectedMonth = monthName;
         firestoreSnapshot.cache = {
@@ -3117,6 +3119,7 @@ function getTuitionMonthSummary(payload) {
       followupSource: followupBundle.source,
       guideAmountAudit: guideAmountAudit,
       portalPaymentSync: portalPaymentSync,
+      inactiveStudents: loadTuitionInactiveStudentMasterFromFirestore_(),
       rows: list
     };
     if (canUseSummaryCache) {
@@ -5668,20 +5671,15 @@ function loadTuitionStudentMasterFromFirestore_() {
   var seen = {};
   docs.forEach(function(doc) {
     if (!isTuitionFirestoreStudentRegistered_(doc)) return;
-    var name = normalizeTuitionStudentName_(doc.studentName || doc.name || doc.displayName);
-    if (!name) return;
-    var school = String(doc.school || doc.schoolName || "").trim();
-    var grade = String(doc.grade || doc.gradeName || "").trim();
+    var studentRow = buildTuitionFirestoreStudentMasterRow_(doc);
+    if (!studentRow) return;
+    var name = studentRow.name;
+    var school = studentRow.school;
+    var grade = studentRow.grade;
     var key = [name, school, grade].join("|");
     if (seen[key]) return;
     seen[key] = true;
-    rows.push({
-      id: String(doc.studentId || doc.id || "").trim(),
-      name: name,
-      school: school,
-      grade: grade,
-      registrationStatus: String(doc.status || "").trim() || (doc.active === true ? "ACTIVE" : "")
-    });
+    rows.push(studentRow);
   });
   rows.sort(function(a, b) {
     return String(a.name || "").localeCompare(String(b.name || ""), "ko");
@@ -5692,14 +5690,78 @@ function loadTuitionStudentMasterFromFirestore_() {
   return rows;
 }
 
+function buildTuitionFirestoreStudentMasterRow_(doc) {
+  if (!doc || typeof doc !== "object") return null;
+  var name = normalizeTuitionStudentName_(doc.studentName || doc.name || doc.displayName);
+  if (!name) return null;
+  return {
+    id: String(doc.studentId || doc.id || "").trim(),
+    name: name,
+    school: String(doc.school || doc.schoolName || "").trim(),
+    grade: String(doc.grade || doc.gradeName || "").trim(),
+    registrationStatus: String(doc.status || doc.registrationStatus || doc.enrollmentStatus || "").trim() ||
+      (doc.active === true || doc.isActive === true ? "ACTIVE" : (doc.active === false || doc.isActive === false ? "INACTIVE" : ""))
+  };
+}
+
+function isTuitionFirestoreStudentInactive_(doc) {
+  if (!doc || typeof doc !== "object") return false;
+  var status = String(doc.status || doc.registrationStatus || doc.enrollmentStatus || "").trim().toUpperCase();
+  if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|중지생|퇴원|퇴원생|휴원|휴원생|비활성|삭제)$/.test(status)) return true;
+  return doc.active === false || doc.isActive === false;
+}
+
 function isTuitionFirestoreStudentRegistered_(doc) {
   if (!doc || typeof doc !== "object") return false;
-  if (doc.active === false || doc.isActive === false) return false;
+  if (isTuitionFirestoreStudentInactive_(doc)) return false;
   var status = String(doc.status || doc.registrationStatus || doc.enrollmentStatus || "").trim().toUpperCase();
   if (!status) return doc.active === true || doc.isActive === true;
-  if (/^(ACTIVE|REGISTERED|ENROLLED|재원|등록|활성)$/.test(status)) return true;
-  if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|퇴원|비활성|삭제)$/.test(status)) return false;
+  if (/^(ACTIVE|REGISTERED|ENROLLED|재원|재원생|등록|활성)$/.test(status)) return true;
+  if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|중지생|퇴원|퇴원생|휴원|휴원생|비활성|삭제)$/.test(status)) return false;
   return doc.active === true || doc.isActive === true;
+}
+
+function loadTuitionInactiveStudentMasterFromFirestore_() {
+  try {
+    var cache = CacheService.getScriptCache();
+    var cacheKey = "TUITION_FIRESTORE_INACTIVE_STUDENTS_V1";
+    var cached = cache.get(cacheKey);
+    if (cached) {
+      try {
+        var cachedRows = JSON.parse(cached);
+        if (Array.isArray(cachedRows)) return cachedRows;
+      } catch (e0) {}
+    }
+    var docs = firestoreListCollection_("students", 1000);
+    var rows = [];
+    var seen = {};
+    docs.forEach(function(doc) {
+      if (!isTuitionFirestoreStudentInactive_(doc)) return;
+      var studentRow = buildTuitionFirestoreStudentMasterRow_(doc);
+      if (!studentRow) return;
+      studentRow.inactive = true;
+      studentRow.source = "firestore";
+      var key = [studentRow.name, studentRow.school, studentRow.grade, studentRow.registrationStatus].join("|");
+      if (seen[key]) return;
+      seen[key] = true;
+      rows.push(studentRow);
+    });
+    rows.sort(function(a, b) {
+      return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+    });
+    try {
+      cache.put(cacheKey, JSON.stringify(rows), 60);
+    } catch (e1) {}
+    return rows;
+  } catch (e) {
+    return [];
+  }
+}
+
+function enrichTuitionInactiveStudents_(summary) {
+  if (!summary || summary.success !== true) return summary;
+  summary.inactiveStudents = loadTuitionInactiveStudentMasterFromFirestore_();
+  return summary;
 }
 
 function loadTuitionStudentMasterFromSheet_() {

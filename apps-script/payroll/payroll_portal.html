@@ -6672,6 +6672,37 @@
       margin-left: 8px;
       font-weight: 700;
     }
+    .tuition-inactive-search-row td {
+      background: #f8fafc;
+      color: #64748b;
+      white-space: normal;
+      padding: 16px 18px;
+    }
+    .tuition-inactive-search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-weight: 850;
+    }
+    .tuition-inactive-search .muted {
+      color: #6b7280;
+      font-weight: 900;
+    }
+    .tuition-inactive-chip {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 950;
+      cursor: pointer;
+    }
+    .tuition-inactive-chip:hover {
+      border-color: #94a3b8;
+      background: #f1f5f9;
+    }
     .tuition-row-unguided td { background: #f3f4f6; }
     .tuition-row-guided td { background: #fff8d9; }
     .tuition-row-partial td { background: #eff6ff; }
@@ -17450,6 +17481,7 @@
         keyword: "",
         allRows: [],
         allPayments: [],
+        inactiveStudents: [],
         todayPayments: [],
         dailyDateKeys: [],
         dailyCursorDateKey: "",
@@ -32553,6 +32585,7 @@
     function renderTuitionSummary(data) {
       state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
+      state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
       state.tuition.todayPayments = (data.todayPayments || []).slice();
       state.tuition.dailyDateKeys = buildTuitionDailyDateKeys_(state.tuition.allPayments, state.tuition.selectedMonth, state.tuition.todayPayments);
       state.tuition.calendarMonth = state.tuition.selectedMonth;
@@ -32587,7 +32620,17 @@
       });
       var payments = (state.tuition.allPayments || []).filter(function(row) {
         if (!keyword && !statusFilter) return true;
-        return !!studentSet[formatStudentName(row.studentName)];
+        if (studentSet[formatStudentName(row.studentName)]) return true;
+        if (!keyword) return false;
+        var paymentBlob = [
+          row.studentName || "",
+          row.dueDate || "",
+          row.paidAt || "",
+          row.paymentType || "",
+          row.approvalNo || "",
+          row.issueMemo || ""
+        ].join(" ").toLowerCase();
+        return paymentBlob.indexOf(keyword) !== -1;
       });
       var stats = buildTuitionStatsClient_(rows);
       state.tuition.kpi = stats.kpi;
@@ -33022,11 +33065,91 @@
       return "#" + ("000000" + out.toString(16)).slice(-6);
     }
 
+    function normalizeTuitionSearchText_(value) {
+      return String(value || "").replace(/\s+/g, "").toLowerCase();
+    }
+
+    function getTuitionInactiveStudentMatches_() {
+      var keyword = normalizeTuitionSearchText_(state.tuition.keyword || "");
+      if (!keyword) return [];
+      return (state.tuition.inactiveStudents || []).filter(function(row) {
+        var blob = normalizeTuitionSearchText_([
+          row.name || row.studentName || "",
+          row.school || "",
+          row.grade || "",
+          row.registrationStatus || ""
+        ].join(" "));
+        return blob.indexOf(keyword) !== -1;
+      }).sort(function(a, b) {
+        var an = normalizeTuitionSearchText_(a.name || a.studentName || "");
+        var bn = normalizeTuitionSearchText_(b.name || b.studentName || "");
+        var aExact = an === keyword ? 0 : 1;
+        var bExact = bn === keyword ? 0 : 1;
+        if (aExact !== bExact) return aExact - bExact;
+        return String(a.name || a.studentName || "").localeCompare(String(b.name || b.studentName || ""), "ko");
+      }).slice(0, 6);
+    }
+
+    function buildTuitionInactivePaymentTarget_(studentName, sourceRow) {
+      var name = formatStudentName(studentName || sourceRow && (sourceRow.name || sourceRow.studentName));
+      if (!name) return null;
+      return {
+        studentName: name,
+        school: String(sourceRow && sourceRow.school || "").trim(),
+        grade: String(sourceRow && sourceRow.grade || "").trim(),
+        guideAmount: 0,
+        collectedAmount: 0,
+        outstandingAmount: 0,
+        unpaidStatus: "중지/퇴원",
+        inactive: true,
+        registrationStatus: String(sourceRow && sourceRow.registrationStatus || "중지/퇴원").trim()
+      };
+    }
+
+    function renderTuitionInactiveSearchRow_() {
+      var keyword = String(state.tuition.keyword || "").trim();
+      if (!keyword) return "";
+      var matches = getTuitionInactiveStudentMatches_();
+      var chips = matches.length
+        ? matches.map(function(row, index) {
+          var label = formatStudentName(row.name || row.studentName);
+          var meta = [row.registrationStatus || "중지/퇴원", row.school || "", row.grade || ""].filter(Boolean).join(" · ");
+          return '<button type="button" class="tuition-inactive-chip" data-pay-inactive-index="' + index + '">' +
+            escapeHtml(label + (meta ? " (" + meta + ")" : "")) +
+          '</button>';
+        }).join("")
+        : '<button type="button" class="tuition-inactive-chip" data-pay-inactive-manual="1">' + escapeHtml(keyword) + ' 수납 입력</button>';
+      return '<tr class="tuition-inactive-search-row"><td colspan="10">' +
+        '<div class="tuition-inactive-search">' +
+          '<span class="muted">표시할 재원생이 없습니다. 중지생 중에서 입력하시겠습니까?</span>' +
+          chips +
+        '</div>' +
+      '</td></tr>';
+    }
+
+    function bindTuitionInactiveSearchActions_() {
+      Array.prototype.forEach.call(document.querySelectorAll("[data-pay-inactive-index]"), function(btn) {
+        btn.addEventListener("click", function() {
+          var index = Math.max(0, parseInt(btn.getAttribute("data-pay-inactive-index") || "0", 10) || 0);
+          var row = getTuitionInactiveStudentMatches_()[index] || null;
+          var target = buildTuitionInactivePaymentTarget_(row && (row.name || row.studentName), row);
+          if (target) openTuitionPaymentModal(target.studentName, target);
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-pay-inactive-manual]"), function(btn) {
+        btn.addEventListener("click", function() {
+          var target = buildTuitionInactivePaymentTarget_(state.tuition.keyword || "", null);
+          if (target) openTuitionPaymentModal(target.studentName, target);
+        });
+      });
+    }
+
     function renderTuitionStudentRows() {
       var rows = state.tuition.rows || [];
       tuitionRowsPillEl.textContent = rows.length + " rows";
       if (!rows.length) {
-        tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
+        tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
+        bindTuitionInactiveSearchActions_();
         return;
       }
       var groupOrder = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
@@ -34786,10 +34909,10 @@
       refreshLucideIcons_();
     }
 
-    function openTuitionPaymentModal(studentName) {
-      var row = findTuitionRowByStudent(studentName);
+    function openTuitionPaymentModal(studentName, overrideTarget) {
+      var row = overrideTarget || findTuitionRowByStudent(studentName);
       state.tuition.paymentTarget = row || null;
-      tuitionPaymentTargetEl.textContent = state.tuition.selectedMonth + " / " + studentName;
+      tuitionPaymentTargetEl.textContent = state.tuition.selectedMonth + " / " + formatStudentName(studentName);
       var monthText = String(state.tuition.selectedMonth || "").replace(/s$/i, "");
       tuitionPaymentDueDateEl.value = monthText + "-01";
       tuitionPaymentAmountEl.value = row && row.guideAmount ? formatSignedAmountInput(String(-Math.max(0, toNumber(row.guideAmount, 0)))) : "";
@@ -34916,6 +35039,8 @@
     function saveTuitionPaymentEntry() {
       var target = state.tuition.paymentTarget;
       if (!target || state.tuition.savingPayment) return;
+      var targetName = formatStudentName(target.studentName);
+      if (!targetName) return;
       state.tuition.savingPayment = true;
       saveTuitionPaymentBtnEl.disabled = true;
       setLoading(true, "수납 내역을 저장하는 중입니다...");
@@ -34929,7 +35054,7 @@
       }
       runServerWriteWithRetry_("appendTuitionPaymentEntry", {
         monthName: state.tuition.selectedMonth,
-        studentName: target.studentName,
+        studentName: targetName,
         dueDate: tuitionPaymentDueDateEl.value,
         itemName: "납부금액",
         amount: toNumber(tuitionPaymentAmountEl.value, 0),
