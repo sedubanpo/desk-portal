@@ -32410,7 +32410,8 @@
       runServer("getTuitionMonthSummary", {
         monthName: state.tuition.selectedMonth,
         statusFilter: "",
-        keyword: ""
+        keyword: "",
+        forceRefresh: !!forceReload
       })
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 조회 실패");

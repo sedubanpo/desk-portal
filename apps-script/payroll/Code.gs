@@ -13,6 +13,7 @@ const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
 const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
 const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
 const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountChanges";
+const TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION = "tuitionMonthSnapshots";
 const TUITION_MONTH_NAMES_CACHE_KEY = "TUITION_MONTH_NAMES_V1";
 const TUITION_MONTH_NAMES_CACHE_TTL_SECONDS = 180;
 const TUITION_MONTH_SUMMARY_CACHE_PREFIX = "TUITION_MONTH_SUMMARY_V2_";
@@ -53,6 +54,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   getTuitionStudentMonthlyHistory: true,
   getTuitionGuideDashboard: true,
   getTuitionMonthlySalesOverview: true,
+  backfillTuitionMonthSnapshots: true,
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
   appendTuitionPaymentEntry: true,
@@ -137,6 +139,7 @@ function handlePayrollApiRequest_(params) {
       getTuitionStudentMonthlyHistory: getTuitionStudentMonthlyHistory,
       getTuitionGuideDashboard: getTuitionGuideDashboard,
       getTuitionMonthlySalesOverview: getTuitionMonthlySalesOverview,
+      backfillTuitionMonthSnapshots: backfillTuitionMonthSnapshots,
       saveTuitionStatusOnly: saveTuitionStatusOnly,
       saveTuitionFollowup: saveTuitionFollowup,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
@@ -1863,6 +1866,20 @@ function firestoreSetDocument_(collectionPath, docId, obj) {
   });
 }
 
+function firestoreGetDocument_(collectionPath, docId) {
+  var cleanCollection = String(collectionPath || "").replace(/^\/+|\/+$/g, "");
+  var cleanId = String(docId || "").replace(/^\/+|\/+$/g, "");
+  if (!cleanCollection || !cleanId) throw new Error("Firestore 문서 경로가 비어 있습니다.");
+  return firestoreDocumentToObject_(firestoreRequestWithServiceAccount_("get", cleanCollection + "/" + cleanId));
+}
+
+function firestoreDeleteDocument_(collectionPath, docId) {
+  var cleanCollection = String(collectionPath || "").replace(/^\/+|\/+$/g, "");
+  var cleanId = String(docId || "").replace(/^\/+|\/+$/g, "");
+  if (!cleanCollection || !cleanId) throw new Error("Firestore 문서 경로가 비어 있습니다.");
+  return firestoreRequestWithServiceAccount_("delete", cleanCollection + "/" + cleanId);
+}
+
 function firebaseSmokeTest() {
   var now = new Date();
   var payload = {
@@ -2675,6 +2692,20 @@ function getTuitionSummaryCacheKey_(monthName) {
   return TUITION_MONTH_SUMMARY_CACHE_PREFIX + String(monthName || "").trim();
 }
 
+function cloneTuitionJson_(value) {
+  try {
+    return JSON.parse(JSON.stringify(value || {}));
+  } catch (e) {
+    return {};
+  }
+}
+
+function buildTuitionMonthSnapshotDocId_(monthName) {
+  var month = String(monthName || "").trim();
+  if (!month) return "";
+  return "tm_" + month.replace(/[^\w-]/g, "_");
+}
+
 function readTuitionJsonCache_(cacheKey) {
   if (!cacheKey) return null;
   try {
@@ -2699,6 +2730,58 @@ function invalidateTuitionSummaryCache_(monthName) {
   try {
     CacheService.getScriptCache().remove(getTuitionSummaryCacheKey_(month));
   } catch (e) {}
+  try {
+    firestoreDeleteDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month));
+  } catch (e2) {}
+}
+
+function readTuitionMonthSnapshotFromFirestore_(monthName) {
+  var month = String(monthName || "").trim();
+  if (!month) return null;
+  try {
+    var doc = firestoreGetDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month));
+    if (!doc || doc.success !== true || !Array.isArray(doc.rows)) return null;
+    return doc;
+  } catch (e) {
+    return null;
+  }
+}
+
+function writeTuitionMonthSnapshotToFirestore_(monthName, summary) {
+  var month = String(monthName || "").trim();
+  if (!month || !summary || summary.success !== true) return;
+  try {
+    var snapshot = cloneTuitionJson_(summary);
+    snapshot.snapshot = {
+      source: "firestore",
+      monthName: month,
+      computedAt: new Date().toISOString()
+    };
+    snapshot.cache = null;
+    firestoreSetDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month), snapshot);
+  } catch (e) {}
+}
+
+function applyTuitionSummaryFilters_(summary, statusFilter, keyword) {
+  var result = cloneTuitionJson_(summary);
+  var status = String(statusFilter || "").trim();
+  var needle = String(keyword || "").trim().toLowerCase();
+  var rows = (Array.isArray(result.rows) ? result.rows : []).filter(function(row) {
+    if (status && row.unpaidStatus !== status) return false;
+    if (needle) {
+      var blob = [row.studentName, row.school, row.grade, row.unpaidStatus].join(" ").toLowerCase();
+      if (blob.indexOf(needle) === -1) return false;
+    }
+    return true;
+  });
+  var stats = buildTuitionSummaryStats_(rows, result.allPayments || []);
+  result.rows = rows;
+  result.kpi = stats.kpi;
+  result.chart = stats.chart;
+  result.allPayments = stats.allPayments;
+  result.payments = stats.payments;
+  result.filtered = !!(status || needle);
+  return result;
 }
 
 function getTuitionMonthSummary(payload) {
@@ -2711,7 +2794,8 @@ function getTuitionMonthSummary(payload) {
     var monthName = String(req.monthName || months[0]).trim();
     var statusFilter = String(req.statusFilter || "").trim();
     var keyword = String(req.keyword || "").trim().toLowerCase();
-    var canUseSummaryCache = !!monthName && !statusFilter && !keyword;
+    var forceRefresh = req.forceRefresh === true;
+    var canUseSummaryCache = !!monthName && !statusFilter && !keyword && !forceRefresh;
     var summaryCacheKey = canUseSummaryCache ? getTuitionSummaryCacheKey_(monthName) : "";
     var cachedSummary = canUseSummaryCache ? readTuitionJsonCache_(summaryCacheKey) : null;
     if (cachedSummary && cachedSummary.success) {
@@ -2720,6 +2804,23 @@ function getTuitionMonthSummary(payload) {
         key: summaryCacheKey
       };
       return cachedSummary;
+    }
+    if (!forceRefresh && monthName) {
+      var firestoreSnapshot = readTuitionMonthSnapshotFromFirestore_(monthName);
+      if (firestoreSnapshot && firestoreSnapshot.success) {
+        firestoreSnapshot.months = months;
+        firestoreSnapshot.selectedMonth = monthName;
+        firestoreSnapshot.cache = {
+          source: "firestore-snapshot",
+          documentId: buildTuitionMonthSnapshotDocId_(monthName),
+          computedAt: firestoreSnapshot.snapshot && firestoreSnapshot.snapshot.computedAt || ""
+        };
+        var filteredSnapshot = applyTuitionSummaryFilters_(firestoreSnapshot, statusFilter, keyword);
+        if (canUseSummaryCache) {
+          writeTuitionJsonCache_(summaryCacheKey, filteredSnapshot, TUITION_MONTH_SUMMARY_CACHE_TTL_SECONDS);
+        }
+        return filteredSnapshot;
+      }
     }
     var allPaymentRows = getTuitionPaymentRowsForMonth_(monthName);
     var paymentRows = [];
@@ -2882,9 +2983,51 @@ function getTuitionMonthSummary(payload) {
     if (canUseSummaryCache) {
       writeTuitionJsonCache_(summaryCacheKey, result, TUITION_MONTH_SUMMARY_CACHE_TTL_SECONDS);
     }
+    if (!statusFilter && !keyword) {
+      writeTuitionMonthSnapshotToFirestore_(monthName, result);
+    }
     return result;
   } catch (e) {
     return { success: false, message: "수강료 데이터 계산 오류: " + e.message };
+  }
+}
+
+function backfillTuitionMonthSnapshots(payload) {
+  try {
+    var req = payload || {};
+    var months = getTuitionMonthSheetNames_();
+    var targetMonths = [];
+    if (req.monthName) {
+      targetMonths = [String(req.monthName || "").trim()];
+    } else if (Array.isArray(req.months) && req.months.length) {
+      targetMonths = req.months.map(function(monthName) {
+        return String(monthName || "").trim();
+      }).filter(Boolean);
+    } else {
+      var limit = Math.max(1, Math.min(12, parseInt(req.limit || 3, 10) || 3));
+      targetMonths = months.slice(0, limit);
+    }
+    var results = [];
+    targetMonths.forEach(function(monthName) {
+      var summary = getTuitionMonthSummary({
+        monthName: monthName,
+        statusFilter: "",
+        keyword: "",
+        forceRefresh: true
+      });
+      results.push({
+        monthName: monthName,
+        success: !!(summary && summary.success),
+        rows: summary && summary.rows ? summary.rows.length : 0,
+        message: summary && summary.message || ""
+      });
+    });
+    return {
+      success: results.every(function(item) { return item.success; }),
+      months: results
+    };
+  } catch (e) {
+    return { success: false, message: "수강료 Firestore 스냅샷 백필 오류: " + e.message };
   }
 }
 
