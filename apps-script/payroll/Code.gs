@@ -18,6 +18,7 @@ const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountCha
 const TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION = "tuitionMonthSnapshots";
 const TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION = "tuitionMonthCharges";
 const TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION = "tuitionMonthChargeMeta";
+const TUITION_MONTH_SNAPSHOT_SCHEMA_VERSION = "v2";
 const TUITION_MONTH_NAMES_CACHE_KEY = "TUITION_MONTH_NAMES_V1";
 const TUITION_MONTH_NAMES_CACHE_TTL_SECONDS = 180;
 const TUITION_MONTH_SUMMARY_CACHE_PREFIX = "TUITION_MONTH_SUMMARY_V2_";
@@ -2752,6 +2753,7 @@ function readTuitionMonthSnapshotFromFirestore_(monthName) {
   try {
     var doc = firestoreGetDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month));
     if (!doc || doc.success !== true || !Array.isArray(doc.rows)) return null;
+    if (!doc.snapshot || doc.snapshot.schemaVersion !== TUITION_MONTH_SNAPSHOT_SCHEMA_VERSION) return null;
     return doc;
   } catch (e) {
     return null;
@@ -2766,7 +2768,8 @@ function writeTuitionMonthSnapshotToFirestore_(monthName, summary) {
     snapshot.snapshot = {
       source: "firestore",
       monthName: month,
-      computedAt: new Date().toISOString()
+      computedAt: new Date().toISOString(),
+      schemaVersion: TUITION_MONTH_SNAPSHOT_SCHEMA_VERSION
     };
     snapshot.cache = null;
     firestoreSetDocument_(TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION, buildTuitionMonthSnapshotDocId_(month), snapshot);
@@ -5151,7 +5154,7 @@ function loadTuitionClassStudentMapByMonth_(tuitionMonthName) {
         if (!name) return;
         firestoreMap[name] = true;
       });
-      return firestoreMap;
+      if (Object.keys(firestoreMap).length) return firestoreMap;
     }
   }
   var sheetRows = loadTuitionMonthChargeRowsFromSheet_(tuitionMonth);
@@ -5161,7 +5164,7 @@ function loadTuitionClassStudentMapByMonth_(tuitionMonthName) {
     if (!name) return;
     map[name] = true;
   });
-  return map;
+  return Object.keys(map).length ? map : null;
 }
 
 function loadTuitionMonthChargeRowsFromSheet_(tuitionMonthName) {
