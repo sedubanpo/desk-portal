@@ -21,6 +21,7 @@ const TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION = "tuitionMonthSnapshots";
 const TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION = "tuitionMonthCharges";
 const TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION = "tuitionMonthChargeMeta";
 const TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION = "tuitionPaymentReadIndexes";
+const TUITION_MONTHLY_READ_INDEX_FIRESTORE_COLLECTION = "tuitionMonthlyReadIndexes";
 const TUITION_RECENT_PAYMENT_INDEX_DOC_ID = "recent";
 const TUITION_RECENT_PAYMENT_INDEX_LIMIT = 120;
 const TUITION_DAILY_PAYMENT_INDEX_LIMIT = 300;
@@ -3522,7 +3523,66 @@ function writeTuitionFollowupToFirestore_(record) {
     source: "desk_portal"
   });
   markTuitionMonthInFirestoreIndex_(row.monthName, "tuition_followup_write");
+  updateTuitionFollowupMonthIndex_(row);
   return { success: true, id: docId };
+}
+
+function normalizeTuitionFollowupIndexRows_(rows) {
+  return (Array.isArray(rows) ? rows : []).map(normalizeTuitionFollowupRecord_).filter(function(row) {
+    return !!row;
+  });
+}
+
+function readTuitionFollowupMonthIndexBundle_(monthName) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthlyReadIndexDocId_("followups", safeMonth);
+  if (!docId) return { rows: [], seeded: false, updatedAt: "" };
+  try {
+    var doc = firestoreGetDocument_(TUITION_MONTHLY_READ_INDEX_FIRESTORE_COLLECTION, docId);
+    if (!doc) return { rows: [], seeded: false, updatedAt: "" };
+    return {
+      rows: normalizeTuitionFollowupIndexRows_(doc.rows).filter(function(row) {
+        return row.monthName === safeMonth;
+      }),
+      seeded: doc.seeded === true,
+      updatedAt: String(doc.updatedAt || "")
+    };
+  } catch (e) {
+    return { rows: [], seeded: false, updatedAt: "" };
+  }
+}
+
+function writeTuitionFollowupMonthIndex_(monthName, rows, seeded) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthlyReadIndexDocId_("followups", safeMonth);
+  if (!docId) return false;
+  var normalized = normalizeTuitionFollowupIndexRows_(rows).filter(function(row) {
+    return row.monthName === safeMonth;
+  });
+  try {
+    firestoreSetDocument_(TUITION_MONTHLY_READ_INDEX_FIRESTORE_COLLECTION, docId, {
+      monthName: safeMonth,
+      rows: normalized,
+      seeded: seeded === true,
+      updatedAt: getTuitionPaymentReadIndexUpdatedAt_(),
+      source: "desk_portal"
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function updateTuitionFollowupMonthIndex_(record) {
+  var row = normalizeTuitionFollowupRecord_(record);
+  if (!row || !row.monthName) return false;
+  try {
+    var bundle = readTuitionFollowupMonthIndexBundle_(row.monthName);
+    var rows = mergeTuitionFollowupRows_(bundle.rows, [row]);
+    return writeTuitionFollowupMonthIndex_(row.monthName, rows, bundle.seeded === true);
+  } catch (e) {
+    return false;
+  }
 }
 
 function writeTuitionPaymentToFirestore_(record) {
@@ -3560,6 +3620,13 @@ function getTuitionPaymentReadIndexUpdatedAt_() {
   } catch (e) {
     return "";
   }
+}
+
+function buildTuitionMonthlyReadIndexDocId_(kind, monthName) {
+  var safeKind = String(kind || "").trim().replace(/[^\w-]/g, "_");
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  if (!safeKind || !safeMonth) return "";
+  return safeKind + "_" + safeMonth.replace(/[^\w-]/g, "_");
 }
 
 function normalizeTuitionPaymentIndexRows_(rows) {
@@ -3878,17 +3945,95 @@ function writeTuitionMonthChargeToFirestore_(record) {
     updatedAt: nowIso
   });
   markTuitionMonthInFirestoreIndex_(row.monthName, "tuition_month_charge_write");
+  updateTuitionMonthChargeIndex_(row);
   return { success: true, id: docId };
+}
+
+function normalizeTuitionMonthChargeIndexRows_(rows) {
+  return (Array.isArray(rows) ? rows : []).map(normalizeTuitionMonthChargeRecord_).filter(function(row) {
+    return !!row && row.active !== false;
+  });
+}
+
+function readTuitionMonthChargeIndexBundle_(monthName) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthlyReadIndexDocId_("charges", safeMonth);
+  if (!docId) return { rows: [], seeded: false, updatedAt: "" };
+  try {
+    var doc = firestoreGetDocument_(TUITION_MONTHLY_READ_INDEX_FIRESTORE_COLLECTION, docId);
+    if (!doc) return { rows: [], seeded: false, updatedAt: "" };
+    return {
+      rows: normalizeTuitionMonthChargeIndexRows_(doc.rows).filter(function(row) {
+        return row.monthName === safeMonth;
+      }),
+      seeded: doc.seeded === true,
+      updatedAt: String(doc.updatedAt || "")
+    };
+  } catch (e) {
+    return { rows: [], seeded: false, updatedAt: "" };
+  }
+}
+
+function writeTuitionMonthChargeIndex_(monthName, rows, seeded) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthlyReadIndexDocId_("charges", safeMonth);
+  if (!docId) return false;
+  var normalized = normalizeTuitionMonthChargeIndexRows_(rows).filter(function(row) {
+    return row.monthName === safeMonth;
+  });
+  try {
+    firestoreSetDocument_(TUITION_MONTHLY_READ_INDEX_FIRESTORE_COLLECTION, docId, {
+      monthName: safeMonth,
+      rows: normalized,
+      seeded: seeded === true,
+      updatedAt: getTuitionPaymentReadIndexUpdatedAt_(),
+      source: "desk_portal"
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function mergeTuitionMonthChargeRows_(primaryRows, secondaryRows) {
+  var map = {};
+  function add(record) {
+    var row = normalizeTuitionMonthChargeRecord_(record);
+    if (!row) return;
+    var key = row.monthName + "|" + normalizeTuitionStudentName_(row.studentName);
+    map[key] = row;
+  }
+  (primaryRows || []).forEach(add);
+  (secondaryRows || []).forEach(add);
+  return Object.keys(map).map(function(key) { return map[key]; });
+}
+
+function updateTuitionMonthChargeIndex_(record) {
+  var row = normalizeTuitionMonthChargeRecord_(record);
+  if (!row || !row.monthName) return false;
+  try {
+    var bundle = readTuitionMonthChargeIndexBundle_(row.monthName);
+    var rows = mergeTuitionMonthChargeRows_(bundle.rows, [row]);
+    return writeTuitionMonthChargeIndex_(row.monthName, rows, bundle.seeded === true);
+  } catch (e) {
+    return false;
+  }
 }
 
 function loadTuitionMonthChargeRowsFromFirestore_(monthName) {
   var safeMonth = String(monthName || "").trim();
+  if (safeMonth) {
+    var indexed = readTuitionMonthChargeIndexBundle_(safeMonth);
+    if (indexed.seeded) return indexed.rows;
+  }
   try {
-    return firestoreListCollection_(TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION, 1000)
+    var rows = firestoreListCollection_(TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION, 1000)
       .map(normalizeTuitionMonthChargeRecord_)
       .filter(function(row) {
         return !!row && row.active !== false && (!safeMonth || row.monthName === safeMonth);
       });
+    if (safeMonth) writeTuitionMonthChargeIndex_(safeMonth, rows, true);
+    return rows;
   } catch (e) {
     return null;
   }
@@ -6320,29 +6465,54 @@ function hasTuitionFollowupRowsForMonth_(rows, monthName) {
 
 function loadTuitionFollowupRowsBundle_(options) {
   var opts = options || {};
-  var monthName = String(opts.monthName || "").trim();
+  var monthName = normalizeTuitionMonthName_(opts.monthName) || String(opts.monthName || "").trim();
+  if (monthName) {
+    var indexed = readTuitionFollowupMonthIndexBundle_(monthName);
+    if (indexed.seeded) {
+      return {
+        source: "firestore-index",
+        rows: indexed.rows,
+        sheetRows: [],
+        firestoreRows: indexed.rows,
+        skippedSheetRows: true
+      };
+    }
+  }
   var firestoreRows = loadTuitionFollowupRowsFromFirestore_();
   var firestoreAvailable = Array.isArray(firestoreRows);
   if (firestoreAvailable && monthName && isTuitionFollowupMonthFirestoreReady_(monthName)) {
+    var monthRows = firestoreRows.filter(function(row) {
+      return String(row && row.monthName || "").trim() === monthName;
+    });
+    writeTuitionFollowupMonthIndex_(monthName, monthRows, true);
     return {
       source: "firestore",
-      rows: firestoreRows,
+      rows: monthRows,
       sheetRows: [],
-      firestoreRows: firestoreRows,
+      firestoreRows: monthRows,
       skippedSheetRows: true
     };
   }
   if (opts.allowSheetFallback === false) {
+    var firestoreOnlyRows = firestoreAvailable && monthName ? firestoreRows.filter(function(row) {
+      return String(row && row.monthName || "").trim() === monthName;
+    }) : (firestoreAvailable ? firestoreRows : []);
+    if (monthName && firestoreOnlyRows.length) writeTuitionFollowupMonthIndex_(monthName, firestoreOnlyRows, true);
     return {
       source: firestoreAvailable ? "firestore-partial" : "firestore-error",
-      rows: firestoreAvailable ? firestoreRows : [],
+      rows: firestoreOnlyRows,
       sheetRows: [],
-      firestoreRows: firestoreAvailable ? firestoreRows : null,
+      firestoreRows: firestoreAvailable ? firestoreOnlyRows : null,
       skippedSheetRows: true
     };
   }
   var sheetRows = loadTuitionFollowupRowsFromSheet_();
   var rows = firestoreAvailable ? mergeTuitionFollowupRows_(sheetRows, firestoreRows) : sheetRows;
+  if (monthName) {
+    writeTuitionFollowupMonthIndex_(monthName, rows.filter(function(row) {
+      return String(row && row.monthName || "").trim() === monthName;
+    }), true);
+  }
   return {
     source: firestoreAvailable ? "sheet-firestore-merged" : "sheet-fallback-firestore-error",
     rows: rows,
