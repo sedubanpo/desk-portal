@@ -17487,6 +17487,7 @@
         todayPayments: [],
         dailyDateKeys: [],
         dailyCursorDateKey: "",
+        pendingSummary: false,
         briefFilters: {
           basis: "paid",
           startDate: "",
@@ -32523,7 +32524,15 @@
           state.tuition.statusFilter = "";
           state.tuition.keyword = "";
           renderTuitionMonthOptions();
-          renderTuitionSummary(res.summary || res);
+          var summary = res.summary || res;
+          renderTuitionSummary(summary);
+          if (summary && summary.pendingSummary) {
+            setTimeout(function() {
+              if (state.tuition.selectedMonth === (summary.selectedMonth || state.tuition.selectedMonth)) {
+                refreshTuitionSummary(false, { silent: true });
+              }
+            }, 250);
+          }
         })
         .catch(function(err) {
           if (!silent) {
@@ -32542,13 +32551,16 @@
       return request;
     }
 
-    function refreshTuitionSummary(forceReload) {
+    function refreshTuitionSummary(forceReload, options) {
+      options = options || {};
       if (forceReload) {
         state.tuition.loaded = false;
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
       }
-      setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
+      if (!options.silent) {
+        setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
+      }
       runServer("getTuitionMonthSummary", {
         monthName: state.tuition.selectedMonth,
         statusFilter: "",
@@ -32564,10 +32576,16 @@
           renderTuitionSummary(res);
         })
         .catch(function(err) {
-          alert("수강료 조회 오류: " + (err.message || String(err)));
+          if (options.silent) {
+            console.warn("수강료 백그라운드 조회 오류", err);
+          } else {
+            alert("수강료 조회 오류: " + (err.message || String(err)));
+          }
         })
         .finally(function() {
-          setLoading(false);
+          if (!options.silent) {
+            setLoading(false);
+          }
         });
     }
 
@@ -32585,6 +32603,7 @@
     }
 
     function renderTuitionSummary(data) {
+      state.tuition.pendingSummary = !!(data && data.pendingSummary);
       state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
@@ -33180,9 +33199,13 @@
       var rows = state.tuition.rows || [];
       tuitionRowsPillEl.textContent = rows.length + " rows";
       if (!rows.length) {
-        tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
-        bindTuitionInactiveSearchActions_();
-        if (state.tuition.keyword) loadTuitionInactiveStudentMatches_(state.tuition.keyword);
+        if (state.tuition.pendingSummary) {
+          tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">월별 수강료 요약을 백그라운드에서 준비 중입니다.</td></tr>';
+        } else {
+          tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
+          bindTuitionInactiveSearchActions_();
+          if (state.tuition.keyword) loadTuitionInactiveStudentMatches_(state.tuition.keyword);
+        }
         return;
       }
       var groupOrder = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
