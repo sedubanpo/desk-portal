@@ -6498,13 +6498,74 @@
       color: #f0fdfa;
       font-size: 14px;
     }
-    .tuition-action-btn.primary .step {
-      background: #ffffff;
-      border-color: #ffffff;
-      color: #0d684d;
-    }
-    .tuition-layout {
-      display: grid;
+	    .tuition-action-btn.primary .step {
+	      background: #ffffff;
+	      border-color: #ffffff;
+	      color: #0d684d;
+	    }
+	    .tuition-ops-status {
+	      display: flex;
+	      align-items: center;
+	      justify-content: space-between;
+	      gap: var(--space-3, 12px);
+	      border: 1px solid var(--ds-border, #d8e4de);
+	      border-radius: 10px;
+	      background: var(--ds-bg-subtle, #f7fbf8);
+	      padding: var(--space-3, 12px) var(--space-4, 16px);
+	      color: var(--ds-fg-soft, #334155);
+	      font-size: 12px;
+	      font-weight: 850;
+	    }
+	    .tuition-ops-status.is-error {
+	      border-color: rgba(185, 28, 28, 0.22);
+	      background: var(--ds-danger-bg, #fff1f2);
+	      color: var(--ds-danger, #b91c1c);
+	    }
+	    .tuition-ops-status-main {
+	      display: inline-flex;
+	      align-items: center;
+	      gap: var(--space-2, 8px);
+	      min-width: 0;
+	    }
+	    .tuition-ops-status-main i {
+	      width: 16px;
+	      height: 16px;
+	      flex: 0 0 auto;
+	    }
+	    .tuition-ops-status-text {
+	      overflow-wrap: anywhere;
+	    }
+	    .tuition-ops-status-list {
+	      display: flex;
+	      align-items: center;
+	      justify-content: flex-end;
+	      flex-wrap: wrap;
+	      gap: 6px;
+	    }
+	    .tuition-ops-chip {
+	      display: inline-flex;
+	      align-items: center;
+	      gap: 5px;
+	      min-height: 28px;
+	      padding: 4px 8px;
+	      border-radius: 999px;
+	      background: var(--ds-bg-panel, #ffffff);
+	      border: 1px solid var(--ds-border-soft, #edf2ef);
+	      color: var(--ds-muted, #667789);
+	      font-variant-numeric: tabular-nums;
+	      white-space: nowrap;
+	    }
+	    .tuition-ops-chip.is-ready {
+	      color: var(--ds-primary, #0d684d);
+	      border-color: rgba(13, 104, 77, 0.2);
+	    }
+	    .tuition-ops-chip.is-pending {
+	      color: var(--ds-warning, #c2410c);
+	      background: var(--ds-warning-bg, #fff7ed);
+	      border-color: rgba(194, 65, 12, 0.18);
+	    }
+	    .tuition-layout {
+	      display: grid;
       grid-template-columns: 1.05fr 1fr 1.45fr;
       gap: 10px;
       align-items: start;
@@ -13904,10 +13965,16 @@
       overflow-wrap: anywhere;
     }
 
-    .tuition-action-frame {
-      grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-      gap: 0;
-    }
+	    .tuition-action-frame {
+	      grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+	      gap: 0;
+	    }
+	    .tuition-ops-status {
+	      min-width: 0;
+	    }
+	    .tuition-ops-status-text {
+	      word-break: keep-all;
+	    }
 
     .tuition-action-btn {
       min-width: 0;
@@ -14156,12 +14223,19 @@
       .tuition-topbar .field:nth-child(3) {
         grid-column: 1 / -1;
       }
-      .tuition-topbar .refresh-btn {
-        width: 100%;
-      }
-      .tuition-cards {
-        grid-template-columns: 1fr;
-      }
+	      .tuition-topbar .refresh-btn {
+	        width: 100%;
+	      }
+	      .tuition-ops-status {
+	        align-items: flex-start;
+	        flex-direction: column;
+	      }
+	      .tuition-ops-status-list {
+	        justify-content: flex-start;
+	      }
+	      .tuition-cards {
+	        grid-template-columns: 1fr;
+	      }
       .tuition-metric-group,
       .tuition-metric-card {
         border-right: 0;
@@ -14708,10 +14782,17 @@
               <label for="tuitionKeywordInput">학생 검색</label>
               <input id="tuitionKeywordInput" type="text" placeholder="학생명 / 학교 / 학년 검색">
             </div>
-            <button class="refresh-btn" id="tuitionRefreshBtn" type="button"><i data-lucide="database"></i> 수강료 데이터 새로고침</button>
-          </section>
+	            <button class="refresh-btn" id="tuitionRefreshBtn" type="button"><i data-lucide="database"></i> 수강료 데이터 새로고침</button>
+	          </section>
+	          <section class="tuition-ops-status" id="tuitionOpsStatus" aria-live="polite">
+	            <div class="tuition-ops-status-main">
+	              <i data-lucide="activity"></i>
+	              <span class="tuition-ops-status-text" id="tuitionOpsStatusText">수강료 인덱스 상태 확인 대기</span>
+	            </div>
+	            <div class="tuition-ops-status-list" id="tuitionOpsStatusList"></div>
+	          </section>
 
-          <section class="tuition-cards">
+	          <section class="tuition-cards">
             <div class="tuition-metric-group">
               <div class="tuition-metric-group-title">재원생 기준</div>
               <div class="tuition-metric-pair">
@@ -17484,11 +17565,14 @@
         inactiveStudents: [],
         inactiveSearchKey: "",
         inactiveSearchLoading: false,
-        todayPayments: [],
-        dailyDateKeys: [],
-        dailyCursorDateKey: "",
-        pendingSummary: false,
-        briefFilters: {
+	        todayPayments: [],
+	        dailyDateKeys: [],
+	        dailyCursorDateKey: "",
+	        pendingSummary: false,
+	        backgroundError: "",
+	        lastWriteWarning: "",
+	        indexStatus: null,
+	        briefFilters: {
           basis: "paid",
           startDate: "",
           endDate: "",
@@ -17990,9 +18074,12 @@
     var deskTaskAssignAlertStackEl = document.getElementById("deskTaskAssignAlertStack");
     var tuitionMonthSelectEl = document.getElementById("tuitionMonthSelect");
     var tuitionStatusFilterEl = document.getElementById("tuitionStatusFilter");
-    var tuitionKeywordInputEl = document.getElementById("tuitionKeywordInput");
-    var tuitionRefreshBtnEl = document.getElementById("tuitionRefreshBtn");
-    var tuitionStudentBodyEl = document.getElementById("tuitionStudentBody");
+	    var tuitionKeywordInputEl = document.getElementById("tuitionKeywordInput");
+	    var tuitionRefreshBtnEl = document.getElementById("tuitionRefreshBtn");
+	    var tuitionOpsStatusEl = document.getElementById("tuitionOpsStatus");
+	    var tuitionOpsStatusTextEl = document.getElementById("tuitionOpsStatusText");
+	    var tuitionOpsStatusListEl = document.getElementById("tuitionOpsStatusList");
+	    var tuitionStudentBodyEl = document.getElementById("tuitionStudentBody");
     var tuitionPaymentBodyEl = document.getElementById("tuitionPaymentBody");
     var tuitionPaymentPanelSubEl = document.getElementById("tuitionPaymentPanelSub");
     var tuitionPaymentPaginationEl = document.getElementById("tuitionPaymentPagination");
@@ -32500,23 +32587,66 @@
       return loadBootstrap();
     }
 
-    function ensureTuitionLoaded() {
-      if (state.tuition.loaded) return Promise.resolve();
-      return loadTuitionBootstrap();
-    }
+	    function ensureTuitionLoaded() {
+	      if (state.tuition.loaded) return Promise.resolve();
+	      return loadTuitionBootstrap();
+	    }
 
-    function loadTuitionBootstrap(options) {
+	    function formatTuitionOpsTime_(value) {
+	      var raw = String(value || "").trim();
+	      if (!raw) return "";
+	      var date = new Date(raw);
+	      if (isNaN(date.getTime())) return raw;
+	      return pad2(date.getMonth() + 1) + "/" + pad2(date.getDate()) + " " + pad2(date.getHours()) + ":" + pad2(date.getMinutes());
+	    }
+
+	    function renderTuitionOpsStatus_() {
+	      if (!tuitionOpsStatusEl || !tuitionOpsStatusTextEl || !tuitionOpsStatusListEl) return;
+	      var status = state.tuition.indexStatus || {};
+	      var parts = [
+	        status.recentPayments,
+	        status.monthPayments,
+	        status.followups,
+	        status.charges
+	      ].filter(Boolean);
+	      var hasError = !!state.tuition.backgroundError;
+	      tuitionOpsStatusEl.classList.toggle("is-error", hasError);
+	      var source = status.summary && status.summary.source ? status.summary.source : "";
+	      var checkedAt = formatTuitionOpsTime_(status.checkedAt);
+	      var readyCount = parts.filter(function(item) { return item.ready; }).length;
+	      var totalCount = parts.length;
+	      var text = hasError
+	        ? state.tuition.backgroundError
+	        : (state.tuition.pendingSummary
+	          ? "월별 요약을 백그라운드에서 준비 중입니다."
+	          : ("인덱스 " + readyCount + "/" + totalCount + " 준비" + (source ? " · " + source : "") + (checkedAt ? " · " + checkedAt : "")));
+	      if (state.tuition.lastWriteWarning && !hasError) {
+	        text += " · " + state.tuition.lastWriteWarning;
+	      }
+	      tuitionOpsStatusTextEl.textContent = text;
+	      tuitionOpsStatusListEl.innerHTML = parts.map(function(item) {
+	        var label = String(item.label || "인덱스");
+	        var count = Math.max(0, parseInt(item.count || 0, 10) || 0);
+	        var cls = item.ready ? "is-ready" : "is-pending";
+	        return '<span class="tuition-ops-chip ' + cls + '">' + escapeHtml(label) + ' ' + (item.ready ? "준비" : "대기") + ' · ' + count + '건</span>';
+	      }).join("");
+	      refreshLucideIcons_();
+	    }
+
+	    function loadTuitionBootstrap(options) {
       options = options || {};
       if (state.tuition.loaded) return Promise.resolve();
       if (state.tuition.loadingPromise) return state.tuition.loadingPromise;
 
       var silent = !!options.silent;
-      if (!silent) {
-        setLoading(true, "재원생 수강료 데이터를 불러오는 중입니다...");
-      }
+	      if (!silent) {
+	        setLoading(true, "재원생 수강료 데이터를 불러오는 중입니다...");
+	      }
+	      state.tuition.backgroundError = "";
+	      renderTuitionOpsStatus_();
 
-      var request = runServer("getTuitionBootstrapData")
-        .then(function(res) {
+	      var request = runServer("getTuitionBootstrapData")
+	        .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 초기 로드 실패");
           state.tuition.loaded = true;
           state.tuition.months = res.months || [];
@@ -32534,10 +32664,12 @@
             }, 250);
           }
         })
-        .catch(function(err) {
-          if (!silent) {
-            alert("수강료 탭 로드 오류: " + (err.message || String(err)));
-          }
+	        .catch(function(err) {
+	          state.tuition.backgroundError = "수강료 초기 로드 오류: " + (err.message || String(err));
+	          renderTuitionOpsStatus_();
+	          if (!silent) {
+	            alert("수강료 탭 로드 오류: " + (err.message || String(err)));
+	          }
           throw err;
         })
         .finally(function() {
@@ -32558,26 +32690,31 @@
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
       }
-      if (!options.silent) {
-        setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
-      }
-      runServer("getTuitionMonthSummary", {
+	      if (!options.silent) {
+	        setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
+	      }
+	      if (!options.silent) state.tuition.backgroundError = "";
+	      renderTuitionOpsStatus_();
+	      runServer("getTuitionMonthSummary", {
         monthName: state.tuition.selectedMonth,
         statusFilter: "",
         keyword: "",
         forceRefresh: !!forceReload
       })
-        .then(function(res) {
-          if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 조회 실패");
-          state.tuition.loaded = true;
-          state.tuition.months = res.months || state.tuition.months;
+	        .then(function(res) {
+	          if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 조회 실패");
+	          state.tuition.loaded = true;
+	          state.tuition.backgroundError = "";
+	          state.tuition.months = res.months || state.tuition.months;
           state.tuition.selectedMonth = res.selectedMonth || state.tuition.selectedMonth;
           renderTuitionMonthOptions();
           renderTuitionSummary(res);
         })
-        .catch(function(err) {
-          if (options.silent) {
-            console.warn("수강료 백그라운드 조회 오류", err);
+	        .catch(function(err) {
+	          state.tuition.backgroundError = "수강료 백그라운드 조회 오류: " + (err.message || String(err));
+	          renderTuitionOpsStatus_();
+	          if (options.silent) {
+	            console.warn("수강료 백그라운드 조회 오류", err);
           } else {
             alert("수강료 조회 오류: " + (err.message || String(err)));
           }
@@ -32602,9 +32739,10 @@
       tuitionKeywordInputEl.value = state.tuition.keyword || "";
     }
 
-    function renderTuitionSummary(data) {
-      state.tuition.pendingSummary = !!(data && data.pendingSummary);
-      state.tuition.allRows = (data.rows || []).slice();
+	    function renderTuitionSummary(data) {
+	      state.tuition.pendingSummary = !!(data && data.pendingSummary);
+	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
+	      state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
       state.tuition.inactiveSearchKey = "";
@@ -32619,9 +32757,10 @@
       } else {
         state.tuition.dailyCursorDateKey = "";
       }
-      state.tuition.calendarSelectedDateKey = state.tuition.dailyCursorDateKey || "";
-      applyTuitionLocalFilters_();
-    }
+	      state.tuition.calendarSelectedDateKey = state.tuition.dailyCursorDateKey || "";
+	      applyTuitionLocalFilters_();
+	      renderTuitionOpsStatus_();
+	    }
 
     function applyTuitionLocalFilters_() {
       var statusFilter = String(state.tuition.statusFilter || "").trim();
@@ -35080,12 +35219,14 @@
           setLoading(true, "연락 기록 저장을 재시도하는 중입니다...");
         }
       })
-        .then(function(res) {
-          cleanup();
-          tuitionContactModalEl.style.display = "none";
-          state.tuition.guideDashboard = null;
-          refreshTuitionSummary(true);
-        })
+	        .then(function(res) {
+	          cleanup();
+	          tuitionContactModalEl.style.display = "none";
+	          state.tuition.lastWriteWarning = res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "";
+	          state.tuition.guideDashboard = null;
+	          renderTuitionOpsStatus_();
+	          refreshTuitionSummary(true);
+	        })
         .catch(function(err) {
           cleanup();
           alert("연락 기록 저장 오류: " + (err.message || String(err)));
@@ -35124,15 +35265,17 @@
           setLoading(true, "수납 내역 저장을 재시도하는 중입니다...");
         }
       })
-        .then(function(res) {
-          cleanup();
-          tuitionPaymentModalEl.style.display = "none";
-          if (res && res.payment) {
-            upsertTuitionPaymentLocal_(res.payment);
-          } else {
-            refreshTuitionSummary(false);
-          }
-        })
+	        .then(function(res) {
+	          cleanup();
+	          tuitionPaymentModalEl.style.display = "none";
+	          state.tuition.lastWriteWarning = res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "";
+	          if (res && res.payment) {
+	            upsertTuitionPaymentLocal_(res.payment);
+	          } else {
+	            refreshTuitionSummary(false);
+	          }
+	          renderTuitionOpsStatus_();
+	        })
         .catch(function(err) {
           cleanup();
           alert("수납 입력 오류: " + (err.message || String(err)));
