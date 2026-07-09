@@ -24,6 +24,7 @@ const TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION = "tuitionPaymentReadIndex
 const TUITION_RECENT_PAYMENT_INDEX_DOC_ID = "recent";
 const TUITION_RECENT_PAYMENT_INDEX_LIMIT = 120;
 const TUITION_DAILY_PAYMENT_INDEX_LIMIT = 300;
+const TUITION_MONTH_PAYMENT_INDEX_LIMIT = 1000;
 const TUITION_MONTH_SNAPSHOT_SCHEMA_VERSION = "v4";
 const TUITION_MONTH_NAMES_CACHE_KEY = "TUITION_MONTH_NAMES_V2";
 const TUITION_MONTH_NAMES_CACHE_TTL_SECONDS = 180;
@@ -3647,12 +3648,78 @@ function writeTuitionDailyPaymentIndex_(dateKey, rows) {
   }
 }
 
+function buildTuitionMonthPaymentIndexDocId_(monthName) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  if (!safeMonth) return "";
+  return "payment_month_" + safeMonth.replace(/[^\w-]/g, "_");
+}
+
+function readTuitionMonthPaymentIndexBundle_(monthName) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthPaymentIndexDocId_(safeMonth);
+  if (!docId) return { rows: [], seeded: false, updatedAt: "" };
+  try {
+    var doc = firestoreGetDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, docId);
+    if (!doc) return { rows: [], seeded: false, updatedAt: "" };
+    return {
+      rows: normalizeTuitionPaymentIndexRows_(doc.payments).filter(function(row) {
+        return row.sourceDueMonth === safeMonth || row.sourceMonth === safeMonth;
+      }),
+      seeded: doc.seeded === true,
+      updatedAt: String(doc.updatedAt || "")
+    };
+  } catch (e) {
+    return { rows: [], seeded: false, updatedAt: "" };
+  }
+}
+
+function loadSeededTuitionMonthPaymentIndexRows_(monthName) {
+  var bundle = readTuitionMonthPaymentIndexBundle_(monthName);
+  return bundle.seeded ? bundle.rows : [];
+}
+
+function writeTuitionMonthPaymentIndex_(monthName, rows, seeded) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  var docId = buildTuitionMonthPaymentIndexDocId_(safeMonth);
+  if (!docId) return false;
+  var normalized = normalizeTuitionPaymentIndexRows_(rows).filter(function(row) {
+    return row.sourceDueMonth === safeMonth || row.sourceMonth === safeMonth;
+  }).slice(0, TUITION_MONTH_PAYMENT_INDEX_LIMIT);
+  if (!normalized.length && seeded !== true) return false;
+  try {
+    firestoreSetDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, docId, {
+      monthName: safeMonth,
+      payments: normalized,
+      seeded: seeded === true,
+      updatedAt: getTuitionPaymentReadIndexUpdatedAt_(),
+      source: "desk_portal"
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getTuitionPaymentIndexMonthNames_(row) {
+  var map = {};
+  [row && row.sourceDueMonth, row && row.sourceMonth, row && row.originMonth, parseTuitionDueMonthName_(row && row.dueDate)].forEach(function(monthName) {
+    var normalized = normalizeTuitionMonthName_(monthName);
+    if (normalized) map[normalized] = true;
+  });
+  return Object.keys(map);
+}
+
 function seedTuitionPaymentReadIndexes_(rows) {
   var normalized = normalizeTuitionPaymentIndexRows_(rows);
   if (!normalized.length) return false;
   writeTuitionRecentPaymentIndex_(normalized, true);
   var dailyMap = {};
+  var monthMap = {};
   normalized.forEach(function(row) {
+    getTuitionPaymentIndexMonthNames_(row).forEach(function(monthName) {
+      if (!monthMap[monthName]) monthMap[monthName] = [];
+      monthMap[monthName].push(row);
+    });
     var dateKey = getTuitionPaymentPaidDateKey_(row);
     if (!dateKey) return;
     if (!dailyMap[dateKey]) dailyMap[dateKey] = [];
@@ -3660,6 +3727,9 @@ function seedTuitionPaymentReadIndexes_(rows) {
   });
   Object.keys(dailyMap).forEach(function(dateKey) {
     writeTuitionDailyPaymentIndex_(dateKey, dailyMap[dateKey]);
+  });
+  Object.keys(monthMap).forEach(function(monthName) {
+    writeTuitionMonthPaymentIndex_(monthName, monthMap[monthName], true);
   });
   return true;
 }
@@ -3679,6 +3749,13 @@ function updateTuitionPaymentReadIndexes_(record) {
       writeTuitionDailyPaymentIndex_(dateKey, dailyRows);
     }
   } catch (e2) {}
+  try {
+    getTuitionPaymentIndexMonthNames_(row).forEach(function(monthName) {
+      var bundle = readTuitionMonthPaymentIndexBundle_(monthName);
+      var monthRows = mergeTuitionPaymentRows_([row], bundle.rows).slice(0, TUITION_MONTH_PAYMENT_INDEX_LIMIT);
+      writeTuitionMonthPaymentIndex_(monthName, monthRows, bundle.seeded === true);
+    });
+  } catch (e3) {}
   return true;
 }
 
@@ -4186,18 +4263,28 @@ function getTuitionPaymentRowsForMonth_(monthName, options) {
   var safeMonth = String(monthName || "").trim();
   if (!safeMonth) return [];
   var opts = options || {};
+  var indexedRows = loadSeededTuitionMonthPaymentIndexRows_(safeMonth);
+  if (indexedRows.length && (opts.allowSheetFallback === false || isTuitionPaymentMonthFirestoreReady_(safeMonth))) {
+    return indexedRows;
+  }
   var firestoreRows = loadTuitionPaymentRowsFromFirestore_(safeMonth);
   if (isTuitionPaymentMonthFirestoreReady_(safeMonth)) {
     if (Array.isArray(firestoreRows)) {
       var portalRows = getTuitionPortalPaymentRowsFromSheet_(safeMonth);
-      return portalRows.length ? mergeTuitionPaymentRows_(portalRows, firestoreRows) : firestoreRows;
+      var readyRows = portalRows.length ? mergeTuitionPaymentRows_(portalRows, firestoreRows) : firestoreRows;
+      writeTuitionMonthPaymentIndex_(safeMonth, readyRows, true);
+      return readyRows;
     }
   }
   if (opts.allowSheetFallback === false) {
-    return Array.isArray(firestoreRows) ? firestoreRows : [];
+    var firestoreOnlyRows = Array.isArray(firestoreRows) ? firestoreRows : [];
+    if (firestoreOnlyRows.length) writeTuitionMonthPaymentIndex_(safeMonth, firestoreOnlyRows, true);
+    return firestoreOnlyRows;
   }
   var sheetRows = getTuitionPaymentRowsForMonthFromSheet_(safeMonth);
-  return Array.isArray(firestoreRows) ? mergeTuitionPaymentRows_(sheetRows, firestoreRows) : sheetRows;
+  var mergedRows = Array.isArray(firestoreRows) ? mergeTuitionPaymentRows_(sheetRows, firestoreRows) : sheetRows;
+  writeTuitionMonthPaymentIndex_(safeMonth, mergedRows, true);
+  return mergedRows;
 }
 
 function getTuitionPortalPaymentRowsFromSheet_(monthName) {
