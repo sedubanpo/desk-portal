@@ -3280,6 +3280,13 @@ function backfillTuitionPaymentsToFirestore(payload) {
           });
         }
       });
+      var indexResult = updateTuitionPaymentReadIndexes_(rows);
+      if (!indexResult.success) {
+        errors.push({
+          studentName: "",
+          message: indexResult.message || "수납 인덱스 갱신 실패"
+        });
+      }
       invalidateTuitionSummaryCache_(monthName);
       if (errors.length === 0) {
         try {
@@ -3929,29 +3936,60 @@ function seedTuitionPaymentReadIndexes_(rows) {
   return true;
 }
 
-function updateTuitionPaymentReadIndexes_(record) {
-  var row = normalizeTuitionPaymentRecord_(record);
-  if (!row) return false;
+function updateTuitionPaymentReadIndexes_(records) {
+  var sourceRows = Array.isArray(records) ? records : [records];
+  var rows = normalizeTuitionPaymentIndexRows_(sourceRows);
+  if (!rows.length) return { success: true, message: "", count: 0 };
+
+  var failures = [];
   try {
-    var bundle = readTuitionRecentPaymentIndexBundle_();
-    var recentRows = mergeTuitionPaymentRows_([row], bundle.rows).slice(0, TUITION_RECENT_PAYMENT_INDEX_LIMIT);
-    writeTuitionRecentPaymentIndex_(recentRows, bundle.seeded === true);
-  } catch (e) {}
-  try {
+    var recentBundle = readTuitionRecentPaymentIndexBundle_();
+    var recentRows = mergeTuitionPaymentRows_(rows, recentBundle.rows).slice(0, TUITION_RECENT_PAYMENT_INDEX_LIMIT);
+    if (!writeTuitionRecentPaymentIndex_(recentRows, recentBundle.seeded === true)) {
+      failures.push("최근 수납 인덱스");
+    }
+  } catch (recentError) {
+    failures.push("최근 수납 인덱스");
+  }
+
+  var dailyMap = {};
+  var monthMap = {};
+  rows.forEach(function(row) {
     var dateKey = getTuitionPaymentPaidDateKey_(row);
     if (dateKey) {
-      var dailyRows = mergeTuitionPaymentRows_([row], readTuitionDailyPaymentIndexRows_(dateKey)).slice(0, TUITION_DAILY_PAYMENT_INDEX_LIMIT);
-      writeTuitionDailyPaymentIndex_(dateKey, dailyRows);
+      if (!dailyMap[dateKey]) dailyMap[dateKey] = [];
+      dailyMap[dateKey].push(row);
     }
-  } catch (e2) {}
-  try {
     getTuitionPaymentIndexMonthNames_(row).forEach(function(monthName) {
-      var bundle = readTuitionMonthPaymentIndexBundle_(monthName);
-      var monthRows = mergeTuitionPaymentRows_([row], bundle.rows).slice(0, TUITION_MONTH_PAYMENT_INDEX_LIMIT);
-      writeTuitionMonthPaymentIndex_(monthName, monthRows, bundle.seeded === true);
+      if (!monthMap[monthName]) monthMap[monthName] = [];
+      monthMap[monthName].push(row);
     });
-  } catch (e3) {}
-  return true;
+  });
+
+  Object.keys(dailyMap).forEach(function(dateKey) {
+    try {
+      var dailyRows = mergeTuitionPaymentRows_(dailyMap[dateKey], readTuitionDailyPaymentIndexRows_(dateKey)).slice(0, TUITION_DAILY_PAYMENT_INDEX_LIMIT);
+      if (!writeTuitionDailyPaymentIndex_(dateKey, dailyRows)) failures.push("일일 수납 인덱스(" + dateKey + ")");
+    } catch (dailyError) {
+      failures.push("일일 수납 인덱스(" + dateKey + ")");
+    }
+  });
+
+  Object.keys(monthMap).forEach(function(monthName) {
+    try {
+      var monthBundle = readTuitionMonthPaymentIndexBundle_(monthName);
+      var monthRows = mergeTuitionPaymentRows_(monthMap[monthName], monthBundle.rows).slice(0, TUITION_MONTH_PAYMENT_INDEX_LIMIT);
+      if (!writeTuitionMonthPaymentIndex_(monthName, monthRows, monthBundle.seeded === true)) failures.push("월별 수납 인덱스(" + monthName + ")");
+    } catch (monthError) {
+      failures.push("월별 수납 인덱스(" + monthName + ")");
+    }
+  });
+
+  return {
+    success: failures.length === 0,
+    message: failures.length ? failures.join(", ") + " 갱신 실패" : "",
+    count: rows.length
+  };
 }
 
 function hasTuitionPaymentRequestInFirestore_(requestId) {
@@ -4538,7 +4576,7 @@ function getTuitionPaymentRowsForMonth_(monthName, options) {
   if (!safeMonth) return [];
   var opts = options || {};
   var indexedRows = loadSeededTuitionMonthPaymentIndexRows_(safeMonth);
-  if (indexedRows.length && (opts.allowSheetFallback === false || isTuitionPaymentMonthFirestoreReady_(safeMonth))) {
+  if (indexedRows.length && isTuitionPaymentMonthFirestoreReady_(safeMonth)) {
     return indexedRows;
   }
   var firestoreRows = loadTuitionPaymentRowsFromFirestore_(safeMonth);
@@ -4600,6 +4638,7 @@ function syncMissingTuitionPortalPaymentsToFirestore_(monthName) {
     var key = getTuitionPaymentRowMergeKey_(row);
     if (key) existingMap[key] = true;
   });
+  var newlyWrittenRows = [];
   portalRows.forEach(function(row) {
     var key = getTuitionPaymentRowMergeKey_(row);
     if (key && existingMap[key]) {
@@ -4609,6 +4648,7 @@ function syncMissingTuitionPortalPaymentsToFirestore_(monthName) {
     try {
       writeTuitionPaymentToFirestore_(row);
       stats.written += 1;
+      newlyWrittenRows.push(row);
       if (key) existingMap[key] = true;
     } catch (writeError) {
       stats.errors.push({
@@ -4618,6 +4658,16 @@ function syncMissingTuitionPortalPaymentsToFirestore_(monthName) {
       });
     }
   });
+  if (newlyWrittenRows.length) {
+    var indexResult = updateTuitionPaymentReadIndexes_(newlyWrittenRows);
+    if (!indexResult.success) {
+      stats.errors.push({
+        stage: "index",
+        message: indexResult.message || "수납 인덱스 갱신 실패"
+      });
+    }
+    invalidateTuitionSummaryCache_(safeMonth);
+  }
   stats.success = stats.errors.length === 0;
   return stats;
 }
@@ -4965,7 +5015,15 @@ function appendTuitionPaymentEntry(payload) {
     };
 
     writeTuitionPaymentToFirestore_(paymentRecord);
-    updateTuitionPaymentReadIndexes_(paymentRecord);
+    var indexResult = withTuitionWriteLock_(function() {
+      return updateTuitionPaymentReadIndexes_(paymentRecord);
+    });
+    var snapshotUpdated = updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord);
+    if (snapshotUpdated) {
+      invalidateTuitionScriptCacheOnly_(monthName);
+    } else {
+      invalidateTuitionSummaryCache_(monthName);
+    }
     var sheetMirrorWarning = "";
     if (mirrorSheets) {
       var mirrorResult = withTuitionWriteLock_(function() {
@@ -5005,15 +5063,23 @@ function appendTuitionPaymentEntry(payload) {
         ? mirrorResult.sheetMirrorWarning
         : (mirrorResult && mirrorResult.success === false ? mirrorResult.message || "시트 미러링 대기 오류" : "");
     }
-    invalidateTuitionSummaryCache_(monthName);
+    var indexWarning = indexResult && !indexResult.success
+      ? (indexResult.message || "수납 인덱스 갱신이 지연되었습니다. 다음 새로고침에서 다시 확인해 주세요.")
+      : "";
+    var snapshotWarning = snapshotUpdated
+      ? ""
+      : "월별 요약 스냅샷이 갱신되지 않아 다음 조회 시 재계산됩니다.";
     return {
       success: true,
       sheetMirrorWarning: sheetMirrorWarning,
+      indexWarning: indexWarning,
+      snapshotWarning: snapshotWarning,
       storage: {
         firestore: true,
         sheetMirror: !!mirrorSheets && !sheetMirrorWarning,
-        snapshotUpdated: false,
-        snapshotDeferred: true
+        indexesUpdated: !!(indexResult && indexResult.success),
+        snapshotUpdated: snapshotUpdated,
+        snapshotDeferred: !snapshotUpdated
       },
       payment: paymentRecord
     };

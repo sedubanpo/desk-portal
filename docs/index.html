@@ -35222,7 +35222,7 @@
 	        .then(function(res) {
 	          cleanup();
 	          tuitionContactModalEl.style.display = "none";
-	          state.tuition.lastWriteWarning = res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "";
+          state.tuition.lastWriteWarning = res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "";
 	          state.tuition.guideDashboard = null;
 	          renderTuitionOpsStatus_();
 	          refreshTuitionSummary(true);
@@ -35268,7 +35268,11 @@
 	        .then(function(res) {
 	          cleanup();
 	          tuitionPaymentModalEl.style.display = "none";
-	          state.tuition.lastWriteWarning = res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "";
+	          state.tuition.lastWriteWarning = [
+	            res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "",
+	            res && res.indexWarning ? ("읽기 인덱스 확인 필요: " + res.indexWarning) : "",
+	            res && res.snapshotWarning ? res.snapshotWarning : ""
+	          ].filter(Boolean).join(" · ");
 	          if (res && res.payment) {
 	            upsertTuitionPaymentLocal_(res.payment);
 	          } else {
