@@ -2845,10 +2845,16 @@ function updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord) 
   }
   snapshot.allPayments = Array.isArray(snapshot.allPayments) ? snapshot.allPayments.slice() : [];
   snapshot.payments = Array.isArray(snapshot.payments) ? snapshot.payments.slice() : [];
+  var alreadyApplied = snapshot.allPayments.some(hasPayment) || snapshot.payments.some(hasPayment);
   if (!snapshot.allPayments.some(hasPayment)) snapshot.allPayments.push(payment);
   if (!snapshot.payments.some(hasPayment)) snapshot.payments.push(payment);
   snapshot.allPayments.sort(compareTuitionPaymentRowsDesc_);
   snapshot.payments.sort(compareTuitionPaymentRowsDesc_);
+
+  if (alreadyApplied) {
+    writeTuitionMonthSnapshotToFirestore_(month, snapshot);
+    return true;
+  }
 
   var studentKey = normalizeTuitionStudentName_(payment.studentName);
   var paidAmount = 0 - toPayrollNumber_(payment.amount);
@@ -2981,7 +2987,7 @@ function getTuitionMonthSummary(payload) {
     var keyword = String(req.keyword || "").trim().toLowerCase();
     var forceRefresh = req.forceRefresh === true;
     var portalPaymentSync = null;
-    if (forceRefresh || req.syncPortalPayments === true) {
+    if (req.syncPortalPayments === true) {
       portalPaymentSync = syncMissingTuitionPortalPaymentsToFirestore_(monthName);
     }
     if (portalPaymentSync && portalPaymentSync.written > 0) forceRefresh = true;
@@ -3001,6 +3007,7 @@ function getTuitionMonthSummary(payload) {
       if (firestoreSnapshot && firestoreSnapshot.success) {
         firestoreSnapshot.months = months;
         firestoreSnapshot.selectedMonth = monthName;
+        seedTuitionReadIndexesFromSnapshot_(monthName, firestoreSnapshot);
         firestoreSnapshot.cache = {
           source: "firestore-snapshot",
           documentId: buildTuitionMonthSnapshotDocId_(monthName),
@@ -3764,6 +3771,53 @@ function buildTuitionIndexStatus_(monthName, summaryCache) {
   };
 }
 
+function seedTuitionReadIndexesFromSnapshot_(monthName, summary) {
+  var safeMonth = normalizeTuitionMonthName_(monthName);
+  if (!safeMonth || !summary || summary.success !== true) return false;
+  var indexStatus = buildTuitionIndexStatus_(safeMonth, { source: "firestore-snapshot" });
+  var snapshotRows = Array.isArray(summary.rows) ? summary.rows : [];
+  var allPayments = Array.isArray(summary.allPayments) ? summary.allPayments : [];
+  var monthPayments = Array.isArray(summary.payments) ? summary.payments : [];
+  var wrote = false;
+
+  if (!indexStatus.recentPayments.ready) {
+    wrote = writeTuitionRecentPaymentIndex_(allPayments, true) || wrote;
+  }
+  if (!indexStatus.monthPayments.ready) {
+    wrote = writeTuitionMonthPaymentIndex_(safeMonth, monthPayments, true) || wrote;
+  }
+  if (!indexStatus.followups.ready) {
+    var followupRows = snapshotRows.map(function(row) {
+      return {
+        monthName: safeMonth,
+        studentName: row.studentName,
+        guideAmount: row.guideAmount,
+        unpaidStatus: row.unpaidStatus,
+        lastContactAt: row.lastContactAt,
+        lastContactMemo: row.lastContactMemo,
+        contactCount: row.contactCount,
+        lastUpdatedAt: row.lastUpdatedAt
+      };
+    });
+    wrote = writeTuitionFollowupMonthIndex_(safeMonth, followupRows, true) || wrote;
+  }
+  if (!indexStatus.charges.ready) {
+    var chargeRows = snapshotRows.map(function(row) {
+      return {
+        monthName: safeMonth,
+        classMonthName: safeMonth.replace(/s$/i, ""),
+        studentName: row.studentName,
+        guideAmount: row.guideAmount,
+        active: true,
+        source: "tuition_month_snapshot",
+        updatedAt: row.lastUpdatedAt || ""
+      };
+    });
+    wrote = writeTuitionMonthChargeIndex_(safeMonth, chargeRows, true) || wrote;
+  }
+  return wrote;
+}
+
 function normalizeTuitionPaymentIndexRows_(rows) {
   return (Array.isArray(rows) ? rows : []).map(normalizeTuitionPaymentRecord_).filter(function(row) {
     return !!row;
@@ -3791,7 +3845,7 @@ function loadSeededTuitionRecentPaymentIndexRows_() {
 
 function writeTuitionRecentPaymentIndex_(rows, seeded) {
   var normalized = normalizeTuitionPaymentIndexRows_(rows).slice(0, TUITION_RECENT_PAYMENT_INDEX_LIMIT);
-  if (!normalized.length) return false;
+  if (!normalized.length && seeded !== true) return false;
   try {
     firestoreSetDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, TUITION_RECENT_PAYMENT_INDEX_DOC_ID, {
       payments: normalized,
@@ -3993,13 +4047,18 @@ function updateTuitionPaymentReadIndexes_(records) {
 }
 
 function hasTuitionPaymentRequestInFirestore_(requestId) {
+  return !!loadTuitionPaymentRequestFromFirestore_(requestId);
+}
+
+function loadTuitionPaymentRequestFromFirestore_(requestId) {
   var id = normalizeTuitionClientRequestId_(requestId);
-  if (!id) return false;
+  if (!id) return null;
   try {
     var doc = firestoreGetDocument_(TUITION_PAYMENT_FIRESTORE_COLLECTION, buildTuitionPaymentFirestoreDocId_({ requestId: id }));
-    return !!(doc && normalizeTuitionClientRequestId_(doc.requestId) === id);
+    var row = normalizeTuitionPaymentRecord_(doc);
+    return row && normalizeTuitionClientRequestId_(row.requestId) === id ? row : null;
   } catch (e) {
-    return false;
+    return null;
   }
 }
 
@@ -4582,10 +4641,8 @@ function getTuitionPaymentRowsForMonth_(monthName, options) {
   var firestoreRows = loadTuitionPaymentRowsFromFirestore_(safeMonth);
   if (isTuitionPaymentMonthFirestoreReady_(safeMonth)) {
     if (Array.isArray(firestoreRows)) {
-      var portalRows = getTuitionPortalPaymentRowsFromSheet_(safeMonth);
-      var readyRows = portalRows.length ? mergeTuitionPaymentRows_(portalRows, firestoreRows) : firestoreRows;
-      writeTuitionMonthPaymentIndex_(safeMonth, readyRows, true);
-      return readyRows;
+      writeTuitionMonthPaymentIndex_(safeMonth, firestoreRows, true);
+      return firestoreRows;
     }
   }
   if (opts.allowSheetFallback === false) {
@@ -4975,6 +5032,7 @@ function saveTuitionStatusOnly(payload) {
 }
 
 function appendTuitionPaymentEntry(payload) {
+  return withTuitionWriteLock_(function() {
   try {
     var req = payload || {};
     var monthName = String(req.monthName || "").trim();
@@ -4988,12 +5046,41 @@ function appendTuitionPaymentEntry(payload) {
     var paidAt = String(req.paidAt || "").trim();
     var business = String(req.business || "").trim();
     var paymentType = String(req.paymentType || "").trim();
+    if (!paidAt) return { success: false, message: "납부일을 입력해 주세요." };
+    if (!paymentType) return { success: false, message: "결재구분을 입력해 주세요." };
     var approvalNo = String(req.approvalNo || "").trim();
     var issueMemo = String(req.issueMemo || "").trim();
     var itemName = String(req.itemName || "납부금액").trim();
     var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
     var nowText = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "M/d HH:mm");
     var mirrorSheets = isTuitionSheetMirrorWritesEnabled_();
+
+    var existingPayment = loadTuitionPaymentRequestFromFirestore_(requestId);
+    if (existingPayment) {
+      var duplicateIndexResult = updateTuitionPaymentReadIndexes_(existingPayment);
+      var duplicateSnapshotUpdated = updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, existingPayment);
+      if (duplicateSnapshotUpdated) {
+        invalidateTuitionScriptCacheOnly_(monthName);
+      } else {
+        invalidateTuitionSummaryCache_(monthName);
+      }
+      return {
+        success: true,
+        duplicate: true,
+        indexWarning: duplicateIndexResult && !duplicateIndexResult.success
+          ? (duplicateIndexResult.message || "수납 인덱스 갱신이 지연되었습니다. 다음 새로고침에서 다시 확인해 주세요.")
+          : "",
+        snapshotWarning: duplicateSnapshotUpdated ? "" : "월별 요약 스냅샷이 갱신되지 않아 다음 조회 시 재계산됩니다.",
+        storage: {
+          firestore: true,
+          sheetMirror: !!mirrorSheets,
+          indexesUpdated: !!(duplicateIndexResult && duplicateIndexResult.success),
+          snapshotUpdated: duplicateSnapshotUpdated,
+          snapshotDeferred: !duplicateSnapshotUpdated
+        },
+        payment: existingPayment
+      };
+    }
 
     var paymentRecord = {
       rowNumber: 0,
@@ -5015,9 +5102,7 @@ function appendTuitionPaymentEntry(payload) {
     };
 
     writeTuitionPaymentToFirestore_(paymentRecord);
-    var indexResult = withTuitionWriteLock_(function() {
-      return updateTuitionPaymentReadIndexes_(paymentRecord);
-    });
+    var indexResult = updateTuitionPaymentReadIndexes_(paymentRecord);
     var snapshotUpdated = updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord);
     if (snapshotUpdated) {
       invalidateTuitionScriptCacheOnly_(monthName);
@@ -5026,7 +5111,7 @@ function appendTuitionPaymentEntry(payload) {
     }
     var sheetMirrorWarning = "";
     if (mirrorSheets) {
-      var mirrorResult = withTuitionWriteLock_(function() {
+      var mirrorResult = (function() {
         try {
           var ss = getPayrollSpreadsheet_();
           var sheet = ensureTuitionPortalPaymentSheet_(ss);
@@ -5058,7 +5143,7 @@ function appendTuitionPaymentEntry(payload) {
             sheetMirrorWarning: sheetError && sheetError.message ? sheetError.message : String(sheetError)
           };
         }
-      });
+      })();
       sheetMirrorWarning = mirrorResult && mirrorResult.sheetMirrorWarning
         ? mirrorResult.sheetMirrorWarning
         : (mirrorResult && mirrorResult.success === false ? mirrorResult.message || "시트 미러링 대기 오류" : "");
@@ -5086,6 +5171,7 @@ function appendTuitionPaymentEntry(payload) {
   } catch (e) {
     return { success: false, message: "수납 입력 오류: " + e.message };
   }
+  });
 }
 
 function getTuitionMonthlySalesOverview(payload) {

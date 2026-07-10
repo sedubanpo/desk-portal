@@ -35126,7 +35126,7 @@
         return runServer(fnName, requestPayload).then(function(res) {
           if (!res || res.success === false) {
             var err = new Error(res && res.message ? res.message : "저장 실패");
-            if (res && res.message && /월 정보|학생명|금액이 0원/.test(res.message)) err.nonRetryable = true;
+            if (res && res.message && /월 정보|학생명|금액이 0원|납부일|결재구분/.test(res.message)) err.nonRetryable = true;
             throw err;
           }
           return res;
@@ -35240,6 +35240,14 @@
       rows.sort(compareTuitionPaymentRowsDesc_);
       state.tuition.allPayments = rows;
 
+      if (replaced) {
+        state.tuition.todayPayments = rows.filter(function(row) {
+          return parseTuitionPaidDateKey_(row && row.paidAt, getTuitionPaymentBaseMonth_(row)) === getTodayDateKey_();
+        });
+        applyTuitionLocalFilters_();
+        return;
+      }
+
       var targetName = formatStudentName(normalized.studentName);
       var paidAmount = 0 - toNumber(normalized.amount, 0);
       state.tuition.allRows = (state.tuition.allRows || []).map(function(row) {
@@ -35314,6 +35322,16 @@
       if (!target || state.tuition.savingPayment) return;
       var targetName = formatStudentName(target.studentName);
       if (!targetName) return;
+      if (!String(tuitionPaymentPaidAtEl.value || "").trim()) {
+        alert("납부일을 입력해 주세요.");
+        tuitionPaymentPaidAtEl.focus();
+        return;
+      }
+      if (!String(tuitionPaymentTypeEl.value || "").trim()) {
+        alert("결재구분을 입력해 주세요.");
+        tuitionPaymentTypeEl.focus();
+        return;
+      }
       state.tuition.savingPayment = true;
       saveTuitionPaymentBtnEl.disabled = true;
       setLoading(true, "수납 내역을 저장하는 중입니다...");
