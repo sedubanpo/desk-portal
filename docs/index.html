@@ -7421,11 +7421,25 @@
       font-size: 11px;
       font-weight: 850;
     }
-    .tuition-chart-legend span {
+    .tuition-chart-legend button {
       display: inline-flex;
       align-items: center;
       gap: 5px;
+      min-height: 28px;
+      padding: var(--ds-space-1) var(--ds-space-2);
+      border: 1px solid transparent;
+      border-radius: var(--ds-control-radius);
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
       white-space: nowrap;
+    }
+    .tuition-chart-legend button:hover,
+    .tuition-chart-legend button:focus-visible {
+      border-color: var(--ds-border);
+      background: var(--ds-bg-subtle);
+      outline: none;
     }
     .tuition-chart-legend i {
       width: 8px;
@@ -7574,6 +7588,56 @@
     .tuition-issue-chip.has::before {
       background: #f97316;
       box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.13);
+    }
+    .tuition-issue-tooltip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .tuition-issue-tooltip-text {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + var(--ds-space-2));
+      z-index: 8;
+      width: max-content;
+      max-width: 220px;
+      padding: var(--ds-space-2);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-control-radius);
+      background: var(--ds-bg-panel);
+      color: var(--ds-fg-soft);
+      box-shadow: 0 var(--ds-space-2) var(--ds-space-4) var(--ds-ring);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.4;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(var(--ds-space-1));
+      transition: opacity 140ms ease, transform 140ms ease;
+      white-space: normal;
+    }
+    .tuition-issue-tooltip:hover .tuition-issue-tooltip-text,
+    .tuition-issue-tooltip:focus-within .tuition-issue-tooltip-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .tuition-student-identity {
+      display: inline-flex;
+      align-items: baseline;
+      gap: var(--ds-space-2);
+      min-width: 0;
+      color: var(--ds-muted);
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .tuition-student-identity::before {
+      content: "·";
+      color: var(--ds-border);
+    }
+    .tuition-table th:first-child,
+    .tuition-table td:first-child {
+      min-width: 164px;
     }
     .tuition-table th {
       font-size: 12px;
@@ -14958,8 +15022,7 @@
               <table class="tuition-table">
                 <thead>
                   <tr>
-                    <th>학생</th>
-                    <th>학교/학년</th>
+                    <th>학생 · 학교/학년</th>
                     <th>안내금액</th>
                     <th>순수납액</th>
                     <th>미납액</th>
@@ -32943,6 +33006,12 @@
         options: {
           maintainAspectRatio: false,
           cutout: "64%",
+          onClick: function(event, elements) {
+            if (!elements || !elements.length) return;
+            var index = elements[0].index;
+            var status = labels[index] || "";
+            if (status) openTuitionStatusListModal_(status);
+          },
           plugins: {
             legend: {
               display: false
@@ -32980,9 +33049,14 @@
       }
       tuitionChartLegendEl.innerHTML = labels.map(function(label, index) {
         var value = toNumber(values[index], 0);
-        return '<span><i style="background:' + (colorMap[label] || "#94a3b8") + ';"></i>' +
-          escapeHtml(label) + ' ' + value + '명</span>';
+        return '<button type="button" data-chart-status="' + escapeHtml(label) + '" aria-label="' + escapeHtml(label) + ' 대상 학생 ' + value + '명 보기"><i style="background:' + (colorMap[label] || "#94a3b8") + ';"></i>' +
+          escapeHtml(label) + ' ' + value + '명</button>';
       }).join("");
+      Array.prototype.forEach.call(tuitionChartLegendEl.querySelectorAll("[data-chart-status]"), function(btn) {
+        btn.addEventListener("click", function() {
+          openTuitionStatusListModal_(btn.getAttribute("data-chart-status") || "");
+        });
+      });
     }
 
     function renderTuitionStatusSummary_(labels, values, maxValue, colorMap, total) {
@@ -33309,7 +33383,7 @@
           '</button>';
         }).join("")
         : '<button type="button" class="tuition-inactive-chip" data-pay-inactive-manual="1">' + escapeHtml(keyword) + ' 수납 입력</button>';
-      return '<tr class="tuition-inactive-search-row"><td colspan="10">' +
+      return '<tr class="tuition-inactive-search-row"><td colspan="9">' +
         '<div class="tuition-inactive-search">' +
           '<span class="muted">표시할 재원생이 없습니다. 중지생 중에서 입력하시겠습니까?</span>' +
           chips +
@@ -33339,9 +33413,9 @@
       tuitionRowsPillEl.textContent = rows.length + " rows";
       if (!rows.length) {
         if (state.tuition.pendingSummary) {
-          tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">월별 수강료 요약을 백그라운드에서 준비 중입니다.</td></tr>';
+          tuitionStudentBodyEl.innerHTML = '<tr><td colspan="9">월별 수강료 요약을 백그라운드에서 준비 중입니다.</td></tr>';
         } else {
-          tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
+          tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="9">표시할 수강료 데이터가 없습니다.</td></tr>';
           bindTuitionInactiveSearchActions_();
           if (state.tuition.keyword) loadTuitionInactiveStudentMatches_(state.tuition.keyword);
         }
@@ -33380,7 +33454,7 @@
 
       tuitionStudentBodyEl.innerHTML = sortedRows.map(function(row) {
         if (row.__group) {
-          return '<tr class="tuition-group-row"><td colspan="10">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
+          return '<tr class="tuition-group-row"><td colspan="9">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
         }
         var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth, { currentRow: row });
         var rowClass = "tuition-row-default";
@@ -33392,10 +33466,6 @@
         if (carryInfo) rowClass += " tuition-row-carryover";
         return '<tr class="' + rowClass + '">' +
           '<td>' + buildTuitionStudentCell(row, carryInfo) + '</td>' +
-          '<td><div class="tuition-school-badges">' +
-            '<span class="tuition-school-chip">' + escapeHtml(row.school || "학교미입력") + '</span>' +
-            '<span class="tuition-grade-chip">' + escapeHtml(formatTuitionGradeLabel(row.grade)) + '</span>' +
-          '</div></td>' +
           '<td>' + buildTuitionAmountCell("guide", row.guideAmount || 0) + '</td>' +
           '<td>' + buildTuitionAmountCell("collected", row.collectedAmount || 0) + '</td>' +
           '<td>' + buildTuitionAmountCell("outstanding", row.outstandingAmount || 0) + '</td>' +
@@ -33477,7 +33547,9 @@
           '<td>' + escapeHtml(row.paidAt || "-") + '</td>' +
           '<td>' + escapeHtml(row.paymentType || "-") + '</td>' +
           '<td>' + escapeHtml(row.approvalNo || "-") + '</td>' +
-          '<td class="memo-col"><span class="tuition-issue-chip' + (hasIssue ? " has" : "") + '" title="' + escapeHtml(issueMemo || "이슈 없음") + '">' + (hasIssue ? "이슈있음" : "이슈없음") + '</span></td>' +
+          '<td class="memo-col">' + (hasIssue
+            ? '<span class="tuition-issue-tooltip" tabindex="0"><span class="tuition-issue-chip has">이슈있음</span><span class="tuition-issue-tooltip-text" role="tooltip">' + escapeHtml(issueMemo) + '</span></span>'
+            : '<span class="tuition-issue-chip" title="이슈 없음">이슈없음</span>') + '</td>' +
         '</tr>';
       }).join("");
       renderTuitionPaymentPagination_(totalPages, page);
@@ -33665,6 +33737,10 @@
 
     function buildTuitionStudentCell(row, carryInfo) {
       var carryHtml = "";
+      var school = String(row.school || "학교미입력").trim();
+      var grade = String(row.grade || "").trim();
+      var compactGrade = /^\d+$/.test(grade) ? grade : grade.replace(/학년$/, "");
+      var identity = school + (compactGrade ? " " + compactGrade : "");
       if (carryInfo) {
         carryHtml = '<span class="tuition-student-carryover">전월 미납 ' + formatWon(carryInfo.outstandingAmount || 0) +
           '<button type="button" class="tuition-carryover-hide-btn" data-hide-tuition-carryover="' + escapeHtml(formatStudentName(row.studentName)) + '" title="이 학생의 전월 미납 표시 숨김">숨김</button></span>';
@@ -33672,7 +33748,7 @@
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
         '<div class="tuition-student-text">' +
-          '<button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' +
+          '<div><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button><span class="tuition-student-identity">' + escapeHtml(identity) + '</span></div>' +
           carryHtml +
         '</div>' +
       '</div>';
