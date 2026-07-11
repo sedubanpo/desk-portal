@@ -17,6 +17,7 @@ const TUITION_FOLLOWUP_META_FIRESTORE_COLLECTION = "tuitionFollowupMeta";
 const TUITION_PAYMENT_META_FIRESTORE_COLLECTION = "tuitionPaymentMeta";
 const TUITION_STATUS_HISTORY_FIRESTORE_COLLECTION = "tuitionStatusChanges";
 const TUITION_GUIDE_AMOUNT_HISTORY_FIRESTORE_COLLECTION = "tuitionGuideAmountChanges";
+const TUITION_STUDENT_MEMO_FIRESTORE_COLLECTION = "tuitionStudentMemos";
 const TUITION_MONTH_SNAPSHOT_FIRESTORE_COLLECTION = "tuitionMonthSnapshots";
 const TUITION_MONTH_CHARGE_FIRESTORE_COLLECTION = "tuitionMonthCharges";
 const TUITION_MONTH_CHARGE_META_FIRESTORE_COLLECTION = "tuitionMonthChargeMeta";
@@ -66,6 +67,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   getTuitionBootstrapData: true,
   getTuitionMonthSummary: true,
   getTuitionStudentMonthlyHistory: true,
+  getTuitionStudentMemoNotes: true,
   getTuitionGuideDashboard: true,
   getTuitionMonthlySalesOverview: true,
   backfillTuitionMonthSnapshots: true,
@@ -75,6 +77,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   completeTuitionFirestoreMigration: true,
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
+  saveTuitionStudentMemo: true,
   appendTuitionPaymentEntry: true,
   getDeskScheduleMonthData: true,
   getDeskCalendarEvents: true,
@@ -155,6 +158,7 @@ function handlePayrollApiRequest_(params) {
       getTuitionBootstrapData: getTuitionBootstrapData,
       getTuitionMonthSummary: getTuitionMonthSummary,
       getTuitionStudentMonthlyHistory: getTuitionStudentMonthlyHistory,
+      getTuitionStudentMemoNotes: getTuitionStudentMemoNotes,
       getTuitionGuideDashboard: getTuitionGuideDashboard,
       getTuitionMonthlySalesOverview: getTuitionMonthlySalesOverview,
       backfillTuitionMonthSnapshots: backfillTuitionMonthSnapshots,
@@ -164,6 +168,7 @@ function handlePayrollApiRequest_(params) {
       completeTuitionFirestoreMigration: completeTuitionFirestoreMigration,
       saveTuitionStatusOnly: saveTuitionStatusOnly,
       saveTuitionFollowup: saveTuitionFollowup,
+      saveTuitionStudentMemo: saveTuitionStudentMemo,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
       getDeskScheduleMonthData: getDeskScheduleMonthData,
       getDeskCalendarEvents: getDeskCalendarEvents,
@@ -3000,7 +3005,7 @@ function getTuitionMonthSummary(payload) {
         key: summaryCacheKey
       };
       cachedSummary.indexStatus = buildTuitionIndexStatus_(monthName, cachedSummary.cache);
-      return cachedSummary;
+      return attachTuitionMemoWarningsToSummary_(cachedSummary);
     }
     if (!forceRefresh && monthName) {
       var firestoreSnapshot = readTuitionMonthSnapshotFromFirestore_(monthName);
@@ -3018,7 +3023,7 @@ function getTuitionMonthSummary(payload) {
           writeTuitionJsonCache_(summaryCacheKey, filteredSnapshot, TUITION_MONTH_SUMMARY_CACHE_TTL_SECONDS);
         }
         filteredSnapshot.indexStatus = buildTuitionIndexStatus_(monthName, filteredSnapshot.cache);
-        return filteredSnapshot;
+        return attachTuitionMemoWarningsToSummary_(filteredSnapshot);
       }
     }
     var allPaymentRows = getTuitionPaymentRowsForMonth_(monthName, { allowSheetFallback: allowSheetFallback });
@@ -3209,7 +3214,7 @@ function getTuitionMonthSummary(payload) {
     if (!statusFilter && !keyword) {
       writeTuitionMonthSnapshotToFirestore_(monthName, result);
     }
-    return result;
+    return attachTuitionMemoWarningsToSummary_(result);
   } catch (e) {
     return { success: false, message: "수강료 데이터 계산 오류: " + e.message };
   }
@@ -3484,6 +3489,130 @@ function buildTuitionGuideAmountHistoryFirestoreDocId_(requestId) {
   var id = normalizeTuitionClientRequestId_(requestId);
   if (id) return "tg_" + id;
   return "tg_" + Utilities.getUuid().replace(/-/g, "");
+}
+
+function buildTuitionStudentMemoFirestoreDocId_(studentName) {
+  var raw = normalizeTuitionStudentName_(studentName);
+  var bytes = Utilities.newBlob(raw).getBytes();
+  return "tsm_" + Utilities.base64EncodeWebSafe(bytes).replace(/=+$/g, "").slice(0, 120);
+}
+
+function normalizeTuitionStudentMemo_(source, fallbackId) {
+  var row = source || {};
+  var text = String(row.memo || row.text || "").trim().slice(0, 1200);
+  if (!text) return null;
+  return {
+    id: String(row.id || fallbackId || "").trim() || ("memo_" + Utilities.getUuid().replace(/-/g, "")),
+    createdAt: String(row.createdAt || row.date || new Date().toISOString()).trim(),
+    memo: text,
+    author: String(row.author || "예스영어학원 관리자").trim().slice(0, 80) || "예스영어학원 관리자"
+  };
+}
+
+function normalizeTuitionStudentMemoList_(source) {
+  var map = source && typeof source === "object" ? source : {};
+  return Object.keys(map).map(function(id) {
+    return normalizeTuitionStudentMemo_(map[id], id);
+  }).filter(Boolean).sort(function(a, b) {
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  });
+}
+
+function loadTuitionStudentMemoDocument_(studentName) {
+  var safeName = normalizeTuitionStudentName_(studentName);
+  if (!safeName) return null;
+  try {
+    return firestoreGetDocument_(TUITION_STUDENT_MEMO_FIRESTORE_COLLECTION, buildTuitionStudentMemoFirestoreDocId_(safeName));
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildTuitionStudentMemoWarning_(memos) {
+  var list = Array.isArray(memos) ? memos : [];
+  if (!list.length) return { hasWarning: false, count: 0, latestMemo: "", latestAt: "", latestAuthor: "" };
+  var latest = list[0] || {};
+  return {
+    hasWarning: true,
+    count: list.length,
+    latestMemo: String(latest.memo || ""),
+    latestAt: String(latest.createdAt || ""),
+    latestAuthor: String(latest.author || "")
+  };
+}
+
+function getTuitionStudentMemoNotes(payload) {
+  try {
+    var studentName = normalizeTuitionStudentName_((payload || {}).studentName);
+    if (!studentName) return { success: false, message: "학생명이 없습니다." };
+    var doc = loadTuitionStudentMemoDocument_(studentName) || {};
+    var memos = normalizeTuitionStudentMemoList_(doc.memos);
+    return {
+      success: true,
+      studentName: studentName,
+      memos: memos,
+      warning: buildTuitionStudentMemoWarning_(memos)
+    };
+  } catch (e) {
+    return { success: false, message: "수강료 메모 조회 오류: " + e.message };
+  }
+}
+
+function saveTuitionStudentMemo(payload) {
+  return withTuitionWriteLock_(function() {
+    try {
+      var req = payload || {};
+      var studentName = normalizeTuitionStudentName_(req.studentName);
+      if (!studentName) return { success: false, message: "학생명이 없습니다." };
+      var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
+      var memoId = requestId ? ("memo_" + requestId) : ("memo_" + Utilities.getUuid().replace(/-/g, ""));
+      var doc = loadTuitionStudentMemoDocument_(studentName) || {};
+      var memoMap = doc.memos && typeof doc.memos === "object" ? doc.memos : {};
+      var existing = memoMap[memoId] || {};
+      var memo = normalizeTuitionStudentMemo_({
+        id: memoId,
+        createdAt: existing.createdAt || new Date().toISOString(),
+        memo: req.memo,
+        author: req.author
+      }, memoId);
+      if (!memo) return { success: false, message: "수강료 메모를 입력해 주세요." };
+      memoMap[memoId] = memo;
+      var memos = normalizeTuitionStudentMemoList_(memoMap);
+      firestoreSetDocument_(TUITION_STUDENT_MEMO_FIRESTORE_COLLECTION, buildTuitionStudentMemoFirestoreDocId_(studentName), {
+        studentName: studentName,
+        updatedAt: new Date().toISOString(),
+        memos: memoMap
+      });
+      return {
+        success: true,
+        studentName: studentName,
+        memo: memo,
+        memos: memos,
+        warning: buildTuitionStudentMemoWarning_(memos)
+      };
+    } catch (e) {
+      return { success: false, message: "수강료 메모 저장 오류: " + e.message };
+    }
+  });
+}
+
+function attachTuitionMemoWarningsToSummary_(summary) {
+  var target = summary || {};
+  var warnings = {};
+  try {
+    firestoreListCollection_(TUITION_STUDENT_MEMO_FIRESTORE_COLLECTION, 500).forEach(function(doc) {
+      var studentName = normalizeTuitionStudentName_(doc && doc.studentName);
+      if (!studentName) return;
+      var warning = buildTuitionStudentMemoWarning_(normalizeTuitionStudentMemoList_(doc.memos));
+      if (warning.hasWarning) warnings[studentName] = warning;
+    });
+  } catch (e) {}
+  (target.rows || []).forEach(function(row) {
+    var warning = warnings[normalizeTuitionStudentName_(row.studentName)];
+    row.tuitionMemoWarning = warning || { hasWarning: false, count: 0, latestMemo: "", latestAt: "", latestAuthor: "" };
+  });
+  target.tuitionMemoWarnings = warnings;
+  return target;
 }
 
 function normalizeTuitionFollowupRecord_(source) {
