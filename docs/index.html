@@ -7731,6 +7731,74 @@
       gap: 8px;
       margin-top: 10px;
     }
+    .tuition-history-tabs {
+      display: flex;
+      gap: var(--ds-space-1);
+      margin-top: var(--ds-space-3);
+      padding-bottom: var(--ds-space-2);
+      border-bottom: 1px solid var(--ds-border-soft);
+    }
+    .tuition-history-tab {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--ds-space-2);
+      padding: 0 var(--ds-space-3);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ds-muted);
+      font-size: 13px;
+      font-weight: 900;
+      transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+    .tuition-history-tab:hover { background: var(--ds-bg-subtle); color: var(--ds-fg-soft); }
+    .tuition-history-tab:active { transform: scale(0.96); }
+    .tuition-history-tab:focus-visible { outline: 2px solid var(--ds-ring); outline-offset: 2px; }
+    .tuition-history-tab.active { border-color: var(--ds-border); background: var(--ds-bg-panel); color: var(--ds-primary); box-shadow: 0 2px 8px rgba(15,23,42,0.035); }
+    .tuition-history-tab i { width: 15px; height: 15px; color: var(--ds-warning); }
+    .tuition-history-tab-count {
+      min-width: 20px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--ds-warning-bg);
+      color: var(--ds-warning);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .tuition-history-tab-panel[hidden] { display: none; }
+    .tuition-student-memo-composer {
+      display: grid;
+      gap: var(--ds-space-3);
+      margin-top: var(--ds-space-3);
+      padding: var(--ds-space-4);
+      border: 1px solid var(--ds-border);
+      border-radius: 12px;
+      background: var(--ds-bg-warm);
+    }
+    .tuition-student-memo-compose-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ds-space-3); }
+    .tuition-student-memo-compose-title { display: flex; align-items: center; gap: var(--ds-space-2); color: var(--ds-fg); font-size: 14px; font-weight: 950; }
+    .tuition-student-memo-compose-title i { width: 17px; height: 17px; color: var(--ds-warning); }
+    .tuition-student-memo-compose-copy { margin-top: var(--ds-space-1); color: var(--ds-muted); font-size: 12px; font-weight: 750; line-height: 1.45; }
+    .tuition-student-memo-form { display: grid; grid-template-columns: 116px minmax(0, 1fr) 136px auto; align-items: end; gap: var(--ds-space-2); }
+    .tuition-student-memo-field { display: grid; gap: var(--ds-space-1); min-width: 0; }
+    .tuition-student-memo-field label { color: var(--ds-muted); font-size: 11px; font-weight: 900; }
+    .tuition-student-memo-field input, .tuition-student-memo-field textarea { width: 100%; border: 1px solid var(--ds-border); border-radius: 8px; background: var(--ds-bg-panel); color: var(--ds-fg); font: inherit; font-size: 13px; font-weight: 750; }
+    .tuition-student-memo-field input { min-height: 40px; padding: 0 var(--ds-space-2); }
+    .tuition-student-memo-field textarea { min-height: 72px; padding: var(--ds-space-2); resize: vertical; line-height: 1.45; }
+    .tuition-student-memo-field input:focus, .tuition-student-memo-field textarea:focus { outline: 2px solid var(--ds-ring); border-color: var(--ds-primary); }
+    .tuition-student-memo-field input[readonly] { background: var(--ds-bg-subtle); color: var(--ds-muted); }
+    .tuition-student-memo-save { min-width: 92px; min-height: 40px; align-self: end; }
+    .tuition-student-memo-list { display: grid; gap: var(--ds-space-2); max-height: 42vh; overflow: auto; margin-top: var(--ds-space-3); }
+    .tuition-student-memo-item { display: grid; gap: var(--ds-space-2); padding: var(--ds-space-3); border: 1px solid var(--ds-border); border-left: 3px solid var(--ds-warning); border-radius: 8px; background: var(--ds-bg-panel); }
+    .tuition-student-memo-meta { display: flex; justify-content: space-between; gap: var(--ds-space-2); color: var(--ds-muted); font-size: 12px; font-weight: 850; font-variant-numeric: tabular-nums; }
+    .tuition-student-memo-text { color: var(--ds-fg-soft); font-size: 13px; font-weight: 750; line-height: 1.55; white-space: pre-wrap; }
+    .tuition-student-warning { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-left: var(--ds-space-1); vertical-align: -5px; border: 1px solid color-mix(in srgb, var(--ds-warning) 28%, transparent); border-radius: 50%; background: var(--ds-warning-bg); color: var(--ds-warning); cursor: help; }
+    .tuition-student-warning i { width: 14px; height: 14px; }
+    .tuition-student-warning::after { content: attr(data-warning); position: absolute; z-index: 15; left: 0; bottom: calc(100% + var(--ds-space-2)); width: max-content; max-width: 260px; padding: var(--ds-space-2) var(--ds-space-3); border: 1px solid var(--ds-border); border-radius: 8px; background: var(--ds-bg-panel); color: var(--ds-fg-soft); box-shadow: 0 10px 24px rgba(15,23,42,0.035); font-size: 12px; font-weight: 800; line-height: 1.45; opacity: 0; pointer-events: none; transform: translateY(var(--ds-space-1)); transition: opacity 140ms ease, transform 140ms ease; white-space: normal; }
+    .tuition-student-warning:hover::after, .tuition-student-warning:focus-visible::after { opacity: 1; transform: translateY(0); }
+    .tuition-student-warning:focus-visible { outline: 2px solid var(--ds-ring); outline-offset: 2px; }
     .tuition-history-dashboard {
       display: grid;
       gap: 12px;
@@ -14392,6 +14460,9 @@
       .tuition-layout { grid-template-columns: 1fr 1fr; }
       .tuition-layout .tuition-panel-soft:last-child { grid-column: 1 / -1; }
       .tuition-history-kpis { grid-template-columns: 1fr 1fr; }
+      .tuition-student-memo-form { grid-template-columns: 116px minmax(0, 1fr); }
+      .tuition-student-memo-field:nth-child(2) { grid-row: span 2; }
+      .tuition-student-memo-save { width: 100%; }
       .tuition-guide-layout { grid-template-columns: 1fr; }
       .tuition-guide-metrics { grid-template-columns: 1fr 1fr; }
       .tuition-calendar-layout { grid-template-columns: 1fr; }
@@ -14419,6 +14490,10 @@
       .tuition-action-frame {
         grid-template-columns: 1fr;
       }
+      .tuition-student-memo-form { grid-template-columns: 1fr; }
+      .tuition-student-memo-field:nth-child(2) { grid-row: auto; }
+      .tuition-history-tabs { overflow-x: auto; }
+      .tuition-history-tab { flex: 0 0 auto; }
       .tuition-metric-group {
         border-right: 0;
         border-bottom: 1px solid #e5eee8;
@@ -17017,7 +17092,17 @@
         <button class="tuition-wide-close" id="closeTuitionStudentHistoryBtn" type="button">닫기</button>
       </div>
       <div class="panel-sub" id="tuitionStudentHistorySummary">학생을 선택하면 이력이 표시됩니다.</div>
-      <div class="tuition-history-list" id="tuitionStudentHistoryList"></div>
+      <div class="tuition-history-tabs" role="tablist" aria-label="학생 수강료 정보">
+        <button class="tuition-history-tab active" type="button" data-tuition-history-tab="history" role="tab" aria-selected="true">월별 수강료 이력</button>
+        <button class="tuition-history-tab" type="button" data-tuition-history-tab="memo" role="tab" aria-selected="false"><i data-lucide="triangle-alert" aria-hidden="true"></i>수강료 메모<span class="tuition-history-tab-count" id="tuitionStudentMemoCount">0</span></button>
+      </div>
+      <div class="tuition-history-tab-panel active" id="tuitionStudentHistoryPanel" role="tabpanel">
+        <div class="tuition-history-list" id="tuitionStudentHistoryList"></div>
+      </div>
+      <div class="tuition-history-tab-panel" id="tuitionStudentMemoPanel" role="tabpanel" hidden>
+        <div class="tuition-student-memo-composer" id="tuitionStudentMemoComposer"></div>
+        <div class="tuition-student-memo-list" id="tuitionStudentMemoList"></div>
+      </div>
     </div>
   </div>
 
@@ -17665,6 +17750,12 @@
         unpaidCacheByMonth: {},
         hiddenCarryoverByMonth: {},
         studentHistoryCache: {},
+        studentHistoryTarget: "",
+        studentHistoryActiveTab: "history",
+        studentMemos: [],
+        studentMemoLoading: false,
+        savingStudentMemo: false,
+        tuitionMemoWarnings: {},
         parentReplyTemplates: [],
         parentReplyTemplatesLoaded: false,
         parentReplyTemplatesLoading: false,
@@ -18259,6 +18350,11 @@
     var closeTuitionStudentHistoryBtnEl = document.getElementById("closeTuitionStudentHistoryBtn");
     var tuitionStudentHistorySummaryEl = document.getElementById("tuitionStudentHistorySummary");
     var tuitionStudentHistoryListEl = document.getElementById("tuitionStudentHistoryList");
+    var tuitionStudentHistoryPanelEl = document.getElementById("tuitionStudentHistoryPanel");
+    var tuitionStudentMemoPanelEl = document.getElementById("tuitionStudentMemoPanel");
+    var tuitionStudentMemoComposerEl = document.getElementById("tuitionStudentMemoComposer");
+    var tuitionStudentMemoListEl = document.getElementById("tuitionStudentMemoList");
+    var tuitionStudentMemoCountEl = document.getElementById("tuitionStudentMemoCount");
     var privGateModalEl = document.getElementById("privGateModal");
     var privGateTitleEl = document.getElementById("privGateTitle");
     var privGateDescEl = document.getElementById("privGateDesc");
@@ -32599,6 +32695,10 @@
       closeTuitionStudentHistoryBtnEl.addEventListener("click", closeTuitionStudentHistoryModal_);
       tuitionStudentHistoryModalEl.addEventListener("click", function(event) {
         if (event.target === tuitionStudentHistoryModalEl) closeTuitionStudentHistoryModal_();
+        var tab = event.target.closest("[data-tuition-history-tab]");
+        if (tab) setTuitionStudentHistoryTab_(tab.getAttribute("data-tuition-history-tab") || "history");
+        var saveMemo = event.target.closest("[data-save-tuition-student-memo]");
+        if (saveMemo) saveTuitionStudentMemoFromForm_();
       });
       tuitionUnpaidMonthSelectEl.addEventListener("change", function() {
         loadAndRenderTuitionUnpaidMonth_(tuitionUnpaidMonthSelectEl.value);
@@ -32805,6 +32905,7 @@
 	    function renderTuitionSummary(data) {
 	      state.tuition.pendingSummary = !!(data && data.pendingSummary);
 	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
+      state.tuition.tuitionMemoWarnings = data && data.tuitionMemoWarnings ? data.tuitionMemoWarnings : {};
 	      state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
@@ -33669,9 +33770,15 @@
     function openTuitionStudentHistoryModal_(studentName) {
       var targetName = formatStudentName(studentName);
       if (!targetName) return;
+      state.tuition.studentHistoryTarget = targetName;
+      state.tuition.studentHistoryActiveTab = "history";
+      state.tuition.studentMemos = [];
+      state.tuition.studentMemoLoading = true;
       tuitionStudentHistorySummaryEl.textContent = targetName + " · 월별 수강료 이력을 불러오는 중입니다...";
       tuitionStudentHistoryListEl.innerHTML = '<div class="tuition-cal-empty">데이터 계산 중...</div>';
+      renderTuitionStudentMemoPanel_();
       tuitionStudentHistoryModalEl.style.display = "flex";
+      setTuitionStudentHistoryTab_("history");
       runServer("getTuitionStudentMonthlyHistory", { studentName: targetName })
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "학생 이력 조회 실패");
@@ -33681,10 +33788,116 @@
           tuitionStudentHistorySummaryEl.textContent = targetName + " · 조회 실패";
           tuitionStudentHistoryListEl.innerHTML = '<div class="tuition-cal-empty">' + escapeHtml(err.message || String(err)) + '</div>';
         });
+      runServer("getTuitionStudentMemoNotes", { studentName: targetName })
+        .then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 메모 조회 실패");
+          if (state.tuition.studentHistoryTarget !== targetName) return;
+          state.tuition.studentMemos = (res.memos || []).slice();
+          state.tuition.studentMemoLoading = false;
+          updateTuitionStudentMemoWarning_(targetName, res.warning || {});
+          renderTuitionStudentMemoPanel_();
+        })
+        .catch(function(err) {
+          if (state.tuition.studentHistoryTarget !== targetName) return;
+          state.tuition.studentMemoLoading = false;
+          state.tuition.studentMemos = [];
+          renderTuitionStudentMemoPanel_(err);
+        });
     }
 
     function closeTuitionStudentHistoryModal_() {
       tuitionStudentHistoryModalEl.style.display = "none";
+    }
+
+    function setTuitionStudentHistoryTab_(tabName) {
+      var tab = tabName === "memo" ? "memo" : "history";
+      state.tuition.studentHistoryActiveTab = tab;
+      Array.prototype.forEach.call(tuitionStudentHistoryModalEl.querySelectorAll("[data-tuition-history-tab]"), function(btn) {
+        var active = btn.getAttribute("data-tuition-history-tab") === tab;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      tuitionStudentHistoryPanelEl.hidden = tab !== "history";
+      tuitionStudentMemoPanelEl.hidden = tab !== "memo";
+      if (tab === "memo") renderTuitionStudentMemoPanel_();
+      refreshLucideIcons_();
+    }
+
+    function formatTuitionStudentMemoDate_(value) {
+      var date = value ? new Date(value) : new Date();
+      if (isNaN(date.getTime())) date = new Date();
+      return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+    }
+
+    function updateTuitionStudentMemoWarning_(studentName, warning) {
+      var target = formatStudentName(studentName);
+      var normalized = Object.assign({ hasWarning: false, count: 0, latestMemo: "", latestAt: "", latestAuthor: "" }, warning || {});
+      [state.tuition.allRows || [], state.tuition.rows || []].forEach(function(rows) {
+        rows.forEach(function(row) {
+          if (formatStudentName(row.studentName) === target) row.tuitionMemoWarning = normalized;
+        });
+      });
+      if (state.tuition.tuitionMemoWarnings) state.tuition.tuitionMemoWarnings[target] = normalized;
+      if (state.tuition.rows && state.tuition.rows.length) renderTuitionStudentRows();
+    }
+
+    function renderTuitionStudentMemoPanel_(loadError) {
+      if (!tuitionStudentMemoComposerEl || !tuitionStudentMemoListEl) return;
+      var memos = state.tuition.studentMemos || [];
+      if (tuitionStudentMemoCountEl) tuitionStudentMemoCountEl.textContent = String(memos.length);
+      var disabled = state.tuition.studentMemoLoading || state.tuition.savingStudentMemo;
+      tuitionStudentMemoComposerEl.innerHTML = '<div class="tuition-student-memo-compose-head">' +
+        '<div><div class="tuition-student-memo-compose-title"><i data-lucide="triangle-alert"></i>안내 전 확인 메모</div><div class="tuition-student-memo-compose-copy">안내 보류 사유나 전달 시 주의할 내용을 남기면 정산 상세에 경고 표시됩니다.</div></div>' +
+      '</div>' +
+      '<div class="tuition-student-memo-form">' +
+        '<div class="tuition-student-memo-field"><label>날짜</label><input type="text" value="' + escapeHtml(formatTuitionStudentMemoDate_()) + '" readonly></div>' +
+        '<div class="tuition-student-memo-field"><label for="tuitionStudentMemoInput">메모</label><textarea id="tuitionStudentMemoInput" placeholder="예: 7월 안내는 보호자 요청 전까지 보류"></textarea></div>' +
+        '<div class="tuition-student-memo-field"><label for="tuitionStudentMemoAuthor">작성자</label><input id="tuitionStudentMemoAuthor" type="text" value="예스영어학원 관리자" maxlength="80"></div>' +
+        '<button type="button" class="modal-action primary tuition-student-memo-save" data-save-tuition-student-memo ' + (disabled ? 'disabled' : '') + '><i data-lucide="save"></i>' + (state.tuition.savingStudentMemo ? "저장 중" : "메모 저장") + '</button>' +
+      '</div>';
+      if (state.tuition.studentMemoLoading) {
+        tuitionStudentMemoListEl.innerHTML = '<div class="tuition-cal-empty">수강료 메모를 불러오는 중입니다...</div>';
+      } else if (loadError) {
+        tuitionStudentMemoListEl.innerHTML = '<div class="tuition-cal-empty">' + escapeHtml(loadError.message || String(loadError)) + '</div>';
+      } else if (!memos.length) {
+        tuitionStudentMemoListEl.innerHTML = '<div class="tuition-cal-empty">등록된 수강료 메모가 없습니다.</div>';
+      } else {
+        tuitionStudentMemoListEl.innerHTML = memos.map(function(item) {
+          return '<article class="tuition-student-memo-item"><div class="tuition-student-memo-meta"><span>' + escapeHtml(formatTuitionStudentMemoDate_(item.createdAt)) + '</span><span>' + escapeHtml(item.author || "예스영어학원 관리자") + '</span></div><div class="tuition-student-memo-text">' + escapeHtml(item.memo || "") + '</div></article>';
+        }).join("");
+      }
+      refreshLucideIcons_();
+    }
+
+    function saveTuitionStudentMemoFromForm_() {
+      var studentName = state.tuition.studentHistoryTarget;
+      var memoInput = document.getElementById("tuitionStudentMemoInput");
+      var authorInput = document.getElementById("tuitionStudentMemoAuthor");
+      var memo = String(memoInput && memoInput.value || "").trim();
+      var author = String(authorInput && authorInput.value || "").trim();
+      if (!studentName || !memo) {
+        alert("수강료 메모를 입력해 주세요.");
+        if (memoInput) memoInput.focus();
+        return;
+      }
+      state.tuition.savingStudentMemo = true;
+      renderTuitionStudentMemoPanel_();
+      runServerWriteWithRetry_("saveTuitionStudentMemo", {
+        studentName: studentName,
+        memo: memo,
+        author: author || "예스영어학원 관리자"
+      }, {
+        onRetry: function() { renderTuitionStudentMemoPanel_(); }
+      }).then(function(res) {
+        if (state.tuition.studentHistoryTarget !== studentName) return;
+        state.tuition.studentMemos = (res.memos || []).slice();
+        updateTuitionStudentMemoWarning_(studentName, res.warning || {});
+      }).catch(function(err) {
+        alert("수강료 메모 저장 오류: " + (err.message || String(err)));
+      }).finally(function() {
+        state.tuition.savingStudentMemo = false;
+        if (state.tuition.studentHistoryTarget === studentName) renderTuitionStudentMemoPanel_();
+      });
     }
 
     function renderTuitionStudentHistory_(studentName, rows, overview) {
@@ -33748,10 +33961,19 @@
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
         '<div class="tuition-student-text">' +
-          '<div><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button><span class="tuition-student-identity">' + escapeHtml(identity) + '</span></div>' +
+          '<div><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) + '<span class="tuition-student-identity">' + escapeHtml(identity) + '</span></div>' +
           carryHtml +
         '</div>' +
       '</div>';
+    }
+
+    function buildTuitionStudentMemoWarning_(studentName, warning) {
+      var item = warning || {};
+      if (!item.hasWarning) return "";
+      var count = Math.max(1, toNumber(item.count, 1));
+      var latest = String(item.latestMemo || "안내 전 메모를 확인해 주세요.").trim();
+      var tooltip = "수강료 메모 " + count + "건: " + latest;
+      return '<button type="button" class="tuition-student-warning" data-student-history="' + escapeHtml(formatStudentName(studentName)) + '" data-warning="' + escapeHtml(tooltip) + '" aria-label="수강료 안내 주의 메모 ' + count + '건" title="수강료 안내 주의 메모 ' + count + '건"><i data-lucide="triangle-alert" aria-hidden="true"></i></button>';
     }
 
     function formatTuitionGradeLabel(grade) {
@@ -35119,7 +35341,7 @@
 
     function runServerWriteWithRetry_(fnName, payload, options) {
       var requestPayload = Object.assign({}, payload || {});
-      if (/^(saveTuitionFollowup|saveTuitionStatusOnly|appendTuitionPaymentEntry)$/.test(fnName) && !requestPayload.clientRequestId) {
+      if (/^(saveTuitionFollowup|saveTuitionStatusOnly|appendTuitionPaymentEntry|saveTuitionStudentMemo)$/.test(fnName) && !requestPayload.clientRequestId) {
         requestPayload.clientRequestId = buildClientRequestId_(fnName);
       }
       return withRetry_(function() {
