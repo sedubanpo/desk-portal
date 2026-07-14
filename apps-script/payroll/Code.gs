@@ -78,6 +78,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveTuitionStatusOnly: true,
   saveTuitionFollowup: true,
   saveTuitionStudentMemo: true,
+  saveTuitionAmountAdjustment: true,
   appendTuitionPaymentEntry: true,
   getDeskScheduleMonthData: true,
   getDeskCalendarEvents: true,
@@ -169,6 +170,7 @@ function handlePayrollApiRequest_(params) {
       saveTuitionStatusOnly: saveTuitionStatusOnly,
       saveTuitionFollowup: saveTuitionFollowup,
       saveTuitionStudentMemo: saveTuitionStudentMemo,
+      saveTuitionAmountAdjustment: saveTuitionAmountAdjustment,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
       getDeskScheduleMonthData: getDeskScheduleMonthData,
       getDeskCalendarEvents: getDeskCalendarEvents,
@@ -2896,6 +2898,65 @@ function updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord) 
   return true;
 }
 
+function resolveTuitionUnpaidStatusAfterAmountAdjustment_(currentStatus, guideAmount, collectedAmount) {
+  var guide = Math.max(0, Math.round(toPayrollNumber_(guideAmount)));
+  var collected = Math.round(toPayrollNumber_(collectedAmount));
+  var outstanding = Math.max(0, guide - collected);
+  if ((guide > 0 && collected >= guide) || (guide <= 0 && collected > 0)) return "납부완료";
+  if (guide > 0 && collected > 0 && outstanding > 0) return "일부완료";
+  if (outstanding > 0 && normalizeTuitionUnpaidStatus_(currentStatus) === "납부완료") return "확인필요";
+  return normalizeTuitionUnpaidStatus_(currentStatus || "안내이전");
+}
+
+function updateTuitionMonthSnapshotAfterAmountAdjustment_(monthName, studentName, guideAmount, paymentRecord) {
+  var month = String(monthName || "").trim();
+  var studentKey = normalizeTuitionStudentName_(studentName);
+  if (!month || !studentKey) return false;
+  var snapshot = readTuitionMonthSnapshotFromFirestore_(month);
+  if (!snapshot || snapshot.success !== true || !Array.isArray(snapshot.rows)) return false;
+
+  var payment = paymentRecord ? normalizeTuitionPaymentRecord_(paymentRecord) : null;
+  var paymentKey = payment ? getTuitionPaymentRowMergeKey_(payment) : "";
+  function hasPayment(row) {
+    return payment && getTuitionPaymentRowMergeKey_(row) === paymentKey;
+  }
+  snapshot.allPayments = Array.isArray(snapshot.allPayments) ? snapshot.allPayments.slice() : [];
+  snapshot.payments = Array.isArray(snapshot.payments) ? snapshot.payments.slice() : [];
+  var paymentAlreadyApplied = payment && (snapshot.allPayments.some(hasPayment) || snapshot.payments.some(hasPayment));
+  if (payment && !snapshot.allPayments.some(hasPayment)) snapshot.allPayments.push(payment);
+  if (payment && !snapshot.payments.some(hasPayment)) snapshot.payments.push(payment);
+  snapshot.allPayments.sort(compareTuitionPaymentRowsDesc_);
+  snapshot.payments.sort(compareTuitionPaymentRowsDesc_);
+
+  snapshot.rows = snapshot.rows.map(function(row) {
+    if (normalizeTuitionStudentName_(row.studentName) !== studentKey) return row;
+    var copy = cloneTuitionJson_(row);
+    copy.guideAmount = Math.max(0, Math.round(toPayrollNumber_(guideAmount)));
+    if (payment && !paymentAlreadyApplied) {
+      copy.collectedAmount = Math.round(toPayrollNumber_(copy.collectedAmount) + (0 - toPayrollNumber_(payment.amount)));
+      copy.paymentCount = Math.max(0, parseInt(copy.paymentCount || 0, 10) || 0) + 1;
+      copy.latestPaidAt = payment.paidAt || copy.latestPaidAt || "";
+      copy.latestBusiness = payment.business || copy.latestBusiness || "";
+      copy.latestMethod = payment.paymentType || copy.latestMethod || "";
+      copy.latestApprovalNo = payment.approvalNo || copy.latestApprovalNo || "";
+    }
+    copy.outstandingAmount = Math.max(0, Math.round(toPayrollNumber_(copy.guideAmount) - toPayrollNumber_(copy.collectedAmount)));
+    copy.unpaidStatus = resolveTuitionUnpaidStatusAfterAmountAdjustment_(copy.unpaidStatus, copy.guideAmount, copy.collectedAmount);
+    return copy;
+  });
+  var stats = buildTuitionSummaryStats_(snapshot.rows, snapshot.payments);
+  snapshot.kpi = stats.kpi;
+  snapshot.chart = stats.chart;
+  snapshot.todayPayments = (snapshot.allPayments || []).filter(function(row) {
+    var now = new Date();
+    var todayMonthDay = ("0" + (now.getMonth() + 1)).slice(-2) + "-" + ("0" + now.getDate()).slice(-2);
+    return extractTuitionMonthDay_(row.paidAt) === todayMonthDay;
+  });
+  writeTuitionMonthSnapshotToFirestore_(month, snapshot);
+  invalidateTuitionScriptCacheOnly_(month);
+  return true;
+}
+
 function readTuitionMonthSnapshotFromFirestore_(monthName) {
   var month = String(monthName || "").trim();
   if (!month) return null;
@@ -4460,6 +4521,7 @@ function writeTuitionGuideAmountHistoryToFirestore_(record) {
     unpaidStatus: normalizeTuitionUnpaidStatus_(row.unpaidStatus),
     changedAt: String(row.changedAt || ""),
     requestId: normalizeTuitionClientRequestId_(row.requestId),
+    reason: String(row.reason || "").trim().slice(0, 300),
     source: "desk_portal"
   });
   return { success: true, id: docId };
@@ -5080,6 +5142,141 @@ function saveTuitionFollowup(payload) {
   } catch (e) {
     return { success: false, message: "연락기록 저장 오류: " + e.message };
   }
+  });
+}
+
+function saveTuitionAmountAdjustment(payload) {
+  return withTuitionWriteLock_(function() {
+    try {
+      var req = payload || {};
+      var monthName = String(req.monthName || "").trim();
+      var studentName = normalizeTuitionStudentName_(req.studentName);
+      var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
+      var reason = String(req.reason || "").trim().slice(0, 300);
+      if (!monthName) return { success: false, message: "월 정보가 없습니다." };
+      if (!studentName) return { success: false, message: "학생명이 없습니다." };
+      if (!reason) return { success: false, message: "수정 사유를 입력해 주세요." };
+
+      var currentRecord = loadTuitionFollowupRecordFromFirestore_(monthName, studentName);
+      var previousGuideAmount = currentRecord ? Math.max(0, Math.round(toPayrollNumber_(currentRecord.guideAmount))) : 0;
+      var nextGuideAmount = Math.max(0, Math.round(toPayrollNumber_(req.guideAmount)));
+      var paymentRows = getTuitionPaymentRowsForMonth_(monthName, { allowSheetFallback: false });
+      var currentCollectedAmount = Math.round((paymentRows || []).filter(function(row) {
+        return normalizeTuitionStudentName_(row.studentName) === studentName;
+      }).reduce(function(sum, row) {
+        return sum + (0 - toPayrollNumber_(row.amount));
+      }, 0));
+      var requestedCollectedAmount = Math.round(toPayrollNumber_(req.collectedAmount));
+      if (requestedCollectedAmount < 0) return { success: false, message: "순수납액은 0원 이상으로 입력해 주세요." };
+      var deltaCollectedAmount = requestedCollectedAmount - currentCollectedAmount;
+      var existingPayment = requestId ? loadTuitionPaymentRequestFromFirestore_(requestId) : null;
+      var now = new Date();
+      var nowIso = now.toISOString();
+      var paidAt = Utilities.formatDate(now, Session.getScriptTimeZone(), "M/d");
+      var nextCollectedAmount = currentCollectedAmount + (existingPayment ? 0 : deltaCollectedAmount);
+      var unpaidStatus = resolveTuitionUnpaidStatusAfterAmountAdjustment_(
+        currentRecord && currentRecord.unpaidStatus,
+        nextGuideAmount,
+        nextCollectedAmount
+      );
+      var nextRecord = {
+        monthName: monthName,
+        studentName: studentName,
+        guideAmount: nextGuideAmount,
+        unpaidStatus: unpaidStatus,
+        lastContactAt: currentRecord ? String(currentRecord.lastContactAt || "") : "",
+        lastContactMemo: currentRecord ? String(currentRecord.lastContactMemo || "") : "",
+        contactCount: currentRecord ? Math.max(0, parseInt(currentRecord.contactCount || 0, 10) || 0) : 0,
+        lastUpdatedAt: nowIso
+      };
+      writeTuitionFollowupToFirestore_(nextRecord);
+      writeTuitionGuideAmountHistoryToFirestore_({
+        monthName: monthName,
+        studentName: studentName,
+        previousGuideAmount: previousGuideAmount,
+        nextGuideAmount: nextGuideAmount,
+        unpaidStatus: unpaidStatus,
+        changedAt: nowIso,
+        requestId: requestId,
+        reason: reason
+      });
+
+      var adjustmentPayment = existingPayment;
+      var indexResult = { success: true };
+      if (!adjustmentPayment && deltaCollectedAmount !== 0) {
+        adjustmentPayment = {
+          rowNumber: 0,
+          dueDate: monthName.replace(/s$/i, "") + "-01",
+          studentName: studentName,
+          itemName: "수강료 정정",
+          amount: 0 - deltaCollectedAmount,
+          paidAt: paidAt,
+          business: String(req.business || "반포").trim() || "반포",
+          paymentType: "수강료 정정",
+          approvalNo: "PORTAL-ADJ",
+          inputAt: Utilities.formatDate(now, Session.getScriptTimeZone(), "M/d HH:mm"),
+          issueMemo: "[정산 금액 수정] " + reason,
+          originMonth: monthName,
+          sourceMonth: monthName,
+          sourceDueMonth: monthName,
+          requestId: requestId,
+          source: "desk_portal_adjustment"
+        };
+        writeTuitionPaymentToFirestore_(adjustmentPayment);
+        indexResult = updateTuitionPaymentReadIndexes_(adjustmentPayment);
+      } else if (adjustmentPayment) {
+        indexResult = updateTuitionPaymentReadIndexes_(adjustmentPayment);
+      }
+
+      var snapshotUpdated = updateTuitionMonthSnapshotAfterAmountAdjustment_(monthName, studentName, nextGuideAmount, adjustmentPayment);
+      if (!snapshotUpdated) invalidateTuitionSummaryCache_(monthName);
+
+      var sheetMirrorWarning = "";
+      if (isTuitionSheetMirrorWritesEnabled_()) {
+        try {
+          var sheetState = findTuitionFollowupSheetRecord_(monthName, studentName);
+          writeTuitionFollowupSheetMirror_(sheetState, nextRecord);
+          if (adjustmentPayment) {
+            var ss = getPayrollSpreadsheet_();
+            var sheet = ensureTuitionPortalPaymentSheet_(ss);
+            var requestIndex = ensureSheetHeaderColumn_(sheet, "요청ID");
+            if (!(requestId && findTuitionRequestRow_(sheet, requestId, requestIndex) > 0)) {
+              var write = [];
+              write[0] = adjustmentPayment.dueDate;
+              write[1] = adjustmentPayment.studentName;
+              write[2] = adjustmentPayment.itemName;
+              write[3] = adjustmentPayment.amount;
+              write[4] = adjustmentPayment.paidAt;
+              write[5] = adjustmentPayment.business;
+              write[6] = adjustmentPayment.paymentType;
+              write[7] = adjustmentPayment.approvalNo;
+              write[8] = adjustmentPayment.inputAt;
+              write[9] = adjustmentPayment.issueMemo;
+              write[10] = monthName;
+              write[requestIndex] = requestId;
+              for (var c = 0; c < sheet.getLastColumn(); c++) if (typeof write[c] === "undefined") write[c] = "";
+              sheet.getRange(sheet.getLastRow() + 1, 1, 1, sheet.getLastColumn()).setValues([write]);
+            }
+          }
+          SpreadsheetApp.flush();
+        } catch (sheetError) {
+          sheetMirrorWarning = sheetError && sheetError.message ? sheetError.message : String(sheetError);
+        }
+      }
+
+      return {
+        success: true,
+        guideAmount: nextGuideAmount,
+        collectedAmount: requestedCollectedAmount,
+        unpaidStatus: unpaidStatus,
+        adjustmentPayment: adjustmentPayment,
+        sheetMirrorWarning: sheetMirrorWarning,
+        indexWarning: indexResult && !indexResult.success ? (indexResult.message || "수납 인덱스 갱신이 지연되었습니다. 다음 새로고침에서 다시 확인해 주세요.") : "",
+        snapshotWarning: snapshotUpdated ? "" : "월별 요약 스냅샷이 갱신되지 않아 다음 조회 시 재계산됩니다."
+      };
+    } catch (e) {
+      return { success: false, message: "금액 수정 오류: " + e.message };
+    }
   });
 }
 

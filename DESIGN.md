@@ -48,6 +48,7 @@ Base unit is 4px.
 ## Components
 
 - Buttons: inline-flex, centered icon and label, 38-44px minimum height for tool buttons, 8px radius, no text clipping. Primary uses `--ds-primary`; ghost uses white surface and `--ds-border`.
+- Amount correction: the editable amount cell retains its existing semantic surface and reveals a pencil on hover/focus. Its modal uses the 8px control radius, `--ds-bg-subtle` calculation summary, and `--ds-bg-warm` audit note. `안내금액` and `순수납액` are editable; `미납액` remains derived.
 - Segmented controls: same height across items, active state uses green fill or green underline, inactive state remains white.
 - Cards: 8-12px radius, `--ds-border`, white or subtle surface, no nested decorative card effect.
 - Tables: sticky header when scrollable, tabular numerals, amount cells use right or compact block alignment, horizontal overflow only inside the table wrapper.
@@ -60,3 +61,8 @@ Only transform, opacity, and filter. Hover lift is 1px maximum. Durations stay b
 ## Depth
 
 Depth is border-led. Use one soft operational shadow only for panels that float above a scrolled surface: `0 10px 24px rgba(15,23,42,0.035)`.
+
+## Control Tokens
+
+- `--ds-control-height` `40px`, `--ds-control-radius` `8px`.
+- `--ds-shadow-panel` `0 10px 24px rgba(15,23,42,0.035)`.
