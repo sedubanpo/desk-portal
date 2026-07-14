@@ -12,6 +12,7 @@ const TUITION_PORTAL_PAYMENT_SHEET_NAME = "수강료_포털수납";
 const TUITION_FOLLOWUP_FIRESTORE_COLLECTION = "tuitionFollowups";
 const TUITION_CONTACT_LOG_FIRESTORE_COLLECTION = "tuitionContactLogs";
 const TUITION_PAYMENT_FIRESTORE_COLLECTION = "tuitionPayments";
+const TUITION_PAYMENT_DELETION_FIRESTORE_COLLECTION = "tuitionPaymentDeletions";
 const TUITION_MONTH_INDEX_FIRESTORE_COLLECTION = "tuitionMonthIndex";
 const TUITION_FOLLOWUP_META_FIRESTORE_COLLECTION = "tuitionFollowupMeta";
 const TUITION_PAYMENT_META_FIRESTORE_COLLECTION = "tuitionPaymentMeta";
@@ -80,6 +81,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveTuitionStudentMemo: true,
   saveTuitionAmountAdjustment: true,
   appendTuitionPaymentEntry: true,
+  deleteTuitionPaymentEntry: true,
   getDeskScheduleMonthData: true,
   getDeskCalendarEvents: true,
   saveDeskScheduleEntry: true,
@@ -172,6 +174,7 @@ function handlePayrollApiRequest_(params) {
       saveTuitionStudentMemo: saveTuitionStudentMemo,
       saveTuitionAmountAdjustment: saveTuitionAmountAdjustment,
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
+      deleteTuitionPaymentEntry: deleteTuitionPaymentEntry,
       getDeskScheduleMonthData: getDeskScheduleMonthData,
       getDeskCalendarEvents: getDeskCalendarEvents,
       saveDeskScheduleEntry: saveDeskScheduleEntry,
@@ -2898,6 +2901,107 @@ function updateTuitionMonthSnapshotAfterPaymentWrite_(monthName, paymentRecord) 
   return true;
 }
 
+function removeTuitionPaymentFromReadIndexes_(paymentRecord) {
+  var payment = normalizeTuitionPaymentRecord_(paymentRecord);
+  if (!payment) return { success: false, message: "삭제할 수납 인덱스 정보가 없습니다." };
+  var paymentKey = getTuitionPaymentRowMergeKey_(payment);
+  function withoutPayment(rows) {
+    return normalizeTuitionPaymentIndexRows_(rows).filter(function(row) {
+      return getTuitionPaymentRowMergeKey_(row) !== paymentKey;
+    });
+  }
+  var failures = [];
+  try {
+    var recentBundle = readTuitionRecentPaymentIndexBundle_();
+    var recentRows = withoutPayment(recentBundle.rows);
+    if (recentRows.length) {
+      if (!writeTuitionRecentPaymentIndex_(recentRows, recentBundle.seeded === true)) failures.push("최근 수납 인덱스");
+    } else {
+      firestoreDeleteDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, TUITION_RECENT_PAYMENT_INDEX_DOC_ID);
+    }
+  } catch (recentError) {
+    failures.push("최근 수납 인덱스");
+  }
+  var dateKey = getTuitionPaymentPaidDateKey_(payment);
+  if (dateKey) {
+    try {
+      var dailyRows = withoutPayment(readTuitionDailyPaymentIndexRows_(dateKey));
+      if (dailyRows.length) {
+        if (!writeTuitionDailyPaymentIndex_(dateKey, dailyRows)) failures.push("일일 수납 인덱스(" + dateKey + ")");
+      } else {
+        firestoreDeleteDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, buildTuitionDailyPaymentIndexDocId_(dateKey));
+      }
+    } catch (dailyError) {
+      failures.push("일일 수납 인덱스(" + dateKey + ")");
+    }
+  }
+  getTuitionPaymentIndexMonthNames_(payment).forEach(function(monthName) {
+    try {
+      var monthBundle = readTuitionMonthPaymentIndexBundle_(monthName);
+      var monthRows = withoutPayment(monthBundle.rows);
+      if (monthRows.length) {
+        if (!writeTuitionMonthPaymentIndex_(monthName, monthRows, monthBundle.seeded === true)) failures.push("월별 수납 인덱스(" + monthName + ")");
+      } else {
+        firestoreDeleteDocument_(TUITION_PAYMENT_READ_INDEX_FIRESTORE_COLLECTION, buildTuitionMonthPaymentIndexDocId_(monthName));
+      }
+    } catch (monthError) {
+      failures.push("월별 수납 인덱스(" + monthName + ")");
+    }
+  });
+  return { success: failures.length === 0, message: failures.join(", ") };
+}
+
+function updateTuitionMonthSnapshotAfterPaymentDelete_(monthName, paymentRecord) {
+  var month = String(monthName || "").trim();
+  var payment = normalizeTuitionPaymentRecord_(paymentRecord);
+  if (!month || !payment) return false;
+  var snapshot = readTuitionMonthSnapshotFromFirestore_(month);
+  if (!snapshot || snapshot.success !== true || !Array.isArray(snapshot.rows)) return false;
+  var paymentKey = getTuitionPaymentRowMergeKey_(payment);
+  function isDeletedPayment(row) {
+    return getTuitionPaymentRowMergeKey_(row) === paymentKey;
+  }
+  var wasPresent = (snapshot.allPayments || []).some(isDeletedPayment) || (snapshot.payments || []).some(isDeletedPayment);
+  snapshot.allPayments = (snapshot.allPayments || []).filter(function(row) { return !isDeletedPayment(row); });
+  snapshot.payments = (snapshot.payments || []).filter(function(row) { return !isDeletedPayment(row); });
+  var studentKey = normalizeTuitionStudentName_(payment.studentName);
+  snapshot.rows = snapshot.rows.map(function(row) {
+    if (normalizeTuitionStudentName_(row.studentName) !== studentKey || !wasPresent) return row;
+    var copy = cloneTuitionJson_(row);
+    copy.collectedAmount = Math.max(0, Math.round(toPayrollNumber_(copy.collectedAmount) + toPayrollNumber_(payment.amount)));
+    copy.paymentCount = Math.max(0, (parseInt(copy.paymentCount || 0, 10) || 0) - 1);
+    var remaining = snapshot.payments.filter(function(item) {
+      return normalizeTuitionStudentName_(item.studentName) === studentKey;
+    }).sort(compareTuitionPaymentRowsDesc_);
+    if (remaining.length) {
+      var latest = remaining[0];
+      copy.latestPaidAt = latest.paidAt || "";
+      copy.latestBusiness = latest.business || "";
+      copy.latestMethod = latest.paymentType || "";
+      copy.latestApprovalNo = latest.approvalNo || "";
+    } else {
+      copy.latestPaidAt = "";
+      copy.latestBusiness = "";
+      copy.latestMethod = "";
+      copy.latestApprovalNo = "";
+    }
+    copy.outstandingAmount = Math.max(0, Math.round(toPayrollNumber_(copy.guideAmount) - toPayrollNumber_(copy.collectedAmount)));
+    copy.unpaidStatus = resolveTuitionUnpaidStatusAfterAmountAdjustment_(copy.unpaidStatus, copy.guideAmount, copy.collectedAmount);
+    return copy;
+  });
+  var stats = buildTuitionSummaryStats_(snapshot.rows, snapshot.payments);
+  snapshot.kpi = stats.kpi;
+  snapshot.chart = stats.chart;
+  snapshot.todayPayments = (snapshot.allPayments || []).filter(function(row) {
+    var now = new Date();
+    var todayMonthDay = ("0" + (now.getMonth() + 1)).slice(-2) + "-" + ("0" + now.getDate()).slice(-2);
+    return extractTuitionMonthDay_(row.paidAt) === todayMonthDay;
+  });
+  writeTuitionMonthSnapshotToFirestore_(month, snapshot);
+  invalidateTuitionScriptCacheOnly_(month);
+  return true;
+}
+
 function resolveTuitionUnpaidStatusAfterAmountAdjustment_(currentStatus, guideAmount, collectedAmount) {
   var guide = Math.max(0, Math.round(toPayrollNumber_(guideAmount)));
   var collected = Math.round(toPayrollNumber_(collectedAmount));
@@ -5149,11 +5253,11 @@ function saveTuitionAmountAdjustment(payload) {
   return withTuitionWriteLock_(function() {
     try {
       var req = payload || {};
-      var monthName = String(req.monthName || "").trim();
+      var requestedMonthName = String(req.monthName || "").trim();
       var studentName = normalizeTuitionStudentName_(req.studentName);
       var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
       var reason = String(req.reason || "").trim().slice(0, 300);
-      if (!monthName) return { success: false, message: "월 정보가 없습니다." };
+      if (!requestedMonthName) return { success: false, message: "월 정보가 없습니다." };
       if (!studentName) return { success: false, message: "학생명이 없습니다." };
       if (!reason) return { success: false, message: "수정 사유를 입력해 주세요." };
 
@@ -5354,6 +5458,80 @@ function saveTuitionStatusOnly(payload) {
   } catch (e) {
     return { success: false, message: "상태 저장 오류: " + e.message };
   }
+  });
+}
+
+function deleteTuitionPaymentEntry(payload) {
+  return withTuitionWriteLock_(function() {
+    try {
+      var req = payload || {};
+      var requestedMonthName = String(req.monthName || "").trim();
+      var reason = String(req.reason || "").trim().slice(0, 300);
+      var requestId = normalizeTuitionClientRequestId_(req.clientRequestId);
+      var requestedPayment = normalizeTuitionPaymentRecord_(req.payment);
+      if (!requestedMonthName) return { success: false, message: "월 정보가 없습니다." };
+      if (!requestedPayment) return { success: false, message: "삭제할 수납 내역을 찾을 수 없습니다." };
+      if (!reason) return { success: false, message: "삭제 사유를 입력해 주세요." };
+      if (!requestId) return { success: false, message: "삭제 요청 식별자가 없습니다. 다시 시도해 주세요." };
+
+      var auditId = "tdel_" + requestId;
+      try {
+        var priorAudit = firestoreGetDocument_(TUITION_PAYMENT_DELETION_FIRESTORE_COLLECTION, auditId);
+        if (priorAudit && priorAudit.success === true) {
+          return { success: true, duplicate: true, deletedPayment: normalizeTuitionPaymentRecord_(priorAudit.deletedPayment) };
+        }
+      } catch (ignoreAuditError) {}
+
+      var paymentDocId = buildTuitionPaymentFirestoreDocId_(requestedPayment);
+      var storedPayment = normalizeTuitionPaymentRecord_(firestoreGetDocument_(TUITION_PAYMENT_FIRESTORE_COLLECTION, paymentDocId));
+      if (!storedPayment) return { success: false, message: "이미 삭제되었거나 수납 내역을 찾을 수 없습니다. 새로고침 후 확인해 주세요." };
+      if (getTuitionPaymentRowMergeKey_(storedPayment) !== getTuitionPaymentRowMergeKey_(requestedPayment)) {
+        return { success: false, message: "선택한 수납 내역이 변경되었습니다. 새로고침 후 다시 선택해 주세요." };
+      }
+      var monthName = String(storedPayment.sourceDueMonth || storedPayment.sourceMonth || storedPayment.originMonth || requestedMonthName).trim();
+
+      firestoreDeleteDocument_(TUITION_PAYMENT_FIRESTORE_COLLECTION, paymentDocId);
+      var indexResult = removeTuitionPaymentFromReadIndexes_(storedPayment);
+      var snapshotUpdated = updateTuitionMonthSnapshotAfterPaymentDelete_(monthName, storedPayment);
+      if (snapshotUpdated) invalidateTuitionScriptCacheOnly_(monthName);
+      else invalidateTuitionSummaryCache_(monthName);
+      invalidateTuitionPaymentReportIndexes_(storedPayment.studentName);
+
+      var sheetMirrorWarning = "";
+      var source = String(storedPayment.source || "").trim();
+      if (isTuitionSheetMirrorWritesEnabled_() && /^desk_portal(?:_adjustment)?$/.test(source) && storedPayment.requestId) {
+        try {
+          var ss = getPayrollSpreadsheet_();
+          var sheet = ensureTuitionPortalPaymentSheet_(ss);
+          var requestIndex = ensureSheetHeaderColumn_(sheet, "요청ID");
+          var mirrorRow = findTuitionRequestRow_(sheet, storedPayment.requestId, requestIndex);
+          if (mirrorRow > 0) sheet.deleteRow(mirrorRow);
+        } catch (sheetError) {
+          sheetMirrorWarning = sheetError && sheetError.message ? sheetError.message : String(sheetError);
+        }
+      } else if (source && !/^desk_portal(?:_adjustment)?$/.test(source)) {
+        sheetMirrorWarning = "Firebase 수납 원장만 삭제했습니다. 원본 시트에서 가져온 건은 원본 시트도 별도로 확인해 주세요.";
+      }
+
+      firestoreSetDocument_(TUITION_PAYMENT_DELETION_FIRESTORE_COLLECTION, auditId, {
+        success: true,
+        requestId: requestId,
+        monthName: monthName,
+        reason: reason,
+        deletedAt: new Date().toISOString(),
+        deletedPayment: storedPayment,
+        source: "desk_portal"
+      });
+      return {
+        success: true,
+        deletedPayment: storedPayment,
+        indexWarning: indexResult && !indexResult.success ? (indexResult.message || "수납 인덱스 갱신이 지연되었습니다.") : "",
+        snapshotWarning: snapshotUpdated ? "" : "월별 요약 스냅샷이 다음 조회에서 다시 계산됩니다.",
+        sheetMirrorWarning: sheetMirrorWarning
+      };
+    } catch (e) {
+      return { success: false, message: "수납 삭제 오류: " + e.message };
+    }
   });
 }
 

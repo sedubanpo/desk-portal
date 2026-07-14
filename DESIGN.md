@@ -49,6 +49,7 @@ Base unit is 4px.
 
 - Buttons: inline-flex, centered icon and label, 38-44px minimum height for tool buttons, 8px radius, no text clipping. Primary uses `--ds-primary`; ghost uses white surface and `--ds-border`.
 - Amount correction: the editable amount cell retains its existing semantic surface and reveals a pencil on hover/focus. Its modal uses the 8px control radius, `--ds-bg-subtle` calculation summary, and `--ds-bg-warm` audit note. `안내금액` and `순수납액` are editable; `미납액` remains derived.
+- Payment deletion: recent-payment rows use a compact trash icon with a tooltip. Deletion opens a focused confirmation modal that shows the selected payment facts, requires a reason, and uses the semantic danger color only for the irreversible command.
 - Segmented controls: same height across items, active state uses green fill or green underline, inactive state remains white.
 - Cards: 8-12px radius, `--ds-border`, white or subtle surface, no nested decorative card effect.
 - Tables: sticky header when scrollable, tabular numerals, amount cells use right or compact block alignment, horizontal overflow only inside the table wrapper.
