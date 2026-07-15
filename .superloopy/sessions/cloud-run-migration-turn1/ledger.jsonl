@@ -1,0 +1,4 @@
+{"at":"2026-07-15T02:16:50.141Z","kind":"plan_created","mode":"light","goals":1}
+{"at":"2026-07-15T02:16:50.145Z","kind":"goal_started","goalId":"G001","attempt":1}
+{"at":"2026-07-15T02:26:50.101Z","kind":"evidence_passed","goalId":"G001","criterionId":"C001","status":"pass","artifact":".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C001-capture.txt","before":"pending"}
+{"at":"2026-07-15T02:26:58.268Z","kind":"evidence_passed","goalId":"G001","criterionId":"C002","status":"pass","artifact":".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C002-capture.txt","before":"pending"}

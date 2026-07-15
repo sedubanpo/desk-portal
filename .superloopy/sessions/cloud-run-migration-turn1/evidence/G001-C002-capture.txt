@@ -1,0 +1,29 @@
+Superloopy command capture
+startedAt: 2026-07-15T02:26:58.001Z
+finishedAt: 2026-07-15T02:26:58.266Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["node","--test","--test-name-pattern=invalid|missing|inactive|origin|account lookup|instructor","services/desk-api/test/app.test.js"]
+[stdout]
+✔ allowed origin receives CORS headers and preflight succeeds (11.794584ms)
+✔ unknown browser origin is rejected (2.740541ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.91375ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (1.52375ms)
+  ✔ account_inactive (1.1665ms)
+  ✔ staff_access_required (1.025083ms)
+✔ missing, inactive, and non-staff accounts are denied (3.975ms)
+✔ an active instructor without deskPortal app access is denied (1.13475ms)
+✔ account lookup failures become a generic service error (1.119083ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 170.928792
+
+[stderr]

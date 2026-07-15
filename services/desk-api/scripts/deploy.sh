@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-${1:-}}"
+REGION="${CLOUD_RUN_REGION:-asia-northeast3}"
+SERVICE="${CLOUD_RUN_SERVICE:-desk-portal-api}"
+FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
+ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://sedubanpo.github.io}"
+RUNTIME_SERVICE_ACCOUNT_NAME="${RUNTIME_SERVICE_ACCOUNT_NAME:-desk-portal-api-runtime}"
+
+if [[ -z "${PROJECT_ID}" ]]; then
+  echo "GOOGLE_CLOUD_PROJECT 또는 첫 번째 인자로 프로젝트 ID를 지정하세요." >&2
+  exit 2
+fi
+
+RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  --project "${PROJECT_ID}" \
+  --quiet
+
+gcloud services enable firestore.googleapis.com \
+  --project "${FIREBASE_PROJECT_ID}" \
+  --quiet
+
+if ! gcloud iam service-accounts describe "${RUNTIME_SERVICE_ACCOUNT}" \
+  --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${RUNTIME_SERVICE_ACCOUNT_NAME}" \
+    --project "${PROJECT_ID}" \
+    --display-name "Desk Portal Cloud Run API" \
+    --quiet
+fi
+
+gcloud projects add-iam-policy-binding "${FIREBASE_PROJECT_ID}" \
+  --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+  --role roles/datastore.user \
+  --condition=None \
+  --quiet >/dev/null
+
+gcloud run deploy "${SERVICE}" \
+  --project "${PROJECT_ID}" \
+  --region "${REGION}" \
+  --source "${ROOT_DIR}" \
+  --allow-unauthenticated \
+  --ingress all \
+  --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
+  --execution-environment gen2 \
+  --cpu 1 \
+  --memory 512Mi \
+  --concurrency 40 \
+  --min-instances 0 \
+  --max-instances 10 \
+  --timeout 30s \
+  --set-env-vars "^@^NODE_ENV=production@FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}@ALLOWED_ORIGINS=${ALLOWED_ORIGINS}@CHECK_REVOKED_TOKENS=true" \
+  --quiet
+
+SERVICE_URL="$(gcloud run services describe "${SERVICE}" \
+  --project "${PROJECT_ID}" \
+  --region "${REGION}" \
+  --format='value(status.url)')"
+
+curl --fail --silent --show-error "${SERVICE_URL}/health"
+printf '\n%s\n' "${SERVICE_URL}"

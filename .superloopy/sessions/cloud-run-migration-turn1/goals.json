@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T02:16:50.141Z",
+  "updatedAt": "2026-07-15T02:26:58.268Z",
+  "briefPath": ".superloopy/sessions/cloud-run-migration-turn1/brief.md",
+  "evidencePath": ".superloopy/sessions/cloud-run-migration-turn1/evidence",
+  "goalsPath": ".superloopy/sessions/cloud-run-migration-turn1/goals.json",
+  "ledgerPath": ".superloopy/sessions/cloud-run-migration-turn1/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "Cloud Run 마이그레이션 1단계: 데스크 포털 운영 경로와 데이터는 변경하지 않고 Cloud Run API 서비스 골격...",
+      "objective": "Cloud Run 마이그레이션 1단계: 데스크 포털 운영 경로와 데이터는 변경하지 않고 Cloud Run API 서비스 골격, Firebase ID 토큰 검증, 역할 기반 /v1/me, 공개 /health, 자동 테스트, 배포 설정과 포털 호환 API 계약을 구현하고 실제 배포를 검증한다.",
+      "status": "in_progress",
+      "attempt": 1,
+      "createdAt": "2026-07-15T02:16:50.141Z",
+      "updatedAt": "2026-07-15T02:26:58.268Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C001-capture.txt",
+          "capturedAt": "2026-07-15T02:26:50.101Z",
+          "command": [
+            "npm",
+            "--prefix",
+            "services/desk-api",
+            "test"
+          ],
+          "exitCode": 0
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T02:26:58.268Z",
+          "command": [
+            "node",
+            "--test",
+            "--test-name-pattern=invalid|missing|inactive|origin|account lookup|instructor",
+            "services/desk-api/test/app.test.js"
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T02:16:50.145Z"
+    }
+  ],
+  "aggregateCompletion": null,
+  "sessionId": "cloud-run-migration-turn1"
+}

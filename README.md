@@ -1,4 +1,4 @@
-# Desk Portal Starter
+# Desk Portal
 
 `데스크포털`을 GitHub 원본 구조로 이주하기 위한 작업용 스타터입니다.
 
@@ -127,3 +127,10 @@ clasp deployments
 ```
 
 현재는 payroll을 GAS 편집기에서 직접 반영하고 있으므로, 우선은 GitHub 원본화부터 하는 것이 가장 안전합니다.
+
+## Cloud Run API 마이그레이션
+
+Apps Script 중계를 단계적으로 제거하기 위한 API 서비스는 `services/desk-api`에 있습니다. 현재 1단계는 Firebase Auth/Firestore 권한 검증과 배포 기반만 추가했으며 기존 운영 업무 요청은 계속 기존 경로를 사용합니다.
+
+- 서비스 안내: `services/desk-api/README.md`
+- 단계별 전환 원칙: `docs/cloud-run-migration.md`

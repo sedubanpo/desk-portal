@@ -1,0 +1,38 @@
+Superloopy command capture
+startedAt: 2026-07-15T02:26:49.717Z
+finishedAt: 2026-07-15T02:26:50.100Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["npm","--prefix","services/desk-api","test"]
+[stdout]
+
+> @sedu/desk-api@0.1.0 test
+> node --test
+
+✔ health endpoint is public and does not expose framework headers (12.816458ms)
+✔ allowed origin receives CORS headers and preflight succeeds (1.785167ms)
+✔ unknown browser origin is rejected (1.397375ms)
+✔ me requires a Firebase bearer token (1.442625ms)
+✔ me returns the normalized staff identity (2.052459ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.274958ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (1.436667ms)
+  ✔ account_inactive (1.118709ms)
+  ✔ staff_access_required (1.277875ms)
+✔ missing, inactive, and non-staff accounts are denied (4.1655ms)
+✔ an active instructor without deskPortal app access is denied (1.156792ms)
+✔ account lookup failures become a generic service error (1.119959ms)
+✔ migration contract confirms that production business traffic is untouched (0.767042ms)
+✔ migration contract exactly mirrors the Apps Script API allowlist (3.391042ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187.613583
+
+[stderr]
