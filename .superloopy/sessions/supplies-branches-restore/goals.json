@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T11:03:24.959Z",
+  "updatedAt": "2026-07-15T11:14:33.486Z",
+  "briefPath": ".superloopy/sessions/supplies-branches-restore/brief.md",
+  "evidencePath": ".superloopy/sessions/supplies-branches-restore/evidence",
+  "goalsPath": ".superloopy/sessions/supplies-branches-restore/goals.json",
+  "ledgerPath": ".superloopy/sessions/supplies-branches-restore/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "데스크 포털 소모품 관리에서 사라진 2관과 3관을 복구하고 조회·입력·저장 흐름을 검증한 뒤 배포한다.",
+      "objective": "데스크 포털 소모품 관리에서 사라진 2관과 3관을 복구하고 조회·입력·저장 흐름을 검증한 뒤 배포한다.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T11:03:24.959Z",
+      "updatedAt": "2026-07-15T11:14:33.486Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/supplies-branches-restore/evidence/VISUAL_QA.md",
+          "capturedAt": "2026-07-15T11:14:17.551Z",
+          "notes": "GitHub Pages 배포 commit 049bfe4를 Chrome 학원 프로필에서 확인했고, 2관·3관 탭과 각 빈 상태 및 입력 폼 관 선택지가 정상 표시됨."
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/supplies-branches-restore/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T11:14:18.131Z",
+          "command": [
+            "npm",
+            "test",
+            "--prefix",
+            "services/desk-api"
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T11:03:24.963Z",
+      "completedAt": "2026-07-15T11:14:33.486Z",
+      "evidence": "소모품 관 목록을 데이터 유무와 분리해 전체·본관·2관·3관을 고정 노출하고, GitHub Pages 운영 화면 및 47개 자동화 테스트로 검증함."
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T11:14:33.486Z",
+    "evidence": "소모품 관 목록을 데이터 유무와 분리해 전체·본관·2관·3관을 고정 노출하고, GitHub Pages 운영 화면 및 47개 자동화 테스트로 검증함.",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/supplies-branches-restore/evidence/VISUAL_QA.md",
+          "relativePath": ".superloopy/sessions/supplies-branches-restore/evidence/VISUAL_QA.md",
+          "size": 1680
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/supplies-branches-restore/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/supplies-branches-restore/evidence/G001-C002-capture.txt",
+          "size": 4316
+        }
+      ]
+    }
+  },
+  "sessionId": "supplies-branches-restore"
+}

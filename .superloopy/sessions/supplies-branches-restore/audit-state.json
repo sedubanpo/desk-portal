@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "sessionId": "supplies-branches-restore",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T11:14:33.485Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "74c37b3a5f6962c610e08d31bd7045d63a426d66e5796a79e51b4e6dab6c45fd",
+      "sourceHash": "208e3250181777159945b0e0bfcddae79cec2ff78c849a5f3b4da1ae4154770a",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T11:14:33.170Z",
+      "command": null,
+      "rerunStatus": "manual-recheck",
+      "rerunArtifact": ".superloopy/sessions/supplies-branches-restore/evidence/VISUAL_QA.md",
+      "rerunArtifactHash": "208e3250181777159945b0e0bfcddae79cec2ff78c849a5f3b4da1ae4154770a",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "3573d8b120f2164b57cfcfb3f294acc3da2395bc3f25c49f3a460aa90399c132",
+      "sourceHash": "2e13943acbc813b6b8053d0f13d5cd738a27b14cdc864975aa7ad4e20af10bae",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T11:14:33.171Z",
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "services/desk-api"
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/supplies-branches-restore/evidence/audit/G001-C002-rerun.txt",
+      "rerunArtifactHash": "2f189feff61a18cacf4035327f0fc624f710888f3efe20546233549b48f12a25",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

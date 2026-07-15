@@ -1,0 +1,6 @@
+URL: https://sedubanpo.github.io/desk-portal/?branch-fix=049bfe4
+Tabs: 전체, 본관, 2관, 3관
+2관: visible, empty-state rendered
+3관: visible, empty-state rendered
+Input select: 본관, 2관, 3관
+Production commit: 049bfe4
