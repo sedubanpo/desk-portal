@@ -16910,7 +16910,7 @@
     <div class="priv-modal-box">
       <h3 class="priv-modal-title" id="privGateTitle">권한 확인</h3>
       <p class="priv-modal-desc" id="privGateDesc">접근 비밀번호를 입력하세요.</p>
-      <input class="priv-modal-input" id="privGateInput" type="password" placeholder="비밀번호 입력">
+      <input class="priv-modal-input" id="privGateInput" type="password" autocomplete="current-password" placeholder="비밀번호 입력">
       <div class="priv-modal-error" id="privGateError"></div>
       <div class="priv-modal-actions">
         <button class="priv-modal-btn cancel" id="privGateCancelBtn" type="button">취소</button>
@@ -17650,6 +17650,7 @@
       portalAccessKey: "",
       privilegedAccessKey: "",
       firebaseUser: null,
+      cloudIdentity: null,
       cloudApiReady: false,
       months: [],
       selectedMonth: "",
@@ -36110,11 +36111,18 @@
           state.firebaseFirestore = app.firestore();
           state.firebaseAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(function() {});
           state.firebaseAuth.onAuthStateChanged(function(user) {
-            if (!user || state.cloudApiReady) return;
+            if (!user) {
+              state.firebaseUser = null;
+              state.cloudIdentity = null;
+              state.cloudApiReady = false;
+              return;
+            }
+            if (state.cloudApiReady) return;
             verifyDeskCloudUser_(user).then(function() {
               enterDeskPortal_(state.portalAccessKey);
             }).catch(function(err) {
               state.firebaseUser = null;
+              state.cloudIdentity = null;
               state.cloudApiReady = false;
               entryErrorTextEl.textContent = err.message || "근무자 권한을 확인하지 못했습니다.";
             });
@@ -36160,6 +36168,7 @@
         return response.json().catch(function() { return {}; }).then(function(body) {
           if (!response.ok) throw new Error(body && body.error && body.error.message ? body.error.message : "데스크 포털 접근 권한이 없습니다.");
           state.firebaseUser = user;
+          state.cloudIdentity = body && body.user ? body.user : null;
           state.cloudApiReady = true;
           return body;
         });
@@ -36257,7 +36266,24 @@
       return entryVerificationPromise_;
     }
 
+    function hasCloudPrivilegedAccess_(featureName) {
+      var identity = state.cloudIdentity || {};
+      var role = String(identity.role || "").toUpperCase();
+      if (role === "ADMIN") return true;
+      return featureName === "강사 시수 정산"
+        && !!(identity.permissions && identity.permissions.canManagePayroll === true);
+    }
+
     function requestPrivilegedAccess_(featureName, onSuccess) {
+      if (state.cloudApiReady && state.firebaseUser) {
+        if (!hasCloudPrivilegedAccess_(featureName)) {
+          showClientMessage(featureName + " 권한이 없습니다. 관리자에게 문의하세요.");
+          return;
+        }
+        state.privilegedAccessKey = "firebase-role";
+        if (typeof onSuccess === "function") onSuccess();
+        return;
+      }
       pendingPrivilegedAction_ = { featureName: featureName, onSuccess: onSuccess };
       privGateTitleEl.textContent = "권한 확인";
       privGateDescEl.textContent = featureName + " 접근 비밀번호를 입력하세요.";
