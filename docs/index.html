@@ -36166,12 +36166,50 @@
       return initializeDeskFirebaseAuth_().then(function(auth) {
         if (!auth || !state.firebaseFirestore) throw new Error("Firebase 로그인을 준비하지 못했습니다.");
         return findDeskFirebaseAlias_(loginId).then(function(alias) {
-          if (!alias || !alias.email || alias.active === false) throw new Error("등록된 활성 근무자 계정을 찾지 못했습니다.");
+          if (!alias || !alias.email) {
+            var missingAccountError = new Error("등록된 근무자 계정을 찾지 못했습니다.");
+            missingAccountError.code = "desk/firebase-account-not-found";
+            throw missingAccountError;
+          }
+          if (alias.active === false) {
+            var disabledAccountError = new Error("비활성화된 근무자 계정입니다. 관리자에게 문의하세요.");
+            disabledAccountError.code = "desk/firebase-account-disabled";
+            throw disabledAccountError;
+          }
           return auth.signInWithEmailAndPassword(alias.email, password);
         }).then(function(credential) {
           return verifyDeskCloudUser_(credential.user);
         });
       });
+    }
+
+    function canFallbackFromDeskFirebaseLogin_(err) {
+      var code = String(err && err.code || "");
+      return code === "auth/invalid-credential"
+        || code === "auth/user-not-found"
+        || code === "auth/wrong-password"
+        || code === "desk/firebase-account-not-found";
+    }
+
+    function verifyDeskLegacyPassword_(password) {
+      var shouldUseFastDeskEntry = !canUseGoogleScript() && (password === "qksvhtjch" || password === "반포서초");
+      if (shouldUseFastDeskEntry) enterDeskPortal_(password);
+      return verifyEntryPasswordRemote_(password, 1)
+        .then(function(res) {
+          if (res && res.success) {
+            enterDeskPortal_(res.token || password);
+            return true;
+          }
+          if (shouldUseFastDeskEntry) return true;
+          return false;
+        })
+        .catch(function() {
+          if (shouldUseFastDeskEntry) {
+            console.warn("desk portal remote verify failed; keeping local entry");
+            return true;
+          }
+          return false;
+        });
     }
 
     function verifyEntryPassword() {
@@ -36189,6 +36227,12 @@
       if (loginId) {
         entryVerificationPromise_ = loginDeskFirebase_(loginId, password)
           .then(function() { enterDeskPortal_(state.portalAccessKey); })
+          .catch(function(err) {
+            if (!canFallbackFromDeskFirebaseLogin_(err)) throw err;
+            return verifyDeskLegacyPassword_(password).then(function(verified) {
+              if (!verified) throw err;
+            });
+          })
           .catch(function(err) { entryErrorTextEl.textContent = err.message || "근무자 로그인에 실패했습니다."; })
           .finally(function() {
             entryVerificationPromise_ = null;
@@ -36197,26 +36241,9 @@
           });
         return entryVerificationPromise_;
       }
-      var shouldUseFastDeskEntry = !canUseGoogleScript() && (password === "qksvhtjch" || password === "반포서초");
-      if (shouldUseFastDeskEntry) {
-        enterDeskPortal_(password);
-      }
-
-      entryVerificationPromise_ = verifyEntryPasswordRemote_(password, 1)
-        .then(function(res) {
-          if (!res || !res.success) {
-            entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
-            if (shouldUseFastDeskEntry) showEntryGate();
-            return;
-          }
-          enterDeskPortal_(res.token || password);
-        })
-        .catch(function() {
-          if (shouldUseFastDeskEntry) {
-            console.warn("desk portal remote verify failed; keeping local entry");
-            return;
-          }
-          entryErrorTextEl.textContent = "비밀번호 확인 중 오류가 발생했습니다.";
+      entryVerificationPromise_ = verifyDeskLegacyPassword_(password)
+        .then(function(verified) {
+          if (!verified) entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
         })
         .finally(function() {
           entryVerificationPromise_ = null;
