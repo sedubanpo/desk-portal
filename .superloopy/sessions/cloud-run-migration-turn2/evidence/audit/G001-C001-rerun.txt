@@ -1,0 +1,48 @@
+Superloopy command capture
+startedAt: 2026-07-15T03:27:02.276Z
+finishedAt: 2026-07-15T03:27:02.811Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["bash","-lc","set -euo pipefail; page=$(curl -fsS https://sedubanpo.github.io/desk-portal/); grep -q canFallbackFromDeskFirebaseLogin_ <<<\"$page\"; grep -q DESK_CLOUD_API_BASE <<<\"$page\"; health=$(curl -fsS https://desk-portal-api-262959464514.asia-northeast3.run.app/health); grep -q '\"ok\":true' <<<\"$health\"; grep -q desk-portal-api-00002-5br <<<\"$health\"; cd services/desk-api; npm test"]
+[stdout]
+
+> @sedu/desk-api@0.1.0 test
+> node --test
+
+✔ health endpoint is public and does not expose framework headers (12.471666ms)
+✔ allowed origin receives CORS headers and preflight succeeds (1.429583ms)
+✔ unknown browser origin is rejected (1.158625ms)
+✔ me requires a Firebase bearer token (1.097834ms)
+✔ me returns the normalized staff identity (1.843916ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.327542ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (1.215792ms)
+  ✔ account_inactive (1.008042ms)
+  ✔ staff_access_required (1.10675ms)
+✔ missing, inactive, and non-staff accounts are denied (3.607125ms)
+✔ an active instructor without deskPortal app access is denied (1.34425ms)
+✔ account lookup failures become a generic service error (0.963834ms)
+✔ migration contract reports Turn 2 handlers without switching production traffic (0.750542ms)
+✔ desk route authenticates, dispatches reads, and carries write idempotency context (3.716ms)
+✔ unmigrated desk methods are rejected before dispatch (0.769083ms)
+✔ migration contract exactly mirrors the Apps Script API allowlist (3.005083ms)
+✔ schedule read preserves legacy shape and filters retired workers without mutating data (1.969ms)
+✔ schedule validation rejects retired workers before any write (0.203917ms)
+✔ journal task write updates the day record and pending index together (0.336625ms)
+✔ supply quantity adjustment uses a transaction and clamps to stock bounds (0.304166ms)
+✔ full supply snapshot preserves custom purchase requests (0.13775ms)
+✔ recruiting month filter includes applicants by operational date fields (0.901958ms)
+✔ completed idempotent writes replay the stored response without rerunning work (1.661458ms)
+✔ writes without an idempotency key fail before running work (0.262583ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.313333
+
+[stderr]

@@ -1,0 +1,24 @@
+Superloopy command capture
+startedAt: 2026-07-15T03:26:37.662Z
+finishedAt: 2026-07-15T03:26:37.923Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["bash","-lc","set -euo pipefail; cd services/desk-api; node --test --test-name-pattern=\"completed idempotent writes|writes without an idempotency key|me requires a Firebase bearer token\"; body=$(mktemp); code=$(curl -sS -o \"$body\" -w \"%{http_code}\" -X POST -H \"Content-Type: application/json\" -d \"{\\\"payload\\\":{}}\" https://desk-portal-api-262959464514.asia-northeast3.run.app/v1/desk/getDeskScheduleBootstrap); test \"$code\" = 401; grep -q authentication_required \"$body\"; rm -f \"$body\""]
+[stdout]
+✔ me requires a Firebase bearer token (12.197959ms)
+✔ test/contracts.test.js (61.607292ms)
+✔ test/desk-handlers.test.js (64.402084ms)
+✔ completed idempotent writes replay the stored response without rerunning work (1.608958ms)
+✔ writes without an idempotency key fail before running work (0.268333ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.668084
+
+[stderr]

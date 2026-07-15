@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "sessionId": "cloud-run-migration-turn2",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T03:27:03.068Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "5be4c7a19ee7bb24123d8277c61a702660a75edb1828a280c674188c9fbfec5c",
+      "sourceHash": "4078978648d768907898f9d7b11d92c25040f5fa3bad9b67d4a554f54db9e67c",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T03:27:02.276Z",
+      "command": [
+        "bash",
+        "-lc",
+        "set -euo pipefail; page=$(curl -fsS https://sedubanpo.github.io/desk-portal/); grep -q canFallbackFromDeskFirebaseLogin_ <<<\"$page\"; grep -q DESK_CLOUD_API_BASE <<<\"$page\"; health=$(curl -fsS https://desk-portal-api-262959464514.asia-northeast3.run.app/health); grep -q '\"ok\":true' <<<\"$health\"; grep -q desk-portal-api-00002-5br <<<\"$health\"; cd services/desk-api; npm test"
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn2/evidence/audit/G001-C001-rerun.txt",
+      "rerunArtifactHash": "772037c1703b01e705ca49e08dc92c6b79ddc2d4730705183b68236748ee389c",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "dc18a84d2a1cb43f70ba15c34bc31b09da7f7e883584d0c6dfd142abe3896ce0",
+      "sourceHash": "2c0a1a55630e0f9edcdafecf2f958a70ee1feb3c130edb79bb90bf6d813f18ed",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T03:27:02.813Z",
+      "command": [
+        "bash",
+        "-lc",
+        "set -euo pipefail; cd services/desk-api; node --test --test-name-pattern=\"completed idempotent writes|writes without an idempotency key|me requires a Firebase bearer token\"; body=$(mktemp); code=$(curl -sS -o \"$body\" -w \"%{http_code}\" -X POST -H \"Content-Type: application/json\" -d \"{\\\"payload\\\":{}}\" https://desk-portal-api-262959464514.asia-northeast3.run.app/v1/desk/getDeskScheduleBootstrap); test \"$code\" = 401; grep -q authentication_required \"$body\"; rm -f \"$body\""
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn2/evidence/audit/G001-C002-rerun.txt",
+      "rerunArtifactHash": "2f444cc81abebb5923cecd206083beaab5c8fba8e930c803f268a94ee6784c9f",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

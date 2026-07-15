@@ -1,0 +1,1 @@
+Cloud Run migration Turn 2: migrate desk schedule, daily journal, supplies, and recruiting handlers behind authenticated Cloud Run APIs; preserve Apps Script fallback, add parity and idempotency safeguards, deploy, and verify through Chrome academy profile without risking operating data.

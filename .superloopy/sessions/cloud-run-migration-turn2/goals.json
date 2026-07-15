@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T02:59:38.886Z",
+  "updatedAt": "2026-07-15T03:27:03.069Z",
+  "briefPath": ".superloopy/sessions/cloud-run-migration-turn2/brief.md",
+  "evidencePath": ".superloopy/sessions/cloud-run-migration-turn2/evidence",
+  "goalsPath": ".superloopy/sessions/cloud-run-migration-turn2/goals.json",
+  "ledgerPath": ".superloopy/sessions/cloud-run-migration-turn2/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "Cloud Run migration Turn 2: migrate desk schedule, daily journal, sup...",
+      "objective": "Cloud Run migration Turn 2: migrate desk schedule, daily journal, supplies, and recruiting handlers behind authenticated Cloud Run APIs; preserve Apps Script fallback, add parity and idempotency safeguards, deploy, and verify through Chrome academy profile without risking operating data.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T02:59:38.886Z",
+      "updatedAt": "2026-07-15T03:27:03.069Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C001-capture.txt",
+          "capturedAt": "2026-07-15T03:26:29.718Z",
+          "command": [
+            "bash",
+            "-lc",
+            "set -euo pipefail; page=$(curl -fsS https://sedubanpo.github.io/desk-portal/); grep -q canFallbackFromDeskFirebaseLogin_ <<<\"$page\"; grep -q DESK_CLOUD_API_BASE <<<\"$page\"; health=$(curl -fsS https://desk-portal-api-262959464514.asia-northeast3.run.app/health); grep -q '\"ok\":true' <<<\"$health\"; grep -q desk-portal-api-00002-5br <<<\"$health\"; cd services/desk-api; npm test"
+          ],
+          "exitCode": 0
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T03:26:37.925Z",
+          "command": [
+            "bash",
+            "-lc",
+            "set -euo pipefail; cd services/desk-api; node --test --test-name-pattern=\"completed idempotent writes|writes without an idempotency key|me requires a Firebase bearer token\"; body=$(mktemp); code=$(curl -sS -o \"$body\" -w \"%{http_code}\" -X POST -H \"Content-Type: application/json\" -d \"{\\\"payload\\\":{}}\" https://desk-portal-api-262959464514.asia-northeast3.run.app/v1/desk/getDeskScheduleBootstrap); test \"$code\" = 401; grep -q authentication_required \"$body\"; rm -f \"$body\""
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T02:59:38.890Z",
+      "completedAt": "2026-07-15T03:27:03.069Z",
+      "evidence": "Production surface, API tests, authentication rejection, idempotency safeguards, and Chrome academy-profile fallback verified."
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T03:27:03.069Z",
+    "evidence": "Production surface, API tests, authentication rejection, idempotency safeguards, and Chrome academy-profile fallback verified.",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C001-capture.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C001-capture.txt",
+          "size": 2597
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn2/evidence/G001-C002-capture.txt",
+          "size": 1146
+        }
+      ]
+    }
+  },
+  "sessionId": "cloud-run-migration-turn2"
+}
