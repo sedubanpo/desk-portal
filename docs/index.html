@@ -37207,7 +37207,10 @@
       }).join("");
 
       (calendarData.weeks || []).forEach(function(week) {
-        week.forEach(function(day) {
+        var days = Array.isArray(week)
+          ? week
+          : Object.keys(week || {}).sort(function(a, b) { return Number(a) - Number(b); }).map(function(key) { return week[key]; });
+        days.forEach(function(day) {
           if (!day) {
             html += '<div class="day-cell day-empty"></div>';
             return;

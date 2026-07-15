@@ -68,6 +68,7 @@ test('payroll month handler reads Google Sheets and returns the legacy response 
   assert.equal(response.selectedMonth, '26-07');
   assert.equal(response.cache.source, 'google-sheets-api');
   assert.equal(response.rows.length, 3);
+  assert.ok(response.calendar.weeks.every(Array.isArray));
   assert.ok(Array.isArray(response.teacherGroups));
   assert.ok(response.overrideSignature);
 });

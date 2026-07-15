@@ -13,4 +13,5 @@ test('Firebase identity replaces the Apps Script payroll password gate', async (
   assert.match(source, /state\.privilegedAccessKey = "firebase-role"/);
   assert.match(source, /if \(state\.cloudApiReady && state\.firebaseUser\)/);
   assert.match(source, /autocomplete="current-password"/);
+  assert.match(source, /var days = Array\.isArray\(week\)/);
 });
