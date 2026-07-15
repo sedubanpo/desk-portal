@@ -1,0 +1,14 @@
+Turn 3 happy-path evidence
+
+- Commit: c6fa08b (pushed to origin/main)
+- Cloud Run revision: desk-portal-api-00004-vrf, 100% traffic
+- Health endpoint: HTTP 200, service desk-portal-api, production
+- Read-only production Firestore check through the new handler:
+  selectedMonth=26-07s, months=2, rows=115, payments=83, source=firestore-snapshot
+- Chrome verification used the user's Chrome profile named "학원".
+- GitHub Pages source contained all 12 tuition Cloud methods and the stable clientRequestId idempotency key.
+- The tuition screen completed loading with index 4/4, 115 students, 83 monthly payments, and 119 recent payments.
+- Chrome console had no warning or error entries.
+- No production tuition write was submitted during verification.
+
+Known cutover boundary: the currently saved desk credential falls back to the legacy read path because its login alias is not connected to a Firebase staff account. The Cloud adapter and endpoints are deployed, but switching this profile's traffic remains a Turn 5 authentication/cutover task.

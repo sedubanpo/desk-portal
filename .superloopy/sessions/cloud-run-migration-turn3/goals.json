@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T05:04:19.932Z",
+  "updatedAt": "2026-07-15T05:30:57.972Z",
+  "briefPath": ".superloopy/sessions/cloud-run-migration-turn3/brief.md",
+  "evidencePath": ".superloopy/sessions/cloud-run-migration-turn3/evidence",
+  "goalsPath": ".superloopy/sessions/cloud-run-migration-turn3/goals.json",
+  "ledgerPath": ".superloopy/sessions/cloud-run-migration-turn3/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "Cloud Run migration Turn 3: migrate tuition reads and writes, payment...",
+      "objective": "Cloud Run migration Turn 3: migrate tuition reads and writes, payment append/update/delete, tuition notes, contact logs, status updates, and amount overrides to authenticated Cloud Run APIs backed by Firestore transactions; preserve safe legacy fallback, prevent duplicate or ambiguous writes, deploy, and verify read-only plus isolated transactional tests through Chrome academy profile.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T05:04:19.932Z",
+      "updatedAt": "2026-07-15T05:30:57.972Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C001.txt",
+          "capturedAt": "2026-07-15T05:29:53.742Z",
+          "notes": "Cloud Run revision deployed and read-only tuition screen verified in Chrome academy profile; production writes were not used."
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C002.txt",
+          "capturedAt": "2026-07-15T05:29:53.861Z",
+          "notes": "Transactional append, duplicate replay, delete audit, follow-up retry, amount adjustment, and auth rejection tests passed."
+        }
+      ],
+      "startedAt": "2026-07-15T05:04:19.936Z",
+      "completedAt": "2026-07-15T05:30:57.972Z",
+      "evidence": "criteria passed"
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T05:30:57.972Z",
+    "evidence": "criteria passed",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C001.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C001.txt",
+          "size": 1047
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C002.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn3/evidence/G001-C002.txt",
+          "size": 994
+        }
+      ]
+    }
+  },
+  "sessionId": "cloud-run-migration-turn3"
+}

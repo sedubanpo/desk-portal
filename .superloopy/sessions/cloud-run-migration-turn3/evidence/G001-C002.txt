@@ -1,0 +1,12 @@
+Turn 3 risk-path evidence
+
+- `npm test`: 30 tests passed, 0 failed.
+- `npm run test:coverage`: 30 tests passed, 0 failed; tuition handlers line coverage 71.73%, tuition normalizers 90.91%.
+- Payment append test proves ledger, recent/month/daily indexes, and month snapshot change in one transaction.
+- Duplicate append with the same clientRequestId returns duplicate=true and does not add a second payment.
+- Payment delete test proves the ledger and indexes are removed while an immutable deletion audit record is written.
+- Follow-up retry test proves contactCount increments once only.
+- Amount adjustment test proves only the collected delta is recorded and the snapshot totals stay consistent.
+- Unauthenticated production `/v1/migration` returned HTTP 401 with authentication_required.
+- Production snapshot document size audit: July snapshot 146,576 bytes, well below the Firestore document limit.
+- Browser retries now reuse `<method>:<clientRequestId>` as the outer x-idempotency-key.
