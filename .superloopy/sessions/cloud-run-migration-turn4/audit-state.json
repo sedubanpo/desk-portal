@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "sessionId": "cloud-run-migration-turn4",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T06:44:36.074Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "05afa0d9d2de39e95fe24e6d9a2b337f01278a7ffc0256b0ed1b5a5a00e34fa3",
+      "sourceHash": "0fe68dd772a8daa78f7d1dd1ff19c49fdd8c3caa4063caa50ab125169db9486f",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T06:44:36.073Z",
+      "command": null,
+      "rerunStatus": "manual-recheck",
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn4/evidence/G001-C001.txt",
+      "rerunArtifactHash": "0fe68dd772a8daa78f7d1dd1ff19c49fdd8c3caa4063caa50ab125169db9486f",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "795f4fa13e403838db8308e82c59d655e9a5a7442319485b1bf146dd33bf7f44",
+      "sourceHash": "2db5e6961b8cacab4d60280ae3e6206ab4842e298e3a1b752b07dd40cf74c2da",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T06:44:36.074Z",
+      "command": null,
+      "rerunStatus": "manual-recheck",
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn4/evidence/G001-C002.txt",
+      "rerunArtifactHash": "2db5e6961b8cacab4d60280ae3e6206ab4842e298e3a1b752b07dd40cf74c2da",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+Cloud Run migration Turn 4 happy-path evidence
+
+Verified at: 2026-07-15 Asia/Seoul
+Surface: Google Chrome academy profile, production desk portal
+URL: https://sedubanpo.github.io/desk-portal/?v=ddb9dff
+
+Observed payroll result after authentication and read-only load:
+- Active module: 강사 시수 정산
+- Selected month: 26-05
+- Available months: 26-05, 26-04, 26-03, 26-02, 26-01
+- Detail rows: 1,693
+- Calendar days rendered: 31
+- Recognized hours: 3,658.5h
+- Working days: 31
+- Recognized lessons: 1,438
+- Net sales: 128,308,659 KRW
+- Estimated pay: 64,154,330 KRW
+- Pure teaching hours: 300.5h
+- Browser console warnings/errors: none
+- JavaScript dialog after compatibility fix: none
+
+The values match the Turn 4 Google Sheets API parity run for 26-05: 1,693 rows and all 10 compared KPIs matched the legacy Apps Script calculation. The deployed Cloud Run payroll API remains authenticated and its production source revision is desk-portal-api-00006-6nj.
+
+No payroll settings, overrides, or source-sheet values were written during this browser verification.

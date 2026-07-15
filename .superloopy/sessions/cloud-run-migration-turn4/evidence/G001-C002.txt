@@ -1,0 +1,23 @@
+Cloud Run migration Turn 4 risk-path evidence
+
+The production browser exposed a compatibility failure after payroll authentication:
+  [급여 포털] week.forEach is not a function
+
+Remediation deployed in commit ddb9dff:
+- The calendar renderer now accepts both array weeks and numeric-key week objects.
+- Numeric object keys are sorted before rendering to preserve weekday order.
+- Backend tests assert that Cloud Run normally emits every calendar week as an array.
+- Frontend routing regression tests assert that the compatibility guard remains present.
+
+Privilege boundary remediation deployed in commit d874da3:
+- Firebase ADMIN users bypass the legacy Apps Script payroll-password gate.
+- Non-admin users require permissions.canManagePayroll for payroll access.
+- The Cloud Run API independently enforces the same ADMIN/canManagePayroll boundary.
+- Legacy password access remains available only as the staged fallback until final traffic cutover in Turn 5.
+
+Safety and regression checks:
+- 37/37 Node tests pass.
+- npm audit --omit=dev reports zero vulnerabilities.
+- Firestore payroll settings and overrides remain server-only behind Admin SDK rules.
+- No destructive payroll write or delete was used for QA.
+- The post-fix Chrome load rendered 31 calendar days and 1,693 rows with no console errors or dialogs.

@@ -1,0 +1,1 @@
+Cloud Run migration Turn 4: migrate payroll calculation, payroll settings and override writes, and Google Calendar/Google Sheets-dependent reads from Apps Script toward authenticated Cloud Run APIs while preserving operational safety and legacy fallback; deploy, verify read-only behavior through Chrome academy profile, and leave final traffic cutover for Turn 5.
