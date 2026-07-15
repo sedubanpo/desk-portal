@@ -19,17 +19,17 @@ Application Default Credentials가 설정된 환경에서 실행합니다.
 ```bash
 npm install
 npm test
-GOOGLE_CLOUD_PROJECT=sedu-portal npm start
+GOOGLE_CLOUD_PROJECT=fir-lms-prod npm start
 ```
 
 ## Cloud Run 배포
 
 ```bash
 gcloud auth login
-GOOGLE_CLOUD_PROJECT=<project-id> bash scripts/deploy.sh
+GOOGLE_CLOUD_PROJECT=fir-lms-prod bash scripts/deploy.sh
 ```
 
-배포 스크립트는 필요한 Google Cloud API를 활성화하고 `desk-portal-api-runtime` 전용 서비스 계정을 만든 뒤 Firestore 접근 역할을 부여합니다. Cloud Run 서비스 자체는 Firebase 클라이언트가 호출할 수 있도록 공개 ingress를 사용하지만, 업무 API는 애플리케이션 계층에서 Firebase ID 토큰과 Firestore 역할을 모두 검증합니다.
+배포 스크립트는 필요한 Google Cloud API를 활성화하고 런타임용 `desk-portal-api-runtime`과 빌드용 `desk-portal-api-build` 서비스 계정을 분리합니다. 빌드 계정에는 Cloud Run Builder 역할만, 런타임 계정에는 Firestore 접근 역할만 부여합니다. Cloud Run 서비스 자체는 Firebase 클라이언트가 호출할 수 있도록 공개 ingress를 사용하지만, 업무 API는 애플리케이션 계층에서 Firebase ID 토큰과 Firestore 역할을 모두 검증합니다.
 
 ## 안전 경계
 

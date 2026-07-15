@@ -2,7 +2,7 @@
   "version": 1,
   "mode": "light",
   "createdAt": "2026-07-15T02:16:50.141Z",
-  "updatedAt": "2026-07-15T02:26:58.268Z",
+  "updatedAt": "2026-07-15T02:52:07.079Z",
   "briefPath": ".superloopy/sessions/cloud-run-migration-turn1/brief.md",
   "evidencePath": ".superloopy/sessions/cloud-run-migration-turn1/evidence",
   "goalsPath": ".superloopy/sessions/cloud-run-migration-turn1/goals.json",
@@ -12,10 +12,10 @@
       "id": "G001",
       "title": "Cloud Run 마이그레이션 1단계: 데스크 포털 운영 경로와 데이터는 변경하지 않고 Cloud Run API 서비스 골격...",
       "objective": "Cloud Run 마이그레이션 1단계: 데스크 포털 운영 경로와 데이터는 변경하지 않고 Cloud Run API 서비스 골격, Firebase ID 토큰 검증, 역할 기반 /v1/me, 공개 /health, 자동 테스트, 배포 설정과 포털 호환 API 계약을 구현하고 실제 배포를 검증한다.",
-      "status": "in_progress",
+      "status": "complete",
       "attempt": 1,
       "createdAt": "2026-07-15T02:16:50.141Z",
-      "updatedAt": "2026-07-15T02:26:58.268Z",
+      "updatedAt": "2026-07-15T02:52:07.079Z",
       "criteria": [
         {
           "id": "C001",
@@ -24,14 +24,14 @@
           "essential": true,
           "status": "pass",
           "artifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C001-capture.txt",
-          "capturedAt": "2026-07-15T02:26:50.101Z",
+          "capturedAt": "2026-07-15T02:51:21.586Z",
           "command": [
-            "npm",
-            "--prefix",
-            "services/desk-api",
-            "test"
+            "bash",
+            "-lc",
+            "set -euo pipefail; URL=$(gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.url)\"); curl --fail --silent --show-error \"$URL/health\"; printf \"\\n\"; gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.latestReadyRevisionName,spec.template.spec.serviceAccountName,status.traffic[0].percent)\""
           ],
-          "exitCode": 0
+          "exitCode": 0,
+          "notes": "Cloud Run revision deployed in fir-lms-prod and public health endpoint passed without switching portal business traffic."
         },
         {
           "id": "C002",
@@ -40,19 +40,40 @@
           "essential": true,
           "status": "pass",
           "artifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C002-capture.txt",
-          "capturedAt": "2026-07-15T02:26:58.268Z",
+          "capturedAt": "2026-07-15T02:51:30.847Z",
           "command": [
-            "node",
-            "--test",
-            "--test-name-pattern=invalid|missing|inactive|origin|account lookup|instructor",
-            "services/desk-api/test/app.test.js"
+            "bash",
+            "-lc",
+            "set -euo pipefail; URL=$(gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.url)\"); test \"$(curl --silent --output /tmp/desk-api-unauth.json --write-out \"%{http_code}\" \"$URL/v1/me\")\" = \"401\"; rg -q \"authentication_required\" /tmp/desk-api-unauth.json; test \"$(curl --silent --output /tmp/desk-api-origin.json --write-out \"%{http_code}\" -H \"Origin: https://example.com\" \"$URL/health\")\" = \"403\"; rg -q \"origin_not_allowed\" /tmp/desk-api-origin.json; printf \"unauth=401 origin=403\\n\""
           ],
-          "exitCode": 0
+          "exitCode": 0,
+          "notes": "Deployed service rejects unauthenticated business API access and disallowed browser origins."
         }
       ],
-      "startedAt": "2026-07-15T02:16:50.145Z"
+      "startedAt": "2026-07-15T02:16:50.145Z",
+      "completedAt": "2026-07-15T02:52:07.079Z",
+      "evidence": "Cloud Run API foundation deployed to fir-lms-prod; health, authentication rejection, CORS rejection, local tests, and least-privilege service identities verified without switching portal business traffic."
     }
   ],
-  "aggregateCompletion": null,
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T02:52:07.079Z",
+    "evidence": "Cloud Run API foundation deployed to fir-lms-prod; health, authentication rejection, CORS rejection, local tests, and least-privilege service identities verified without switching portal business traffic.",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C001-capture.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C001-capture.txt",
+          "size": 890
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn1/evidence/G001-C002-capture.txt",
+          "size": 822
+        }
+      ]
+    }
+  },
   "sessionId": "cloud-run-migration-turn1"
 }

@@ -1,13 +1,13 @@
 Superloopy command capture
-startedAt: 2026-07-15T02:51:19.958Z
-finishedAt: 2026-07-15T02:51:21.584Z
+startedAt: 2026-07-15T02:52:04.562Z
+finishedAt: 2026-07-15T02:52:06.282Z
 cwd: /Users/anjongseong/Documents/desk-portal
 status: pass
 exitCode: 0
 signal: null
 command: ["bash","-lc","set -euo pipefail; URL=$(gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.url)\"); curl --fail --silent --show-error \"$URL/health\"; printf \"\\n\"; gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.latestReadyRevisionName,spec.template.spec.serviceAccountName,status.traffic[0].percent)\""]
 [stdout]
-{"ok":true,"service":"desk-portal-api","revision":"desk-portal-api-00001-mnr","environment":"production","timestamp":"2026-07-15T02:51:20.768Z"}
+{"ok":true,"service":"desk-portal-api","revision":"desk-portal-api-00001-mnr","environment":"production","timestamp":"2026-07-15T02:52:05.400Z"}
 desk-portal-api-00001-mnr	desk-portal-api-runtime@fir-lms-prod.iam.gserviceaccount.com	100
 
 [stderr]

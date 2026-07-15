@@ -11,6 +11,8 @@
 5. 공개 `/health`, 보호된 `/v1/me`
 6. 기존 Apps Script API 43개에 대한 전환 수량 계약
 
+배포 대상은 Firebase Auth와 Firestore가 있는 `fir-lms-prod`, 리전은 `asia-northeast3`, 서비스명은 `desk-portal-api`입니다. 1단계 배포는 업무 API 트래픽을 연결하지 않습니다.
+
 ## 인증 흐름
 
 ```text

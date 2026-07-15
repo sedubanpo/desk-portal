@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "sessionId": "cloud-run-migration-turn1",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T02:52:07.078Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "f4f5a9d6eda35b7ff34b5236e154b2a349a54941f0e72c2500a37f765d3b3d25",
+      "sourceHash": "ae864083a56f14616a983653737b9526ebf9de6f0f2e5580e8c7dae4c2a77c98",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T02:52:04.562Z",
+      "command": [
+        "bash",
+        "-lc",
+        "set -euo pipefail; URL=$(gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.url)\"); curl --fail --silent --show-error \"$URL/health\"; printf \"\\n\"; gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.latestReadyRevisionName,spec.template.spec.serviceAccountName,status.traffic[0].percent)\""
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/audit/G001-C001-rerun.txt",
+      "rerunArtifactHash": "9f2cf98591866a1d9542a8bfb70c551c0b146cc58b30e3a5f40e381fc2308749",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "bd890b2dc382047ce7ad20a624faca58c8a1ca74871a4a85f042ce7b68c18e18",
+      "sourceHash": "0a7c41012dab9939767f0a6b9e1c79e151302b9a542b1f2ab1b39b46c55a49a3",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T02:52:06.284Z",
+      "command": [
+        "bash",
+        "-lc",
+        "set -euo pipefail; URL=$(gcloud run services describe desk-portal-api --project fir-lms-prod --region asia-northeast3 --format=\"value(status.url)\"); test \"$(curl --silent --output /tmp/desk-api-unauth.json --write-out \"%{http_code}\" \"$URL/v1/me\")\" = \"401\"; rg -q \"authentication_required\" /tmp/desk-api-unauth.json; test \"$(curl --silent --output /tmp/desk-api-origin.json --write-out \"%{http_code}\" -H \"Origin: https://example.com\" \"$URL/health\")\" = \"403\"; rg -q \"origin_not_allowed\" /tmp/desk-api-origin.json; printf \"unauth=401 origin=403\\n\""
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn1/evidence/audit/G001-C002-rerun.txt",
+      "rerunArtifactHash": "256b71e6d0cdfbb7f7c8edce02fc5ce2b90650c9360c8b09cec4339cdff8d179",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

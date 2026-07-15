@@ -8,6 +8,7 @@ SERVICE="${CLOUD_RUN_SERVICE:-desk-portal-api}"
 FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
 ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://sedubanpo.github.io}"
 RUNTIME_SERVICE_ACCOUNT_NAME="${RUNTIME_SERVICE_ACCOUNT_NAME:-desk-portal-api-runtime}"
+BUILD_SERVICE_ACCOUNT_NAME="${BUILD_SERVICE_ACCOUNT_NAME:-desk-portal-api-build}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "GOOGLE_CLOUD_PROJECT 또는 첫 번째 인자로 프로젝트 ID를 지정하세요." >&2
@@ -15,6 +16,7 @@ if [[ -z "${PROJECT_ID}" ]]; then
 fi
 
 RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+BUILD_SERVICE_ACCOUNT="${BUILD_SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 gcloud services enable \
   run.googleapis.com \
@@ -35,16 +37,63 @@ if ! gcloud iam service-accounts describe "${RUNTIME_SERVICE_ACCOUNT}" \
     --quiet
 fi
 
-gcloud projects add-iam-policy-binding "${FIREBASE_PROJECT_ID}" \
-  --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
-  --role roles/datastore.user \
-  --condition=None \
-  --quiet >/dev/null
+if ! gcloud iam service-accounts describe "${BUILD_SERVICE_ACCOUNT}" \
+  --project "${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${BUILD_SERVICE_ACCOUNT_NAME}" \
+    --project "${PROJECT_ID}" \
+    --display-name "Desk Portal Cloud Run Builder" \
+    --quiet
+fi
+
+for attempt in {1..12}; do
+  if gcloud iam service-accounts describe "${RUNTIME_SERVICE_ACCOUNT}" \
+    --project "${PROJECT_ID}" >/dev/null 2>&1 && \
+    gcloud iam service-accounts describe "${BUILD_SERVICE_ACCOUNT}" \
+      --project "${PROJECT_ID}" >/dev/null 2>&1; then
+    break
+  fi
+  if [[ "${attempt}" -eq 12 ]]; then
+    echo "런타임 서비스 계정이 IAM에 전파되지 않았습니다." >&2
+    exit 1
+  fi
+  sleep 5
+done
+
+for attempt in {1..6}; do
+  if gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+    --member "serviceAccount:${BUILD_SERVICE_ACCOUNT}" \
+    --role roles/run.builder \
+    --condition=None \
+    --quiet >/dev/null; then
+    break
+  fi
+  if [[ "${attempt}" -eq 6 ]]; then
+    echo "빌드 서비스 계정에 Cloud Run Builder 역할을 부여하지 못했습니다." >&2
+    exit 1
+  fi
+  sleep 5
+done
+
+for attempt in {1..6}; do
+  if gcloud projects add-iam-policy-binding "${FIREBASE_PROJECT_ID}" \
+    --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role roles/datastore.user \
+    --condition=None \
+    --quiet >/dev/null; then
+    break
+  fi
+  if [[ "${attempt}" -eq 6 ]]; then
+    echo "런타임 서비스 계정에 Firestore 역할을 부여하지 못했습니다." >&2
+    exit 1
+  fi
+  sleep 5
+done
 
 gcloud run deploy "${SERVICE}" \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
   --source "${ROOT_DIR}" \
+  --build-service-account "projects/${PROJECT_ID}/serviceAccounts/${BUILD_SERVICE_ACCOUNT}" \
   --allow-unauthenticated \
   --ingress all \
   --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
