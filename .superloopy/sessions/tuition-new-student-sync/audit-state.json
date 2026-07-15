@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "sessionId": "tuition-new-student-sync",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T09:22:43.992Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "84eebf1f731c13e368702c6a8ddddc58ee4e87419a2134fa45b4e15736360dee",
+      "sourceHash": "a1bcf0d057d0f4afae53d2b9ea20b5b07905a8527671799f6f66a857f3ae924c",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T09:22:43.604Z",
+      "command": null,
+      "rerunStatus": "manual-recheck",
+      "rerunArtifact": ".superloopy/sessions/tuition-new-student-sync/evidence/chrome-sinyujin-detail-row.png",
+      "rerunArtifactHash": "a1bcf0d057d0f4afae53d2b9ea20b5b07905a8527671799f6f66a857f3ae924c",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "2c21f11f1eb91cb0a581df3716510913d81abd1a3a37f2a379a55e1bbb5050cf",
+      "sourceHash": "8ad7c1b2550ea2bf89e4d9ebd99563b562ea8db4044b448d2c93a339bc7f6a41",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T09:22:43.606Z",
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "services/desk-api"
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/tuition-new-student-sync/evidence/audit/G001-C002-rerun.txt",
+      "rerunArtifactHash": "0be6aeb87962bf25f32b16e9d97e5be035f1155c71d8bfe3806b1188c908e560",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

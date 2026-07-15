@@ -38,6 +38,7 @@ const COLLECTIONS = Object.freeze({
   statusChanges: 'tuitionStatusChanges',
   guideChanges: 'tuitionGuideAmountChanges',
   studentMemos: 'tuitionStudentMemos',
+  students: 'students',
   snapshots: 'tuitionMonthSnapshots',
   paymentIndexes: 'tuitionPaymentReadIndexes',
   monthlyIndexes: 'tuitionMonthlyReadIndexes'
@@ -325,8 +326,9 @@ async function buildMonthSummary(store, payload) {
   const months = payload.months || await loadMonths(store);
   const snapshot = await store.get(key(COLLECTIONS.snapshots, snapshotId(month)));
   if (!snapshot?.success || !Array.isArray(snapshot.rows)) return pendingSummary(month, months, 'summary-snapshot-missing');
-  const [memoDocuments, recent, monthPayments, followups, charges] = await Promise.all([
+  const [memoDocuments, studentDocuments, recent, monthPayments, followups, charges] = await Promise.all([
     store.list(COLLECTIONS.studentMemos, 500),
+    store.list(COLLECTIONS.students, 1000),
     store.get(key(COLLECTIONS.paymentIndexes, 'recent')),
     store.get(key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month))),
     store.get(key(COLLECTIONS.monthlyIndexes, followupIndexId(month))),
@@ -338,7 +340,8 @@ async function buildMonthSummary(store, payload) {
   }).filter(([student, warning]) => student && warning.hasWarning));
   const statusFilter = text(payload.statusFilter);
   const keyword = text(payload.keyword).toLowerCase().replace(/\s+/g, '');
-  const rows = structuredClone(snapshot.rows).filter(row => {
+  const masterRows = studentDocuments.filter(isActiveStudent).map(studentMasterTuitionRow).filter(Boolean);
+  const rows = mergeStudentMasterRows(snapshot.rows, masterRows).filter(row => {
     if (statusFilter && statusFilter !== '전체' && unpaidStatus(row.unpaidStatus) !== statusFilter) return false;
     if (!keyword) return true;
     return [row.studentName, row.school, row.grade].join('').toLowerCase().replace(/\s+/g, '').includes(keyword);
@@ -577,6 +580,7 @@ function followupMutationKeys(month, student, requestId, incrementContact) {
 function changeSnapshotPayment(source, row, action, month, date) {
   if (!source?.success || !Array.isArray(source.rows)) return null;
   const snapshot = structuredClone(source);
+  if (action === 'append') ensureSnapshotStudentRow(snapshot, row.studentName);
   const isTarget = item => paymentKey(item) === paymentKey(row);
   snapshot.allPayments = action === 'append' ? mergePayments(row, snapshot.allPayments || []) : (snapshot.allPayments || []).filter(item => !isTarget(item));
   snapshot.payments = action === 'append' ? mergePayments(row, snapshot.payments || []) : (snapshot.payments || []).filter(item => !isTarget(item));
@@ -604,6 +608,7 @@ function changeSnapshotPayment(source, row, action, month, date) {
 function updateSnapshotFollowup(source, student, next, timestamp) {
   if (!source?.success || !Array.isArray(source.rows)) return null;
   const snapshot = structuredClone(source);
+  ensureSnapshotStudentRow(snapshot, student);
   snapshot.rows = snapshot.rows.map(row => studentName(row.studentName) === student ? {
     ...row,
     guideAmount: next.guideAmount,
@@ -622,6 +627,7 @@ function updateSnapshotAmount(source, student, guideAmount, collectedAmount, sta
   if (!source?.success || !Array.isArray(source.rows)) return null;
   let snapshot = structuredClone(source);
   if (adjustmentPayment) snapshot = changeSnapshotPayment(snapshot, adjustmentPayment, 'append', adjustmentPayment.sourceDueMonth, date);
+  ensureSnapshotStudentRow(snapshot, student);
   snapshot.rows = snapshot.rows.map(row => studentName(row.studentName) === student ? {
     ...row, guideAmount, collectedAmount, outstandingAmount: Math.max(0, guideAmount - collectedAmount), unpaidStatus: status
   } : row);
@@ -718,6 +724,58 @@ function isInactiveStudent(document) {
   const status = text(document?.status || document?.registrationStatus || document?.enrollmentStatus).toUpperCase();
   if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|중지생|퇴원|퇴원생|휴원|휴원생|비활성|삭제)$/.test(status)) return true;
   return document?.active === false || document?.isActive === false;
+}
+
+function isActiveStudent(document) {
+  if (isInactiveStudent(document)) return false;
+  const status = text(document?.status || document?.registrationStatus || document?.enrollmentStatus).toUpperCase();
+  return document?.active === true
+    || document?.isActive === true
+    || /^(ACTIVE|REGISTERED|ENROLLED|CURRENT|재원|재원생|등록)$/.test(status);
+}
+
+function studentMasterTuitionRow(document) {
+  const name = studentName(document?.studentName || document?.name || document?.displayName);
+  if (!name) return null;
+  return {
+    ...baseTuitionRow(name),
+    studentId: text(document?.studentId || document?.id),
+    school: text(document?.school || document?.schoolName),
+    grade: text(document?.grade || document?.gradeName),
+    masterRegistrationStatus: text(document?.status || document?.registrationStatus || document?.enrollmentStatus),
+    source: 'firestore-student-master'
+  };
+}
+
+function baseTuitionRow(student) {
+  return {
+    studentName: studentName(student), school: '', grade: '', guideAmount: 0,
+    collectedAmount: 0, outstandingAmount: 0, paymentCount: 0, unpaidStatus: '안내이전',
+    contactCount: 0, lastContactAt: '', lastContactMemo: '', lastUpdatedAt: ''
+  };
+}
+
+function ensureSnapshotStudentRow(snapshot, student) {
+  const name = studentName(student);
+  if (!name || snapshot.rows.some(row => studentName(row.studentName) === name)) return;
+  snapshot.rows.push(baseTuitionRow(name));
+}
+
+function mergeStudentMasterRows(snapshotRows, masterRows) {
+  const masterByName = new Map(masterRows.map(row => [studentName(row.studentName), row]));
+  const merged = structuredClone(snapshotRows || []).map(row => {
+    const master = masterByName.get(studentName(row.studentName));
+    if (!master) return row;
+    masterByName.delete(studentName(row.studentName));
+    return {
+      ...row,
+      studentId: text(row.studentId) || master.studentId,
+      school: text(row.school) || master.school,
+      grade: text(row.grade) || master.grade,
+      masterRegistrationStatus: master.masterRegistrationStatus || text(row.masterRegistrationStatus)
+    };
+  });
+  return merged.concat([...masterByName.values()].sort((a, b) => a.studentName.localeCompare(b.studentName, 'ko')));
 }
 
 function studentMasterRow(document) {

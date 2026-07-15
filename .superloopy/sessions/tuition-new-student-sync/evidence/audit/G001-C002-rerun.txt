@@ -1,0 +1,69 @@
+Superloopy command capture
+startedAt: 2026-07-15T09:22:43.606Z
+finishedAt: 2026-07-15T09:22:43.991Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["npm","test","--prefix","services/desk-api"]
+[stdout]
+
+> @sedu/desk-api@0.1.0 test
+> node --test
+
+✔ health endpoint is public and does not expose framework headers (12.967584ms)
+✔ allowed origin receives CORS headers and preflight succeeds (1.784083ms)
+✔ unknown browser origin is rejected (1.458917ms)
+✔ me requires a Firebase bearer token (1.335833ms)
+✔ me returns the normalized staff identity (2.067709ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.0095ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (1.273916ms)
+  ✔ account_inactive (1.483792ms)
+  ✔ staff_access_required (1.475708ms)
+✔ missing, inactive, and non-staff accounts are denied (4.561875ms)
+✔ an active instructor without deskPortal app access is denied (1.411584ms)
+✔ account lookup failures become a generic service error (1.169083ms)
+✔ migration contract reports the Turn 5 production cutover (1.027167ms)
+✔ desk route authenticates, dispatches reads, and carries write idempotency context (5.348542ms)
+✔ unmigrated maintenance methods are rejected before dispatch (1.188125ms)
+✔ payroll methods require admin or explicit payroll permission (1.994042ms)
+✔ tuition writes dispatch with staff identity and idempotency context (1.135042ms)
+✔ migration contract exactly mirrors the Apps Script API allowlist (10.468834ms)
+✔ Cloud Run runtime can verify revoked Firebase ID tokens (6.491958ms)
+✔ schedule read preserves legacy shape and filters retired workers without mutating data (3.24025ms)
+✔ schedule validation rejects retired workers before any write (0.251084ms)
+✔ journal task write updates the day record and pending index together (0.363458ms)
+✔ supply quantity adjustment uses a transaction and clamps to stock bounds (0.305583ms)
+✔ full supply snapshot preserves custom purchase requests (0.137916ms)
+✔ recruiting month filter includes applicants by operational date fields (1.88125ms)
+✔ portal config is proxied through an allowlisted server path (0.645916ms)
+✔ Firebase identity replaces the Apps Script payroll password gate (17.171084ms)
+✔ production frontend has no Apps Script or direct RTDB transport fallback (8.1705ms)
+✔ Google Workspace reader returns payroll months, rows, and normalized calendar events (12.691208ms)
+✔ completed idempotent writes replay the stored response without rerunning work (1.806208ms)
+✔ writes without an idempotency key fail before running work (0.424208ms)
+✔ payroll parser and ratio summary preserve recognition, overlap, and cancellation rules (13.429375ms)
+✔ payroll month handler reads Google Sheets and returns the legacy response shape (1.557875ms)
+✔ settings and overrides replay the same business request without a second mutation (0.466541ms)
+✔ invalid month and missing request ids fail before touching storage (0.133291ms)
+✔ month summary reads the snapshot and attaches student memo warnings (5.111084ms)
+✔ month summary merges newly registered active students without reviving inactive students (1.109375ms)
+✔ inactive student search reads Firestore student records only (0.210417ms)
+✔ payment append updates the ledger, indexes, and snapshot in one transaction and replays duplicates (13.39075ms)
+✔ first payment for a master-only student materializes a snapshot row (0.602709ms)
+✔ payment delete writes an audit record and removes the payment everywhere atomically (0.50275ms)
+✔ followup retries do not increment contact count twice (0.610041ms)
+✔ first status save for a master-only student materializes a snapshot row (0.858833ms)
+✔ amount adjustment records only the collected delta and keeps snapshot totals consistent (1.026459ms)
+✔ first amount adjustment for a master-only student materializes a snapshot row (0.527542ms)
+ℹ tests 45
+ℹ suites 0
+ℹ pass 45
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 210.627792
+
+[stderr]

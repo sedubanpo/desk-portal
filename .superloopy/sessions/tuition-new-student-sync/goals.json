@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T09:13:56.089Z",
+  "updatedAt": "2026-07-15T09:22:43.993Z",
+  "briefPath": ".superloopy/sessions/tuition-new-student-sync/brief.md",
+  "evidencePath": ".superloopy/sessions/tuition-new-student-sync/evidence",
+  "goalsPath": ".superloopy/sessions/tuition-new-student-sync/goals.json",
+  "ledgerPath": ".superloopy/sessions/tuition-new-student-sync/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "신규 등록된 재원생이 데스크 포털 수강료 정산에 즉시 표시되고, 최초 상태·금액·수납 입력도 정상 저장되도록 수정·검증·배포한다.",
+      "objective": "신규 등록된 재원생이 데스크 포털 수강료 정산에 즉시 표시되고, 최초 상태·금액·수납 입력도 정상 저장되도록 수정·검증·배포한다.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T09:13:56.089Z",
+      "updatedAt": "2026-07-15T09:22:43.993Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/tuition-new-student-sync/evidence/chrome-sinyujin-detail-row.png",
+          "capturedAt": "2026-07-15T09:22:27.193Z",
+          "notes": "Cloud Run revision desk-portal-api-00009-rnd 배포 후 Chrome 학원 프로필에서 신유진 검색 결과가 수강료 정산 상세에 세화여고 2, 안내이전, 0원으로 표시됨."
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/tuition-new-student-sync/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T09:22:34.747Z",
+          "command": [
+            "npm",
+            "test",
+            "--prefix",
+            "services/desk-api"
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T09:13:56.097Z",
+      "completedAt": "2026-07-15T09:22:43.993Z",
+      "evidence": "신규 활성 학생 조회 병합, 최초 입력 스냅샷 편입, 45개 테스트 및 Chrome 운영 화면 검증 완료; Cloud Run desk-portal-api-00009-rnd 배포."
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T09:22:43.993Z",
+    "evidence": "신규 활성 학생 조회 병합, 최초 입력 스냅샷 편입, 45개 테스트 및 Chrome 운영 화면 검증 완료; Cloud Run desk-portal-api-00009-rnd 배포.",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/tuition-new-student-sync/evidence/chrome-sinyujin-detail-row.png",
+          "relativePath": ".superloopy/sessions/tuition-new-student-sync/evidence/chrome-sinyujin-detail-row.png",
+          "size": 109293
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/tuition-new-student-sync/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/tuition-new-student-sync/evidence/G001-C002-capture.txt",
+          "size": 4131
+        }
+      ]
+    }
+  },
+  "sessionId": "tuition-new-student-sync"
+}

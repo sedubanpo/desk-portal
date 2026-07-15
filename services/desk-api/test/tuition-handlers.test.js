@@ -67,6 +67,30 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 
+test('month summary merges newly registered active students without reviving inactive students', async () => {
+  const seed = tuitionSeed();
+  seed.documents['students/new-active'] = {
+    studentId: 'new-active', studentName: '신유진', school: '세화여고', grade: '2',
+    status: 'ACTIVE', active: true, isActive: true
+  };
+  seed.documents['students/stopped'] = {
+    studentId: 'stopped', studentName: '이중지', school: '반포중', grade: '2',
+    status: 'STOPPED', active: false, isActive: false
+  };
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) })
+    .getTuitionMonthSummary({ monthName: seed.month });
+  assert.equal(result.success, true);
+  assert.deepEqual(result.rows.map(row => row.studentName), ['김재희', '신유진']);
+  assert.equal(result.rows[1].studentId, 'new-active');
+  assert.equal(result.rows[1].school, '세화여고');
+  assert.equal(result.rows[1].grade, '2');
+  assert.equal(result.rows[1].guideAmount, 0);
+  assert.equal(result.rows[1].collectedAmount, 0);
+  assert.equal(result.rows[1].outstandingAmount, 0);
+  assert.equal(result.rows[1].unpaidStatus, '안내이전');
+  assert.equal(result.kpi.totalStudents, 2);
+});
+
 test('inactive student search reads Firestore student records only', async () => {
   const store = memoryStore({
     'students/inactive-1': { studentName: '이중지', school: '반포중', grade: '2', status: 'STOPPED' },
@@ -98,6 +122,22 @@ test('payment append updates the ledger, indexes, and snapshot in one transactio
   assert.equal(dump['tuitionPaymentReadIndexes/payment_month_26-07s'].payments.length, 2);
   assert.equal(dump['tuitionPaymentReadIndexes/daily_2026_07_15'].payments.length, 1);
   assert.ok(dump['tuitionPayments/tp_append-1']);
+});
+
+test('first payment for a master-only student materializes a snapshot row', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T03:30:00.000Z') });
+  const result = await handlers.appendTuitionPaymentEntry({
+    monthName: seed.month, studentName: '신유진', dueDate: '26-07-01', amount: -200000,
+    paidAt: '7/15', business: '반포', paymentType: '신한카드', approvalNo: '9999',
+    clientRequestId: 'new-student-payment'
+  }, { uid: 'staff-1', name: '관리자' });
+  assert.equal(result.success, true, JSON.stringify(result));
+  const row = store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows.find(item => item.studentName === '신유진');
+  assert.equal(row.collectedAmount, 200000);
+  assert.equal(row.paymentCount, 1);
+  assert.equal(row.unpaidStatus, '납부완료');
 });
 
 test('payment delete writes an audit record and removes the payment everywhere atomically', async () => {
@@ -134,6 +174,20 @@ test('followup retries do not increment contact count twice', async () => {
   assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].contactCount, 1);
 });
 
+test('first status save for a master-only student materializes a snapshot row', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T05:00:00.000Z') });
+  const result = await handlers.saveTuitionStatusOnly({
+    monthName: seed.month, studentName: '신유진', guideAmount: 0,
+    unpaidStatus: '안내완료', clientRequestId: 'new-student-status'
+  }, { uid: 'staff-1', name: '관리자' });
+  assert.equal(result.success, true, JSON.stringify(result));
+  const row = store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows.find(item => item.studentName === '신유진');
+  assert.equal(row.guideAmount, 0);
+  assert.equal(row.unpaidStatus, '안내완료');
+});
+
 test('amount adjustment records only the collected delta and keeps snapshot totals consistent', async () => {
   const seed = tuitionSeed();
   const store = memoryStore(seed.documents);
@@ -152,4 +206,19 @@ test('amount adjustment records only the collected delta and keeps snapshot tota
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].guideAmount, 120000);
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 120000);
   assert.equal(dump['tuitionPayments/tp_adjust-1'].amount, -20000);
+});
+
+test('first amount adjustment for a master-only student materializes a snapshot row', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T06:00:00.000Z') });
+  const result = await handlers.saveTuitionAmountAdjustment({
+    monthName: seed.month, studentName: '신유진', guideAmount: 300000, collectedAmount: 0,
+    reason: '신규생 안내금액 등록', clientRequestId: 'new-student-adjustment'
+  }, { uid: 'staff-1', name: '관리자' });
+  assert.equal(result.success, true, JSON.stringify(result));
+  const row = store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows.find(item => item.studentName === '신유진');
+  assert.equal(row.guideAmount, 300000);
+  assert.equal(row.collectedAmount, 0);
+  assert.equal(row.outstandingAmount, 300000);
 });
