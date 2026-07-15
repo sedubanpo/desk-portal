@@ -31,3 +31,11 @@ test('production frontend has no Apps Script or direct RTDB transport fallback',
   assert.doesNotMatch(source, /canFallbackFromDeskFirebaseLogin_/);
   assert.doesNotMatch(source, /verifyDeskLegacyPassword_/);
 });
+
+test('supply management keeps every academy branch visible without inventory rows', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /var branches = \["전체", "본관", "2관", "3관"\]/);
+  assert.match(source, /var seen = \{ "전체": true, "본관": true, "2관": true, "3관": true \}/);
+  assert.match(source, /\(state\.desk\.supplies\.consumables \|\| \[\]\)\.forEach/);
+});

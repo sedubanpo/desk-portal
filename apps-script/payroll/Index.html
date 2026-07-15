@@ -19487,8 +19487,8 @@
     }
 
     function getDeskSupplyBranchOptions_() {
-      var seen = { "전체": true };
-      var branches = ["전체"];
+      var seen = { "전체": true, "본관": true, "2관": true, "3관": true };
+      var branches = ["전체", "본관", "2관", "3관"];
       (state.desk.supplies.consumables || []).forEach(function(item) {
         var branch = String(item && item.branch || "").trim() || "본관";
         if (seen[branch]) return;
