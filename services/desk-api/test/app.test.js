@@ -134,14 +134,14 @@ test('account lookup failures become a generic service error', async () => {
   }
 });
 
-test('migration contract reports Turn 3 handlers without switching production traffic', async () => {
+test('migration contract reports Turn 4 handlers without switching production traffic', async () => {
   const response = await request(testApp())
     .get('/v1/migration')
     .set('authorization', 'Bearer valid-token')
     .expect(200);
-  assert.equal(response.body.migration.phase, 3);
-  assert.equal(response.body.migration.migratedBusinessMethods, 33);
-  assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition']);
+  assert.equal(response.body.migration.phase, 4);
+  assert.equal(response.body.migration.migratedBusinessMethods, 39);
+  assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition', 'payroll', 'googleWorkspace']);
   assert.equal(response.body.migration.productionTrafficSwitched, false);
   assert.ok(response.body.migration.legacyMethods > 0);
 });
@@ -169,13 +169,32 @@ test('desk route authenticates, dispatches reads, and carries write idempotency 
   assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'saveDeskSupplyPurchaseState', key: 'write-1' });
 });
 
-test('unmigrated desk methods are rejected before dispatch', async () => {
+test('unmigrated maintenance methods are rejected before dispatch', async () => {
   const response = await request(testApp())
-    .post('/v1/desk/getDeskCalendarEvents')
+    .post('/v1/desk/backfillTuitionMonthSnapshots')
     .set('authorization', 'Bearer valid-token')
     .send({ payload: { dateKey: '2026-07-15' } })
     .expect(404);
   assert.equal(response.body.error.code, 'desk_method_not_found');
+});
+
+test('payroll methods require admin or explicit payroll permission', async () => {
+  const denied = testApp({ deskHandlers: { getPayrollSettings: async () => ({ success: true }) } });
+  const deniedResponse = await request(denied).post('/v1/desk/getPayrollSettings')
+    .set('authorization', 'Bearer valid-token').send({ payload: {} }).expect(403);
+  assert.equal(deniedResponse.body.error.code, 'payroll_access_required');
+
+  const allowed = testApp({
+    loadAccount: async () => ({
+      account: { role: 'STAFF', status: 'ACTIVE', name: '급여 담당자' },
+      access: { apps: { deskPortal: true }, permissions: { canManagePayroll: true } }
+    }),
+    deskHandlers: { getPayrollSettings: async (_payload, identity) => ({ success: true, role: identity.role }) }
+  });
+  const allowedResponse = await request(allowed).post('/v1/desk/getPayrollSettings')
+    .set('authorization', 'Bearer valid-token').send({ payload: {} }).expect(200);
+  assert.equal(allowedResponse.body.success, true);
+  assert.equal(allowedResponse.body.role, 'STAFF');
 });
 
 test('tuition writes dispatch with staff identity and idempotency context', async () => {

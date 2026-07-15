@@ -17511,11 +17511,13 @@
     };
     var DESK_CLOUD_METHODS = {
       getDeskScheduleMonthData: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
+      getDeskCalendarEvents: true,
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true,
       getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true,
-      saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true
+      saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
+      getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
@@ -36848,9 +36850,10 @@
       var payload = {
         monthName: state.selectedMonth,
         updates: updates,
-        suspicionRules: suspicionRules
+        suspicionRules: suspicionRules,
+        clientRequestId: buildClientRequestId_("savePayrollSettings")
       };
-      if (canUseGoogleScript()) {
+      if (canUseGoogleScript() || canUseDeskCloudApi_("savePayrollSettings")) {
         return runServer("savePayrollSettings", payload);
       }
 
@@ -36859,7 +36862,8 @@
         return chain.then(function() {
           return runServer("savePayrollSettings", {
             monthName: state.selectedMonth,
-            updates: [update]
+            updates: [update],
+            clientRequestId: buildClientRequestId_("savePayrollSettings")
           });
         }).then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
@@ -36869,7 +36873,8 @@
         return runServer("savePayrollSettings", {
           monthName: state.selectedMonth,
           updates: [],
-          suspicionRules: suspicionRules
+          suspicionRules: suspicionRules,
+          clientRequestId: buildClientRequestId_("savePayrollSettings")
         });
       });
     }
@@ -36936,7 +36941,10 @@
       var seq = ++state.payroll.overrideSaveSeq;
       var tail = state.payroll.overrideSaveTail || Promise.resolve();
       var job = tail.catch(function() {}).then(function() {
-        var payload = Object.assign({ monthName: state.selectedMonth }, buildPayrollOverridesPayload_());
+        var payload = Object.assign({
+          monthName: state.selectedMonth,
+          clientRequestId: buildClientRequestId_("savePayrollOverrides")
+        }, buildPayrollOverridesPayload_());
         return runServer("savePayrollOverrides", payload);
       })
         .then(function(res) {

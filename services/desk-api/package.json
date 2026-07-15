@@ -9,11 +9,14 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage"
+    "test:coverage": "node --test --experimental-test-coverage",
+    "migrate:payroll-config": "node scripts/migrate-payroll-config.js",
+    "verify:payroll-parity": "node scripts/compare-payroll-parity.js"
   },
   "dependencies": {
     "express": "5.2.1",
-    "firebase-admin": "14.1.0"
+    "firebase-admin": "14.1.0",
+    "google-auth-library": "^10.9.0"
   },
   "devDependencies": {
     "supertest": "7.2.2"

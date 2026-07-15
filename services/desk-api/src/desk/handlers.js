@@ -28,6 +28,7 @@ const PATHS = Object.freeze({
 
 export const DESK_READ_METHODS = new Set([
   'getDeskScheduleMonthData',
+  'getDeskCalendarEvents',
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
   'getDeskSuppliesData',

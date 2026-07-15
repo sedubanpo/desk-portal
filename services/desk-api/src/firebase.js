@@ -7,19 +7,27 @@ import { createDeskStore } from './desk/store.js';
 import { createIdempotencyExecutor } from './idempotency.js';
 import { createTuitionHandlers } from './tuition/handlers.js';
 import { createTuitionStore } from './tuition/store.js';
+import { createGoogleWorkspaceReader } from './google-workspace.js';
+import { createPayrollHandlers } from './payroll/handlers.js';
+import { createPayrollStore } from './payroll/store.js';
 
 function firebaseApp(projectId) {
   if (getApps().length) return getApps()[0];
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
 
   const legacyApp = legacyFirebaseApp(legacyRtdbUrl);
   const legacyDatabase = getDatabase(legacyApp);
+  const workspace = createGoogleWorkspaceReader({
+    spreadsheetId: payrollSpreadsheetId,
+    calendarId: deskCalendarId,
+    serviceAccountEmail: workspaceServiceAccountEmail
+  });
 
   return {
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),
@@ -35,7 +43,9 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
     },
     deskHandlers: {
       ...createDeskHandlers({ store: createDeskStore(legacyDatabase) }),
-      ...createTuitionHandlers({ store: createTuitionStore(firestore) })
+      getDeskCalendarEvents: workspace.getDeskCalendarEvents,
+      ...createTuitionHandlers({ store: createTuitionStore(firestore) }),
+      ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace })
     },
     runIdempotent: createIdempotencyExecutor(firestore)
   };
