@@ -17,6 +17,10 @@ export function createTuitionStore(firestore) {
       const snapshot = await firestore.collection(collection).limit(limit).get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
+    async listWhere(collection, field, operator, value, limit = 1000) {
+      const snapshot = await firestore.collection(collection).where(field, operator, value).limit(limit).get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    },
     async transaction(keys, mutate) {
       const uniqueKeys = [...new Set(keys.filter(Boolean))];
       return firestore.runTransaction(async transaction => {

@@ -1,0 +1,70 @@
+Superloopy command capture
+startedAt: 2026-07-15T10:41:38.418Z
+finishedAt: 2026-07-15T10:41:38.814Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["npm","test","--prefix","services/desk-api"]
+[stdout]
+
+> @sedu/desk-api@0.1.0 test
+> node --test
+
+✔ health endpoint is public and does not expose framework headers (13.069541ms)
+✔ allowed origin receives CORS headers and preflight succeeds (1.681292ms)
+✔ unknown browser origin is rejected (1.181709ms)
+✔ me requires a Firebase bearer token (1.256042ms)
+✔ me returns the normalized staff identity (2.01325ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.2915ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (0.969166ms)
+  ✔ account_inactive (0.859708ms)
+  ✔ staff_access_required (1.128792ms)
+✔ missing, inactive, and non-staff accounts are denied (3.218417ms)
+✔ an active instructor without deskPortal app access is denied (1.191834ms)
+✔ account lookup failures become a generic service error (0.929917ms)
+✔ migration contract reports the Turn 5 production cutover (0.7375ms)
+✔ desk route authenticates, dispatches reads, and carries write idempotency context (6.635417ms)
+✔ unmigrated maintenance methods are rejected before dispatch (0.954875ms)
+✔ payroll methods require admin or explicit payroll permission (1.674458ms)
+✔ tuition writes dispatch with staff identity and idempotency context (0.875417ms)
+✔ migration contract exactly mirrors the Apps Script API allowlist (7.726542ms)
+✔ Cloud Run runtime can verify revoked Firebase ID tokens (7.653458ms)
+✔ schedule read preserves legacy shape and filters retired workers without mutating data (2.348541ms)
+✔ schedule validation rejects retired workers before any write (0.219083ms)
+✔ journal task write updates the day record and pending index together (0.474458ms)
+✔ supply quantity adjustment uses a transaction and clamps to stock bounds (0.314916ms)
+✔ full supply snapshot preserves custom purchase requests (0.138ms)
+✔ recruiting month filter includes applicants by operational date fields (2.748791ms)
+✔ portal config is proxied through an allowlisted server path (0.49775ms)
+✔ Firebase identity replaces the Apps Script payroll password gate (11.558667ms)
+✔ production frontend has no Apps Script or direct RTDB transport fallback (12.605417ms)
+✔ Google Workspace reader returns payroll months, rows, and normalized calendar events (11.607ms)
+✔ completed idempotent writes replay the stored response without rerunning work (1.916917ms)
+✔ writes without an idempotency key fail before running work (0.277042ms)
+✔ payroll parser and ratio summary preserve recognition, overlap, and cancellation rules (12.881916ms)
+✔ payroll month handler reads Google Sheets and returns the legacy response shape (1.522708ms)
+✔ settings and overrides replay the same business request without a second mutation (0.467416ms)
+✔ invalid month and missing request ids fail before touching storage (0.128792ms)
+✔ month summary reads the snapshot and attaches student memo warnings (3.80275ms)
+✔ month summary merges newly registered active students without reviving inactive students (6.842083ms)
+✔ active student queries find a canonical record beyond the first 1000 alias documents (8.573625ms)
+✔ inactive student search reads Firestore student records only (0.246667ms)
+✔ payment append updates the ledger, indexes, and snapshot in one transaction and replays duplicates (5.535834ms)
+✔ first payment for a master-only student materializes a snapshot row (0.446791ms)
+✔ payment delete writes an audit record and removes the payment everywhere atomically (0.366625ms)
+✔ followup retries do not increment contact count twice (0.872375ms)
+✔ first status save for a master-only student materializes a snapshot row (0.313709ms)
+✔ amount adjustment records only the collected delta and keeps snapshot totals consistent (1.112792ms)
+✔ first amount adjustment for a master-only student materializes a snapshot row (0.378291ms)
+ℹ tests 46
+ℹ suites 0
+ℹ pass 46
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 236.313292
+
+[stderr]

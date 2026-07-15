@@ -328,7 +328,7 @@ async function buildMonthSummary(store, payload) {
   if (!snapshot?.success || !Array.isArray(snapshot.rows)) return pendingSummary(month, months, 'summary-snapshot-missing');
   const [memoDocuments, studentDocuments, recent, monthPayments, followups, charges] = await Promise.all([
     store.list(COLLECTIONS.studentMemos, 500),
-    store.list(COLLECTIONS.students, 1000),
+    loadActiveStudentDocuments(store),
     store.get(key(COLLECTIONS.paymentIndexes, 'recent')),
     store.get(key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month))),
     store.get(key(COLLECTIONS.monthlyIndexes, followupIndexId(month))),
@@ -732,6 +732,22 @@ function isActiveStudent(document) {
   return document?.active === true
     || document?.isActive === true
     || /^(ACTIVE|REGISTERED|ENROLLED|CURRENT|재원|재원생|등록)$/.test(status);
+}
+
+async function loadActiveStudentDocuments(store) {
+  if (typeof store.listWhere !== 'function') return store.list(COLLECTIONS.students, 1000);
+  const activeStatuses = ['ACTIVE', 'REGISTERED', 'ENROLLED', 'CURRENT', 'RETURNING', '재원', '등록'];
+  const groups = await Promise.all([
+    store.listWhere(COLLECTIONS.students, 'active', '==', true, 5000),
+    store.listWhere(COLLECTIONS.students, 'isActive', '==', true, 5000),
+    store.listWhere(COLLECTIONS.students, 'status', 'in', activeStatuses, 5000)
+  ]);
+  const documents = new Map();
+  groups.flat().forEach(document => {
+    const id = text(document?.id || document?.studentId || document?.canonicalStudentId);
+    if (id && !documents.has(id)) documents.set(id, document);
+  });
+  return [...documents.values()];
 }
 
 function studentMasterTuitionRow(document) {

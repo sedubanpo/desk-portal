@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T10:32:14.290Z",
+  "updatedAt": "2026-07-15T10:41:48.945Z",
+  "briefPath": ".superloopy/sessions/tuition-reactivated-student-sync/brief.md",
+  "evidencePath": ".superloopy/sessions/tuition-reactivated-student-sync/evidence",
+  "goalsPath": ".superloopy/sessions/tuition-reactivated-student-sync/goals.json",
+  "ledgerPath": ".superloopy/sessions/tuition-reactivated-student-sync/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "중지에서 등록으로 복귀한 학생이 데스크 포털 수강료 정산에 즉시 표시되도록 상태 판정과 저장 일관성을 수정·검증·배포한다.",
+      "objective": "중지에서 등록으로 복귀한 학생이 데스크 포털 수강료 정산에 즉시 표시되도록 상태 판정과 저장 일관성을 수정·검증·배포한다.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T10:32:14.290Z",
+      "updatedAt": "2026-07-15T10:41:48.945Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/tuition-reactivated-student-sync/evidence/chrome-songtaeyoung-fullpage.png",
+          "capturedAt": "2026-07-15T10:41:38.296Z",
+          "notes": "Cloud Run revision desk-portal-api-00010-cjx 배포 후 Chrome 학원 프로필에서 송태영이 세화고 1, 안내이전, 0원으로 수강료 정산 상세에 표시됨."
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/tuition-reactivated-student-sync/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T10:41:38.816Z",
+          "command": [
+            "npm",
+            "test",
+            "--prefix",
+            "services/desk-api"
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T10:32:14.293Z",
+      "completedAt": "2026-07-15T10:41:48.945Z",
+      "evidence": "활성 canonical 학생이 1,000개 별칭 문서 뒤에 있어도 조회되는 회귀 테스트 46개 통과 및 Chrome 학원 프로필 운영 화면에서 송태영 표시 확인"
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T10:41:48.945Z",
+    "evidence": "활성 canonical 학생이 1,000개 별칭 문서 뒤에 있어도 조회되는 회귀 테스트 46개 통과 및 Chrome 학원 프로필 운영 화면에서 송태영 표시 확인",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/tuition-reactivated-student-sync/evidence/chrome-songtaeyoung-fullpage.png",
+          "relativePath": ".superloopy/sessions/tuition-reactivated-student-sync/evidence/chrome-songtaeyoung-fullpage.png",
+          "size": 199180
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/tuition-reactivated-student-sync/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/tuition-reactivated-student-sync/evidence/G001-C002-capture.txt",
+          "size": 4230
+        }
+      ]
+    }
+  },
+  "sessionId": "tuition-reactivated-student-sync"
+}

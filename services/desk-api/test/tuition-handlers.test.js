@@ -8,9 +8,18 @@ function clone(value) { return value == null ? value : structuredClone(value); }
 function memoryStore(seed = {}) {
   const documents = new Map(Object.entries(seed).map(([key, value]) => [key, clone(value)]));
   let transactions = 0;
+  const listDocuments = collection => [...documents.entries()]
+    .filter(([key]) => key.startsWith(`${collection}/`))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => ({ id: key.slice(collection.length + 1), ...clone(value) }));
   return {
     get: async key => clone(documents.get(key) || null),
-    list: async collection => [...documents.entries()].filter(([key]) => key.startsWith(`${collection}/`)).map(([key, value]) => ({ id: key.slice(collection.length + 1), ...clone(value) })),
+    list: async (collection, limit = 1000) => listDocuments(collection).slice(0, limit),
+    listWhere: async (collection, field, operator, value, limit = 1000) => listDocuments(collection).filter(document => {
+      if (operator === '==') return document[field] === value;
+      if (operator === 'in') return Array.isArray(value) && value.includes(document[field]);
+      throw new Error(`unsupported memoryStore operator: ${operator}`);
+    }).slice(0, limit),
     transaction: async (keys, mutate) => {
       transactions += 1;
       const current = Object.fromEntries([...new Set(keys.filter(Boolean))].map(key => [key, clone(documents.get(key) || null)]));
@@ -89,6 +98,29 @@ test('month summary merges newly registered active students without reviving ina
   assert.equal(result.rows[1].outstandingAmount, 0);
   assert.equal(result.rows[1].unpaidStatus, '안내이전');
   assert.equal(result.kpi.totalStudents, 2);
+});
+
+test('active student queries find a canonical record beyond the first 1000 alias documents', async () => {
+  const seed = tuitionSeed();
+  for (let index = 0; index < 1001; index += 1) {
+    const id = `ROW-${String(index).padStart(4, '0')}`;
+    seed.documents[`students/${id}`] = {
+      studentId: id, studentName: `과거별칭${index}`, status: 'MERGED',
+      identityStatus: 'ALIAS', isAlias: true
+    };
+  }
+  seed.documents['students/student_216f618b10487bec1f77e52c'] = {
+    studentId: 'student_216f618b10487bec1f77e52c', studentName: '송태영', school: '세화고', grade: '1',
+    status: 'ACTIVE', active: true, isActive: true, identityStatus: 'CANONICAL'
+  };
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) })
+    .getTuitionMonthSummary({ monthName: seed.month, keyword: '송태영' });
+  assert.equal(result.success, true);
+  assert.equal(result.rows.length, 1);
+  assert.equal(result.rows[0].studentName, '송태영');
+  assert.equal(result.rows[0].school, '세화고');
+  assert.equal(result.rows[0].grade, '1');
+  assert.equal(result.rows[0].unpaidStatus, '안내이전');
 });
 
 test('inactive student search reads Firestore student records only', async () => {
