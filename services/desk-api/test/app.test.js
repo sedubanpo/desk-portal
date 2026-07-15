@@ -134,13 +134,46 @@ test('account lookup failures become a generic service error', async () => {
   }
 });
 
-test('migration contract confirms that production business traffic is untouched', async () => {
+test('migration contract reports Turn 2 handlers without switching production traffic', async () => {
   const response = await request(testApp())
     .get('/v1/migration')
     .set('authorization', 'Bearer valid-token')
     .expect(200);
-  assert.equal(response.body.migration.phase, 1);
-  assert.equal(response.body.migration.migratedBusinessMethods, 0);
+  assert.equal(response.body.migration.phase, 2);
+  assert.equal(response.body.migration.migratedBusinessMethods, 21);
+  assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting']);
   assert.equal(response.body.migration.productionTrafficSwitched, false);
   assert.ok(response.body.migration.legacyMethods > 0);
+});
+
+test('desk route authenticates, dispatches reads, and carries write idempotency context', async () => {
+  const contexts = [];
+  const app = testApp({
+    deskHandlers: {
+      getDeskSuppliesData: async () => ({ success: true, data: { consumables: [] } }),
+      saveDeskSupplyPurchaseState: async payload => ({ success: true, payload })
+    },
+    runIdempotent: async (context, operation) => {
+      contexts.push(context);
+      return operation();
+    }
+  });
+  const read = await request(app).post('/v1/desk/getDeskSuppliesData').set('authorization', 'Bearer valid-token').send({ payload: {} }).expect(200);
+  assert.equal(read.body.success, true);
+  assert.equal(contexts.length, 0);
+
+  const write = await request(app).post('/v1/desk/saveDeskSupplyPurchaseState')
+    .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'write-1')
+    .send({ payload: { purchaseRequestNote: 'test' } }).expect(200);
+  assert.equal(write.body.payload.purchaseRequestNote, 'test');
+  assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'saveDeskSupplyPurchaseState', key: 'write-1' });
+});
+
+test('unmigrated desk methods are rejected before dispatch', async () => {
+  const response = await request(testApp())
+    .post('/v1/desk/getDeskCalendarEvents')
+    .set('authorization', 'Bearer valid-token')
+    .send({ payload: { dateKey: '2026-07-15' } })
+    .expect(404);
+  assert.equal(response.body.error.code, 'desk_method_not_found');
 });

@@ -1,16 +1,23 @@
-import { getApps, initializeApp } from 'firebase-admin/app';
+import { applicationDefault, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getDatabase } from 'firebase-admin/database';
 import { getFirestore } from 'firebase-admin/firestore';
+import { createDeskHandlers } from './desk/handlers.js';
+import { createDeskStore } from './desk/store.js';
+import { createIdempotencyExecutor } from './idempotency.js';
 
 function firebaseApp(projectId) {
   if (getApps().length) return getApps()[0];
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
+
+  const legacyApp = legacyFirebaseApp(legacyRtdbUrl);
+  const legacyDatabase = getDatabase(legacyApp);
 
   return {
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),
@@ -23,6 +30,17 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens }) {
         account: accountSnapshot.exists ? accountSnapshot.data() : null,
         access: accessSnapshot.exists ? accessSnapshot.data() : null
       };
-    }
+    },
+    deskHandlers: createDeskHandlers({ store: createDeskStore(legacyDatabase) }),
+    runIdempotent: createIdempotencyExecutor(firestore)
   };
+}
+
+function legacyFirebaseApp(databaseURL) {
+  if (!databaseURL) throw new Error('LEGACY_RTDB_URL is required.');
+  try {
+    return getApp('legacy-rtdb');
+  } catch {
+    return initializeApp({ credential: applicationDefault(), databaseURL }, 'legacy-rtdb');
+  }
 }

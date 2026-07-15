@@ -15,6 +15,7 @@ export function loadConfig(env = process.env) {
     environment: env.NODE_ENV || 'development',
     port: Number(env.PORT) || 8080,
     projectId: env.FIREBASE_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || '',
+    legacyRtdbUrl: String(env.LEGACY_RTDB_URL || '').trim().replace(/\/+$/, ''),
     allowedOrigins: configuredOrigins.length
       ? configuredOrigins
       : production

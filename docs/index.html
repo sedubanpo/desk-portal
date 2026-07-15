@@ -10617,6 +10617,10 @@
       color: rgba(236, 253, 245, 0.7);
     }
 
+    .gate-input + .gate-input {
+      margin-top: 8px;
+    }
+
     .gate-row {
       margin-top: 10px;
       display: flex;
@@ -14624,8 +14628,9 @@
         <img class="gate-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
         <h1 class="gate-title">SEDU Desk Portal Access</h1>
       </div>
-      <p class="gate-desc">초기 진입 비밀번호를 입력해야 데스크 관리 화면에 접근할 수 있습니다.</p>
-      <input id="entryPasswordInput" class="gate-input" type="password" placeholder="비밀번호 입력">
+      <p class="gate-desc">근무자 계정으로 로그인하세요. 기존 데스크 비밀번호만 사용하는 경우 로그인 ID는 비워둘 수 있습니다.</p>
+      <input id="entryLoginIdInput" class="gate-input" type="text" inputmode="numeric" autocomplete="username" placeholder="로그인 ID (휴대전화 번호)">
+      <input id="entryPasswordInput" class="gate-input" type="password" autocomplete="current-password" placeholder="비밀번호 입력">
       <div class="gate-row">
         <button id="entrySubmitBtn" class="gate-btn" type="button">입장</button>
       </div>
@@ -17498,6 +17503,18 @@
 
   <script>
     var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbwXTWtznXXr8cF_x7BhyNWKb6KkfYFzUHbnWFLwdyZhmIgAHkOFvHYtmHMPJ-Rdv2kn/exec";
+    var DESK_CLOUD_API_BASE = "https://desk-portal-api-furtzykzmq-du.a.run.app";
+    var DESK_FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCFM21ZxgwIYwmjRPaAOp5bL9Kprqiyppg",
+      authDomain: "fir-lms-prod.firebaseapp.com",
+      projectId: "fir-lms-prod"
+    };
+    var DESK_CLOUD_METHODS = {
+      getDeskScheduleMonthData: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
+      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
+      getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
+      getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true
+    };
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
@@ -17628,6 +17645,8 @@
     var state = {
       portalAccessKey: "",
       privilegedAccessKey: "",
+      firebaseUser: null,
+      cloudApiReady: false,
       months: [],
       selectedMonth: "",
       subjects: [],
@@ -18509,6 +18528,7 @@
     var deskDailyMemoLocalSeq_ = 0;
     var runServerReadInFlight_ = {};
     var entryGateEl = document.getElementById("entryGate");
+    var entryLoginIdInputEl = document.getElementById("entryLoginIdInput");
     var entryPasswordInputEl = document.getElementById("entryPasswordInput");
     var entrySubmitBtnEl = document.getElementById("entrySubmitBtn");
     var entryErrorTextEl = document.getElementById("entryErrorText");
@@ -18518,6 +18538,7 @@
       bindEvents();
       bindEntryGateEvents();
       showEntryGate();
+      initializeDeskFirebaseAuth_();
       renderModuleLayout();
       deskTodayWorkerTimer_ = setInterval(function() {
         if (shouldDeferPortalDataLoad_()) return;
@@ -18554,7 +18575,7 @@
     }
 
     function shouldDeferPortalDataLoad_() {
-      return !canUseGoogleScript() && !state.portalAccessKey;
+      return !canUseGoogleScript() && !state.portalAccessKey && !state.cloudApiReady;
     }
 
     function shouldPausePortalBackgroundSync_() {
@@ -19796,6 +19817,7 @@
     }
 
     function startDeskSuppliesRealtime_() {
+      if (canUseDeskCloudApi_("getDeskSuppliesData")) return;
       if (!state.desk.supplies.realtimeEnabled || typeof EventSource === "undefined") return;
       if (state.desk.supplies.realtimeSource) return;
       var source = new EventSource(buildDeskSuppliesRealtimeUrl_("", true));
@@ -19847,8 +19869,12 @@
       if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
         renderDeskSupplies_();
       }
-      return deskRealtimeFetchJson_("PUT", buildDeskSuppliesRealtimeUrl_("", false), payload)
-        .then(function() {
+      var writeRequest = canUseDeskCloudApi_("saveDeskSuppliesSnapshot")
+        ? runServer("saveDeskSuppliesSnapshot", { data: payload })
+        : deskRealtimeFetchJson_("PUT", buildDeskSuppliesRealtimeUrl_("", false), payload);
+      return writeRequest
+        .then(function(res) {
+          if (res && res.success === false) throw new Error(res.message || "소모품 저장에 실패했습니다.");
           markDeskSuppliesSynced_();
           setDeskSuppliesSyncStatus_("idle");
           state.desk.supplies.realtimeSnapshot = cloneDeskSuppliesSnapshot_(payload);
@@ -19880,6 +19906,21 @@
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
       if (state.desk.supplies.loaded) return Promise.resolve();
       if (state.desk.supplies.loadingPromise) return state.desk.supplies.loadingPromise;
+      if (canUseDeskCloudApi_("getDeskSuppliesData")) {
+        state.desk.supplies.loadingPromise = runServer("getDeskSuppliesData", {}).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
+          applyDeskSuppliesData_(res.data || {});
+          markDeskSuppliesSynced_();
+          state.desk.supplies.loaded = true;
+          renderDeskSupplies_();
+        }).catch(function(err) {
+          setDeskSuppliesSyncStatus_("error");
+          showClientMessage(err && err.message ? err.message : "소모품 데이터를 불러오지 못했습니다.");
+        }).finally(function() {
+          state.desk.supplies.loadingPromise = null;
+        });
+        return state.desk.supplies.loadingPromise;
+      }
       state.desk.supplies.loadingPromise = deskRealtimeFetchJson_("GET", buildDeskSuppliesRealtimeUrl_("", false), null)
         .then(function(snapshot) {
           if (!snapshot || (!Array.isArray(snapshot.consumables) && !Array.isArray(snapshot.assets) && !snapshot.purchaseSelections && !Array.isArray(snapshot.purchaseCustomRequests))) {
@@ -20763,7 +20804,13 @@
       if (!force && state.desk.recruiting.loaded) return Promise.resolve();
       if (state.desk.recruiting.loadingPromise) return state.desk.recruiting.loadingPromise;
       setDeskRecruitingSyncStatus_("pending");
-      state.desk.recruiting.loadingPromise = deskRealtimeFetchJson_("GET", buildDeskRecruitingRealtimeUrl_(""), null)
+      var loadRequest = canUseDeskCloudApi_("getDeskRecruitingApplicantsData")
+        ? runServer("getDeskRecruitingApplicantsData", { monthKey: state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date()) }).then(function(res) {
+            if (!res || !res.success) throw new Error(res && res.message ? res.message : "인사 관리 데이터를 불러오지 못했습니다.");
+            return res.applicants || [];
+          })
+        : deskRealtimeFetchJson_("GET", buildDeskRecruitingRealtimeUrl_(""), null);
+      state.desk.recruiting.loadingPromise = loadRequest
         .then(function(snapshot) {
           applyDeskRecruitingApplicants_(snapshot || {});
           state.desk.recruiting.loaded = true;
@@ -20792,6 +20839,12 @@
     }
 
     function saveDeskRecruitingApplicantRemote_(applicant) {
+      if (canUseDeskCloudApi_("saveDeskRecruitingApplicant")) {
+        return runServer("saveDeskRecruitingApplicant", { applicant: applicant }).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 저장에 실패했습니다.");
+          return res.applicant || applicant;
+        });
+      }
       return deskRealtimeFetchJson_("PUT", buildDeskRecruitingRealtimeUrl_(applicant.id), applicant)
         .catch(function() {
           return runServer("saveDeskRecruitingApplicant", { applicant: applicant }).then(function(res) {
@@ -20802,6 +20855,12 @@
     }
 
     function deleteDeskRecruitingApplicantRemote_(id) {
+      if (canUseDeskCloudApi_("deleteDeskRecruitingApplicant")) {
+        return runServer("deleteDeskRecruitingApplicant", { id: id }).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 삭제에 실패했습니다.");
+          return res;
+        });
+      }
       return deskRealtimeFetchJson_("DELETE", buildDeskRecruitingRealtimeUrl_(id), null)
         .catch(function() {
           return runServer("deleteDeskRecruitingApplicant", { id: id }).then(function(res) {
@@ -23943,6 +24002,7 @@
 
     function fetchDeskScheduleMonthRealtime_(monthKey) {
       var safeMonthKey = String(monthKey || "").trim();
+      if (canUseDeskCloudApi_("getDeskScheduleMonthData")) return runServer("getDeskScheduleMonthData", { monthKey: safeMonthKey });
       if (!safeMonthKey || !DESK_SCHEDULE_DIRECT_RTDB_ENABLED) return Promise.reject(new Error("근무표 직접 연결이 꺼져 있습니다."));
       return deskRealtimeFetchJson_("GET", buildDeskScheduleRealtimeUrl_(safeMonthKey), null).then(function(snapshot) {
         var hasWrappedEntries = !!(snapshot && snapshot.entries && typeof snapshot.entries === "object" && !Array.isArray(snapshot.entries));
@@ -23987,6 +24047,7 @@
       } catch (err) {
         return Promise.reject(err);
       }
+      if (canUseDeskCloudApi_("saveDeskScheduleEntry")) return runServer("saveDeskScheduleEntry", { monthKey: safeMonthKey, entry: item });
       if (DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
         return deskRealtimeFetchJson_("PUT", buildDeskScheduleRealtimeUrl_(safeMonthKey, "entries/" + item.id), item)
           .then(function() {
@@ -24004,6 +24065,7 @@
       var safeMonthKey = String(monthKey || "").trim();
       var safeId = String(id || "").trim();
       if (!safeMonthKey || !safeId) return Promise.reject(new Error("삭제할 근무 일정 정보가 부족합니다."));
+      if (canUseDeskCloudApi_("deleteDeskScheduleEntry")) return runServer("deleteDeskScheduleEntry", { monthKey: safeMonthKey, id: safeId });
       if (DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
         return deskRealtimeFetchJson_("DELETE", buildDeskScheduleRealtimeUrl_(safeMonthKey, "entries/" + safeId), null)
           .then(function() {
@@ -24029,6 +24091,7 @@
       } catch (err) {
         return Promise.reject(err);
       }
+      if (canUseDeskCloudApi_("batchUpdateDeskScheduleEntries")) return runServer("batchUpdateDeskScheduleEntries", { monthKey: safeMonthKey, deleteIds: safeDeleteIds, entries: safeEntries });
       if (!DESK_SCHEDULE_DIRECT_RTDB_ENABLED) {
         return runServer("batchUpdateDeskScheduleEntries", { monthKey: safeMonthKey, deleteIds: safeDeleteIds, entries: safeEntries });
       }
@@ -26871,6 +26934,7 @@
     function fetchDeskDailyJournalDataRemote_(dateKey) {
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey) return Promise.reject(new Error("dateKey가 올바르지 않습니다."));
+      if (canUseDeskCloudApi_("getDeskDailyJournalData")) return fetchDeskDailyJournalDataServer_(safeDateKey);
       if (DESK_DAILY_DIRECT_TASK_READ_ENABLED || DESK_DAILY_DIRECT_MEMO_READ_ENABLED) {
         return fetchDeskDailyJournalDataRealtime_(safeDateKey).catch(function(err) {
           console.warn("desk daily direct load fallback", err && err.message ? err.message : err);
@@ -26909,6 +26973,7 @@
 
     function saveDeskDailyTaskRemote_(item) {
       var safeItem = normalizeDeskDailyTask_(item);
+      if (canUseDeskCloudApi_("saveDeskDailyJournalTask")) return runDeskDailyJournalServerMutation_("saveDeskDailyJournalTask", { dateKey: safeItem.dateKey, task: safeItem });
       if (DESK_DAILY_DIRECT_TASK_WRITE_ENABLED) {
         return deskRealtimeFetchJson_("PUT", buildDeskDailyJournalRealtimeUrl_(safeItem.dateKey, "tasks/" + safeItem.id), safeItem)
           .then(function() {
@@ -26934,6 +26999,7 @@
     function deleteDeskDailyTaskRemote_(dateKey, taskId) {
       var safeDateKey = String(dateKey || "").trim();
       var safeTaskId = String(taskId || "").trim();
+      if (canUseDeskCloudApi_("deleteDeskDailyJournalTask")) return runDeskDailyJournalServerMutation_("deleteDeskDailyJournalTask", { dateKey: safeDateKey, id: safeTaskId });
       if (DESK_DAILY_DIRECT_TASK_WRITE_ENABLED) {
         return Promise.all([
           deskRealtimeFetchJson_("DELETE", buildDeskDailyJournalRealtimeUrl_(safeDateKey, "tasks/" + safeTaskId), null),
@@ -26954,6 +27020,7 @@
 
     function saveDeskDailyMemoRemote_(item) {
       var safeItem = normalizeDeskDailyMemo_(item);
+      if (canUseDeskCloudApi_("saveDeskDailyJournalMemo")) return saveDeskDailyMemoServer_(safeItem);
       if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) {
         return saveDeskDailyMemoRealtime_(safeItem).catch(function(err) {
           console.warn("desk daily direct memo save fallback", err && err.message ? err.message : err);
@@ -26969,6 +27036,7 @@
     function deleteDeskDailyMemoRemote_(dateKey, memoId) {
       var safeDateKey = String(dateKey || "").trim();
       var safeMemoId = String(memoId || "").trim();
+      if (canUseDeskCloudApi_("deleteDeskDailyJournalMemo")) return deleteDeskDailyMemoServer_(safeDateKey, safeMemoId);
       if (DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED) {
         return deleteDeskDailyMemoRealtime_(safeDateKey, safeMemoId).catch(function(err) {
           console.warn("desk daily direct memo delete fallback", err && err.message ? err.message : err);
@@ -27956,6 +28024,12 @@
     function fetchDeskDailyPendingTasksRealtime_(beforeDateKey, workerNames) {
       var safeDateKey = String(beforeDateKey || "").trim();
       if (!safeDateKey) return Promise.resolve([]);
+      if (canUseDeskCloudApi_("getDeskDailyJournalPendingTasks")) {
+        return runServer("getDeskDailyJournalPendingTasks", { beforeDateKey: safeDateKey, workers: workerNames || [] }).then(function(res) {
+          if (!res || !res.success) throw new Error(res && res.message ? res.message : "미해결 업무를 불러오지 못했습니다.");
+          return (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_);
+        });
+      }
       return deskRealtimeFetchJson_("GET", buildDeskDailyPendingTasksRealtimeUrl_(""), null).then(function(snapshot) {
         var source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot) ? snapshot : {};
         return Object.keys(source).map(function(id) {
@@ -35945,12 +36019,18 @@
       entryPasswordInputEl.value = "";
       entryErrorTextEl.textContent = "";
       setTimeout(function() {
-        entryPasswordInputEl.focus();
+        (entryLoginIdInputEl && entryLoginIdInputEl.value ? entryPasswordInputEl : entryLoginIdInputEl || entryPasswordInputEl).focus();
       }, 20);
     }
 
     function bindEntryGateEvents() {
       entrySubmitBtnEl.addEventListener("click", verifyEntryPassword);
+      entryLoginIdInputEl.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          entryPasswordInputEl.focus();
+        }
+      });
       entryPasswordInputEl.addEventListener("keydown", function(event) {
         if (event.key === "Enter") {
           event.preventDefault();
@@ -35990,8 +36070,113 @@
       renderModuleLayout();
     }
 
+    function loadDeskFirebaseScript_(src) {
+      return new Promise(function(resolve, reject) {
+        var existing = document.querySelector('script[data-desk-firebase-src="' + src + '"]');
+        if (existing) {
+          if (existing.getAttribute("data-loaded") === "true") resolve();
+          else existing.addEventListener("load", resolve, { once: true });
+          return;
+        }
+        var script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.setAttribute("data-desk-firebase-src", src);
+        script.addEventListener("load", function() { script.setAttribute("data-loaded", "true"); resolve(); }, { once: true });
+        script.addEventListener("error", function() { reject(new Error("Firebase 로그인 모듈을 불러오지 못했습니다.")); }, { once: true });
+        document.head.appendChild(script);
+      });
+    }
+
+    function initializeDeskFirebaseAuth_() {
+      if (state.firebaseAuthPromise) return state.firebaseAuthPromise;
+      state.firebaseAuthPromise = loadDeskFirebaseScript_("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js")
+        .then(function() {
+          return Promise.all([
+            loadDeskFirebaseScript_("https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"),
+            loadDeskFirebaseScript_("https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js")
+          ]);
+        })
+        .then(function() {
+          var app;
+          try { app = window.firebase.app("desk-portal-cloud"); }
+          catch (err) { app = window.firebase.initializeApp(DESK_FIREBASE_CONFIG, "desk-portal-cloud"); }
+          state.firebaseApp = app;
+          state.firebaseAuth = app.auth();
+          state.firebaseFirestore = app.firestore();
+          state.firebaseAuth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL).catch(function() {});
+          state.firebaseAuth.onAuthStateChanged(function(user) {
+            if (!user || state.cloudApiReady) return;
+            verifyDeskCloudUser_(user).then(function() {
+              enterDeskPortal_(state.portalAccessKey);
+            }).catch(function(err) {
+              state.firebaseUser = null;
+              state.cloudApiReady = false;
+              entryErrorTextEl.textContent = err.message || "근무자 권한을 확인하지 못했습니다.";
+            });
+          });
+          return state.firebaseAuth;
+        })
+        .catch(function(err) {
+          console.warn("desk firebase auth unavailable", err && err.message ? err.message : err);
+          return null;
+        });
+      return state.firebaseAuthPromise;
+    }
+
+    function normalizeDeskLoginId_(value) {
+      var digits = String(value || "").replace(/\D+/g, "");
+      if (digits.length === 8) return "010" + digits;
+      if (digits.length === 10 && digits.charAt(0) !== "0") return "0" + digits;
+      return digits;
+    }
+
+    function hashDeskLoginAlias_(value) {
+      return window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || ""))).then(function(buffer) {
+        return Array.prototype.map.call(new Uint8Array(buffer), function(byte) { return byte.toString(16).padStart(2, "0"); }).join("");
+      });
+    }
+
+    function findDeskFirebaseAlias_(loginId) {
+      var canonical = normalizeDeskLoginId_(loginId);
+      var candidates = [canonical, canonical.indexOf("010") === 0 && canonical.length === 11 ? canonical.slice(3) : ""].filter(Boolean);
+      return candidates.reduce(function(chain, alias) {
+        return chain.then(function(found) {
+          if (found) return found;
+          return hashDeskLoginAlias_(alias).then(function(id) { return state.firebaseFirestore.collection("loginAliases").doc(id).get(); })
+            .then(function(doc) { return doc.exists ? doc.data() : null; });
+        });
+      }, Promise.resolve(null));
+    }
+
+    function verifyDeskCloudUser_(user) {
+      return user.getIdToken(true).then(function(token) {
+        return fetch(DESK_CLOUD_API_BASE + "/v1/me", { headers: { Authorization: "Bearer " + token } });
+      }).then(function(response) {
+        return response.json().catch(function() { return {}; }).then(function(body) {
+          if (!response.ok) throw new Error(body && body.error && body.error.message ? body.error.message : "데스크 포털 접근 권한이 없습니다.");
+          state.firebaseUser = user;
+          state.cloudApiReady = true;
+          return body;
+        });
+      });
+    }
+
+    function loginDeskFirebase_(loginId, password) {
+      return initializeDeskFirebaseAuth_().then(function(auth) {
+        if (!auth || !state.firebaseFirestore) throw new Error("Firebase 로그인을 준비하지 못했습니다.");
+        return findDeskFirebaseAlias_(loginId).then(function(alias) {
+          if (!alias || !alias.email || alias.active === false) throw new Error("등록된 활성 근무자 계정을 찾지 못했습니다.");
+          return auth.signInWithEmailAndPassword(alias.email, password);
+        }).then(function(credential) {
+          return verifyDeskCloudUser_(credential.user);
+        });
+      });
+    }
+
     function verifyEntryPassword() {
       if (entryVerificationPromise_) return entryVerificationPromise_;
+      var loginId = String(entryLoginIdInputEl.value || "").trim();
       var password = normalizeDeskPortalPassword_(entryPasswordInputEl.value || "");
       if (!password) {
         entryErrorTextEl.textContent = "비밀번호를 입력해 주세요.";
@@ -36001,6 +36186,17 @@
       entryErrorTextEl.textContent = "";
       entrySubmitBtnEl.disabled = true;
       entrySubmitBtnEl.textContent = "확인 중...";
+      if (loginId) {
+        entryVerificationPromise_ = loginDeskFirebase_(loginId, password)
+          .then(function() { enterDeskPortal_(state.portalAccessKey); })
+          .catch(function(err) { entryErrorTextEl.textContent = err.message || "근무자 로그인에 실패했습니다."; })
+          .finally(function() {
+            entryVerificationPromise_ = null;
+            entrySubmitBtnEl.disabled = false;
+            entrySubmitBtnEl.textContent = "입장";
+          });
+        return entryVerificationPromise_;
+      }
       var shouldUseFastDeskEntry = !canUseGoogleScript() && (password === "qksvhtjch" || password === "반포서초");
       if (shouldUseFastDeskEntry) {
         enterDeskPortal_(password);
@@ -38010,6 +38206,38 @@
       setTimeout(function() { win.print(); }, 160);
     }
 
+    function canUseDeskCloudApi_(fnName) {
+      return !!(state.cloudApiReady && state.firebaseUser && DESK_CLOUD_METHODS[String(fnName || "")]);
+    }
+
+    function createDeskIdempotencyKey_(fnName) {
+      if (window.crypto && typeof window.crypto.randomUUID === "function") return fnName + ":" + window.crypto.randomUUID();
+      return fnName + ":" + Date.now() + ":" + Math.random().toString(36).slice(2);
+    }
+
+    function runDeskCloudApi_(fnName, payload) {
+      if (!canUseDeskCloudApi_(fnName)) return Promise.reject(new Error("Cloud API 로그인이 필요합니다."));
+      return state.firebaseUser.getIdToken().then(function(token) {
+        var headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
+        if (isRunServerWriteApi_(fnName)) headers["x-idempotency-key"] = createDeskIdempotencyKey_(fnName);
+        return fetch(DESK_CLOUD_API_BASE + "/v1/desk/" + encodeURIComponent(fnName), {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ payload: typeof payload === "undefined" ? {} : payload })
+        });
+      }).then(function(response) {
+        return response.json().catch(function() { return {}; }).then(function(body) {
+          if (!response.ok) {
+            var error = new Error(body && body.error && body.error.message ? body.error.message : "Cloud API 호출에 실패했습니다.");
+            error.requestTransmitted = true;
+            error.status = response.status;
+            throw error;
+          }
+          return body || {};
+        });
+      });
+    }
+
     function runServer(fnName, payload) {
       var isRead = shouldRetryRunServer_(fnName);
       var requestKey = "";
@@ -38048,6 +38276,13 @@
     }
 
     function runServerAttempt_(fnName, payload, timeoutMs) {
+      if (canUseDeskCloudApi_(fnName)) {
+        return runDeskCloudApi_(fnName, payload).catch(function(err) {
+          if (isRunServerWriteApi_(fnName) || !state.portalAccessKey) throw err;
+          console.warn("desk cloud read fallback", fnName, err && err.message ? err.message : err);
+          return apiJsonp(fnName, payload);
+        });
+      }
       if (!canUseGoogleScript()) {
         return apiJsonp(fnName, payload);
       }

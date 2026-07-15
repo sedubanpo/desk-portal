@@ -9,6 +9,8 @@ FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
 ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-https://sedubanpo.github.io}"
 RUNTIME_SERVICE_ACCOUNT_NAME="${RUNTIME_SERVICE_ACCOUNT_NAME:-desk-portal-api-runtime}"
 BUILD_SERVICE_ACCOUNT_NAME="${BUILD_SERVICE_ACCOUNT_NAME:-desk-portal-api-build}"
+LEGACY_RTDB_PROJECT_ID="${LEGACY_RTDB_PROJECT_ID:-sedu-portal}"
+LEGACY_RTDB_URL="${LEGACY_RTDB_URL:-https://sedu-portal-default-rtdb.firebaseio.com}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "GOOGLE_CLOUD_PROJECT 또는 첫 번째 인자로 프로젝트 ID를 지정하세요." >&2
@@ -75,6 +77,21 @@ for attempt in {1..6}; do
 done
 
 for attempt in {1..6}; do
+  if gcloud projects add-iam-policy-binding "${LEGACY_RTDB_PROJECT_ID}" \
+    --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role roles/firebasedatabase.admin \
+    --condition=None \
+    --quiet >/dev/null; then
+    break
+  fi
+  if [[ "${attempt}" -eq 6 ]]; then
+    echo "런타임 서비스 계정에 Realtime Database 역할을 부여하지 못했습니다." >&2
+    exit 1
+  fi
+  sleep 5
+done
+
+for attempt in {1..6}; do
   if gcloud projects add-iam-policy-binding "${FIREBASE_PROJECT_ID}" \
     --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
     --role roles/datastore.user \
@@ -104,7 +121,7 @@ gcloud run deploy "${SERVICE}" \
   --min-instances 0 \
   --max-instances 10 \
   --timeout 30s \
-  --set-env-vars "^@^NODE_ENV=production@FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}@ALLOWED_ORIGINS=${ALLOWED_ORIGINS}@CHECK_REVOKED_TOKENS=true" \
+  --set-env-vars "^@^NODE_ENV=production@FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}@LEGACY_RTDB_URL=${LEGACY_RTDB_URL}@ALLOWED_ORIGINS=${ALLOWED_ORIGINS}@CHECK_REVOKED_TOKENS=true" \
   --quiet
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE}" \
