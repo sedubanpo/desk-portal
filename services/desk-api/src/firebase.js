@@ -5,6 +5,8 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { createDeskHandlers } from './desk/handlers.js';
 import { createDeskStore } from './desk/store.js';
 import { createIdempotencyExecutor } from './idempotency.js';
+import { createTuitionHandlers } from './tuition/handlers.js';
+import { createTuitionStore } from './tuition/store.js';
 
 function firebaseApp(projectId) {
   if (getApps().length) return getApps()[0];
@@ -31,7 +33,10 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
         access: accessSnapshot.exists ? accessSnapshot.data() : null
       };
     },
-    deskHandlers: createDeskHandlers({ store: createDeskStore(legacyDatabase) }),
+    deskHandlers: {
+      ...createDeskHandlers({ store: createDeskStore(legacyDatabase) }),
+      ...createTuitionHandlers({ store: createTuitionStore(firestore) })
+    },
     runIdempotent: createIdempotencyExecutor(firestore)
   };
 }

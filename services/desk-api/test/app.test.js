@@ -134,14 +134,14 @@ test('account lookup failures become a generic service error', async () => {
   }
 });
 
-test('migration contract reports Turn 2 handlers without switching production traffic', async () => {
+test('migration contract reports Turn 3 handlers without switching production traffic', async () => {
   const response = await request(testApp())
     .get('/v1/migration')
     .set('authorization', 'Bearer valid-token')
     .expect(200);
-  assert.equal(response.body.migration.phase, 2);
-  assert.equal(response.body.migration.migratedBusinessMethods, 21);
-  assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting']);
+  assert.equal(response.body.migration.phase, 3);
+  assert.equal(response.body.migration.migratedBusinessMethods, 33);
+  assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition']);
   assert.equal(response.body.migration.productionTrafficSwitched, false);
   assert.ok(response.body.migration.legacyMethods > 0);
 });
@@ -176,4 +176,27 @@ test('unmigrated desk methods are rejected before dispatch', async () => {
     .send({ payload: { dateKey: '2026-07-15' } })
     .expect(404);
   assert.equal(response.body.error.code, 'desk_method_not_found');
+});
+
+test('tuition writes dispatch with staff identity and idempotency context', async () => {
+  const contexts = [];
+  const identities = [];
+  const app = testApp({
+    deskHandlers: {
+      appendTuitionPaymentEntry: async (payload, identity) => {
+        identities.push(identity);
+        return { success: true, payload };
+      }
+    },
+    runIdempotent: async (context, operation) => {
+      contexts.push(context);
+      return operation();
+    }
+  });
+  const response = await request(app).post('/v1/desk/appendTuitionPaymentEntry')
+    .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'append:request-1')
+    .send({ payload: { clientRequestId: 'request-1', studentName: '김재희' } }).expect(200);
+  assert.equal(response.body.success, true);
+  assert.equal(identities[0].uid, 'staff-1');
+  assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'appendTuitionPaymentEntry', key: 'append:request-1' });
 });

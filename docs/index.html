@@ -17513,7 +17513,9 @@
       getDeskScheduleMonthData: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
-      getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true
+      getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true,
+      getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true,
+      saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true
     };
     var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
     var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
@@ -38237,7 +38239,9 @@
       return !!(state.cloudApiReady && state.firebaseUser && DESK_CLOUD_METHODS[String(fnName || "")]);
     }
 
-    function createDeskIdempotencyKey_(fnName) {
+    function createDeskIdempotencyKey_(fnName, payload) {
+      var requestId = String(payload && payload.clientRequestId || "").replace(/[^\w:.-]/g, "").slice(0, 120);
+      if (requestId) return fnName + ":" + requestId;
       if (window.crypto && typeof window.crypto.randomUUID === "function") return fnName + ":" + window.crypto.randomUUID();
       return fnName + ":" + Date.now() + ":" + Math.random().toString(36).slice(2);
     }
@@ -38246,7 +38250,7 @@
       if (!canUseDeskCloudApi_(fnName)) return Promise.reject(new Error("Cloud API 로그인이 필요합니다."));
       return state.firebaseUser.getIdToken().then(function(token) {
         var headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
-        if (isRunServerWriteApi_(fnName)) headers["x-idempotency-key"] = createDeskIdempotencyKey_(fnName);
+        if (isRunServerWriteApi_(fnName)) headers["x-idempotency-key"] = createDeskIdempotencyKey_(fnName, payload);
         return fetch(DESK_CLOUD_API_BASE + "/v1/desk/" + encodeURIComponent(fnName), {
           method: "POST",
           headers: headers,

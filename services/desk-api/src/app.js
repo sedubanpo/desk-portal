@@ -3,6 +3,7 @@ import { createRequireStaff } from './auth.js';
 import { MIGRATION_STATE } from './contracts.js';
 import { DESK_METHODS, DESK_WRITE_METHODS } from './desk/handlers.js';
 import { ApiError } from './http.js';
+import { TUITION_METHODS, TUITION_WRITE_METHODS } from './tuition/handlers.js';
 import {
   createCorsMiddleware,
   errorHandler,
@@ -42,12 +43,14 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
 
   app.post('/v1/desk/:method', requireStaff, async (req, res, next) => {
     const method = String(req.params.method || '').trim();
-    if (!DESK_METHODS.has(method) || typeof deskHandlers[method] !== 'function') {
+    const supportedMethods = new Set([...DESK_METHODS, ...TUITION_METHODS]);
+    const writeMethods = new Set([...DESK_WRITE_METHODS, ...TUITION_WRITE_METHODS]);
+    if (!supportedMethods.has(method) || typeof deskHandlers[method] !== 'function') {
       return next(new ApiError(404, 'desk_method_not_found', '아직 Cloud Run으로 이전되지 않은 데스크 기능입니다.'));
     }
-    const execute = () => deskHandlers[method](req.body?.payload ?? req.body ?? {});
+    const execute = () => deskHandlers[method](req.body?.payload ?? req.body ?? {}, req.identity);
     try {
-      const response = DESK_WRITE_METHODS.has(method)
+      const response = writeMethods.has(method)
         ? await runIdempotent({ uid: req.identity.uid, method, key: req.get('x-idempotency-key') }, execute)
         : await execute();
       return res.json(response);

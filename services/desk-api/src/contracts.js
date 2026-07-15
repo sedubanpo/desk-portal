@@ -45,9 +45,9 @@ export const LEGACY_API_METHODS = Object.freeze([
 ]);
 
 export const MIGRATION_STATE = Object.freeze({
-  phase: 2,
+  phase: 3,
   legacyMethods: LEGACY_API_METHODS.length,
-  migratedBusinessMethods: 21,
-  migratedDomains: Object.freeze(['schedule', 'dailyJournal', 'supplies', 'recruiting']),
+  migratedBusinessMethods: 33,
+  migratedDomains: Object.freeze(['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition']),
   productionTrafficSwitched: false
 });
