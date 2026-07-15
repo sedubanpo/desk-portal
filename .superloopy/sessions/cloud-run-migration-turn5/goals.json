@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "mode": "light",
+  "createdAt": "2026-07-15T06:57:10.347Z",
+  "updatedAt": "2026-07-15T07:58:25.519Z",
+  "briefPath": ".superloopy/sessions/cloud-run-migration-turn5/brief.md",
+  "evidencePath": ".superloopy/sessions/cloud-run-migration-turn5/evidence",
+  "goalsPath": ".superloopy/sessions/cloud-run-migration-turn5/goals.json",
+  "ledgerPath": ".superloopy/sessions/cloud-run-migration-turn5/ledger.jsonl",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "Cloud Run migration Turn 5: complete final production cutover for the...",
+      "objective": "Cloud Run migration Turn 5: complete final production cutover for the desk portal by removing migrated Apps Script and direct RTDB traffic paths, enforcing Firebase-authenticated Cloud Run routing with safe operational fallbacks only where explicitly unmigrated, verifying all desk, tuition, payroll, and Google Workspace read paths plus non-destructive write contracts, deploying, and validating in the Chrome academy profile without losing production data.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-07-15T06:57:10.347Z",
+      "updatedAt": "2026-07-15T07:58:25.519Z",
+      "criteria": [
+        {
+          "id": "C001",
+          "kind": "happy",
+          "scenario": "Happy path works from the real user-facing surface.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C001-live-browser.txt",
+          "capturedAt": "2026-07-15T07:57:42.348Z",
+          "notes": "Chrome academy profile authenticated successfully against Cloud Run revision desk-portal-api-00008-dl4; desk, tuition, payroll, schedule, supplies, and recruiting production reads loaded with no console errors and no writes."
+        },
+        {
+          "id": "C002",
+          "kind": "risk",
+          "scenario": "Riskiest edge or failure path is handled.",
+          "essential": true,
+          "status": "pass",
+          "artifact": ".superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C002-capture.txt",
+          "capturedAt": "2026-07-15T07:23:02.524Z",
+          "notes": "40 regression tests, frontend cloud-only transport assertions, authorization boundaries, idempotency, and non-destructive handlers passed after production deployment.",
+          "command": [
+            "npm",
+            "--prefix",
+            "services/desk-api",
+            "test"
+          ],
+          "exitCode": 0
+        }
+      ],
+      "startedAt": "2026-07-15T06:57:10.351Z",
+      "completedAt": "2026-07-15T07:58:25.519Z",
+      "evidence": "Authenticated Chrome production reads and regression evidence both passed."
+    }
+  ],
+  "aggregateCompletion": {
+    "status": "complete",
+    "completedAt": "2026-07-15T07:58:25.519Z",
+    "evidence": "Authenticated Chrome production reads and regression evidence both passed.",
+    "qualityGate": {
+      "status": "passed",
+      "artifacts": [
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C001-live-browser.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C001-live-browser.txt",
+          "size": 1280
+        },
+        {
+          "absolutePath": "/Users/anjongseong/Documents/desk-portal/.superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C002-capture.txt",
+          "relativePath": ".superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C002-capture.txt",
+          "size": 3678
+        }
+      ]
+    }
+  },
+  "sessionId": "cloud-run-migration-turn5"
+}

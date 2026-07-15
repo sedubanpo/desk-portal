@@ -1,0 +1,65 @@
+Superloopy command capture
+startedAt: 2026-07-15T07:58:25.197Z
+finishedAt: 2026-07-15T07:58:25.518Z
+cwd: /Users/anjongseong/Documents/desk-portal
+status: pass
+exitCode: 0
+signal: null
+command: ["npm","--prefix","services/desk-api","test"]
+[stdout]
+
+> @sedu/desk-api@0.1.0 test
+> node --test
+
+✔ health endpoint is public and does not expose framework headers (12.851542ms)
+✔ allowed origin receives CORS headers and preflight succeeds (1.65925ms)
+✔ unknown browser origin is rejected (1.339875ms)
+✔ me requires a Firebase bearer token (1.129375ms)
+✔ me returns the normalized staff identity (2.022834ms)
+✔ invalid tokens are rejected without leaking verifier errors (1.23025ms)
+▶ missing, inactive, and non-staff accounts are denied
+  ✔ account_not_registered (1.075417ms)
+  ✔ account_inactive (0.996292ms)
+  ✔ staff_access_required (1.086584ms)
+✔ missing, inactive, and non-staff accounts are denied (3.440583ms)
+✔ an active instructor without deskPortal app access is denied (1.3275ms)
+✔ account lookup failures become a generic service error (1.09675ms)
+✔ migration contract reports the Turn 5 production cutover (0.942792ms)
+✔ desk route authenticates, dispatches reads, and carries write idempotency context (4.118041ms)
+✔ unmigrated maintenance methods are rejected before dispatch (0.876834ms)
+✔ payroll methods require admin or explicit payroll permission (1.836709ms)
+✔ tuition writes dispatch with staff identity and idempotency context (1.045292ms)
+✔ migration contract exactly mirrors the Apps Script API allowlist (4.214958ms)
+✔ Cloud Run runtime can verify revoked Firebase ID tokens (4.264791ms)
+✔ schedule read preserves legacy shape and filters retired workers without mutating data (2.06975ms)
+✔ schedule validation rejects retired workers before any write (0.200333ms)
+✔ journal task write updates the day record and pending index together (0.3315ms)
+✔ supply quantity adjustment uses a transaction and clamps to stock bounds (0.302667ms)
+✔ full supply snapshot preserves custom purchase requests (0.1325ms)
+✔ recruiting month filter includes applicants by operational date fields (0.788291ms)
+✔ portal config is proxied through an allowlisted server path (0.2715ms)
+✔ Firebase identity replaces the Apps Script payroll password gate (9.089708ms)
+✔ production frontend has no Apps Script or direct RTDB transport fallback (5.844917ms)
+✔ Google Workspace reader returns payroll months, rows, and normalized calendar events (11.773208ms)
+✔ completed idempotent writes replay the stored response without rerunning work (2.254042ms)
+✔ writes without an idempotency key fail before running work (0.330875ms)
+✔ payroll parser and ratio summary preserve recognition, overlap, and cancellation rules (9.8165ms)
+✔ payroll month handler reads Google Sheets and returns the legacy response shape (1.5365ms)
+✔ settings and overrides replay the same business request without a second mutation (0.471708ms)
+✔ invalid month and missing request ids fail before touching storage (0.131583ms)
+✔ month summary reads the snapshot and attaches student memo warnings (4.18175ms)
+✔ inactive student search reads Firestore student records only (0.886667ms)
+✔ payment append updates the ledger, indexes, and snapshot in one transaction and replays duplicates (11.1885ms)
+✔ payment delete writes an audit record and removes the payment everywhere atomically (0.423417ms)
+✔ followup retries do not increment contact count twice (0.670708ms)
+✔ amount adjustment records only the collected delta and keeps snapshot totals consistent (0.831541ms)
+ℹ tests 41
+ℹ suites 0
+ℹ pass 41
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.861958
+
+[stderr]

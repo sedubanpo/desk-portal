@@ -1,0 +1,23 @@
+Cloud Run migration Turn 5 live browser verification
+Date: 2026-07-15 Asia/Seoul
+Surface: Google Chrome academy profile
+Frontend: https://sedubanpo.github.io/desk-portal/?v=bc973bf
+Cloud Run revision: desk-portal-api-00008-dl4
+
+Authentication
+- Firebase password authentication succeeded.
+- Cloud Run /v1/me returned HTTP 200 for an active ADMIN staff account.
+- The portal login gate closed after the authenticated Cloud Run identity check.
+
+Read-only production verification
+- Desk daily journal loaded current workers, shared work, records, and pending tasks.
+- Monthly schedule loaded July 2026 with 58 entries and 337.5 counted hours.
+- Supplies loaded 51 registered consumables and current stock summaries.
+- Recruiting loaded July 2026 metrics, calendar, templates, and applicant data.
+- Tuition loaded Firestore indexes 4/4, 115 active students, 119 recent payments, and 115 detail rows.
+- Payroll loaded May 2026, 1,693 lesson rows, calendar hours, sales, and settlement summaries.
+
+Safety and browser health
+- No create, update, delete, payment, schedule, stock, or recruiting write action was performed.
+- No browser console warning or error was present after each verified surface loaded.
+- The previous payroll `week.forEach is not a function` failure did not recur.

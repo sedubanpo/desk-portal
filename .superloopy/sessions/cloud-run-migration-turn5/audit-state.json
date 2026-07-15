@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "sessionId": "cloud-run-migration-turn5",
+  "auditsAccepted": 0,
+  "updatedAt": "2026-07-15T07:58:25.519Z",
+  "criteria": [
+    {
+      "criterion": "G001/C001",
+      "scenario": "Happy path works from the real user-facing surface.",
+      "inputHash": "90dd6cbb3eb6f2c58566f60b0df651ee6e12b56937c90c21da76f18a376d77bc",
+      "sourceHash": "35c27d9c1c96ef009ae3efa27842a1caa4ddfa044744f63684bd624c7c6ed093",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T07:58:25.195Z",
+      "command": null,
+      "rerunStatus": "manual-recheck",
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn5/evidence/G001-C001-live-browser.txt",
+      "rerunArtifactHash": "35c27d9c1c96ef009ae3efa27842a1caa4ddfa044744f63684bd624c7c6ed093",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    },
+    {
+      "criterion": "G001/C002",
+      "scenario": "Riskiest edge or failure path is handled.",
+      "inputHash": "29ee30df32b993674d51ce023dd313b381cbcbd6638e6aef10d166f38957395d",
+      "sourceHash": "a8b5a887913727ba6186d9aa2f82a3e8649c85ed18f02d979e5c3552ba5a8ce2",
+      "verdict": null,
+      "failCount": 0,
+      "auditedAt": "2026-07-15T07:58:25.196Z",
+      "command": [
+        "npm",
+        "--prefix",
+        "services/desk-api",
+        "test"
+      ],
+      "rerunStatus": "pass",
+      "rerunExitCode": 0,
+      "rerunArtifact": ".superloopy/sessions/cloud-run-migration-turn5/evidence/audit/G001-C002-rerun.txt",
+      "rerunArtifactHash": "8d3f75329dfc78071669934f7bed5aa8658fc1091b5311ff89ffeb7c4ce4d47d",
+      "floor": "pass",
+      "verdictArtifact": null,
+      "verdictHash": null
+    }
+  ]
+}

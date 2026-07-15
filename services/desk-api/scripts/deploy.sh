@@ -25,6 +25,7 @@ gcloud services enable \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
   iamcredentials.googleapis.com \
+  identitytoolkit.googleapis.com \
   sheets.googleapis.com \
   calendar-json.googleapis.com \
   --project "${PROJECT_ID}" \
@@ -120,6 +121,21 @@ for attempt in {1..6}; do
   fi
   if [[ "${attempt}" -eq 6 ]]; then
     echo "런타임 서비스 계정에 Firestore 역할을 부여하지 못했습니다." >&2
+    exit 1
+  fi
+  sleep 5
+done
+
+for attempt in {1..6}; do
+  if gcloud projects add-iam-policy-binding "${FIREBASE_PROJECT_ID}" \
+    --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role roles/firebaseauth.viewer \
+    --condition=None \
+    --quiet >/dev/null; then
+    break
+  fi
+  if [[ "${attempt}" -eq 6 ]]; then
+    echo "런타임 서비스 계정에 Firebase Authentication 조회 역할을 부여하지 못했습니다." >&2
     exit 1
   fi
   sleep 5
