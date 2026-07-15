@@ -23,7 +23,9 @@ const PATHS = Object.freeze({
   journal: 'desk_portal/daily_journal',
   pending: 'desk_portal/daily_pending_tasks',
   supplies: 'desk_portal/supplies',
-  recruiting: 'desk_portal/hr_recruiting/applicants'
+  recruiting: 'desk_portal/hr_recruiting/applicants',
+  dailyConfig: 'desk_portal/daily_config',
+  tuitionConfig: 'desk_portal/tuition_config'
 });
 
 export const DESK_READ_METHODS = new Set([
@@ -32,7 +34,8 @@ export const DESK_READ_METHODS = new Set([
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
   'getDeskSuppliesData',
-  'getDeskRecruitingApplicantsData'
+  'getDeskRecruitingApplicantsData',
+  'getDeskPortalConfig'
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
@@ -40,7 +43,8 @@ export const DESK_WRITE_METHODS = new Set([
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
   'adjustDeskSupplyConsumable', 'saveDeskSupplyConsumable', 'deleteDeskSupplyConsumable',
   'saveDeskSupplyAsset', 'deleteDeskSupplyAsset', 'saveDeskSupplyPurchaseState', 'saveDeskSuppliesSnapshot',
-  'saveDeskRecruitingApplicant', 'deleteDeskRecruitingApplicant'
+  'saveDeskRecruitingApplicant', 'deleteDeskRecruitingApplicant',
+  'saveDeskPortalConfig'
 ]);
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
@@ -241,6 +245,20 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, monthKey: key, applicants };
     },
 
+    async getDeskPortalConfig(payload = {}) {
+      const path = portalConfigPath(payload.scope, payload.key);
+      if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
+      return { success: true, scope: payload.scope, key: payload.key, value: await store.get(path) };
+    },
+
+    async saveDeskPortalConfig(payload = {}) {
+      const path = portalConfigPath(payload.scope, payload.key);
+      if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
+      if (typeof payload.value === 'undefined') return failure('저장할 포털 설정 값이 없습니다.');
+      await store.set(path, payload.value);
+      return { success: true, scope: payload.scope, key: payload.key, value: payload.value };
+    },
+
     async saveDeskRecruitingApplicant(payload = {}) {
       const applicant = recruitingApplicant(payload.applicant, payload.applicant?.id, now());
       if (!applicant.applicantName) return failure('지원자명을 입력해 주세요.');
@@ -268,6 +286,16 @@ function validateSchedule(entry, key) {
   if (!entry.worker) return '근무자 이름이 필요합니다.';
   if (RETIRED_WORKERS.has(entry.worker)) return '퇴사자는 근무표에 저장할 수 없습니다.';
   if (!entry.resident && !entry.unavailable && (!entry.start || !entry.end)) return '시작/종료 시간이 필요합니다.';
+  return '';
+}
+
+function portalConfigPath(scopeValue, keyValue) {
+  const scope = String(scopeValue || '').trim();
+  const key = String(keyValue || '').trim().replace(/^\/+|\/+$/g, '');
+  const dailyAllowed = /^(memoTemplates|memoTypes|responseGuides|messageTemplates|responseLogs(?:\/[A-Za-z0-9_.:-]{1,160})?)$/;
+  const tuitionAllowed = /^(parentReplyTemplates|carryoverSuppressions\/\d{2}-\d{2}s?)$/;
+  if (scope === 'daily' && dailyAllowed.test(key)) return `${PATHS.dailyConfig}/${key}`;
+  if (scope === 'tuition' && tuitionAllowed.test(key)) return `${PATHS.tuitionConfig}/${key}`;
   return '';
 }
 

@@ -1,6 +1,6 @@
 # Desk Portal Cloud Run API
 
-데스크 포털의 Apps Script 중계를 단계적으로 제거하기 위한 Cloud Run 서비스입니다. 4단계에서는 Firebase Auth 인증 경계 안에서 근무표, 일일 업무일지, 비품, 채용, 수강료, 급여 및 데스크 캘린더 API를 제공합니다.
+데스크 포털의 Apps Script 중계를 제거한 Cloud Run 서비스입니다. 5단계 운영 전환에서는 Firebase Auth 인증 경계 안에서 근무표, 일일 업무일지, 비품, 채용, 포털 설정, 수강료, 급여 및 데스크 캘린더 API를 제공합니다.
 
 ## 현재 제공 API
 
@@ -59,6 +59,7 @@ npm run verify:payroll-parity
 ## 안전 경계
 
 - 급여·캘린더 Cloud Run 구현과 데이터 이관은 완료됐지만 운영 기능 플래그는 최종 검증 전까지 전환하지 않습니다.
-- GitHub Pages의 운영 호출은 기능 플래그 전환 전까지 기존 Apps Script 경로를 유지합니다.
+- GitHub Pages의 운영 호출은 Firebase ID 토큰을 사용하는 Cloud Run 경로만 허용합니다.
+- 과거 수강료 백필 메서드는 유지보수 전용으로 남아 있으며 운영 라우터에서 거부됩니다.
 - 서비스 계정 키 파일을 저장소나 프론트엔드에 두지 않습니다.
 - Cloud Run에서는 런타임 서비스 계정의 Application Default Credentials와 자기 위임 토큰을 사용합니다.

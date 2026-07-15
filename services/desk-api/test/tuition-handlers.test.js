@@ -67,6 +67,17 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 
+test('inactive student search reads Firestore student records only', async () => {
+  const store = memoryStore({
+    'students/inactive-1': { studentName: '이중지', school: '반포중', grade: '2', status: 'STOPPED' },
+    'students/active-1': { studentName: '이재원', school: '반포중', grade: '2', status: 'ACTIVE' }
+  });
+  const result = await createTuitionHandlers({ store }).getTuitionInactiveStudentCandidates({ keyword: '이' });
+  assert.equal(result.success, true);
+  assert.deepEqual(result.rows.map(row => row.name), ['이중지']);
+  assert.equal(result.rows[0].source, 'firestore');
+});
+
 test('payment append updates the ledger, indexes, and snapshot in one transaction and replays duplicates', async () => {
   const seed = tuitionSeed();
   const store = memoryStore(seed.documents);

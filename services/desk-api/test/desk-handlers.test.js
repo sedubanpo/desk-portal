@@ -88,3 +88,15 @@ test('recruiting month filter includes applicants by operational date fields', a
   const result = await createDeskHandlers({ store }).getDeskRecruitingApplicantsData({ monthKey: '2026-07' });
   assert.deepEqual(result.applicants.map(item => item.applicantName), ['7월 지원자']);
 });
+
+test('portal config is proxied through an allowlisted server path', async () => {
+  const store = memoryStore();
+  const handlers = createDeskHandlers({ store });
+  const saved = await handlers.saveDeskPortalConfig({ scope: 'daily', key: 'memoTypes', value: [{ id: 'general', label: '일반' }] });
+  assert.equal(saved.success, true);
+  const loaded = await handlers.getDeskPortalConfig({ scope: 'daily', key: 'memoTypes' });
+  assert.deepEqual(loaded.value, [{ id: 'general', label: '일반' }]);
+  const denied = await handlers.saveDeskPortalConfig({ scope: 'daily', key: '../private', value: 'blocked' });
+  assert.equal(denied.success, false);
+  assert.equal(store.dump().private, undefined);
+});

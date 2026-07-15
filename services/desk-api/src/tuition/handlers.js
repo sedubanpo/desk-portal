@@ -49,7 +49,8 @@ const DAILY_LIMIT = 500;
 
 export const TUITION_READ_METHODS = new Set([
   'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
-  'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview'
+  'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
+  'getTuitionInactiveStudentCandidates'
 ]);
 
 export const TUITION_WRITE_METHODS = new Set([
@@ -89,6 +90,24 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const document = await store.get(key(COLLECTIONS.studentMemos, studentMemoId(student))) || {};
       const memos = memoList(document.memos, nowIso);
       return { success: true, studentName: student, memos, warning: memoWarning(memos) };
+    },
+
+    async getTuitionInactiveStudentCandidates(payload = {}) {
+      const keyword = text(payload.keyword || payload.studentName).toLowerCase().replace(/\s+/g, '');
+      if (!keyword) return { success: true, rows: [] };
+      const seen = new Set();
+      const rows = (await store.list('students', 1000)).filter(isInactiveStudent).map(studentMasterRow)
+        .filter(Boolean)
+        .filter(row => [row.name, row.school, row.grade, row.registrationStatus].join('').toLowerCase().replace(/\s+/g, '').includes(keyword))
+        .filter(row => {
+          const key = [row.name, row.school, row.grade, row.registrationStatus].join('|');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+        .slice(0, 8);
+      return { success: true, rows };
     },
 
     async getTuitionStudentMonthlyHistory(payload = {}) {
@@ -694,6 +713,28 @@ function key(collection, id) { return id ? `${collection}/${id}` : ''; }
 function requiredRequestId(payload) { return clientRequestId(payload.clientRequestId); }
 function monthIndexDocument(month, timestamp, source) { return { monthName: month, updatedAt: timestamp, source }; }
 function failure(message) { return { success: false, message }; }
+
+function isInactiveStudent(document) {
+  const status = text(document?.status || document?.registrationStatus || document?.enrollmentStatus).toUpperCase();
+  if (/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|중지생|퇴원|퇴원생|휴원|휴원생|비활성|삭제)$/.test(status)) return true;
+  return document?.active === false || document?.isActive === false;
+}
+
+function studentMasterRow(document) {
+  const name = studentName(document?.studentName || document?.name || document?.displayName);
+  if (!name) return null;
+  const registrationStatus = text(document?.status || document?.registrationStatus || document?.enrollmentStatus)
+    || (document?.active === false || document?.isActive === false ? 'INACTIVE' : '');
+  return {
+    id: text(document?.studentId || document?.id),
+    name,
+    school: text(document?.school || document?.schoolName),
+    grade: text(document?.grade || document?.gradeName),
+    registrationStatus,
+    inactive: true,
+    source: 'firestore'
+  };
+}
 function compareContacts(a, b) { return b.contactCount - a.contactCount || a.studentName.localeCompare(b.studentName, 'ko'); }
 function routeLabel(row) { return text(row.paymentType) || (text(row.issueMemo).includes('현금') ? '현금' : '기타'); }
 

@@ -134,15 +134,22 @@ test('account lookup failures become a generic service error', async () => {
   }
 });
 
-test('migration contract reports Turn 4 handlers without switching production traffic', async () => {
+test('migration contract reports the Turn 5 production cutover', async () => {
   const response = await request(testApp())
     .get('/v1/migration')
     .set('authorization', 'Bearer valid-token')
     .expect(200);
-  assert.equal(response.body.migration.phase, 4);
-  assert.equal(response.body.migration.migratedBusinessMethods, 39);
+  assert.equal(response.body.migration.phase, 5);
+  assert.equal(response.body.migration.migratedBusinessMethods, 42);
   assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition', 'payroll', 'googleWorkspace']);
-  assert.equal(response.body.migration.productionTrafficSwitched, false);
+  assert.equal(response.body.migration.productionTrafficSwitched, true);
+  assert.deepEqual(response.body.migration.maintenanceOnlyLegacyMethods, [
+    'backfillTuitionMonthSnapshots',
+    'backfillTuitionPaymentsToFirestore',
+    'backfillTuitionFollowupsToFirestore',
+    'backfillTuitionMonthChargesToFirestore',
+    'completeTuitionFirestoreMigration'
+  ]);
   assert.ok(response.body.migration.legacyMethods > 0);
 });
 

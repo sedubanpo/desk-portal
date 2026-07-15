@@ -1,8 +1,8 @@
 # 데스크 포털 Cloud Run 마이그레이션
 
-## 4단계 상태
+## 5단계 완료 상태
 
-운영 트래픽을 변경하지 않은 채 아래 기반과 업무 API를 추가했습니다.
+2026-07-15 기준 운영 웹의 업무 호출을 Firebase 인증 기반 Cloud Run API로 전환했습니다.
 
 1. Cloud Run용 Node.js API 서비스
 2. Firebase ID 토큰 검증
@@ -12,9 +12,11 @@
 6. 수강료 조회·입력·수정·삭제 트랜잭션
 7. Google Sheets API 기반 급여 계산과 Firestore 설정·예외값 저장
 8. Google Calendar API 기반 데스크 일정 조회
-9. 기존 Apps Script API 43개 중 39개에 대한 전환 수량 계약
+9. 기존 Apps Script 사용자 업무 38개와 Cloud 전용 업무 4개에 대한 전환 수량 계약
+10. 포털 설정 및 중지·퇴원생 검색의 Cloud Run 중계
+11. 브라우저의 Apps Script JSONP 및 직접 RTDB 연결 제거
 
-배포 대상은 Firebase Auth와 Firestore가 있는 `fir-lms-prod`, 리전은 `asia-northeast3`, 서비스명은 `desk-portal-api`입니다. 4단계 배포도 최종 전환 전까지 운영 기능 플래그를 유지합니다.
+배포 대상은 Firebase Auth와 Firestore가 있는 `fir-lms-prod`, 리전은 `asia-northeast3`, 서비스명은 `desk-portal-api`입니다. 운영 기능 플래그는 5단계에서 Cloud Run 경로로 전환했습니다.
 
 ## 인증 흐름
 
@@ -30,12 +32,13 @@ GitHub Pages
 
 Cloud Run의 Firebase Admin SDK는 런타임 서비스 계정의 Application Default Credentials를 사용합니다. 서비스 계정 JSON 키를 코드나 브라우저에 넣지 않습니다.
 
-## 운영 전환 원칙
+## 운영 경계
 
-- 기능별로 읽기 API를 먼저 병렬 검증한 뒤 쓰기 API를 전환합니다.
-- 쓰기 API는 Firestore 트랜잭션과 멱등성 키를 갖춘 뒤에만 운영 경로로 연결합니다.
+- 운영 브라우저는 Apps Script URL이나 RTDB 인증값을 보유하지 않습니다.
+- 근무표·업무일지·비품·채용 데이터의 기존 RTDB 형식은 유지하되 Cloud Run 서비스 계정만 접근합니다.
+- 수강료·급여 쓰기는 Firestore 트랜잭션과 멱등성 키로 보호합니다.
 - 수납 삭제처럼 파괴적인 작업은 대상 문서, 작성자, 사유를 감사 로그로 남깁니다.
-- 각 단계는 기존 Apps Script 경로를 유지한 상태에서 검증하고, 확인 후 기능 플래그로 전환합니다.
+- 과거 데이터 복구용 수강료 백필 5개 메서드는 유지보수 전용이며 운영 웹에서 호출할 수 없습니다.
 
 ## Google Workspace 연동
 
@@ -43,6 +46,10 @@ Cloud Run 런타임 서비스 계정에 급여 시트 뷰어 권한과 데스크
 
 급여 설정은 `payrollSettings/global`, 월별 수동 보정값은 `payrollOverrides/{month}`에 저장하며 쓰기 요청은 Firestore 트랜잭션과 요청 ID 감사 기록으로 보호합니다.
 
-## 다음 단계
+## 완료 기준
 
-5단계에서는 Chrome `학원` 프로필로 전체 기능의 Cloud Run 실호출을 검증하고, 남은 유지보수 전용 메서드의 경계를 확정한 뒤 기능 플래그를 단계적으로 전환합니다.
+- Firebase 로그인과 `users/{uid}`, `userAppAccess/{uid}` 권한 확인 성공
+- 데스크·수강료·급여·Google Workspace 조회가 Cloud Run 응답으로 동작
+- 인증 누락, 허용되지 않은 origin, 유지보수 메서드가 차단
+- 브라우저 코드에 Apps Script 호출 주소와 RTDB 인증값이 없음
+- Chrome `학원` 프로필에서 운영 화면 회귀 검증 완료

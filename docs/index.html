@@ -14628,7 +14628,7 @@
         <img class="gate-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
         <h1 class="gate-title">SEDU Desk Portal Access</h1>
       </div>
-      <p class="gate-desc">근무자 계정으로 로그인하세요. 기존 데스크 비밀번호만 사용하는 경우 로그인 ID는 비워둘 수 있습니다.</p>
+      <p class="gate-desc">Firebase에 등록된 근무자 로그인 ID와 비밀번호를 입력하세요.</p>
       <input id="entryLoginIdInput" class="gate-input" type="text" inputmode="numeric" autocomplete="username" placeholder="로그인 ID (휴대전화 번호)">
       <input id="entryPasswordInput" class="gate-input" type="password" autocomplete="current-password" placeholder="비밀번호 입력">
       <div class="gate-row">
@@ -17502,7 +17502,6 @@
   </div>
 
   <script>
-    var DESK_PORTAL_API_BASE = "https://script.google.com/macros/s/AKfycbwXTWtznXXr8cF_x7BhyNWKb6KkfYFzUHbnWFLwdyZhmIgAHkOFvHYtmHMPJ-Rdv2kn/exec";
     var DESK_CLOUD_API_BASE = "https://desk-portal-api-furtzykzmq-du.a.run.app";
     var DESK_FIREBASE_CONFIG = {
       apiKey: "AIzaSyCFM21ZxgwIYwmjRPaAOp5bL9Kprqiyppg",
@@ -17513,26 +17512,25 @@
       getDeskScheduleMonthData: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskCalendarEvents: true,
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
+      getDeskPortalConfig: true, saveDeskPortalConfig: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true,
-      getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true,
+      getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true,
       saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
-    var DESK_RTDB_BASE_URL = "https://sedu-portal-default-rtdb.firebaseio.com";
-    var DESK_RTDB_AUTH = "oMxZXZl73LPJ4cpGoo5pM1SHyhsmlqlXiBqyhOa3";
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
     var DESK_DAILY_PENDING_TASKS_RT_PATH = "desk_portal/daily_pending_tasks";
     var DESK_DAILY_CONFIG_RT_PATH = "desk_portal/daily_config";
     var DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED = false;
-    var DESK_SCHEDULE_DIRECT_RTDB_ENABLED = true;
-    var DESK_DAILY_DIRECT_TASK_WRITE_ENABLED = true;
-    var DESK_DAILY_DIRECT_TASK_READ_ENABLED = true;
-    var DESK_DAILY_DIRECT_TASK_STREAM_ENABLED = true;
-    var DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = true;
-    var DESK_DAILY_DIRECT_MEMO_READ_ENABLED = true;
-    var DESK_DAILY_DIRECT_MEMO_STREAM_ENABLED = true;
+    var DESK_SCHEDULE_DIRECT_RTDB_ENABLED = false;
+    var DESK_DAILY_DIRECT_TASK_WRITE_ENABLED = false;
+    var DESK_DAILY_DIRECT_TASK_READ_ENABLED = false;
+    var DESK_DAILY_DIRECT_TASK_STREAM_ENABLED = false;
+    var DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = false;
+    var DESK_DAILY_DIRECT_MEMO_READ_ENABLED = false;
+    var DESK_DAILY_DIRECT_MEMO_STREAM_ENABLED = false;
     var DESK_DAILY_MEMO_SAVE_MAX_CONCURRENCY = 4;
     var DESK_SUPPLIES_RT_PATH = "desk_portal/supplies";
     var DESK_RECRUITING_RT_PATH = "desk_portal/hr_recruiting/applicants";
@@ -18915,24 +18913,18 @@
       saveDeskMemoTemplatesRemote_();
     }
 
-    function buildDeskDailyConfigRealtimeUrl_(childPath) {
-      var path = DESK_DAILY_CONFIG_RT_PATH;
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    function loadDeskPortalConfig_(scope, key) {
+      return runServer("getDeskPortalConfig", { scope: scope, key: key }).then(function(res) {
+        if (!res || res.success === false) throw new Error(res && res.message ? res.message : "포털 설정을 불러오지 못했습니다.");
+        return typeof res.value === "undefined" ? null : res.value;
+      });
     }
 
-    function buildTuitionConfigRealtimeUrl_(childPath) {
-      var path = TUITION_CONFIG_RT_PATH;
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+    function saveDeskPortalConfig_(scope, key, value) {
+      return runServer("saveDeskPortalConfig", { scope: scope, key: key, value: value }).then(function(res) {
+        if (!res || res.success === false) throw new Error(res && res.message ? res.message : "포털 설정을 저장하지 못했습니다.");
+        return res.value;
+      });
     }
 
     function getDefaultTuitionParentReplyTemplates_() {
@@ -19013,7 +19005,7 @@
       state.tuition.parentReplyTemplatesLoading = true;
       setTuitionAssistantStatus_("저장 문구 불러오는 중");
       renderTuitionAssistantTemplates_();
-      deskRealtimeFetchJson_("GET", buildTuitionConfigRealtimeUrl_("parentReplyTemplates"), null)
+      loadDeskPortalConfig_("tuition", "parentReplyTemplates")
         .then(function(snapshot) {
           if (Array.isArray(snapshot) && snapshot.length) {
             state.tuition.parentReplyTemplates = snapshot.map(normalizeTuitionParentReplyTemplate_).filter(function(item) {
@@ -19039,7 +19031,7 @@
     function saveTuitionParentReplyTemplatesRemote_() {
       saveTuitionParentReplyTemplatesLocal_();
       setTuitionAssistantStatus_("저장 문구 동기화 중");
-      return deskRealtimeFetchJson_("PUT", buildTuitionConfigRealtimeUrl_("parentReplyTemplates"), state.tuition.parentReplyTemplates || [])
+      return saveDeskPortalConfig_("tuition", "parentReplyTemplates", state.tuition.parentReplyTemplates || [])
         .then(function() {
           state.tuition.parentReplyTemplatesLoaded = true;
           setTuitionAssistantStatus_("저장 문구 동기화 완료");
@@ -19274,7 +19266,7 @@
       if (shouldDeferPortalDataLoad_()) return;
       if (state.desk.daily.memoTemplatesLoaded || state.desk.daily.memoTemplatesLoading) return;
       state.desk.daily.memoTemplatesLoading = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTemplates"), null)
+      loadDeskPortalConfig_("daily", "memoTemplates")
         .then(function(snapshot) {
           if (Array.isArray(snapshot) && snapshot.length) {
             state.desk.daily.memoTemplates = snapshot.slice(0, DESK_DEFAULT_MEMO_TEMPLATES.length).map(normalizeDeskMemoTemplate_);
@@ -19295,7 +19287,7 @@
 
     function saveDeskMemoTemplatesRemote_() {
       if (shouldDeferPortalDataLoad_()) return;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("memoTemplates"), state.desk.daily.memoTemplates || [])
+      saveDeskPortalConfig_("daily", "memoTemplates", state.desk.daily.memoTemplates || [])
         .then(function() {
           state.desk.daily.memoTemplatesLoaded = true;
         })
@@ -19308,7 +19300,7 @@
       if (shouldDeferPortalDataLoad_()) return;
       if (state.desk.daily.memoTypesLoaded || state.desk.daily.memoTypesLoading) return;
       state.desk.daily.memoTypesLoading = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTypes"), null)
+      loadDeskPortalConfig_("daily", "memoTypes")
         .then(function(snapshot) {
           applyDeskMemoTypesSnapshot_(snapshot, { skipWhenEditing: false });
           state.desk.daily.memoTypesLoaded = true;
@@ -19326,7 +19318,7 @@
     function saveDeskMemoTypesRemote_() {
       if (shouldDeferPortalDataLoad_()) return;
       deskMemoTypesSaving_ = true;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("memoTypes"), state.desk.daily.memoTypes || [])
+      saveDeskPortalConfig_("daily", "memoTypes", state.desk.daily.memoTypes || [])
         .then(function() {
           state.desk.daily.memoTypesLoaded = true;
           deskMemoTypesRemoteSignature_ = buildDeskMemoTypesSignature_(state.desk.daily.memoTypes);
@@ -19611,13 +19603,7 @@
     }
 
     function buildDeskSuppliesRealtimeUrl_(childPath, stream) {
-      var path = DESK_SUPPLIES_RT_PATH;
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return "";
     }
 
     function normalizeDeskSuppliesSnapshot_(snapshot) {
@@ -19822,50 +19808,7 @@
     }
 
     function startDeskSuppliesRealtime_() {
-      if (canUseDeskCloudApi_("getDeskSuppliesData")) return;
-      if (!state.desk.supplies.realtimeEnabled || typeof EventSource === "undefined") return;
-      if (state.desk.supplies.realtimeSource) return;
-      var source = new EventSource(buildDeskSuppliesRealtimeUrl_("", true));
-      source.addEventListener("put", function(event) {
-        try {
-          var payload = JSON.parse(event.data || "{}");
-          patchDeskSuppliesSnapshot_(payload.path, payload.data);
-          markDeskSuppliesSynced_();
-          setDeskSuppliesSyncStatus_("idle");
-          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
-            renderDeskSupplies_();
-          }
-        } catch (err) {
-          console.warn("desk supplies realtime put parse error", err);
-        }
-      });
-      source.addEventListener("patch", function(event) {
-        try {
-          var payload = JSON.parse(event.data || "{}");
-          patchDeskSuppliesSnapshot_(payload.path, payload.data);
-          markDeskSuppliesSynced_();
-          setDeskSuppliesSyncStatus_("idle");
-          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
-            renderDeskSupplies_();
-          }
-        } catch (err) {
-          console.warn("desk supplies realtime patch parse error", err);
-        }
-      });
-      source.onerror = function() {
-        if (state.desk.supplies.realtimeSource === source) {
-          source.close();
-          state.desk.supplies.realtimeSource = null;
-          setDeskSuppliesSyncStatus_("error");
-          if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
-            renderDeskSupplies_();
-          }
-          setTimeout(function() {
-            if (state.desk.supplies.realtimeEnabled) startDeskSuppliesRealtime_();
-          }, 3000);
-        }
-      };
-      state.desk.supplies.realtimeSource = source;
+      return;
     }
 
     function persistDeskSuppliesRealtime_(showAlertOnFail) {
@@ -20559,13 +20502,7 @@
     }
 
     function buildDeskRecruitingRealtimeUrl_(childPath) {
-      var path = DESK_RECRUITING_RT_PATH;
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return "";
     }
 
     function setDeskRecruitingSyncStatus_(status) {
@@ -22556,7 +22493,7 @@
       if (shouldDeferPortalDataLoad_()) return;
       if (state.desk.responseCenter.remoteLoaded || state.desk.responseCenter.remoteLoading) return;
       state.desk.responseCenter.remoteLoading = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("responseGuides"), null)
+      loadDeskPortalConfig_("daily", "responseGuides")
         .then(function(snapshot) {
           var source = Array.isArray(snapshot) ? snapshot : (snapshot && snapshot.guides);
           if (Array.isArray(source) && source.length) {
@@ -22590,7 +22527,7 @@
     function saveDeskResponseGuidesRemote_() {
       if (shouldDeferPortalDataLoad_()) return;
       state.desk.responseCenter.remoteSaving = true;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseGuides"), {
+      saveDeskPortalConfig_("daily", "responseGuides", {
         guides: state.desk.responseCenter.guides || []
       })
         .then(function() {
@@ -22679,7 +22616,7 @@
       if (shouldDeferPortalDataLoad_()) return;
       if (state.desk.responseCenter.logsRemoteLoaded || state.desk.responseCenter.logsRemoteLoading) return;
       state.desk.responseCenter.logsRemoteLoading = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("responseLogs"), null)
+      loadDeskPortalConfig_("daily", "responseLogs")
         .then(function(snapshot) {
           var source = collectDeskResponseLogsFromSnapshot_(snapshot);
           if (Array.isArray(source)) {
@@ -22712,7 +22649,7 @@
       var item = normalizeDeskResponseLog_(log);
       if (shouldDeferPortalDataLoad_() || !item.text || !item.id) return;
       state.desk.responseCenter.logsRemoteSaving = true;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("responseLogs/" + item.id), item)
+      saveDeskPortalConfig_("daily", "responseLogs/" + item.id, item)
         .then(function() {
           state.desk.responseCenter.logsRemoteLoaded = true;
         })
@@ -23396,7 +23333,7 @@
       if (shouldDeferPortalDataLoad_()) return;
       if (state.desk.messageTemplates.remoteLoaded || state.desk.messageTemplates.remoteLoading) return;
       state.desk.messageTemplates.remoteLoading = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("messageTemplates"), null)
+      loadDeskPortalConfig_("daily", "messageTemplates")
         .then(function(snapshot) {
           if (snapshot && Array.isArray(snapshot.tags) && Array.isArray(snapshot.templates) && snapshot.tags.length) {
             state.desk.messageTemplates.tags = snapshot.tags.map(normalizeDeskMessageTag_);
@@ -23423,7 +23360,7 @@
     function saveDeskMessageTemplatesRemote_() {
       if (shouldDeferPortalDataLoad_()) return;
       state.desk.messageTemplates.remoteSaving = true;
-      deskRealtimeFetchJson_("PUT", buildDeskDailyConfigRealtimeUrl_("messageTemplates"), {
+      saveDeskPortalConfig_("daily", "messageTemplates", {
         tags: state.desk.messageTemplates.tags || [],
         templates: state.desk.messageTemplates.templates || []
       })
@@ -23977,15 +23914,7 @@
     }
 
     function buildDeskScheduleRealtimeUrl_(monthKey, childPath) {
-      var safeMonthKey = String(monthKey || "").trim();
-      if (!safeMonthKey) return "";
-      var path = DESK_SCHEDULE_RT_PATH + "/" + encodeURIComponent(safeMonthKey);
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return "";
     }
 
     function normalizeDeskScheduleEntriesMap_(snapshot) {
@@ -26787,30 +26716,15 @@
     }
 
     function buildDeskDailyJournalRealtimeUrl_(dateKey, childPath, stream) {
-      var safeDateKey = String(dateKey || "").trim();
-      if (!safeDateKey) return "";
-      var path = DESK_DAILY_JOURNAL_RT_PATH + "/" + encodeURIComponent(safeDateKey);
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      var url = DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
-      return url;
+      return "";
     }
 
     function buildDeskDailyJournalRootRealtimeUrl_() {
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + DESK_DAILY_JOURNAL_RT_PATH + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return "";
     }
 
     function buildDeskDailyPendingTasksRealtimeUrl_(childPath) {
-      var path = DESK_DAILY_PENDING_TASKS_RT_PATH;
-      if (childPath) {
-        path += "/" + String(childPath || "").split("/").map(function(part) {
-          return encodeURIComponent(String(part || ""));
-        }).join("/");
-      }
-      return DESK_RTDB_BASE_URL.replace(/\/$/, "") + "/" + path + ".json?auth=" + encodeURIComponent(DESK_RTDB_AUTH);
+      return "";
     }
 
     function isDeskDailyJournalRealtimeRequestAllowed_(method, url) {
@@ -26832,29 +26746,7 @@
     }
 
     function deskRealtimeFetchJson_(method, url, payload) {
-      if (!isDeskDailyJournalRealtimeRequestAllowed_(method, url)) {
-        return Promise.reject(new Error("일일 업무일지는 서버 API 경로로만 동기화합니다."));
-      }
-      var options = {
-        method: method,
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-cache, no-store, max-age=0",
-          "Pragma": "no-cache"
-        }
-      };
-      if (payload !== undefined && payload !== null) {
-        options.body = JSON.stringify(payload);
-      }
-      return fetch(url, options).then(function(res) {
-        if (!res.ok) {
-          throw new Error("Firebase 요청 실패 (" + res.status + ")");
-        }
-        return res.text();
-      }).then(function(text) {
-        return text ? JSON.parse(text) : null;
-      });
+      return Promise.reject(new Error("브라우저의 Realtime Database 직접 연결은 종료되었습니다."));
     }
 
     function runDeskDailyJournalServerMutation_(fnName, payload) {
@@ -26881,7 +26773,7 @@
         }
         return {
           success: true,
-          source: "apps-script",
+          source: "cloud-run",
           dateKey: dateKey,
           tasks: (res.tasks || []).map(normalizeDeskDailyTask_).sort(compareDeskDailyTask_),
           memos: (res.memos || []).map(normalizeDeskDailyMemo_).sort(compareDeskDailyMemo_)
@@ -28515,7 +28407,7 @@
       if (state.desk.daily.memoTypeSettingsOpen) return;
       if (state.desk.daily.memoTypesLoading || deskMemoTypesPollInFlight_ || deskMemoTypesSaving_) return;
       deskMemoTypesPollInFlight_ = true;
-      deskRealtimeFetchJson_("GET", buildDeskDailyConfigRealtimeUrl_("memoTypes"), null)
+      loadDeskPortalConfig_("daily", "memoTypes")
         .then(function(snapshot) {
           var changed = applyDeskMemoTypesSnapshot_(snapshot, { skipWhenEditing: true });
           if (changed) {
@@ -34346,7 +34238,7 @@
       if (cache && cache.loaded) return Promise.resolve(cache.map || {});
       if (cache && cache.promise) return cache.promise;
 
-      var promise = deskRealtimeFetchJson_("GET", buildTuitionConfigRealtimeUrl_("carryoverSuppressions/" + currentMonth), null)
+      var promise = loadDeskPortalConfig_("tuition", "carryoverSuppressions/" + currentMonth)
         .then(function(snapshot) {
           var map = (snapshot && typeof snapshot === "object") ? snapshot : {};
           state.tuition.hiddenCarryoverByMonth[currentMonth] = {
@@ -34402,7 +34294,7 @@
         map: map
       };
       renderTuitionStudentRows();
-      return deskRealtimeFetchJson_("PUT", buildTuitionConfigRealtimeUrl_("carryoverSuppressions/" + currentMonth), map)
+      return saveDeskPortalConfig_("tuition", "carryoverSuppressions/" + currentMonth, map)
         .catch(function(err) {
           console.warn("tuition carryover suppression save failed", err);
           alert("전월 미납 숨김 저장에 실패했습니다. 새로고침 후 다시 시도해 주세요.");
@@ -36044,31 +35936,6 @@
       });
     }
 
-    function normalizeDeskPortalPassword_(password) {
-      var raw = String(password || "").trim();
-      var lowered = raw.toLowerCase();
-      if (lowered === "qksvhtjch" || raw === "반포센터") {
-        return "qksvhtjch";
-      }
-      if (raw === "반포서초" || raw === "030606") {
-        return "반포서초";
-      }
-      return raw;
-    }
-
-    function verifyEntryPasswordRemote_(password, retriesLeft) {
-      return runServer("verifyPayrollPortalPassword", password).catch(function(err) {
-        if (retriesLeft > 0) {
-          return new Promise(function(resolve) {
-            setTimeout(resolve, 220);
-          }).then(function() {
-            return verifyEntryPasswordRemote_(password, retriesLeft - 1);
-          });
-        }
-        throw err;
-      });
-    }
-
     function enterDeskPortal_(accessKey) {
       state.portalAccessKey = accessKey || state.portalAccessKey || "";
       entryGateEl.style.display = "none";
@@ -36196,39 +36063,15 @@
       });
     }
 
-    function canFallbackFromDeskFirebaseLogin_(err) {
-      var code = String(err && err.code || "");
-      return code === "auth/invalid-credential"
-        || code === "auth/user-not-found"
-        || code === "auth/wrong-password"
-        || code === "desk/firebase-account-not-found";
-    }
-
-    function verifyDeskLegacyPassword_(password) {
-      var shouldUseFastDeskEntry = !canUseGoogleScript() && (password === "qksvhtjch" || password === "반포서초");
-      if (shouldUseFastDeskEntry) enterDeskPortal_(password);
-      return verifyEntryPasswordRemote_(password, 1)
-        .then(function(res) {
-          if (res && res.success) {
-            enterDeskPortal_(res.token || password);
-            return true;
-          }
-          if (shouldUseFastDeskEntry) return true;
-          return false;
-        })
-        .catch(function() {
-          if (shouldUseFastDeskEntry) {
-            console.warn("desk portal remote verify failed; keeping local entry");
-            return true;
-          }
-          return false;
-        });
-    }
-
     function verifyEntryPassword() {
       if (entryVerificationPromise_) return entryVerificationPromise_;
       var loginId = String(entryLoginIdInputEl.value || "").trim();
-      var password = normalizeDeskPortalPassword_(entryPasswordInputEl.value || "");
+      var password = String(entryPasswordInputEl.value || "").trim();
+      if (!loginId) {
+        entryErrorTextEl.textContent = "근무자 로그인 ID를 입력해 주세요.";
+        entryLoginIdInputEl.focus();
+        return;
+      }
       if (!password) {
         entryErrorTextEl.textContent = "비밀번호를 입력해 주세요.";
         return;
@@ -36237,27 +36080,9 @@
       entryErrorTextEl.textContent = "";
       entrySubmitBtnEl.disabled = true;
       entrySubmitBtnEl.textContent = "확인 중...";
-      if (loginId) {
-        entryVerificationPromise_ = loginDeskFirebase_(loginId, password)
-          .then(function() { enterDeskPortal_(state.portalAccessKey); })
-          .catch(function(err) {
-            if (!canFallbackFromDeskFirebaseLogin_(err)) throw err;
-            return verifyDeskLegacyPassword_(password).then(function(verified) {
-              if (!verified) throw err;
-            });
-          })
-          .catch(function(err) { entryErrorTextEl.textContent = err.message || "근무자 로그인에 실패했습니다."; })
-          .finally(function() {
-            entryVerificationPromise_ = null;
-            entrySubmitBtnEl.disabled = false;
-            entrySubmitBtnEl.textContent = "입장";
-          });
-        return entryVerificationPromise_;
-      }
-      entryVerificationPromise_ = verifyDeskLegacyPassword_(password)
-        .then(function(verified) {
-          if (!verified) entryErrorTextEl.textContent = "비밀번호가 올바르지 않습니다.";
-        })
+      entryVerificationPromise_ = loginDeskFirebase_(loginId, password)
+        .then(function() { enterDeskPortal_(state.portalAccessKey); })
+        .catch(function(err) { entryErrorTextEl.textContent = err.message || "근무자 로그인에 실패했습니다."; })
         .finally(function() {
           entryVerificationPromise_ = null;
           entrySubmitBtnEl.disabled = false;
@@ -38344,39 +38169,10 @@
     }
 
     function runServerAttempt_(fnName, payload, timeoutMs) {
-      if (canUseDeskCloudApi_(fnName)) {
-        return runDeskCloudApi_(fnName, payload).catch(function(err) {
-          if (isRunServerWriteApi_(fnName) || !state.portalAccessKey) throw err;
-          console.warn("desk cloud read fallback", fnName, err && err.message ? err.message : err);
-          return apiJsonp(fnName, payload);
-        });
+      if (!DESK_CLOUD_METHODS[String(fnName || "")]) {
+        return Promise.reject(new Error("Cloud Run으로 이전되지 않은 기능입니다: " + String(fnName || "")));
       }
-      if (!canUseGoogleScript()) {
-        return apiJsonp(fnName, payload);
-      }
-      return new Promise(function(resolve, reject) {
-        var settled = false;
-        var timer = setTimeout(function() {
-          if (settled) return;
-          settled = true;
-          reject(new Error("API 호출 시간 초과"));
-        }, timeoutMs);
-        function settle(done, value) {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          done(value);
-        }
-        var runner = google.script.run
-          .withSuccessHandler(function(res) {
-            settle(resolve, res || {});
-          })
-          .withFailureHandler(function(err) {
-            settle(reject, new Error(err && err.message ? err.message : String(err)));
-          });
-        if (typeof payload === "undefined") runner[fnName]();
-        else runner[fnName](payload);
-      });
+      return runDeskCloudApi_(fnName, payload);
     }
 
     function isRunServerWriteApi_(fnName) {
@@ -38397,62 +38193,7 @@
     }
 
     function canUseGoogleScript() {
-      return !!(typeof google !== "undefined" && google.script && google.script.run);
-    }
-
-    function apiJsonp(fnName, payload) {
-      return new Promise(function(resolve, reject) {
-        if (!DESK_PORTAL_API_BASE) {
-          reject(new Error("API 연결 주소가 설정되지 않았습니다."));
-          return;
-        }
-
-        var cbName = "__deskPortalApiCb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
-        var script = document.createElement("script");
-        var timer = null;
-        var settled = false;
-        var url = new URL(DESK_PORTAL_API_BASE);
-
-        url.searchParams.set("mode", "api");
-        url.searchParams.set("fn", fnName);
-        url.searchParams.set("callback", cbName);
-        if (state.portalAccessKey) url.searchParams.set("portalKey", state.portalAccessKey);
-        if (state.privilegedAccessKey) url.searchParams.set("privilegedKey", state.privilegedAccessKey);
-        if (typeof payload !== "undefined") {
-          url.searchParams.set("payload", JSON.stringify(payload));
-        }
-
-        function cleanup() {
-          if (timer) clearTimeout(timer);
-          if (script.parentNode) script.parentNode.removeChild(script);
-          try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
-        }
-
-        window[cbName] = function(res) {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          resolve(res || {});
-        };
-
-        script.onerror = function() {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(new Error("API 호출 실패"));
-        };
-
-        var timeoutMs = getRunServerTimeoutMs_(fnName);
-        timer = setTimeout(function() {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(new Error("API 호출 시간 초과"));
-        }, timeoutMs);
-
-        script.src = url.toString();
-        document.head.appendChild(script);
-      });
+      return false;
     }
 
     function setLoading(isLoading, text) {
