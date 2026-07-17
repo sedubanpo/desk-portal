@@ -21399,7 +21399,7 @@
         var commentCount = normalizeDeskHrComments_(item.comments).length;
         return '<tr>' +
           '<td><div class="desk-hr-applicant-name"><span>' + escapeHtml(item.applicantName || "이름 미입력") + '</span>' +
-            '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-toggle="' + escapeHtml(item.id) + '" aria-expanded="false" aria-controls="deskHrSpecial_' + escapeHtml(item.id) + '">특이사항' + (commentCount ? " " + commentCount : "") + '</button></div>' +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-toggle="' + escapeHtml(item.id) + '" data-desk-hr-storage-id="' + escapeHtml(item.storageId || item.id) + '" aria-expanded="false" aria-controls="deskHrSpecial_' + escapeHtml(item.id) + '">특이사항' + (commentCount ? " " + commentCount : "") + '</button></div>' +
             '<div class="desk-hr-applicant-sub">' + escapeHtml(formatDeskHrApplicantRoleLabel_(item)) + '</div>' +
             '<div class="desk-hr-special-details" id="deskHrSpecial_' + escapeHtml(item.id) + '" data-desk-hr-special-details="' + escapeHtml(item.id) + '">' +
               renderDeskHrCommentsHtml_(item) +
