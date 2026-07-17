@@ -194,8 +194,10 @@ export function recruitingApplicant(item = {}, fallbackId = '', now = new Date()
   if (!HR_STATUSES.includes(status)) status = '이력서 검토';
   let reviewDecision = String(item.reviewDecision || '검토중').trim();
   if (!HR_REVIEW_DECISIONS.includes(reviewDecision)) reviewDecision = '검토중';
+  const id = String(item.id || fallbackId || newId()).trim();
   return {
-    id: String(item.id || fallbackId || newId()).trim(),
+    id,
+    storageId: String(item.storageId || fallbackId || id).trim(),
     applicantName: String(item.applicantName || item.name || '').trim(),
     roleType,
     subject: subject || (roleType === '데스크 직원' ? '데스크' : ''),

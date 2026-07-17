@@ -107,11 +107,44 @@ test('recruiting comments append transactionally and preserve concurrent notes',
   assert.equal(result.comment.authorName, '테스트 근무자');
 });
 
+test('recruiting writes keep using the RTDB storage key when a legacy embedded id differs', async () => {
+  const store = memoryStore({ desk_portal: { hr_recruiting: { applicants: {
+    'legacy-storage-key': { id: 'embedded-applicant-id', applicantName: '레거시 지원자', subject: '수학' }
+  } } } });
+  const handlers = createDeskHandlers({ store, now: () => '2026-07-17T11:00:00.000Z' });
+  const loaded = await handlers.getDeskRecruitingApplicantsData({});
+  assert.equal(loaded.applicants[0].id, 'embedded-applicant-id');
+  assert.equal(loaded.applicants[0].storageId, 'legacy-storage-key');
+
+  const commented = await handlers.addDeskRecruitingApplicantComment({
+    id: 'embedded-applicant-id', storageId: 'legacy-storage-key', content: '저장 키 확인'
+  }, { uid: 'staff-1', name: '테스트 근무자' });
+  assert.equal(commented.success, true);
+  assert.equal(commented.applicant.storageId, 'legacy-storage-key');
+  assert.equal(store.dump().desk_portal.hr_recruiting.applicants['legacy-storage-key'].comments[0].content, '저장 키 확인');
+  assert.equal(store.dump().desk_portal.hr_recruiting.applicants['embedded-applicant-id'], undefined);
+
+  const saved = await handlers.saveDeskRecruitingApplicant({ applicant: {
+    ...commented.applicant, school: '수정 학교'
+  } });
+  assert.equal(saved.success, true);
+  assert.equal(store.dump().desk_portal.hr_recruiting.applicants['legacy-storage-key'].school, '수정 학교');
+
+  const deleted = await handlers.deleteDeskRecruitingApplicant({
+    id: 'embedded-applicant-id', storageId: 'legacy-storage-key'
+  });
+  assert.equal(deleted.success, true);
+  assert.equal(store.dump().desk_portal.hr_recruiting.applicants['legacy-storage-key'], undefined);
+});
+
 test('recruiting comments reject empty, oversized, and missing applicant writes', async () => {
-  const handlers = createDeskHandlers({ store: memoryStore() });
+  const store = memoryStore();
+  const handlers = createDeskHandlers({ store });
   assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: '메모' })).success, false);
   assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: ' ' })).success, false);
   assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: 'x'.repeat(1001) })).success, false);
+  assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'applicant', storageId: '../invalid', content: '메모' })).success, false);
+  assert.deepEqual(store.dump(), {});
 });
 
 test('portal config is proxied through an allowlisted server path', async () => {

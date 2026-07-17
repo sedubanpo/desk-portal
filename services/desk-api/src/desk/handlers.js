@@ -242,7 +242,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     async getDeskRecruitingApplicantsData(payload = {}) {
       const key = monthKey(payload.monthKey);
       const stored = await store.get(PATHS.recruiting) || {};
-      const applicants = Object.entries(stored).map(([id, item]) => recruitingApplicant(item, id, now())).filter(item => !key || [item.interviewDate, item.nextContactAt, item.resumeReportedAt, item.directorRequestedAt, item.createdAt].some(value => String(value || '').slice(0, 7) === key)).sort(compareApplicants);
+      const applicants = Object.entries(stored).map(([id, item]) => recruitingApplicant({ ...item, storageId: id }, id, now())).filter(item => !key || [item.interviewDate, item.nextContactAt, item.resumeReportedAt, item.directorRequestedAt, item.createdAt].some(value => String(value || '').slice(0, 7) === key)).sort(compareApplicants);
       return { success: true, monthKey: key, applicants };
     },
 
@@ -263,14 +263,19 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     async saveDeskRecruitingApplicant(payload = {}) {
       const applicant = recruitingApplicant(payload.applicant, payload.applicant?.id, now());
       if (!applicant.applicantName) return failure('지원자명을 입력해 주세요.');
-      await store.set(`${PATHS.recruiting}/${applicant.id}`, applicant);
+      const storageId = recruitingStorageId(applicant.storageId || applicant.id);
+      if (!storageId) return failure('지원자 저장 키가 올바르지 않습니다. 새로고침 후 다시 시도해 주세요.');
+      applicant.storageId = storageId;
+      await store.set(`${PATHS.recruiting}/${storageId}`, applicant);
       return { success: true, applicant };
     },
 
     async addDeskRecruitingApplicantComment(payload = {}, identity = {}) {
       const id = String(payload.id || '').trim();
+      const storageId = recruitingStorageId(payload.storageId || id);
       const content = String(payload.content || '').trim();
       if (!id) return failure('코멘트를 남길 지원자 ID가 없습니다.');
+      if (!storageId) return failure('지원자 저장 키가 올바르지 않습니다. 새로고침 후 다시 시도해 주세요.');
       if (!content) return failure('코멘트 내용을 입력해 주세요.');
       if (content.length > 1000) return failure('코멘트는 1,000자 이내로 입력해 주세요.');
       const createdAt = now();
@@ -280,22 +285,25 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         authorUid: identity.uid,
         authorName: identity.name
       }, '', createdAt);
-      const stored = await store.transaction(`${PATHS.recruiting}/${id}`, current => {
+      const stored = await store.transaction(`${PATHS.recruiting}/${storageId}`, current => {
         if (!current || typeof current !== 'object') return;
-        const applicant = recruitingApplicant(current, id, createdAt);
+        const applicant = recruitingApplicant(current, storageId, createdAt);
+        applicant.storageId = storageId;
         applicant.comments = [comment, ...(applicant.comments || []).filter(item => item.id !== comment.id)].slice(0, 100);
         applicant.updatedAt = createdAt;
         return applicant;
       });
       if (!stored) return failure('지원자를 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.');
-      return { success: true, applicant: recruitingApplicant(stored, id, createdAt), comment };
+      return { success: true, applicant: recruitingApplicant(stored, storageId, createdAt), comment };
     },
 
     async deleteDeskRecruitingApplicant(payload = {}) {
       const id = String(payload.id || '').trim();
+      const storageId = recruitingStorageId(payload.storageId || id);
       if (!id) return failure('삭제할 지원자 ID가 없습니다.');
-      await store.remove(`${PATHS.recruiting}/${id}`);
-      return { success: true, id };
+      if (!storageId) return failure('지원자 저장 키가 올바르지 않습니다. 새로고침 후 다시 시도해 주세요.');
+      await store.remove(`${PATHS.recruiting}/${storageId}`);
+      return { success: true, id, storageId };
     }
   };
 
@@ -322,6 +330,12 @@ function portalConfigPath(scopeValue, keyValue) {
   if (scope === 'daily' && dailyAllowed.test(key)) return `${PATHS.dailyConfig}/${key}`;
   if (scope === 'tuition' && tuitionAllowed.test(key)) return `${PATHS.tuitionConfig}/${key}`;
   return '';
+}
+
+function recruitingStorageId(value) {
+  const id = String(value || '').trim();
+  if (!id || id.length > 300 || /[.#$\[\]\/\u0000-\u001f\u007f]/.test(id)) return '';
+  return id;
 }
 
 async function mutateSupplies(store, mutation) {

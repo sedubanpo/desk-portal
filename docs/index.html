@@ -20744,8 +20744,10 @@
         subject = subject || "과학";
       }
       if (subject !== "과학") detail = "";
+      var normalizedId = String(source.id || ("desk_hr_" + index + "_" + Date.now())).trim();
       return {
-        id: String(source.id || ("desk_hr_" + index + "_" + Date.now())).trim(),
+        id: normalizedId,
+        storageId: String(source.storageId || source.id || normalizedId).trim(),
         applicantName: String(source.applicantName || source.name || "").trim(),
         roleType: roleType,
         subject: subject || (roleType === "데스크 직원" ? "데스크" : roleType === "조교 지원자" ? "조교" : ""),
@@ -21000,25 +21002,29 @@
         });
     }
 
-    function deleteDeskRecruitingApplicantRemote_(id) {
+    function deleteDeskRecruitingApplicantRemote_(applicant) {
+      var id = applicant && applicant.id || "";
+      var storageId = applicant && applicant.storageId || id;
       if (canUseDeskCloudApi_("deleteDeskRecruitingApplicant")) {
-        return runServer("deleteDeskRecruitingApplicant", { id: id }).then(function(res) {
+        return runServer("deleteDeskRecruitingApplicant", { id: id, storageId: storageId }).then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 삭제에 실패했습니다.");
           return res;
         });
       }
-      return deskRealtimeFetchJson_("DELETE", buildDeskRecruitingRealtimeUrl_(id), null)
+      return deskRealtimeFetchJson_("DELETE", buildDeskRecruitingRealtimeUrl_(storageId), null)
         .catch(function() {
-          return runServer("deleteDeskRecruitingApplicant", { id: id }).then(function(res) {
+          return runServer("deleteDeskRecruitingApplicant", { id: id, storageId: storageId }).then(function(res) {
             if (!res || !res.success) throw new Error(res && res.message ? res.message : "지원자 삭제에 실패했습니다.");
             return res;
           });
         });
     }
 
-    function addDeskRecruitingApplicantCommentRemote_(id, content) {
+    function addDeskRecruitingApplicantCommentRemote_(applicant, content) {
+      var id = applicant && applicant.id || "";
       return runServer("addDeskRecruitingApplicantComment", {
         id: id,
+        storageId: applicant && applicant.storageId || id,
         content: content,
         clientRequestId: "hr_comment_" + id + "_" + Date.now()
       }).then(function(res) {
@@ -21937,12 +21943,13 @@
     function deleteDeskRecruitingApplicant_(id) {
       if (!id) return;
       if (!confirm("이 지원자를 삭제할까요?")) return;
+      var target = findDeskRecruitingApplicant_(id) || { id: id, storageId: id };
       state.desk.recruiting.applicants = (state.desk.recruiting.applicants || []).filter(function(item) { return item.id !== id; });
       if (state.desk.recruiting.selectedApplicantId === id) state.desk.recruiting.selectedApplicantId = "";
       if (state.desk.recruiting.editingApplicantId === id) resetDeskRecruitingForm_();
       renderDeskRecruiting_();
       setDeskRecruitingSyncStatus_("pending");
-      deleteDeskRecruitingApplicantRemote_(id)
+      deleteDeskRecruitingApplicantRemote_(target)
         .then(function() { setDeskRecruitingSyncStatus_("idle"); })
         .catch(function(err) {
           setDeskRecruitingSyncStatus_("error");
@@ -21994,7 +22001,7 @@
       }
       setDeskRecruitingSyncStatus_("pending");
       if (input) input.disabled = true;
-      addDeskRecruitingApplicantCommentRemote_(id, content)
+      addDeskRecruitingApplicantCommentRemote_(item, content)
         .then(function(updated) {
           var normalized = normalizeDeskRecruitingApplicant_(updated, 0);
           state.desk.recruiting.applicants = (state.desk.recruiting.applicants || []).map(function(row) {

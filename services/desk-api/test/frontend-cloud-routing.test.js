@@ -45,6 +45,7 @@ test('recruiting comments use write idempotency and the applicant table keeps co
 
   assert.match(source, /\^\(save\|delete\|append\|update\|batchUpdate\|adjust\|add\)/);
   assert.match(source, /addDeskRecruitingApplicantComment: true/);
+  assert.match(source, /storageId: applicant && applicant\.storageId \|\| id/);
   assert.match(source, /id="deskHrSubjectTabs" role="tablist"/);
   assert.match(source, /data-desk-hr-special-details/);
   assert.doesNotMatch(source, /<th class="col-role">직무\/과목<\/th>/);
