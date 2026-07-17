@@ -2288,9 +2288,59 @@
       gap: 6px;
       white-space: nowrap;
     }
+    .desk-hr-subject-tabs {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      overflow-x: auto;
+      margin: 0 0 var(--ds-space-2);
+      border-bottom: 1px solid var(--ds-border);
+      scrollbar-width: thin;
+    }
+    .desk-hr-subject-tab {
+      position: relative;
+      min-width: max-content;
+      min-height: var(--ds-control-height);
+      border: 0;
+      background: transparent;
+      color: var(--ds-muted);
+      padding: var(--ds-space-2) var(--ds-space-3);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+      transition-property: color, background-color, transform;
+      transition-duration: 140ms;
+      transition-timing-function: ease;
+    }
+    .desk-hr-subject-tab::after {
+      content: "";
+      position: absolute;
+      right: var(--ds-space-2);
+      bottom: -1px;
+      left: var(--ds-space-2);
+      height: 2px;
+      background: var(--ds-primary);
+      opacity: 0;
+      transform: scaleX(0.25);
+      transform-origin: center;
+      transition-property: opacity, transform;
+      transition-duration: 140ms;
+      transition-timing-function: ease;
+    }
+    .desk-hr-subject-tab:hover { color: var(--ds-primary); background: var(--ds-bg-subtle); }
+    .desk-hr-subject-tab:active { transform: scale(0.96); }
+    .desk-hr-subject-tab:focus-visible { outline: 3px solid var(--ds-ring); outline-offset: -3px; }
+    .desk-hr-subject-tab[aria-selected="true"] { color: var(--ds-primary); background: var(--ds-bg-subtle); }
+    .desk-hr-subject-tab[aria-selected="true"]::after { opacity: 1; transform: scaleX(1); }
+    .desk-hr-subject-tab-count {
+      margin-left: var(--ds-space-1);
+      color: inherit;
+      font-variant-numeric: tabular-nums;
+    }
     .desk-hr-table {
       width: 100%;
-      min-width: 1180px;
+      min-width: 1060px;
       border-collapse: collapse;
       font-size: 12px;
       table-layout: fixed;
@@ -2321,8 +2371,7 @@
     .desk-hr-table tr:last-child td {
       border-bottom: 0;
     }
-    .desk-hr-table .col-applicant { width: 250px; }
-    .desk-hr-table .col-role { width: 118px; }
+    .desk-hr-table .col-applicant { width: 268px; }
     .desk-hr-table .col-school { width: 210px; }
     .desk-hr-table .col-profile { width: 88px; }
     .desk-hr-table .col-platform { width: 88px; }
@@ -2368,7 +2417,19 @@
     .desk-hr-comment-list {
       display: grid;
       gap: 4px;
-      margin-top: 7px;
+    }
+    .desk-hr-special-details {
+      display: none;
+      margin-top: var(--ds-space-2);
+      padding: var(--ds-space-2);
+      border-left: 2px solid var(--ds-border);
+      background: var(--ds-bg-subtle);
+    }
+    .desk-hr-special-details.is-open { display: block; }
+    .desk-hr-special-empty {
+      color: var(--ds-muted);
+      font-size: 10px;
+      font-weight: 800;
     }
     .desk-hr-comment-note {
       display: grid;
@@ -2390,12 +2451,11 @@
     .desk-hr-comment-note span { overflow-wrap: anywhere; }
     .desk-hr-comment-more { color: #667789; font-size: 10px; font-weight: 850; }
     .desk-hr-comment-composer {
-      display: none;
+      display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 5px;
       margin-top: 6px;
     }
-    .desk-hr-comment-composer.is-open { display: grid; }
     .desk-hr-comment-input {
       min-width: 0;
       height: 31px;
@@ -16302,12 +16362,12 @@
                   <input id="deskHrApplicantListSearch" class="desk-inline-input desk-hr-list-search" type="search" placeholder="지원자명, 과목, 학교, 전공, 플랫폼, 메모 검색">
                   <span class="desk-hr-muted"><i data-lucide="search"></i>현재 필터와 함께 적용됩니다.</span>
                 </div>
+                <div class="desk-hr-subject-tabs" id="deskHrSubjectTabs" role="tablist" aria-label="지원 과목 필터"></div>
                 <div class="desk-hr-table-wrap">
                   <table class="desk-hr-table">
                     <thead>
                       <tr>
-                        <th class="col-applicant">지원자 / 코멘트</th>
-                        <th class="col-role">직무/과목</th>
+                        <th class="col-applicant">지원자 / 특이사항</th>
                         <th class="col-school">학교/전공</th>
                         <th class="col-profile">출생/성별</th>
                         <th class="col-platform">플랫폼</th>
@@ -17867,6 +17927,7 @@
           bulkReportText: "",
           statusFilter: "",
           roleFilter: "",
+          subjectFilter: "",
           platformFilter: "",
           keywordFilter: ""
         },
@@ -18248,6 +18309,7 @@
     var deskHrResetFormBtnEl = document.getElementById("deskHrResetFormBtn");
     var deskHrApplicantCountEl = document.getElementById("deskHrApplicantCount");
     var deskHrApplicantListSearchEl = document.getElementById("deskHrApplicantListSearch");
+    var deskHrSubjectTabsEl = document.getElementById("deskHrSubjectTabs");
     var deskHrApplicantTableBodyEl = document.getElementById("deskHrApplicantTableBody");
     var deskResponseSavedCountEl = document.getElementById("deskResponseSavedCount");
     var deskResponseAdminToggleBtnEl = document.getElementById("deskResponseAdminToggleBtn");
@@ -20965,7 +21027,7 @@
       });
     }
 
-    function getDeskVisibleRecruitingApplicants_() {
+    function getDeskRecruitingApplicantsBeforeSubjectFilter_() {
       var hr = state.desk.recruiting;
       var platform = normalizeDeskSearchValue_(hr.platformFilter);
       var keyword = normalizeDeskSearchValue_(hr.keywordFilter);
@@ -20985,6 +21047,60 @@
       });
     }
 
+    function getDeskHrSubjectGroup_(item) {
+      var subject = String(item && item.subject || "").trim();
+      var canonical = ["국어", "영어", "수학", "과학", "사회"];
+      var matchedSubject = canonical.find(function(label) { return subject.indexOf(label) !== -1; });
+      if (matchedSubject) return matchedSubject;
+      if (subject && subject !== "조교") return subject;
+      var searchable = [item && item.subjectDetail, item && item.jobPostTitle].filter(Boolean).join(" ");
+      var matched = canonical.find(function(label) {
+        return searchable.indexOf(label) !== -1;
+      });
+      return matched || "조교/기타";
+    }
+
+    function formatDeskHrApplicantRoleLabel_(item) {
+      if (item.jobPostTitle) return item.jobPostTitle;
+      var subject = [item.subjectDetail, item.subject].filter(Boolean)[0] || "";
+      if (item.roleType === "강사" && subject) return subject + " 강사";
+      if (item.roleType === "조교 지원자") return subject && subject !== "조교" ? subject + " 조교" : "조교 지원자";
+      return formatDeskHrRoleSubject_(item);
+    }
+
+    function getDeskVisibleRecruitingApplicants_() {
+      var subjectFilter = state.desk.recruiting.subjectFilter || "";
+      return getDeskRecruitingApplicantsBeforeSubjectFilter_().filter(function(item) {
+        return !subjectFilter || getDeskHrSubjectGroup_(item) === subjectFilter;
+      });
+    }
+
+    function renderDeskHrSubjectTabs_() {
+      if (!deskHrSubjectTabsEl) return;
+      var counts = {};
+      getDeskRecruitingApplicantsBeforeSubjectFilter_().forEach(function(item) {
+        var group = getDeskHrSubjectGroup_(item);
+        counts[group] = (counts[group] || 0) + 1;
+      });
+      var preferred = ["국어", "영어", "수학", "과학", "사회", "조교/기타"];
+      var subjects = preferred.filter(function(label) { return counts[label]; });
+      Object.keys(counts).sort().forEach(function(label) {
+        if (subjects.indexOf(label) === -1) subjects.push(label);
+      });
+      var current = state.desk.recruiting.subjectFilter || "";
+      if (current && !counts[current]) {
+        current = "";
+        state.desk.recruiting.subjectFilter = "";
+      }
+      var tabs = [{ value: "", label: "전체", count: getDeskRecruitingApplicantsBeforeSubjectFilter_().length }]
+        .concat(subjects.map(function(label) { return { value: label, label: label, count: counts[label] }; }));
+      deskHrSubjectTabsEl.innerHTML = tabs.map(function(tab) {
+        var selected = tab.value === current;
+        return '<button class="desk-hr-subject-tab" type="button" role="tab" data-desk-hr-subject="' + escapeHtml(tab.value) + '" aria-selected="' + (selected ? "true" : "false") + '" tabindex="' + (selected ? "0" : "-1") + '">' +
+          escapeHtml(tab.label) + '<span class="desk-hr-subject-tab-count">' + tab.count + '</span></button>';
+      }).join("");
+    }
+
     function getDeskRecruitingMonthApplicants_() {
       var monthKey = state.desk.recruiting.currentMonth || getDeskMonthKey_(new Date());
       return getDeskVisibleRecruitingApplicants_().filter(function(item) {
@@ -20997,6 +21113,7 @@
     }
 
     function renderDeskRecruiting_() {
+      renderDeskHrSubjectTabs_();
       syncDeskRecruitingControls_();
       renderDeskRecruitingSummary_();
       renderDeskRecruitingCalendar_();
@@ -21269,20 +21386,21 @@
       if (!deskHrApplicantTableBodyEl) return;
       var items = getDeskVisibleRecruitingApplicants_();
       if (!items.length) {
-        deskHrApplicantTableBodyEl.innerHTML = '<tr><td colspan="9"><div class="desk-empty">등록된 지원자가 없습니다.</div></td></tr>';
+        deskHrApplicantTableBodyEl.innerHTML = '<tr><td colspan="8"><div class="desk-empty">현재 조건에 맞는 지원자가 없습니다.</div></td></tr>';
         return;
       }
       deskHrApplicantTableBodyEl.innerHTML = items.map(function(item) {
+        var commentCount = normalizeDeskHrComments_(item.comments).length;
         return '<tr>' +
           '<td><div class="desk-hr-applicant-name"><span>' + escapeHtml(item.applicantName || "이름 미입력") + '</span>' +
-            '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-toggle="' + escapeHtml(item.id) + '" aria-expanded="false">코멘트</button></div>' +
-            '<div class="desk-hr-applicant-sub">' + escapeHtml(item.jobPostTitle || "지원 공고 미입력") + '</div>' +
-            renderDeskHrCommentsHtml_(item) +
-            '<div class="desk-hr-comment-composer" data-desk-hr-comment-composer="' + escapeHtml(item.id) + '">' +
-              '<input class="desk-hr-comment-input" type="text" maxlength="1000" data-desk-hr-comment-input="' + escapeHtml(item.id) + '" placeholder="코멘트를 입력하세요" aria-label="' + escapeHtml((item.applicantName || "지원자") + " 코멘트") + '">' +
-              '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-save="' + escapeHtml(item.id) + '">저장</button>' +
-            '</div></td>' +
-          '<td>' + escapeHtml(formatDeskHrRoleSubject_(item)) + '</td>' +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-toggle="' + escapeHtml(item.id) + '" aria-expanded="false" aria-controls="deskHrSpecial_' + escapeHtml(item.id) + '">특이사항' + (commentCount ? " " + commentCount : "") + '</button></div>' +
+            '<div class="desk-hr-applicant-sub">' + escapeHtml(formatDeskHrApplicantRoleLabel_(item)) + '</div>' +
+            '<div class="desk-hr-special-details" id="deskHrSpecial_' + escapeHtml(item.id) + '" data-desk-hr-special-details="' + escapeHtml(item.id) + '">' +
+              renderDeskHrCommentsHtml_(item) +
+              '<div class="desk-hr-comment-composer" data-desk-hr-comment-composer="' + escapeHtml(item.id) + '">' +
+                '<input class="desk-hr-comment-input" type="text" maxlength="1000" data-desk-hr-comment-input="' + escapeHtml(item.id) + '" placeholder="특이사항을 입력하세요" aria-label="' + escapeHtml((item.applicantName || "지원자") + " 특이사항") + '">' +
+                '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-save="' + escapeHtml(item.id) + '">저장</button>' +
+              '</div></div></td>' +
           '<td>' + escapeHtml((item.school || "학교 미입력") + " / " + (item.major || "전공 미입력")) + '</td>' +
           '<td>' + escapeHtml((item.birthYear || "-") + " / " + (item.gender || "-")) + '</td>' +
           '<td>' + escapeHtml(item.platform || "-") + '</td>' +
@@ -21328,11 +21446,11 @@
 
     function renderDeskHrCommentsHtml_(item) {
       var comments = normalizeDeskHrComments_(item.comments);
-      if (!comments.length) return '<div class="desk-hr-applicant-sub">등록된 코멘트 없음</div>';
-      var visible = comments.slice(0, 2).map(function(comment) {
+      if (!comments.length) return '<div class="desk-hr-special-empty">등록된 특이사항이 없습니다.</div>';
+      var visible = comments.map(function(comment) {
         return '<div class="desk-hr-comment-note"><time datetime="' + escapeHtml(comment.createdAt) + '">' + escapeHtml(formatDeskHrCommentTime_(comment.createdAt)) + '</time><span>' + escapeHtml(comment.content) + '</span></div>';
       }).join("");
-      return '<div class="desk-hr-comment-list">' + visible + (comments.length > 2 ? '<div class="desk-hr-comment-more">외 ' + (comments.length - 2) + '건</div>' : '') + '</div>';
+      return '<div class="desk-hr-comment-list">' + visible + '</div>';
     }
 
     function buildDeskHrStageButtonsHtml_(item) {
@@ -31635,6 +31753,14 @@
           renderDeskRecruiting_();
         });
       }
+      if (deskHrSubjectTabsEl) {
+        deskHrSubjectTabsEl.addEventListener("click", function(event) {
+          var tab = event.target.closest("[data-desk-hr-subject]");
+          if (!tab) return;
+          state.desk.recruiting.subjectFilter = tab.getAttribute("data-desk-hr-subject") || "";
+          renderDeskRecruiting_();
+        });
+      }
       if (deskHrCalendarGridEl) {
         deskHrCalendarGridEl.addEventListener("click", function(event) {
           var btn = event.target.closest("[data-desk-hr-date]");
@@ -31776,13 +31902,13 @@
           var commentToggleBtn = event.target.closest("[data-desk-hr-comment-toggle]");
           if (commentToggleBtn) {
             var commentId = commentToggleBtn.getAttribute("data-desk-hr-comment-toggle") || "";
-            var composer = deskHrApplicantTableBodyEl.querySelector('[data-desk-hr-comment-composer="' + CSS.escape(commentId) + '"]');
-            if (!composer) return;
-            var open = !composer.classList.contains("is-open");
-            composer.classList.toggle("is-open", open);
+            var details = deskHrApplicantTableBodyEl.querySelector('[data-desk-hr-special-details="' + CSS.escape(commentId) + '"]');
+            if (!details) return;
+            var open = !details.classList.contains("is-open");
+            details.classList.toggle("is-open", open);
             commentToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
             if (open) {
-              var commentInput = composer.querySelector("input");
+              var commentInput = details.querySelector("input");
               if (commentInput) commentInput.focus();
             }
             return;
@@ -38428,7 +38554,7 @@
     }
 
     function isRunServerWriteApi_(fnName) {
-      return /^(save|delete|append|update|batchUpdate|adjust)/.test(String(fnName || ""));
+      return /^(save|delete|append|update|batchUpdate|adjust|add)/.test(String(fnName || ""));
     }
 
     function shouldRetryRunServer_(fnName) {

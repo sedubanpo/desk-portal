@@ -39,3 +39,13 @@ test('supply management keeps every academy branch visible without inventory row
   assert.match(source, /var seen = \{ "전체": true, "본관": true, "2관": true, "3관": true \}/);
   assert.match(source, /\(state\.desk\.supplies\.consumables \|\| \[\]\)\.forEach/);
 });
+
+test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /\^\(save\|delete\|append\|update\|batchUpdate\|adjust\|add\)/);
+  assert.match(source, /addDeskRecruitingApplicantComment: true/);
+  assert.match(source, /id="deskHrSubjectTabs" role="tablist"/);
+  assert.match(source, /data-desk-hr-special-details/);
+  assert.doesNotMatch(source, /<th class="col-role">직무\/과목<\/th>/);
+});
