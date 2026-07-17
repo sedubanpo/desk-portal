@@ -31,3 +31,18 @@ Validated on 2026-07-17 in the signed-in Chrome `학원` profile against the pro
 - Desk API regression suite: 50 passed, 0 failed.
 - Frontend cloud-routing assertions cover idempotency classification, subject tabs, collapsed special-note details, and the removed role column.
 - The production inline script passes `node --check` and `git diff --check`.
+
+## Recruiting storage-key regression QA
+
+Validated on 2026-07-17 after migrating legacy recruiting records whose RTDB storage key can differ from the embedded applicant ID.
+
+- URL: `https://sedubanpo.github.io/desk-portal/?v=2674476`
+- Cloud Run revision: `desk-portal-api-00012-m5d`
+- Applicant rows rendered in the signed-in Chrome `학원` profile: 17
+- Rows missing an authoritative storage ID: 0
+- Sync state: `Firebase 서버 저장`
+- Comment, edit, and delete requests now address the RTDB node by `storageId` while preserving the public applicant `id`.
+- The regression test covers read, comment append, edit, and delete when the storage key and embedded ID differ.
+- Desk API regression suite: 51 passed, 0 failed.
+- The production inline script passes `node --check` and `git diff --check`.
+- No production comment was submitted during QA.
