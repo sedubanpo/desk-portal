@@ -2267,8 +2267,9 @@
     .desk-hr-table-wrap {
       overflow: auto;
       border: 1px solid #d8e6de;
-      border-radius: 8px;
+      border-radius: 4px;
       background: #fff;
+      max-height: 720px;
     }
     .desk-hr-list-tools {
       display: flex;
@@ -2289,31 +2290,155 @@
     }
     .desk-hr-table {
       width: 100%;
-      min-width: 980px;
+      min-width: 1180px;
       border-collapse: collapse;
       font-size: 12px;
+      table-layout: fixed;
     }
     .desk-hr-table th,
     .desk-hr-table td {
-      padding: 10px 11px;
-      border-bottom: 1px solid #edf2ef;
+      padding: 9px 10px;
+      border-right: 1px solid #edf2ef;
+      border-bottom: 1px solid #e4ebe7;
       text-align: left;
-      vertical-align: middle;
+      vertical-align: top;
+      line-height: 1.45;
     }
     .desk-hr-table th {
       background: #f4faf7;
       color: #52687b;
       font-size: 11px;
       font-weight: 950;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      white-space: nowrap;
     }
+    .desk-hr-table th:last-child,
+    .desk-hr-table td:last-child { border-right: 0; }
+    .desk-hr-table tbody tr { transition: background-color 140ms ease; }
+    .desk-hr-table tbody tr:hover { background: #f8fbf9; }
     .desk-hr-table tr:last-child td {
       border-bottom: 0;
     }
+    .desk-hr-table .col-applicant { width: 250px; }
+    .desk-hr-table .col-role { width: 118px; }
+    .desk-hr-table .col-school { width: 210px; }
+    .desk-hr-table .col-profile { width: 88px; }
+    .desk-hr-table .col-platform { width: 88px; }
+    .desk-hr-table .col-stage { width: 112px; }
+    .desk-hr-table .col-report { width: 190px; }
+    .desk-hr-table .col-interview { width: 118px; }
+    .desk-hr-table .col-actions { width: 176px; }
+    .desk-hr-applicant-name {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      color: #102133;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .desk-hr-applicant-sub {
+      margin-top: 2px;
+      color: #667789;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .desk-hr-stage-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      padding: 4px 7px;
+      border: 1px solid #cbd5e1;
+      border-left-width: 3px;
+      border-radius: 2px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .desk-hr-stage-label.is-review { border-color: #cbd5e1; color: #475569; background: #f8fafc; }
+    .desk-hr-stage-label.is-recommended { border-color: #86bfa9; color: #0d684d; background: #eef8f3; }
+    .desk-hr-stage-label.is-scheduling { border-color: #f59e0b; color: #9a5200; background: #fffbeb; }
+    .desk-hr-stage-label.is-interview { border-color: #60a5fa; color: #1d4ed8; background: #eff6ff; }
+    .desk-hr-stage-label.is-hired { border-color: #22c55e; color: #166534; background: #f0fdf4; }
+    .desk-hr-stage-label.is-rejected { border-color: #ef4444; color: #b91c1c; background: #fff1f2; }
+    .desk-hr-comment-list {
+      display: grid;
+      gap: 4px;
+      margin-top: 7px;
+    }
+    .desk-hr-comment-note {
+      display: grid;
+      grid-template-columns: 68px minmax(0, 1fr);
+      gap: 6px;
+      padding: 5px 6px;
+      border-left: 2px solid #86bfa9;
+      background: #f5f9f7;
+      color: #334155;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+    .desk-hr-comment-note time {
+      color: #667789;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .desk-hr-comment-note span { overflow-wrap: anywhere; }
+    .desk-hr-comment-more { color: #667789; font-size: 10px; font-weight: 850; }
+    .desk-hr-comment-composer {
+      display: none;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 5px;
+      margin-top: 6px;
+    }
+    .desk-hr-comment-composer.is-open { display: grid; }
+    .desk-hr-comment-input {
+      min-width: 0;
+      height: 31px;
+      border: 1px solid #b9cec3;
+      border-radius: 3px;
+      background: #fff;
+      padding: 5px 7px;
+      color: #102133;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .desk-hr-comment-input:focus { outline: 3px solid rgba(13, 104, 77, 0.12); border-color: #0d684d; }
     .desk-hr-table-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: wrap;
+    }
+    .desk-hr-db-action {
+      min-height: 28px;
+      border: 1px solid #d4dfd9;
+      border-radius: 3px;
+      background: #fff;
+      color: #334155;
+      padding: 4px 7px;
+      font-size: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .desk-hr-db-action:hover { border-color: #86bfa9; background: #f5faf7; color: #0d684d; }
+    .desk-hr-db-action.danger:hover { border-color: #fca5a5; background: #fff1f2; color: #b91c1c; }
+    .desk-hr-stage-select {
+      width: 100%;
+      min-height: 30px;
+      margin-top: 6px;
+      border: 1px solid #d4dfd9;
+      border-radius: 3px;
+      background: #fff;
+      color: #334155;
+      padding: 4px 6px;
+      font-size: 10px;
+      font-weight: 850;
     }
     .desk-form-actions-row {
       display: flex;
@@ -16169,7 +16294,7 @@
                 <div class="desk-supply-card-head">
                   <div>
                     <h3>지원자 목록</h3>
-                    <p>필터가 적용된 지원자 목록입니다. 행의 복사 버튼은 선택 지원자 상세 보고를 바로 만듭니다.</p>
+                    <p>지원자 정보, 채용 단계, 면접 일정과 코멘트를 행 단위로 관리합니다.</p>
                   </div>
                   <span class="desk-count-pill" id="deskHrApplicantCount">0명</span>
                 </div>
@@ -16181,15 +16306,15 @@
                   <table class="desk-hr-table">
                     <thead>
                       <tr>
-                        <th>지원자</th>
-                        <th>직무/과목</th>
-                        <th>학교/전공</th>
-                        <th>출생/성별</th>
-                        <th>플랫폼</th>
-                        <th>채용 단계</th>
-                        <th>보고/지시</th>
-                        <th>면접</th>
-                        <th>관리</th>
+                        <th class="col-applicant">지원자 / 코멘트</th>
+                        <th class="col-role">직무/과목</th>
+                        <th class="col-school">학교/전공</th>
+                        <th class="col-profile">출생/성별</th>
+                        <th class="col-platform">플랫폼</th>
+                        <th class="col-stage">채용 단계</th>
+                        <th class="col-report">보고/지시</th>
+                        <th class="col-interview">면접</th>
+                        <th class="col-actions">관리</th>
                       </tr>
                     </thead>
                     <tbody id="deskHrApplicantTableBody"></tbody>
@@ -17514,7 +17639,7 @@
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskPortalConfig: true, saveDeskPortalConfig: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
-      getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, deleteDeskRecruitingApplicant: true,
+      getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true,
       saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
@@ -20580,11 +20705,28 @@
         contactChannel: String(source.contactChannel || "전화").trim() || "전화",
         contactLogs: normalizeDeskHrContactLogs_(source.contactLogs),
         guidanceTemplates: normalizeDeskHrGuidanceTemplates_(source.guidanceTemplates),
+        comments: normalizeDeskHrComments_(source.comments),
         jobPostTitle: String(source.jobPostTitle || "").trim(),
         note: String(source.note || "").trim(),
         createdAt: String(source.createdAt || now).trim(),
         updatedAt: String(source.updatedAt || source.createdAt || now).trim()
       };
+    }
+
+    function normalizeDeskHrComments_(comments) {
+      var source = Array.isArray(comments) ? comments : Object.keys(comments && typeof comments === "object" ? comments : {}).map(function(id) {
+        return Object.assign({ id: id }, comments[id]);
+      });
+      return source.map(function(item, index) {
+        return {
+          id: String(item && item.id || ("comment_" + index)).trim(),
+          createdAt: String(item && item.createdAt || "").trim(),
+          content: String(item && (item.content || item.memo) || "").trim(),
+          authorName: String(item && (item.authorName || item.author) || "").trim()
+        };
+      }).filter(function(item) { return item.content; }).sort(function(a, b) {
+        return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+      }).slice(0, 100);
     }
 
     function normalizeDeskHrContactLogs_(logs) {
@@ -20810,6 +20952,17 @@
             return res;
           });
         });
+    }
+
+    function addDeskRecruitingApplicantCommentRemote_(id, content) {
+      return runServer("addDeskRecruitingApplicantComment", {
+        id: id,
+        content: content,
+        clientRequestId: "hr_comment_" + id + "_" + Date.now()
+      }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "코멘트 저장에 실패했습니다.");
+        return res.applicant;
+      });
     }
 
     function getDeskVisibleRecruitingApplicants_() {
@@ -21121,23 +21274,65 @@
       }
       deskHrApplicantTableBodyEl.innerHTML = items.map(function(item) {
         return '<tr>' +
-          '<td><strong>' + escapeHtml(item.applicantName || "이름 미입력") + '</strong><div class="desk-hr-muted">' + escapeHtml(item.jobPostTitle || "-") + '</div></td>' +
+          '<td><div class="desk-hr-applicant-name"><span>' + escapeHtml(item.applicantName || "이름 미입력") + '</span>' +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-toggle="' + escapeHtml(item.id) + '" aria-expanded="false">코멘트</button></div>' +
+            '<div class="desk-hr-applicant-sub">' + escapeHtml(item.jobPostTitle || "지원 공고 미입력") + '</div>' +
+            renderDeskHrCommentsHtml_(item) +
+            '<div class="desk-hr-comment-composer" data-desk-hr-comment-composer="' + escapeHtml(item.id) + '">' +
+              '<input class="desk-hr-comment-input" type="text" maxlength="1000" data-desk-hr-comment-input="' + escapeHtml(item.id) + '" placeholder="코멘트를 입력하세요" aria-label="' + escapeHtml((item.applicantName || "지원자") + " 코멘트") + '">' +
+              '<button class="desk-hr-db-action" type="button" data-desk-hr-comment-save="' + escapeHtml(item.id) + '">저장</button>' +
+            '</div></td>' +
           '<td>' + escapeHtml(formatDeskHrRoleSubject_(item)) + '</td>' +
           '<td>' + escapeHtml((item.school || "학교 미입력") + " / " + (item.major || "전공 미입력")) + '</td>' +
           '<td>' + escapeHtml((item.birthYear || "-") + " / " + (item.gender || "-")) + '</td>' +
           '<td>' + escapeHtml(item.platform || "-") + '</td>' +
-          '<td><span class="desk-hr-chip' + (item.status === "면접 조율" ? " warn" : "") + '">' + escapeHtml(item.status) + '</span></td>' +
+          '<td><span class="desk-hr-stage-label ' + getDeskHrStageClass_(item.status) + '">' + escapeHtml(item.status) + '</span>' + buildDeskHrStageSelectHtml_(item) + '</td>' +
           '<td>' + escapeHtml((item.reviewDecision || "검토중") + " / 보고 " + (item.resumeReportedAt || "-") + " / 지시 " + (item.directorRequestedAt || "-")) + '</td>' +
           '<td>' + escapeHtml((item.interviewDate || "-") + " " + (item.interviewTime || "")) + '</td>' +
           '<td><div class="desk-hr-table-actions">' +
-            '<button class="desk-ghost-btn" type="button" data-desk-hr-edit="' + escapeHtml(item.id) + '">수정</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-hr-copy="' + escapeHtml(item.id) + '">복사</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-hr-guidance="' + escapeHtml(item.id) + '">안내</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-hr-delete="' + escapeHtml(item.id) + '">삭제</button>' +
-            buildDeskHrStageButtonsHtml_(item) +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-edit="' + escapeHtml(item.id) + '">수정</button>' +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-copy="' + escapeHtml(item.id) + '">보고 복사</button>' +
+            '<button class="desk-hr-db-action" type="button" data-desk-hr-guidance="' + escapeHtml(item.id) + '">안내 복사</button>' +
+            '<button class="desk-hr-db-action danger" type="button" data-desk-hr-delete="' + escapeHtml(item.id) + '">삭제</button>' +
           '</div></td>' +
         '</tr>';
       }).join("");
+    }
+
+    function getDeskHrStageClass_(status) {
+      var classes = {
+        "이력서 검토": "is-review",
+        "추천": "is-recommended",
+        "면접 조율": "is-scheduling",
+        "면접 진행": "is-interview",
+        "합격 안내": "is-hired",
+        "불합격 안내": "is-rejected"
+      };
+      return classes[normalizeDeskHrStatus_(status)] || "is-review";
+    }
+
+    function buildDeskHrStageSelectHtml_(item) {
+      return '<select class="desk-hr-stage-select" data-desk-hr-stage-select="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml((item.applicantName || "지원자") + " 채용 단계 변경") + '">' +
+        DESK_HR_STATUSES.map(function(stage) {
+          return '<option value="' + escapeHtml(stage) + '"' + (stage === item.status ? ' selected' : '') + '>' + escapeHtml(stage) + '</option>';
+        }).join("") + '</select>';
+    }
+
+    function formatDeskHrCommentTime_(value) {
+      var date = new Date(value || "");
+      if (Number.isNaN(date.getTime())) return "시간 미상";
+      return new Intl.DateTimeFormat("ko-KR", {
+        month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false
+      }).format(date).replace(/\. /g, ".").replace(".", "/");
+    }
+
+    function renderDeskHrCommentsHtml_(item) {
+      var comments = normalizeDeskHrComments_(item.comments);
+      if (!comments.length) return '<div class="desk-hr-applicant-sub">등록된 코멘트 없음</div>';
+      var visible = comments.slice(0, 2).map(function(comment) {
+        return '<div class="desk-hr-comment-note"><time datetime="' + escapeHtml(comment.createdAt) + '">' + escapeHtml(formatDeskHrCommentTime_(comment.createdAt)) + '</time><span>' + escapeHtml(comment.content) + '</span></div>';
+      }).join("");
+      return '<div class="desk-hr-comment-list">' + visible + (comments.length > 2 ? '<div class="desk-hr-comment-more">외 ' + (comments.length - 2) + '건</div>' : '') + '</div>';
     }
 
     function buildDeskHrStageButtonsHtml_(item) {
@@ -21668,6 +21863,33 @@
         .catch(function(err) {
           setDeskRecruitingSyncStatus_("error");
           alert("채용 단계 저장 오류: " + ((err && err.message) || String(err)));
+        });
+    }
+
+    function saveDeskRecruitingApplicantComment_(id) {
+      var item = findDeskRecruitingApplicant_(id);
+      var input = deskHrApplicantTableBodyEl && deskHrApplicantTableBodyEl.querySelector('[data-desk-hr-comment-input="' + CSS.escape(id) + '"]');
+      var content = String(input && input.value || "").trim();
+      if (!item || !content) {
+        if (input) input.focus();
+        return;
+      }
+      setDeskRecruitingSyncStatus_("pending");
+      if (input) input.disabled = true;
+      addDeskRecruitingApplicantCommentRemote_(id, content)
+        .then(function(updated) {
+          var normalized = normalizeDeskRecruitingApplicant_(updated, 0);
+          state.desk.recruiting.applicants = (state.desk.recruiting.applicants || []).map(function(row) {
+            return row.id === normalized.id ? normalized : row;
+          }).sort(compareDeskRecruitingApplicants_);
+          setDeskRecruitingSyncStatus_("idle");
+          renderDeskRecruiting_();
+          showDeskRecruitingCopyStatus_("코멘트를 저장했습니다.");
+        })
+        .catch(function(err) {
+          setDeskRecruitingSyncStatus_("error");
+          if (input) input.disabled = false;
+          alert("코멘트 저장 오류: " + ((err && err.message) || String(err)));
         });
     }
 
@@ -31551,6 +31773,25 @@
       }
       if (deskHrApplicantTableBodyEl) {
         deskHrApplicantTableBodyEl.addEventListener("click", function(event) {
+          var commentToggleBtn = event.target.closest("[data-desk-hr-comment-toggle]");
+          if (commentToggleBtn) {
+            var commentId = commentToggleBtn.getAttribute("data-desk-hr-comment-toggle") || "";
+            var composer = deskHrApplicantTableBodyEl.querySelector('[data-desk-hr-comment-composer="' + CSS.escape(commentId) + '"]');
+            if (!composer) return;
+            var open = !composer.classList.contains("is-open");
+            composer.classList.toggle("is-open", open);
+            commentToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) {
+              var commentInput = composer.querySelector("input");
+              if (commentInput) commentInput.focus();
+            }
+            return;
+          }
+          var commentSaveBtn = event.target.closest("[data-desk-hr-comment-save]");
+          if (commentSaveBtn) {
+            saveDeskRecruitingApplicantComment_(commentSaveBtn.getAttribute("data-desk-hr-comment-save") || "");
+            return;
+          }
           var editBtn = event.target.closest("[data-desk-hr-edit]");
           if (editBtn) {
             loadDeskRecruitingApplicantIntoForm_(editBtn.getAttribute("data-desk-hr-edit") || "");
@@ -31586,6 +31827,17 @@
           var deleteBtn = event.target.closest("[data-desk-hr-delete]");
           if (!deleteBtn) return;
           deleteDeskRecruitingApplicant_(deleteBtn.getAttribute("data-desk-hr-delete") || "");
+        });
+        deskHrApplicantTableBodyEl.addEventListener("change", function(event) {
+          var select = event.target.closest("[data-desk-hr-stage-select]");
+          if (!select) return;
+          updateDeskRecruitingApplicantStage_(select.getAttribute("data-desk-hr-stage-select") || "", select.value || "");
+        });
+        deskHrApplicantTableBodyEl.addEventListener("keydown", function(event) {
+          var input = event.target.closest("[data-desk-hr-comment-input]");
+          if (!input || event.key !== "Enter" || event.shiftKey) return;
+          event.preventDefault();
+          saveDeskRecruitingApplicantComment_(input.getAttribute("data-desk-hr-comment-input") || "");
         });
       }
       if (deskHrCopyDayReportBtnEl) {

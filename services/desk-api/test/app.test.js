@@ -140,7 +140,7 @@ test('migration contract reports the Turn 5 production cutover', async () => {
     .set('authorization', 'Bearer valid-token')
     .expect(200);
   assert.equal(response.body.migration.phase, 5);
-  assert.equal(response.body.migration.migratedBusinessMethods, 42);
+  assert.equal(response.body.migration.migratedBusinessMethods, 43);
   assert.deepEqual(response.body.migration.migratedDomains, ['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition', 'payroll', 'googleWorkspace']);
   assert.equal(response.body.migration.productionTrafficSwitched, true);
   assert.deepEqual(response.body.migration.maintenanceOnlyLegacyMethods, [

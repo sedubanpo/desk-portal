@@ -8,6 +8,7 @@ import {
   dateKey,
   isSharedTask,
   monthKey,
+  recruitingComment,
   recruitingApplicant,
   RETIRED_WORKERS,
   scheduleEntry,
@@ -43,7 +44,7 @@ export const DESK_WRITE_METHODS = new Set([
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
   'adjustDeskSupplyConsumable', 'saveDeskSupplyConsumable', 'deleteDeskSupplyConsumable',
   'saveDeskSupplyAsset', 'deleteDeskSupplyAsset', 'saveDeskSupplyPurchaseState', 'saveDeskSuppliesSnapshot',
-  'saveDeskRecruitingApplicant', 'deleteDeskRecruitingApplicant',
+  'saveDeskRecruitingApplicant', 'addDeskRecruitingApplicantComment', 'deleteDeskRecruitingApplicant',
   'saveDeskPortalConfig'
 ]);
 
@@ -266,6 +267,30 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, applicant };
     },
 
+    async addDeskRecruitingApplicantComment(payload = {}, identity = {}) {
+      const id = String(payload.id || '').trim();
+      const content = String(payload.content || '').trim();
+      if (!id) return failure('코멘트를 남길 지원자 ID가 없습니다.');
+      if (!content) return failure('코멘트 내용을 입력해 주세요.');
+      if (content.length > 1000) return failure('코멘트는 1,000자 이내로 입력해 주세요.');
+      const createdAt = now();
+      const comment = recruitingComment({
+        content,
+        createdAt,
+        authorUid: identity.uid,
+        authorName: identity.name
+      }, '', createdAt);
+      const stored = await store.transaction(`${PATHS.recruiting}/${id}`, current => {
+        if (!current || typeof current !== 'object') return;
+        const applicant = recruitingApplicant(current, id, createdAt);
+        applicant.comments = [comment, ...(applicant.comments || []).filter(item => item.id !== comment.id)].slice(0, 100);
+        applicant.updatedAt = createdAt;
+        return applicant;
+      });
+      if (!stored) return failure('지원자를 찾을 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+      return { success: true, applicant: recruitingApplicant(stored, id, createdAt), comment };
+    },
+
     async deleteDeskRecruitingApplicant(payload = {}) {
       const id = String(payload.id || '').trim();
       if (!id) return failure('삭제할 지원자 ID가 없습니다.');
@@ -274,8 +299,8 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     }
   };
 
-  return Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, async payload => {
-    try { return await handler(payload); }
+  return Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, async (payload, identity) => {
+    try { return await handler(payload, identity); }
     catch (error) { return failure(`${errorPrefix(name)}: ${error.message}`); }
   }]));
 }
@@ -316,7 +341,7 @@ function errorPrefix(name) {
     getDeskScheduleMonthData: '근무표 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
     getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
-    getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'
+    getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'
   };
   return labels[name] || '데스크 API 오류';
 }

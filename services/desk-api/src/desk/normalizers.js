@@ -207,9 +207,28 @@ export function recruitingApplicant(item = {}, fallbackId = '', now = new Date()
     contactChannel: String(item.contactChannel || '전화').trim() || '전화',
     contactLogs: Array.isArray(item.contactLogs) ? item.contactLogs.map(log => ({ at: String(log?.at || '').trim(), channel: String(log?.channel || '').trim(), summary: String(log?.summary || '').trim() })).filter(log => log.at || log.channel || log.summary) : [],
     guidanceTemplates: normalizeGuidanceTemplates(item.guidanceTemplates),
+    comments: normalizeRecruitingComments(item.comments),
     jobPostTitle: String(item.jobPostTitle || '').trim(), note: String(item.note || '').trim(),
     createdAt: String(item.createdAt || now).trim(), updatedAt: String(item.updatedAt || item.createdAt || now).trim()
   };
+}
+
+export function recruitingComment(item = {}, fallbackId = '', now = new Date().toISOString()) {
+  return {
+    id: String(item.id || fallbackId || newId()).trim(),
+    createdAt: String(item.createdAt || now).trim(),
+    content: String(item.content || item.memo || '').trim().slice(0, 1000),
+    authorUid: String(item.authorUid || '').trim().slice(0, 160),
+    authorName: String(item.authorName || item.author || '').trim().slice(0, 120)
+  };
+}
+
+function normalizeRecruitingComments(input) {
+  const source = Array.isArray(input) ? input : Object.entries(input && typeof input === 'object' ? input : {}).map(([id, item]) => ({ id, ...item }));
+  return source.map((item, index) => recruitingComment(item, `comment_${index}`))
+    .filter(item => item.content)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+    .slice(0, 100);
 }
 
 export function compareApplicants(left, right) {

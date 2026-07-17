@@ -89,6 +89,31 @@ test('recruiting month filter includes applicants by operational date fields', a
   assert.deepEqual(result.applicants.map(item => item.applicantName), ['7월 지원자']);
 });
 
+test('recruiting comments append transactionally and preserve concurrent notes', async () => {
+  const store = memoryStore({ desk_portal: { hr_recruiting: { applicants: {
+    applicant: { id: 'applicant', applicantName: '테스트 지원자', comments: [{ id: 'old', createdAt: '2026-07-16T01:00:00.000Z', content: '기존 메모' }] }
+  } } } });
+  let transactions = 0;
+  const original = store.transaction;
+  store.transaction = async (...args) => { transactions += 1; return original(...args); };
+  const handlers = createDeskHandlers({ store, now: () => '2026-07-17T10:00:00.000Z' });
+  const result = await handlers.addDeskRecruitingApplicantComment(
+    { id: 'applicant', content: '새 코멘트' },
+    { uid: 'staff-1', name: '테스트 근무자' }
+  );
+  assert.equal(result.success, true);
+  assert.equal(transactions, 1);
+  assert.deepEqual(result.applicant.comments.map(item => item.content), ['새 코멘트', '기존 메모']);
+  assert.equal(result.comment.authorName, '테스트 근무자');
+});
+
+test('recruiting comments reject empty, oversized, and missing applicant writes', async () => {
+  const handlers = createDeskHandlers({ store: memoryStore() });
+  assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: '메모' })).success, false);
+  assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: ' ' })).success, false);
+  assert.equal((await handlers.addDeskRecruitingApplicantComment({ id: 'missing', content: 'x'.repeat(1001) })).success, false);
+});
+
 test('portal config is proxied through an allowlisted server path', async () => {
   const store = memoryStore();
   const handlers = createDeskHandlers({ store });

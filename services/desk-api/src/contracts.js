@@ -37,6 +37,7 @@ export const LEGACY_API_METHODS = Object.freeze([
   'saveDeskSupplyPurchaseState',
   'getDeskRecruitingApplicantsData',
   'saveDeskRecruitingApplicant',
+  'addDeskRecruitingApplicantComment',
   'deleteDeskRecruitingApplicant',
   'getPayrollMonthSummary',
   'getPayrollSettings',
@@ -47,7 +48,7 @@ export const LEGACY_API_METHODS = Object.freeze([
 export const MIGRATION_STATE = Object.freeze({
   phase: 5,
   legacyMethods: LEGACY_API_METHODS.length,
-  migratedBusinessMethods: 42,
+  migratedBusinessMethods: 43,
   migratedDomains: Object.freeze(['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition', 'payroll', 'googleWorkspace']),
   maintenanceOnlyLegacyMethods: Object.freeze([
     'backfillTuitionMonthSnapshots',

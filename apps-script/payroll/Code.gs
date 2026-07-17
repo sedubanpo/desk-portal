@@ -102,6 +102,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   saveDeskSupplyPurchaseState: true,
   getDeskRecruitingApplicantsData: true,
   saveDeskRecruitingApplicant: true,
+  addDeskRecruitingApplicantComment: true,
   deleteDeskRecruitingApplicant: true,
   getPayrollMonthSummary: true,
   getPayrollSettings: true,
@@ -195,6 +196,7 @@ function handlePayrollApiRequest_(params) {
       saveDeskSupplyPurchaseState: saveDeskSupplyPurchaseState,
       getDeskRecruitingApplicantsData: getDeskRecruitingApplicantsData,
       saveDeskRecruitingApplicant: saveDeskRecruitingApplicant,
+      addDeskRecruitingApplicantComment: addDeskRecruitingApplicantComment,
       deleteDeskRecruitingApplicant: deleteDeskRecruitingApplicant,
       getPayrollMonthSummary: getPayrollMonthSummary,
       getPayrollSettings: getPayrollSettings,
@@ -1159,6 +1161,28 @@ function saveDeskRecruitingApplicant(payload) {
   }
 }
 
+function addDeskRecruitingApplicantComment(payload) {
+  try {
+    var id = String(payload && payload.id || "").trim();
+    var content = String(payload && payload.content || "").trim();
+    if (!id) return { success: false, message: "코멘트를 남길 지원자 ID가 없습니다." };
+    if (!content) return { success: false, message: "코멘트 내용을 입력해 주세요." };
+    if (content.length > 1000) return { success: false, message: "코멘트는 1,000자 이내로 입력해 주세요." };
+    var path = buildDeskRecruitingPath_() + "/" + id;
+    var current = firebaseRequestWithServiceAccount_("get", path);
+    if (!current) return { success: false, message: "지원자를 찾을 수 없습니다." };
+    var createdAt = new Date().toISOString();
+    var comment = { id: buildDeskScheduleEntryId_(), createdAt: createdAt, content: content };
+    var applicant = normalizeDeskRecruitingApplicant_(current, id);
+    applicant.comments = [comment].concat(applicant.comments || []).slice(0, 100);
+    applicant.updatedAt = createdAt;
+    firebaseRequestWithServiceAccount_("put", path, applicant);
+    return { success: true, applicant: applicant, comment: comment };
+  } catch (e) {
+    return { success: false, message: "지원자 코멘트 저장 오류: " + e.message };
+  }
+}
+
 function deleteDeskRecruitingApplicant(payload) {
   try {
     var id = String(payload && payload.id || "").trim();
@@ -1205,11 +1229,26 @@ function normalizeDeskRecruitingApplicant_(item, fallbackId) {
     contactChannel: String(source.contactChannel || "전화").trim() || "전화",
     contactLogs: normalizeDeskRecruitingContactLogs_(source.contactLogs),
     guidanceTemplates: normalizeDeskRecruitingGuidanceTemplates_(source.guidanceTemplates),
+    comments: normalizeDeskRecruitingComments_(source.comments),
     jobPostTitle: String(source.jobPostTitle || "").trim(),
     note: String(source.note || "").trim(),
     createdAt: String(source.createdAt || now).trim(),
     updatedAt: String(source.updatedAt || source.createdAt || now).trim()
   };
+}
+
+function normalizeDeskRecruitingComments_(comments) {
+  if (!Array.isArray(comments)) return [];
+  return comments.map(function(comment, index) {
+    return {
+      id: String(comment && comment.id || ("comment_" + index)).trim(),
+      createdAt: String(comment && comment.createdAt || "").trim(),
+      content: String(comment && (comment.content || comment.memo) || "").trim(),
+      authorName: String(comment && (comment.authorName || comment.author) || "").trim()
+    };
+  }).filter(function(comment) { return comment.content; }).sort(function(a, b) {
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+  }).slice(0, 100);
 }
 
 function normalizeDeskRecruitingContactLogs_(logs) {
