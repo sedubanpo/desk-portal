@@ -7888,34 +7888,61 @@
     }
     .tuition-amount-cell.is-editable {
       position: relative;
-      display: grid;
+      display: inline-grid;
+      grid-template-columns: minmax(0, 1fr) 18px;
+      align-items: center;
+      column-gap: var(--ds-space-1);
       width: 100%;
+      min-height: 40px;
+      padding: var(--ds-space-1) var(--ds-space-2);
+      border-color: transparent;
+      background: transparent;
       text-align: left;
       cursor: pointer;
-      transition-property: border-color, background-color, transform, box-shadow;
+      transition-property: border-color, background-color;
       transition-duration: 140ms;
     }
     .tuition-amount-cell.is-editable:hover {
-      border-color: var(--ds-primary);
-      box-shadow: var(--ds-shadow-panel);
-      transform: translateY(-1px);
+      border-color: var(--ds-border);
+      background: var(--ds-bg-subtle);
     }
-    .tuition-amount-cell.is-editable:active { transform: scale(0.96); }
+    .tuition-amount-cell.is-editable:active { background: var(--ds-border-soft); }
     .tuition-amount-cell.is-editable:focus-visible { outline: 3px solid var(--ds-ring); outline-offset: 2px; }
     .tuition-amount-cell.is-editable i {
-      position: absolute;
-      top: var(--ds-space-2);
-      right: var(--ds-space-2);
       width: 14px;
       height: 14px;
       color: var(--ds-primary);
-      opacity: 0;
-      transform: scale(0.25);
-      filter: blur(4px);
-      transition: opacity 140ms cubic-bezier(0.2, 0, 0, 1), transform 140ms cubic-bezier(0.2, 0, 0, 1), filter 140ms cubic-bezier(0.2, 0, 0, 1);
+      opacity: 0.62;
+      transition: opacity 140ms cubic-bezier(0.2, 0, 0, 1);
     }
     .tuition-amount-cell.is-editable:hover i,
-    .tuition-amount-cell.is-editable:focus-visible i { opacity: 1; transform: scale(1); filter: blur(0); }
+    .tuition-amount-cell.is-editable:focus-visible i { opacity: 1; }
+    .tuition-choice-field { grid-column: 1 / -1; }
+    .tuition-choice-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--ds-space-2); }
+    .tuition-choice-grid.contact { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .tuition-choice-btn { min-width: 0; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: var(--ds-space-2); padding: var(--ds-space-2); border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg-panel); color: var(--ds-fg-soft); font: inherit; font-size: 12px; font-weight: 850; cursor: pointer; transition: border-color 140ms, background-color 140ms, color 140ms; }
+    .tuition-choice-btn:hover { border-color: var(--ds-primary); background: var(--ds-bg-subtle); color: var(--ds-primary); }
+    .tuition-choice-btn.is-selected { border-color: var(--ds-primary); background: var(--ds-bg-subtle); color: var(--ds-primary); box-shadow: inset 0 0 0 1px var(--ds-primary); }
+    .tuition-choice-btn:focus-visible { outline: 3px solid var(--ds-ring); outline-offset: 2px; }
+    .tuition-choice-btn i { width: 16px; height: 16px; flex: 0 0 auto; }
+    .tuition-previous-method { width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; margin-left: var(--ds-space-1); border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg-subtle); color: var(--ds-fg-soft); vertical-align: middle; }
+    .tuition-previous-method i { width: 13px; height: 13px; }
+    .tuition-contact-channel-tag { display: inline-flex; align-items: center; gap: var(--ds-space-1); margin-left: var(--ds-space-1); color: var(--ds-muted); font-size: 11px; font-weight: 800; }
+    .tuition-contact-channel-tag i { width: 13px; height: 13px; }
+    .tuition-template-settings { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 420px; border-top: 1px solid var(--ds-border); border-bottom: 1px solid var(--ds-border); }
+    .tuition-template-list { padding: var(--ds-space-3); border-right: 1px solid var(--ds-border); background: var(--ds-bg-subtle); overflow: auto; }
+    .tuition-template-list button { width: 100%; display: grid; gap: var(--ds-space-1); padding: var(--ds-space-2); border: 1px solid transparent; border-radius: var(--ds-control-radius); background: transparent; color: var(--ds-fg); text-align: left; cursor: pointer; }
+    .tuition-template-list button.is-selected { border-color: var(--ds-border); background: var(--ds-bg-panel); }
+    .tuition-template-list small { color: var(--ds-muted); }
+    .tuition-template-editor { display: grid; align-content: start; gap: var(--ds-space-3); padding: var(--ds-space-4); }
+    .tuition-template-editor textarea { min-height: 210px; resize: vertical; }
+    .tuition-template-note { color: var(--ds-muted); font-size: 12px; font-weight: 750; }
+    @media (max-width: 760px) {
+      .tuition-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tuition-choice-grid.contact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tuition-template-settings { grid-template-columns: 1fr; }
+      .tuition-template-list { border-right: 0; border-bottom: 1px solid var(--ds-border); max-height: 160px; }
+    }
     .tuition-amount-adjust-modal { display: grid; gap: var(--ds-space-4); }
     .tuition-amount-adjust-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-2); }
     .tuition-amount-adjust-summary > div { display: grid; gap: var(--ds-space-1); padding: var(--ds-space-3); border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg-subtle); }
@@ -17526,7 +17553,17 @@
             <option value="연락두절">연락두절</option>
           </select>
         </div>
-        <div class="field">
+        <div class="field tuition-choice-field">
+          <label>연락 방법</label>
+          <input id="tuitionContactChannel" type="hidden">
+          <div class="tuition-choice-grid contact" id="tuitionContactChannelChoices" role="radiogroup" aria-label="연락 방법">
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="카톡" aria-checked="false"><i data-lucide="message-circle"></i><span>카톡</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="전화" aria-checked="false"><i data-lucide="phone-call"></i><span>전화</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="문자" aria-checked="false"><i data-lucide="message-square-text"></i><span>문자</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="구두(대화)" aria-checked="false"><i data-lucide="messages-square"></i><span>구두(대화)</span></button>
+          </div>
+        </div>
+        <div class="field tuition-choice-field">
           <label for="tuitionContactMemo">연락 메모</label>
           <input id="tuitionContactMemo" class="modal-input" type="text" placeholder="예: 2/26 오후 3시 재연락 예정">
         </div>
@@ -17535,7 +17572,7 @@
       <section class="tuition-assistant">
         <div class="tuition-assistant-head">
           <div class="tuition-assistant-title"><i data-lucide="bot-message-square"></i>학부모 응대 도우미</div>
-          <div class="tuition-assistant-status" id="tuitionAssistantStatus">문구 동기화 대기</div>
+          <div style="display:flex;align-items:center;gap:8px;"><div class="tuition-assistant-status" id="tuitionAssistantStatus">문구 동기화 대기</div><button class="tuition-assistant-btn" id="tuitionAssistantSettingsBtn" type="button"><i data-lucide="settings-2"></i>안내 문구 설정</button></div>
         </div>
         <div class="tuition-assistant-controls">
           <div class="tuition-assistant-field">
@@ -17569,7 +17606,6 @@
             <button class="tuition-assistant-btn primary" id="tuitionAssistantDraftBtn" type="button"><i data-lucide="sparkles"></i>상황 문구 만들기</button>
             <button class="tuition-assistant-btn" id="tuitionAssistantUseMemoBtn" type="button"><i data-lucide="corner-down-left"></i>메모에 넣기</button>
             <button class="tuition-assistant-btn" id="tuitionAssistantCopyBtn" type="button"><i data-lucide="copy"></i>문구 복사</button>
-            <button class="tuition-assistant-btn warn" id="tuitionAssistantSaveTemplateBtn" type="button"><i data-lucide="save"></i>현재 문구 저장</button>
           </div>
           <div class="tuition-assistant-hint">실제 발송 전 이름/금액/납부 예정일은 실무자가 한 번 더 확인해 주세요.</div>
         </div>
@@ -17578,6 +17614,25 @@
         <div></div>
         <button class="modal-action primary" id="saveTuitionContactBtn" type="button">연락 기록 저장</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="tuitionTemplateSettingsModal" style="display:none;">
+    <div class="modal-box" style="max-width:820px;">
+      <div class="modal-head">
+        <div><h3 class="modal-title" style="font-size:20px;">안내 문구 설정</h3><div class="modal-sub">상황별 기본 문구를 관리합니다. 학생명은 발송 문구 맨 앞에 자동 표시됩니다.</div></div>
+        <button class="modal-action ghost" id="closeTuitionTemplateSettingsBtn" type="button">닫기</button>
+      </div>
+      <div class="tuition-template-settings">
+        <div class="tuition-template-list" id="tuitionTemplateSettingsList"></div>
+        <div class="tuition-template-editor">
+          <div class="field"><label for="tuitionTemplateTitle">문구 이름</label><input class="modal-input" id="tuitionTemplateTitle" type="text" maxlength="80"></div>
+          <div class="field"><label for="tuitionTemplateSituation">상황</label><select class="modal-select" id="tuitionTemplateSituation"><option value="first_notice">미납 최초 안내</option><option value="followup">재연락</option><option value="promise">납부 예정 확인</option><option value="check_needed">확인 필요</option><option value="unreachable">연락두절</option><option value="paid_thanks">납부 확인 감사</option></select></div>
+          <div class="field"><label for="tuitionTemplateMessage">안내 문구</label><textarea class="modal-input" id="tuitionTemplateMessage"></textarea></div>
+          <div class="tuition-template-note">사용 가능 항목: {{월}}, {{학교}}, {{학년}}, {{안내금액}}, {{수납액}}, {{미납액}}, {{상태}}, {{연락횟수}}</div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="modal-action ghost" id="newTuitionTemplateBtn" type="button"><i data-lucide="plus"></i>새 문구</button><div style="display:flex;gap:8px;"><button class="modal-action ghost" id="deleteTuitionTemplateBtn" type="button"><i data-lucide="trash-2"></i>삭제</button><button class="modal-action primary" id="saveTuitionTemplateBtn" type="button"><i data-lucide="save"></i>문구 저장</button></div></div>
     </div>
   </div>
 
@@ -17601,7 +17656,7 @@
         </div>
         <div class="field">
           <label for="tuitionPaymentPaidAt">납부일</label>
-          <input id="tuitionPaymentPaidAt" class="modal-input" type="text" placeholder="예: 2/25">
+          <input id="tuitionPaymentPaidAt" class="modal-input" type="date">
         </div>
         <div class="field">
           <label for="tuitionPaymentBusiness">사업자</label>
@@ -17612,9 +17667,17 @@
             <option value="대치">대치</option>
           </select>
         </div>
-        <div class="field">
-          <label for="tuitionPaymentType">결재구분</label>
-          <input id="tuitionPaymentType" class="modal-input" type="text" placeholder="카드유형/서울페이/입금은행">
+        <div class="field tuition-choice-field">
+          <label>결재 구분</label>
+          <input id="tuitionPaymentType" type="hidden">
+          <div class="tuition-choice-grid" id="tuitionPaymentTypeChoices" role="radiogroup" aria-label="결재 구분">
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="결제링크" aria-checked="false"><i data-lucide="link-2"></i><span>결제링크</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="현장카드" aria-checked="false"><i data-lucide="credit-card"></i><span>현장카드</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="계좌이체" aria-checked="false"><i data-lucide="landmark"></i><span>계좌이체</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="현금" aria-checked="false"><i data-lucide="banknote"></i><span>현금</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="서울페이" aria-checked="false"><i data-lucide="scan-line"></i><span>서울페이</span></button>
+            <button class="tuition-choice-btn" type="button" data-tuition-choice="기타" aria-checked="false"><i data-lucide="ellipsis"></i><span>기타</span></button>
+          </div>
         </div>
         <div class="field">
           <label for="tuitionPaymentApprovalNo">승인번호</label>
@@ -18079,6 +18142,7 @@
         parentReplyTemplates: [],
         parentReplyTemplatesLoaded: false,
         parentReplyTemplatesLoading: false,
+        templateSettingsId: "",
         savingContact: false,
         savingPayment: false,
         savingAmountAdjustment: false,
@@ -18580,6 +18644,8 @@
     var tuitionContactTargetEl = document.getElementById("tuitionContactTarget");
     var tuitionContactGuideAmountEl = document.getElementById("tuitionContactGuideAmount");
     var tuitionContactStatusEl = document.getElementById("tuitionContactStatus");
+    var tuitionContactChannelEl = document.getElementById("tuitionContactChannel");
+    var tuitionContactChannelChoicesEl = document.getElementById("tuitionContactChannelChoices");
     var tuitionContactMemoEl = document.getElementById("tuitionContactMemo");
     var tuitionAssistantStatusEl = document.getElementById("tuitionAssistantStatus");
     var tuitionAssistantSituationEl = document.getElementById("tuitionAssistantSituation");
@@ -18589,7 +18655,16 @@
     var tuitionAssistantDraftBtnEl = document.getElementById("tuitionAssistantDraftBtn");
     var tuitionAssistantUseMemoBtnEl = document.getElementById("tuitionAssistantUseMemoBtn");
     var tuitionAssistantCopyBtnEl = document.getElementById("tuitionAssistantCopyBtn");
-    var tuitionAssistantSaveTemplateBtnEl = document.getElementById("tuitionAssistantSaveTemplateBtn");
+    var tuitionAssistantSettingsBtnEl = document.getElementById("tuitionAssistantSettingsBtn");
+    var tuitionTemplateSettingsModalEl = document.getElementById("tuitionTemplateSettingsModal");
+    var closeTuitionTemplateSettingsBtnEl = document.getElementById("closeTuitionTemplateSettingsBtn");
+    var tuitionTemplateSettingsListEl = document.getElementById("tuitionTemplateSettingsList");
+    var tuitionTemplateTitleEl = document.getElementById("tuitionTemplateTitle");
+    var tuitionTemplateSituationEl = document.getElementById("tuitionTemplateSituation");
+    var tuitionTemplateMessageEl = document.getElementById("tuitionTemplateMessage");
+    var newTuitionTemplateBtnEl = document.getElementById("newTuitionTemplateBtn");
+    var deleteTuitionTemplateBtnEl = document.getElementById("deleteTuitionTemplateBtn");
+    var saveTuitionTemplateBtnEl = document.getElementById("saveTuitionTemplateBtn");
     var tuitionPaymentTargetEl = document.getElementById("tuitionPaymentTarget");
     var tuitionPaymentDeleteTargetEl = document.getElementById("tuitionPaymentDeleteTarget");
     var tuitionPaymentDeleteSummaryEl = document.getElementById("tuitionPaymentDeleteSummary");
@@ -18599,6 +18674,7 @@
     var tuitionPaymentPaidAtEl = document.getElementById("tuitionPaymentPaidAt");
     var tuitionPaymentBusinessEl = document.getElementById("tuitionPaymentBusiness");
     var tuitionPaymentTypeEl = document.getElementById("tuitionPaymentType");
+    var tuitionPaymentTypeChoicesEl = document.getElementById("tuitionPaymentTypeChoices");
     var tuitionPaymentApprovalNoEl = document.getElementById("tuitionPaymentApprovalNo");
     var tuitionPaymentIssueMemoEl = document.getElementById("tuitionPaymentIssueMemo");
     var tuitionAmountAdjustTargetEl = document.getElementById("tuitionAmountAdjustTarget");
@@ -19364,11 +19440,30 @@
       return text;
     }
 
+    function stripTuitionStudentPrefix_(message, student) {
+      var text = String(message || "").trim();
+      var escapedStudent = String(student || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (escapedStudent) {
+        text = text.replace(new RegExp("^안녕하세요,?\\s*" + escapedStudent + "\\s*학생(?:\\s*학부모님)?[,.]?\\s*", "i"), "");
+        text = text.replace(new RegExp("^" + escapedStudent + "\\s*학생\\s*학부모님,?\\s*안녕하세요[.!]?\\s*", "i"), "");
+      }
+      text = text.replace(/^안녕하세요,?\s*\{\{학생\}\}\s*학생(?:\s*학부모님)?[,.]?\s*/i, "");
+      text = text.replace(/^\{\{학생\}\}\s*학생\s*학부모님,?\s*안녕하세요[.!]?\s*/i, "");
+      return text.trim();
+    }
+
+    function ensureTuitionStudentPrefix_(message, context) {
+      var student = context && context.student ? context.student : "학생";
+      var body = stripTuitionStudentPrefix_(message, student);
+      return student + " 학생 학부모님, 안녕하세요." + (body ? "\n" + body : "");
+    }
+
     function updateTuitionAssistantDraft_() {
       if (!tuitionAssistantOutputEl) return;
       var template = getSelectedTuitionAssistantTemplate_();
       var context = buildTuitionAssistantContext_();
       var draft = applyTuitionAssistantPlaceholders_(template.message, context);
+      draft = ensureTuitionStudentPrefix_(draft, context);
       draft = applyTuitionAssistantTone_(draft, tuitionAssistantToneEl ? tuitionAssistantToneEl.value : "polite");
       tuitionAssistantOutputEl.value = draft;
       setTuitionAssistantStatus_("문구 생성 완료");
@@ -19420,32 +19515,64 @@
       }
     }
 
-    function saveCurrentTuitionAssistantTemplate_() {
-      var draft = tuitionAssistantOutputEl ? String(tuitionAssistantOutputEl.value || "").trim() : "";
-      if (!draft) {
-        alert("저장할 문구가 없습니다. 먼저 문구를 작성해 주세요.");
-        return;
+    function renderTuitionTemplateSettings_() {
+      var templates = state.tuition.parentReplyTemplates && state.tuition.parentReplyTemplates.length ? state.tuition.parentReplyTemplates : getDefaultTuitionParentReplyTemplates_();
+      if (!state.tuition.templateSettingsId && templates[0]) state.tuition.templateSettingsId = templates[0].id;
+      tuitionTemplateSettingsListEl.innerHTML = templates.map(function(item) {
+        var template = normalizeTuitionParentReplyTemplate_(item);
+        return '<button type="button" class="' + (template.id === state.tuition.templateSettingsId ? 'is-selected' : '') + '" data-tuition-template-settings="' + escapeHtml(template.id) + '"><strong>' + escapeHtml(template.title) + '</strong><small>' + escapeHtml(getTuitionAssistantSituationLabel_(template.situation)) + '</small></button>';
+      }).join("");
+      var selected = templates.filter(function(item) { return normalizeTuitionParentReplyTemplate_(item).id === state.tuition.templateSettingsId; })[0];
+      if (selected) {
+        selected = normalizeTuitionParentReplyTemplate_(selected);
+        tuitionTemplateTitleEl.value = selected.title;
+        tuitionTemplateSituationEl.value = selected.situation;
+        tuitionTemplateMessageEl.value = stripTuitionStudentPrefix_(selected.message, "{{학생}}");
       }
-      var defaultTitle = getTuitionAssistantSituationLabel_(tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "first_notice");
-      var title = window.prompt("저장할 문구 제목을 입력해 주세요.", defaultTitle);
-      if (title === null) return;
-      title = String(title || "").trim();
-      if (!title) {
-        alert("문구 제목은 비워둘 수 없습니다.");
-        return;
-      }
-      var template = normalizeTuitionParentReplyTemplate_({
-        id: "parent_reply_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-        situation: tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "first_notice",
-        title: title,
-        message: generalizeTuitionAssistantTemplateMessage_(draft, buildTuitionAssistantContext_())
+    }
+
+    function openTuitionTemplateSettings_() {
+      ensureTuitionParentReplyTemplatesLoaded_();
+      state.tuition.templateSettingsId = tuitionAssistantTemplateSelectEl && tuitionAssistantTemplateSelectEl.value || state.tuition.templateSettingsId;
+      renderTuitionTemplateSettings_();
+      tuitionTemplateSettingsModalEl.style.display = "flex";
+      refreshLucideIcons_();
+    }
+
+    function newTuitionTemplate_() {
+      state.tuition.templateSettingsId = "parent_reply_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+      tuitionTemplateTitleEl.value = "새 안내 문구";
+      tuitionTemplateSituationEl.value = tuitionAssistantSituationEl ? tuitionAssistantSituationEl.value : "first_notice";
+      tuitionTemplateMessageEl.value = "";
+      tuitionTemplateTitleEl.focus();
+    }
+
+    function saveTuitionTemplateSettings_() {
+      var title = String(tuitionTemplateTitleEl.value || "").trim();
+      var message = stripTuitionStudentPrefix_(tuitionTemplateMessageEl.value, "{{학생}}");
+      if (!title || !message) { alert("문구 이름과 안내 문구를 모두 입력해 주세요."); return; }
+      var template = normalizeTuitionParentReplyTemplate_({ id: state.tuition.templateSettingsId || ("parent_reply_" + Date.now()), situation: tuitionTemplateSituationEl.value, title: title, message: message });
+      var found = false;
+      state.tuition.parentReplyTemplates = (state.tuition.parentReplyTemplates || []).map(function(item) {
+        if (normalizeTuitionParentReplyTemplate_(item).id !== template.id) return item;
+        found = true;
+        return template;
       });
-      state.tuition.parentReplyTemplates = (state.tuition.parentReplyTemplates || []).filter(function(item) {
-        return normalizeTuitionParentReplyTemplate_(item).id !== template.id;
-      });
-      state.tuition.parentReplyTemplates.unshift(template);
+      if (!found) state.tuition.parentReplyTemplates.unshift(template);
+      state.tuition.templateSettingsId = template.id;
+      renderTuitionTemplateSettings_();
       renderTuitionAssistantTemplates_();
       if (tuitionAssistantTemplateSelectEl) tuitionAssistantTemplateSelectEl.value = template.id;
+      saveTuitionParentReplyTemplatesRemote_().then(updateTuitionAssistantDraft_);
+    }
+
+    function deleteTuitionTemplateSettings_() {
+      var templates = state.tuition.parentReplyTemplates || [];
+      if (templates.length <= 1) { alert("안내 문구는 한 개 이상 있어야 합니다."); return; }
+      state.tuition.parentReplyTemplates = templates.filter(function(item) { return normalizeTuitionParentReplyTemplate_(item).id !== state.tuition.templateSettingsId; });
+      state.tuition.templateSettingsId = state.tuition.parentReplyTemplates[0].id;
+      renderTuitionTemplateSettings_();
+      renderTuitionAssistantTemplates_();
       saveTuitionParentReplyTemplatesRemote_();
     }
 
@@ -33069,9 +33196,20 @@
       if (tuitionAssistantCopyBtnEl) {
         tuitionAssistantCopyBtnEl.addEventListener("click", copyTuitionAssistantDraft_);
       }
-      if (tuitionAssistantSaveTemplateBtnEl) {
-        tuitionAssistantSaveTemplateBtnEl.addEventListener("click", saveCurrentTuitionAssistantTemplate_);
-      }
+      if (tuitionAssistantSettingsBtnEl) tuitionAssistantSettingsBtnEl.addEventListener("click", openTuitionTemplateSettings_);
+      if (closeTuitionTemplateSettingsBtnEl) closeTuitionTemplateSettingsBtnEl.addEventListener("click", function() { tuitionTemplateSettingsModalEl.style.display = "none"; });
+      if (newTuitionTemplateBtnEl) newTuitionTemplateBtnEl.addEventListener("click", newTuitionTemplate_);
+      if (saveTuitionTemplateBtnEl) saveTuitionTemplateBtnEl.addEventListener("click", saveTuitionTemplateSettings_);
+      if (deleteTuitionTemplateBtnEl) deleteTuitionTemplateBtnEl.addEventListener("click", deleteTuitionTemplateSettings_);
+      if (tuitionTemplateSettingsListEl) tuitionTemplateSettingsListEl.addEventListener("click", function(event) {
+        var button = event.target.closest("[data-tuition-template-settings]");
+        if (!button) return;
+        state.tuition.templateSettingsId = button.getAttribute("data-tuition-template-settings") || "";
+        renderTuitionTemplateSettings_();
+      });
+      if (tuitionTemplateSettingsModalEl) tuitionTemplateSettingsModalEl.addEventListener("click", function(event) { if (event.target === tuitionTemplateSettingsModalEl) tuitionTemplateSettingsModalEl.style.display = "none"; });
+      bindTuitionChoiceButtons_(tuitionContactChannelChoicesEl, tuitionContactChannelEl);
+      bindTuitionChoiceButtons_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl);
       tuitionPaymentAmountEl.addEventListener("input", function() {
         tuitionPaymentAmountEl.value = formatSignedAmountInput(tuitionPaymentAmountEl.value);
       });
@@ -34072,7 +34210,7 @@
           '<td>' + buildTuitionAmountCell(row, "outstanding", row.outstandingAmount || 0) + '</td>' +
           '<td>' + buildTuitionStatusControl(row) + '</td>' +
           '<td class="tuition-col-contact">' +
-            '<div class="tuition-contact-last"><i data-lucide="phone"></i><span>' + escapeHtml(row.lastContactAt || "-") + '</span></div>' +
+            '<div class="tuition-contact-last"><i data-lucide="' + getTuitionContactChannelIcon_(row.contactChannel) + '"></i><span>' + escapeHtml(formatContactDateText_(row.lastContactAt)) + '</span>' + buildTuitionContactChannelTag_(row.contactChannel) + '</div>' +
             (row.lastContactMemo
               ? ('<div class="tuition-contact-memo">' + escapeHtml(row.lastContactMemo) + '</div>')
               : '<div class="tuition-contact-memo muted">메모 없음</div>') +
@@ -34473,10 +34611,41 @@
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
         '<div class="tuition-student-text">' +
-          '<div><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) + '<span class="tuition-student-identity">' + escapeHtml(identity) + '</span></div>' +
+          '<div><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + escapeHtml(formatStudentName(row.studentName)) + '</button>' + buildTuitionPreviousMethod_(row.previousPaymentMethod) + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) + '<span class="tuition-student-identity">' + escapeHtml(identity) + '</span></div>' +
           carryHtml +
         '</div>' +
       '</div>';
+    }
+
+    function normalizeTuitionPaymentMethod_(value) {
+      var raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/링크/.test(raw)) return "결제링크";
+      if (/서울페이/.test(raw)) return "서울페이";
+      if (/계좌|이체|은행/.test(raw)) return "계좌이체";
+      if (/현금/.test(raw)) return "현금";
+      if (/현장|카드/.test(raw)) return "현장카드";
+      return "기타";
+    }
+
+    function getTuitionPaymentMethodIcon_(value) {
+      var method = normalizeTuitionPaymentMethod_(value);
+      return { "결제링크": "link-2", "현장카드": "credit-card", "계좌이체": "landmark", "현금": "banknote", "서울페이": "scan-line", "기타": "ellipsis" }[method] || "wallet-cards";
+    }
+
+    function buildTuitionPreviousMethod_(value) {
+      var method = normalizeTuitionPaymentMethod_(value);
+      if (!method) return "";
+      return '<span class="tuition-previous-method" title="이전 달 수납 방법: ' + escapeHtml(method) + '" aria-label="이전 달 수납 방법 ' + escapeHtml(method) + '"><i data-lucide="' + getTuitionPaymentMethodIcon_(method) + '" aria-hidden="true"></i></span>';
+    }
+
+    function getTuitionContactChannelIcon_(value) {
+      return { "카톡": "message-circle", "전화": "phone-call", "문자": "message-square-text", "구두(대화)": "messages-square" }[String(value || "")] || "phone";
+    }
+
+    function buildTuitionContactChannelTag_(value) {
+      var channel = String(value || "").trim();
+      return channel ? '<span class="tuition-contact-channel-tag">' + escapeHtml(channel) + '</span>' : "";
     }
 
     function buildTuitionStudentMemoWarning_(studentName, warning) {
@@ -35808,7 +35977,7 @@
     function formatContactDateText_(value, weekdayText) {
       var d = parseDateSafe_(value);
       if (!d) return String(value || "-");
-      return d.getFullYear() + "." + pad2(d.getMonth() + 1) + "." + pad2(d.getDate()) + "(" + (weekdayText || getWeekdayKor_(d.getDay())) + ")";
+      return (d.getMonth() + 1) + "/" + d.getDate() + "(" + (weekdayText || getWeekdayKor_(d.getDay())) + ") " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
     }
 
     function hexToRgba_(hex, alpha) {
@@ -35907,6 +36076,26 @@
       return String(Math.max(0, toNumber(digits, 0))).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
+    function selectTuitionChoice_(container, input, value) {
+      if (!container || !input) return;
+      var selected = String(value || "");
+      input.value = selected;
+      Array.prototype.forEach.call(container.querySelectorAll("[data-tuition-choice]"), function(button) {
+        var active = button.getAttribute("data-tuition-choice") === selected;
+        button.classList.toggle("is-selected", active);
+        button.setAttribute("aria-checked", active ? "true" : "false");
+      });
+    }
+
+    function bindTuitionChoiceButtons_(container, input) {
+      if (!container || !input) return;
+      container.addEventListener("click", function(event) {
+        var button = event.target.closest("[data-tuition-choice]");
+        if (!button || !container.contains(button)) return;
+        selectTuitionChoice_(container, input, button.getAttribute("data-tuition-choice"));
+      });
+    }
+
     function openTuitionAmountAdjustModal_(studentName, focusKind) {
       var row = findTuitionRowByStudent(studentName);
       if (!row) return;
@@ -35992,6 +36181,7 @@
       tuitionContactStatusEl.value = "안내완료";
       tuitionContactStatusEl.disabled = true;
       tuitionContactMemoEl.value = "";
+      selectTuitionChoice_(tuitionContactChannelChoicesEl, tuitionContactChannelEl, row && row.contactChannel || "카톡");
       if (tuitionAssistantSituationEl) tuitionAssistantSituationEl.value = inferTuitionAssistantSituation_(row);
       if (tuitionAssistantToneEl) tuitionAssistantToneEl.value = "polite";
       ensureTuitionParentReplyTemplatesLoaded_();
@@ -36008,9 +36198,9 @@
       var monthText = String(state.tuition.selectedMonth || "").replace(/s$/i, "");
       tuitionPaymentDueDateEl.value = monthText + "-01";
       tuitionPaymentAmountEl.value = row && row.guideAmount ? formatSignedAmountInput(String(-Math.max(0, toNumber(row.guideAmount, 0)))) : "";
-      tuitionPaymentPaidAtEl.value = "";
+      tuitionPaymentPaidAtEl.value = getTodayDateKey_();
       tuitionPaymentBusinessEl.value = "반포";
-      tuitionPaymentTypeEl.value = "";
+      selectTuitionChoice_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl, "");
       tuitionPaymentApprovalNoEl.value = "";
       tuitionPaymentIssueMemoEl.value = "";
       tuitionPaymentModalEl.style.display = "flex";
@@ -36213,6 +36403,7 @@
         studentName: target.studentName,
         guideAmount: toNumber(tuitionContactGuideAmountEl.value, 0),
         unpaidStatus: "안내완료",
+        contactChannel: tuitionContactChannelEl.value,
         memo: tuitionContactMemoEl.value || ""
       }, {
         onRetry: function() {
@@ -36244,8 +36435,9 @@
         return;
       }
       if (!String(tuitionPaymentTypeEl.value || "").trim()) {
-        alert("결재구분을 입력해 주세요.");
-        tuitionPaymentTypeEl.focus();
+        alert("결재 구분을 선택해 주세요.");
+        var firstPaymentChoice = tuitionPaymentTypeChoicesEl.querySelector("[data-tuition-choice]");
+        if (firstPaymentChoice) firstPaymentChoice.focus();
         return;
       }
       state.tuition.savingPayment = true;

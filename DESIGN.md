@@ -49,6 +49,11 @@ Base unit is 4px.
 
 - Buttons: inline-flex, centered icon and label, 38-44px minimum height for tool buttons, 8px radius, no text clipping. Primary uses `--ds-primary`; ghost uses white surface and `--ds-border`.
 - Amount correction: the editable amount cell retains its existing semantic surface and reveals a pencil on hover/focus. Its modal uses the 8px control radius, `--ds-bg-subtle` calculation summary, and `--ds-bg-warm` audit note. `안내금액` and `순수납액` are editable; `미납액` remains derived.
+- Inline amount edit: editable amounts read as table text, not standalone cards. The 40px hit area contains a 16px pencil beside the amount; hover/focus uses `--ds-bg-subtle` and `--ds-ring` without lift or panel shadow.
+- Icon choice controls: payment and contact methods use a compact grid of 40px minimum-height buttons with Lucide icons, 8px radius, `--ds-border`, and a `--ds-primary` selected state. Labels remain visible beside icons and the native hidden input remains the form value authority.
+- Previous payment method: the student identity line may show one 24px icon action beside the name. It uses `--ds-bg-subtle`, `--ds-muted`, and a tooltip; it is informational and does not use a pill silhouette.
+- Contact timestamps: table timestamps use `M/D(요일) HH:mm`, tabular numerals, and local Korean time. Empty values remain `-`.
+- Tuition message settings: template management uses a single modal working surface with an unframed list and editor. Student names are injected as a fixed prefix and are not stored inside the editable template body.
 - Payment deletion: recent-payment rows use a compact trash icon with a tooltip. Deletion opens a focused confirmation modal that shows the selected payment facts, requires a reason, and uses the semantic danger color only for the irreversible command.
 - Segmented controls: same height across items, active state uses green fill or green underline, inactive state remains white.
 - Cards: 8-12px radius, `--ds-border`, white or subtle surface, no nested decorative card effect.

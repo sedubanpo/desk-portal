@@ -41,6 +41,12 @@ function tuitionSeed() {
     inputAt: '7/14 12:00', originMonth: month, sourceMonth: month, sourceDueMonth: month,
     requestId: 'existing-payment', source: 'desk_portal'
   };
+  const previousPayment = {
+    dueDate: '26-06-01', studentName: '김재희', itemName: '납부금액', amount: -90000,
+    paidAt: '6/14', business: '반포', paymentType: '계좌이체', approvalNo: 'prev-1',
+    inputAt: '6/14 12:00', originMonth: '26-06s', sourceMonth: '26-06s', sourceDueMonth: '26-06s',
+    requestId: 'previous-payment', source: 'desk_portal'
+  };
   return {
     month,
     payment,
@@ -59,6 +65,7 @@ function tuitionSeed() {
       },
       'tuitionPaymentReadIndexes/recent': { payments: [payment], seeded: true },
       'tuitionPaymentReadIndexes/payment_month_26-07s': { monthName: month, payments: [payment], seeded: true },
+      'tuitionPaymentReadIndexes/payment_month_26-06s': { monthName: '26-06s', payments: [previousPayment], seeded: true },
       'tuitionPaymentReadIndexes/daily_2026_07_14': { dateKey: '2026-07-14', payments: [payment] },
       [`tuitionPayments/${paymentId(payment)}`]: payment
     }
@@ -73,6 +80,7 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.success, true);
   assert.equal(result.rows.length, 1);
   assert.equal(result.rows[0].tuitionMemoWarning.latestMemo, '안내 보류');
+  assert.equal(result.rows[0].previousPaymentMethod, '계좌이체');
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 
@@ -196,14 +204,18 @@ test('followup retries do not increment contact count twice', async () => {
   const seed = tuitionSeed();
   const store = memoryStore(seed.documents);
   const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T05:00:00.000Z') });
-  const payload = { monthName: seed.month, studentName: '김재희', guideAmount: 100000, unpaidStatus: '안내완료', memo: '문자 안내', clientRequestId: 'followup-1' };
+  const payload = { monthName: seed.month, studentName: '김재희', guideAmount: 100000, unpaidStatus: '안내완료', contactChannel: '카톡', memo: '문자 안내', clientRequestId: 'followup-1' };
   const first = await handlers.saveTuitionFollowup(payload, { uid: 'staff-1', name: '관리자' });
   const second = await handlers.saveTuitionFollowup(payload, { uid: 'staff-1', name: '관리자' });
   assert.equal(first.success, true, JSON.stringify(first));
   assert.equal(first.contactCount, 1);
   assert.equal(second.duplicate, true);
-  assert.equal(store.dump()[`tuitionFollowups/${followupId(seed.month, '김재희')}`].contactCount, 1);
-  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].contactCount, 1);
+  const dump = store.dump();
+  assert.equal(dump[`tuitionFollowups/${followupId(seed.month, '김재희')}`].contactCount, 1);
+  assert.equal(dump[`tuitionFollowups/${followupId(seed.month, '김재희')}`].contactChannel, '카톡');
+  assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].contactCount, 1);
+  assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].contactChannel, '카톡');
+  assert.equal(dump['tuitionContactLogs/tl_followup-1'].contactChannel, '카톡');
 });
 
 test('first status save for a master-only student materializes a snapshot row', async () => {

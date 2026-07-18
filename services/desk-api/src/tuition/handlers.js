@@ -1,4 +1,5 @@
 import {
+  contactChannel,
   base64Id,
   clientRequestId,
   comparePaymentsDesc,
@@ -132,6 +133,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
           contactCount: Math.max(0, Math.trunc(number(row.contactCount))),
           lastContactAt: text(row.lastContactAt),
           lastContactMemo: text(row.lastContactMemo),
+          contactChannel: contactChannel(row.contactChannel),
           lastUpdatedAt: text(row.lastUpdatedAt),
           paid: status === '납부완료' || status === '이월금',
           unpaidStatus: status,
@@ -163,7 +165,8 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
           guideAmount: Math.max(0, Math.round(number(row.guideAmount))),
           unpaidStatus: unpaidStatus(row.unpaidStatus),
           lastContactAt: text(row.lastContactAt),
-          lastContactMemo: text(row.lastContactMemo)
+          lastContactMemo: text(row.lastContactMemo),
+          contactChannel: contactChannel(row.contactChannel)
         })).filter(row => row.studentName);
         tracked.forEach(row => {
           const current = studentMap.get(row.studentName) || { studentName: row.studentName, totalContacts: 0, monthsGuided: 0, maxContacts: 0, latestMonthName: '' };
@@ -326,11 +329,13 @@ async function buildMonthSummary(store, payload) {
   const months = payload.months || await loadMonths(store);
   const snapshot = await store.get(key(COLLECTIONS.snapshots, snapshotId(month)));
   if (!snapshot?.success || !Array.isArray(snapshot.rows)) return pendingSummary(month, months, 'summary-snapshot-missing');
-  const [memoDocuments, studentDocuments, recent, monthPayments, followups, charges] = await Promise.all([
+  const previousMonth = previousMonthName(month);
+  const [memoDocuments, studentDocuments, recent, monthPayments, previousMonthPayments, followups, charges] = await Promise.all([
     store.list(COLLECTIONS.studentMemos, 500),
     loadActiveStudentDocuments(store),
     store.get(key(COLLECTIONS.paymentIndexes, 'recent')),
     store.get(key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month))),
+    previousMonth ? store.get(key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(previousMonth))) : null,
     store.get(key(COLLECTIONS.monthlyIndexes, followupIndexId(month))),
     store.get(key(COLLECTIONS.monthlyIndexes, `charges_${month}`))
   ]);
@@ -341,11 +346,16 @@ async function buildMonthSummary(store, payload) {
   const statusFilter = text(payload.statusFilter);
   const keyword = text(payload.keyword).toLowerCase().replace(/\s+/g, '');
   const masterRows = studentDocuments.filter(isActiveStudent).map(studentMasterTuitionRow).filter(Boolean);
+  const previousMethods = previousPaymentMethodMap(previousMonthPayments?.payments || []);
   const rows = mergeStudentMasterRows(snapshot.rows, masterRows).filter(row => {
     if (statusFilter && statusFilter !== '전체' && unpaidStatus(row.unpaidStatus) !== statusFilter) return false;
     if (!keyword) return true;
     return [row.studentName, row.school, row.grade].join('').toLowerCase().replace(/\s+/g, '').includes(keyword);
-  }).map(row => ({ ...row, tuitionMemoWarning: warnings[studentName(row.studentName)] || memoWarning([]) }));
+  }).map(row => ({
+    ...row,
+    previousPaymentMethod: previousMethods[studentName(row.studentName)] || '',
+    tuitionMemoWarning: warnings[studentName(row.studentName)] || memoWarning([])
+  }));
   const allPayments = mergePayments(snapshot.allPayments || recent?.payments || []);
   const payments = mergePayments(snapshot.payments || monthPayments?.payments || []).filter(row => !keyword || row.studentName.toLowerCase().replace(/\s+/g, '').includes(keyword));
   const stats = summaryStats(rows, payments);
@@ -379,7 +389,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
     if (duplicateDocument) return { result: { success: true, duplicate: true, status: duplicateDocument.nextStatus || duplicateDocument.unpaidStatus, contactAt: duplicateDocument.contactAt, contactCount: duplicateDocument.contactCount } };
     const current = followup(documents[keys.followup]) || {
       monthName: month, studentName: student, guideAmount: 0, unpaidStatus: '안내이전',
-      lastContactAt: '', lastContactMemo: '', contactCount: 0, lastUpdatedAt: ''
+      lastContactAt: '', lastContactMemo: '', contactChannel: '', contactCount: 0, lastUpdatedAt: ''
     };
     const timestamp = nowIso();
     const guideAmount = Math.max(0, Math.round(number(payload.guideAmount || current.guideAmount)));
@@ -390,6 +400,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
       unpaidStatus: status,
       lastContactAt: incrementContact ? timestamp : current.lastContactAt,
       lastContactMemo: incrementContact ? text(payload.memo, 1200) : current.lastContactMemo,
+      contactChannel: incrementContact ? contactChannel(payload.contactChannel) : current.contactChannel,
       contactCount: current.contactCount + (incrementContact ? 1 : 0),
       lastUpdatedAt: timestamp
     };
@@ -406,7 +417,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
     if (incrementContact) {
       writes[keys.contactLog] = {
         monthName: month, studentName: student, guideAmount, unpaidStatus: status,
-        memo: next.lastContactMemo, contactAt: timestamp, contactCount: next.contactCount,
+        memo: next.lastContactMemo, contactChannel: next.contactChannel, contactAt: timestamp, contactCount: next.contactCount,
         requestId, actorUid: text(identity.uid), actorName: text(identity.name), source: 'desk_portal'
       };
     } else {
@@ -525,7 +536,8 @@ async function adjustAmounts({ store, payload, identity, nowDate, nowIso, timeZo
     const current = followup(documents[keys.followup]) || {
       monthName: month, studentName: student, guideAmount: Math.max(0, Math.round(number(row?.guideAmount))),
       unpaidStatus: unpaidStatus(row?.unpaidStatus), lastContactAt: text(row?.lastContactAt),
-      lastContactMemo: text(row?.lastContactMemo), contactCount: Math.max(0, Math.trunc(number(row?.contactCount))), lastUpdatedAt: ''
+      lastContactMemo: text(row?.lastContactMemo), contactChannel: contactChannel(row?.contactChannel),
+      contactCount: Math.max(0, Math.trunc(number(row?.contactCount))), lastUpdatedAt: ''
     };
     const currentCollected = row ? Math.round(number(row.collectedAmount)) : mergePayments(documents[keys.monthPayments]?.payments || []).filter(item => item.studentName === student).reduce((sum, item) => sum - number(item.amount), 0);
     const nextGuide = Math.max(0, Math.round(number(payload.guideAmount)));
@@ -615,6 +627,7 @@ function updateSnapshotFollowup(source, student, next, timestamp) {
     unpaidStatus: next.unpaidStatus,
     lastContactAt: next.lastContactAt,
     lastContactMemo: next.lastContactMemo,
+    contactChannel: next.contactChannel,
     contactCount: next.contactCount,
     lastUpdatedAt: timestamp,
     outstandingAmount: Math.max(0, next.guideAmount - Math.max(0, number(row.collectedAmount)))
@@ -767,7 +780,7 @@ function baseTuitionRow(student) {
   return {
     studentName: studentName(student), school: '', grade: '', guideAmount: 0,
     collectedAmount: 0, outstandingAmount: 0, paymentCount: 0, unpaidStatus: '안내이전',
-    contactCount: 0, lastContactAt: '', lastContactMemo: '', lastUpdatedAt: ''
+    contactCount: 0, lastContactAt: '', lastContactMemo: '', contactChannel: '', lastUpdatedAt: ''
   };
 }
 
@@ -811,6 +824,22 @@ function studentMasterRow(document) {
 }
 function compareContacts(a, b) { return b.contactCount - a.contactCount || a.studentName.localeCompare(b.studentName, 'ko'); }
 function routeLabel(row) { return text(row.paymentType) || (text(row.issueMemo).includes('현금') ? '현금' : '기타'); }
+
+function previousMonthName(value) {
+  const normalized = monthName(value);
+  if (!normalized) return '';
+  const [yearText, monthText] = normalized.replace(/s$/, '').split('-');
+  const date = new Date(2000 + Number(yearText), Number(monthText) - 2, 1);
+  return `${String(date.getFullYear()).slice(-2)}-${String(date.getMonth() + 1).padStart(2, '0')}s`;
+}
+
+function previousPaymentMethodMap(rows) {
+  return mergePayments(rows || []).reduce((methods, row) => {
+    const student = studentName(row.studentName);
+    if (student && !methods[student] && text(row.paymentType)) methods[student] = text(row.paymentType);
+    return methods;
+  }, {});
+}
 
 function monthLabel(value) {
   const normalized = monthName(value);

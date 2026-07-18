@@ -5,6 +5,8 @@ export const TUITION_STATUSES = Object.freeze([
   '안내완료', '연락두절', '확인필요', '납부예정'
 ]);
 
+export const TUITION_CONTACT_CHANNELS = Object.freeze(['카톡', '전화', '문자', '구두(대화)']);
+
 export function text(value, max = 0) {
   const result = String(value ?? '').trim();
   return max > 0 ? result.slice(0, max) : result;
@@ -42,6 +44,11 @@ export function unpaidStatus(value) {
   return TUITION_STATUSES.includes(status) ? status : '안내이전';
 }
 
+export function contactChannel(value) {
+  const channel = text(value);
+  return TUITION_CONTACT_CHANNELS.includes(channel) ? channel : '';
+}
+
 export function followup(source = {}) {
   source = source && typeof source === 'object' ? source : {};
   const month = monthName(source.monthName || source.month);
@@ -54,6 +61,7 @@ export function followup(source = {}) {
     unpaidStatus: unpaidStatus(source.unpaidStatus),
     lastContactAt: text(source.lastContactAt),
     lastContactMemo: text(source.lastContactMemo, 1200),
+    contactChannel: contactChannel(source.contactChannel),
     contactCount: Math.max(0, Math.trunc(number(source.contactCount))),
     lastUpdatedAt: text(source.lastUpdatedAt)
   };
