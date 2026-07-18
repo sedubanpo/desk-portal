@@ -34296,7 +34296,7 @@
 
     function renderTuitionPaymentRows() {
       var all = buildTuitionEffectivePaymentRows_(state.tuition.payments || []).filter(function(row) {
-        return !isTuitionAdjustmentPayment_(row);
+        return !isTuitionAdjustmentPayment_(row) && isTuitionDatedPayment_(row);
       }).sort(compareTuitionPaymentRowsDesc_);
       var pageSize = Math.max(1, toNumber(state.tuition.paymentPageSize, 15));
       var totalCount = all.length;
@@ -35094,6 +35094,10 @@
       return row.countsAsPayment === false || String(row.entryKind || "") === "adjustment" ||
         String(row.source || "") === "desk_portal_adjustment" ||
         (String(row.paymentType || "") === "수강료 정정" && String(row.approvalNo || "") === "PORTAL-ADJ");
+    }
+
+    function isTuitionDatedPayment_(row) {
+      return Boolean(String(row && row.paidAt || "").trim() || String(row && row.inputAt || "").trim());
     }
 
     function buildTuitionEffectivePaymentRows_(rows) {

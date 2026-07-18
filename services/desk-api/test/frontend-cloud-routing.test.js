@@ -75,6 +75,7 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /\.tuition-col-contact \{[\s\S]*?width: 136px;[\s\S]*?min-width: 136px;[\s\S]*?max-width: 136px;/);
   assert.match(source, /\.tuition-amount-cell \.v \{[\s\S]*?white-space: nowrap;/);
   assert.match(source, /function isTuitionAdjustmentPayment_\(row\)/);
+  assert.match(source, /function isTuitionDatedPayment_\(row\)/);
   assert.match(source, /function buildTuitionEffectivePaymentRows_\(rows\)/);
   assert.match(source, /var all = buildTuitionEffectivePaymentRows_\(state\.tuition\.payments \|\| \[\]\)/);
   assert.match(source, /var list = buildTuitionEffectivePaymentRows_\(sourceRows\)\.filter/);
