@@ -516,7 +516,8 @@ async function adjustAmounts({ store, payload, identity, nowDate, nowIso, timeZo
     amount: 0, paidAt: formatPaidAt(date, timeZone), business: text(payload.business || '반포'),
     paymentType: '수강료 정정', approvalNo: 'PORTAL-ADJ', inputAt: formatInputAt(date, timeZone),
     issueMemo: `[정산 금액 수정] ${reason}`, originMonth: month, sourceMonth: month,
-    sourceDueMonth: month, requestId, source: 'desk_portal_adjustment', createdAt: date.toISOString()
+    sourceDueMonth: month, requestId, source: 'desk_portal_adjustment', entryKind: 'adjustment',
+    countsAsPayment: false, createdAt: date.toISOString()
   });
   const keys = followupMutationKeys(month, student, requestId, false);
   Object.assign(keys, {
@@ -559,9 +560,17 @@ async function adjustAmounts({ store, payload, identity, nowDate, nowIso, timeZo
     };
     let adjustmentPayment = null;
     if (delta !== 0) {
-      adjustmentPayment = { ...adjustment, amount: -delta, updatedAt: timestamp };
+      const basePayment = mergePayments(documents[keys.monthPayments]?.payments || [])
+        .filter(item => item.studentName === student && item.countsAsPayment !== false && item.entryKind !== 'adjustment')
+        .sort(comparePaymentsDesc)[0] || null;
+      adjustmentPayment = payment({
+        ...adjustment,
+        amount: -delta,
+        adjustmentForRequestId: basePayment?.requestId || '',
+        adjustmentForPaymentKey: basePayment ? paymentKey(basePayment) : '',
+        updatedAt: timestamp
+      });
       writes[keys.payment] = adjustmentPayment;
-      writes[keys.recent] = changePaymentIndex(documents[keys.recent], adjustmentPayment, 'append', 'payments', RECENT_LIMIT, timestamp, { seeded: documents[keys.recent]?.seeded === true });
       writes[keys.monthPayments] = changePaymentIndex(documents[keys.monthPayments], adjustmentPayment, 'append', 'payments', MONTH_LIMIT, timestamp, { monthName: month, seeded: documents[keys.monthPayments]?.seeded === true });
       writes[keys.dailyPayments] = changePaymentIndex(documents[keys.dailyPayments], adjustmentPayment, 'append', 'payments', DAILY_LIMIT, timestamp, { dateKey: localDateKey });
     }
@@ -601,8 +610,13 @@ function changeSnapshotPayment(source, row, action, month, date) {
     const copy = { ...item };
     const delta = action === 'append' ? -number(row.amount) : number(row.amount);
     copy.collectedAmount = Math.round(number(copy.collectedAmount) + delta);
-    copy.paymentCount = Math.max(0, Math.trunc(number(copy.paymentCount)) + (action === 'append' ? 1 : -1));
-    const remaining = snapshot.payments.filter(paymentRow => studentName(paymentRow.studentName) === row.studentName).sort(comparePaymentsDesc);
+    if (row.countsAsPayment !== false && row.entryKind !== 'adjustment') {
+      copy.paymentCount = Math.max(0, Math.trunc(number(copy.paymentCount)) + (action === 'append' ? 1 : -1));
+    }
+    const remaining = snapshot.payments.filter(paymentRow =>
+      studentName(paymentRow.studentName) === row.studentName &&
+      paymentRow.countsAsPayment !== false && paymentRow.entryKind !== 'adjustment'
+    ).sort(comparePaymentsDesc);
     const latest = remaining[0] || {};
     copy.latestPaidAt = text(latest.paidAt);
     copy.latestBusiness = text(latest.business);

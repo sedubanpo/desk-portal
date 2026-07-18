@@ -246,10 +246,17 @@ test('amount adjustment records only the collected delta and keeps snapshot tota
   }, { uid: 'staff-1', name: '관리자' });
   assert.equal(result.success, true, JSON.stringify(result));
   assert.equal(result.adjustmentPayment.amount, -20000);
+  assert.equal(result.adjustmentPayment.entryKind, 'adjustment');
+  assert.equal(result.adjustmentPayment.countsAsPayment, false);
+  assert.equal(result.adjustmentPayment.adjustmentForRequestId, 'existing-payment');
   const dump = store.dump();
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].guideAmount, 120000);
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 120000);
   assert.equal(dump['tuitionPayments/tp_adjust-1'].amount, -20000);
+  assert.equal(dump['tuitionPayments/tp_adjust-1'].countsAsPayment, false);
+  assert.equal(dump['tuitionPaymentReadIndexes/recent'].payments.length, 1);
+  assert.equal(dump['tuitionPaymentReadIndexes/payment_month_26-07s'].payments.length, 2);
+  assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].paymentCount, 1);
 });
 
 test('first amount adjustment for a master-only student materializes a snapshot row', async () => {

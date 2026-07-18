@@ -34295,7 +34295,9 @@
     }
 
     function renderTuitionPaymentRows() {
-      var all = (state.tuition.payments || []).slice().sort(compareTuitionPaymentRowsDesc_);
+      var all = buildTuitionEffectivePaymentRows_(state.tuition.payments || []).filter(function(row) {
+        return !isTuitionAdjustmentPayment_(row);
+      }).sort(compareTuitionPaymentRowsDesc_);
       var pageSize = Math.max(1, toNumber(state.tuition.paymentPageSize, 15));
       var totalCount = all.length;
       var totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -35087,6 +35089,47 @@
       return toNumber((b && b.rowNumber) || 0, 0) - toNumber((a && a.rowNumber) || 0, 0);
     }
 
+    function isTuitionAdjustmentPayment_(row) {
+      if (!row) return false;
+      return row.countsAsPayment === false || String(row.entryKind || "") === "adjustment" ||
+        String(row.source || "") === "desk_portal_adjustment" ||
+        (String(row.paymentType || "") === "수강료 정정" && String(row.approvalNo || "") === "PORTAL-ADJ");
+    }
+
+    function buildTuitionEffectivePaymentRows_(rows) {
+      var payments = [];
+      var adjustments = [];
+      (Array.isArray(rows) ? rows : []).forEach(function(row) {
+        var copy = Object.assign({}, row || {});
+        if (isTuitionAdjustmentPayment_(copy)) adjustments.push(copy);
+        else payments.push(copy);
+      });
+      adjustments.sort(compareTuitionPaymentRowsDesc_).forEach(function(adjustment) {
+        var targetRequestId = String(adjustment.adjustmentForRequestId || "").trim();
+        var targetPaymentKey = String(adjustment.adjustmentForPaymentKey || "").trim();
+        var target = payments.find(function(row) {
+          if (targetRequestId && String(row.requestId || row.clientRequestId || "").trim() === targetRequestId) return true;
+          return targetPaymentKey && getTuitionPaymentClientMergeKey_(row) === targetPaymentKey;
+        });
+        if (!target) {
+          var student = formatStudentName(adjustment.studentName);
+          var month = getTuitionPaymentBaseMonth_(adjustment);
+          target = payments.filter(function(row) {
+            return formatStudentName(row.studentName) === student && getTuitionPaymentBaseMonth_(row) === month;
+          }).sort(compareTuitionPaymentRowsDesc_)[0] || null;
+        }
+        if (!target) {
+          return;
+        }
+        target.amount = toNumber(target.amount, 0) + toNumber(adjustment.amount, 0);
+        target.effectiveAdjustmentCount = toNumber(target.effectiveAdjustmentCount, 0) + 1;
+        adjustment.effectiveAdjustmentApplied = true;
+      });
+      return payments.concat(adjustments.filter(function(row) {
+        return !row.effectiveAdjustmentApplied;
+      }));
+    }
+
     function normalizeTuitionRoute_(text, issueMemoText) {
       var raw = String(text || "").trim().toLowerCase();
       if (!raw) return "기타";
@@ -35123,16 +35166,10 @@
     function buildTuitionDailyBreakdown_(dateKey, filtersOverride) {
       var routeOrder = ["계좌", "서울페이", "현장결제", "현금", "카드", "기타"];
       var filters = filtersOverride || { basis: "paid", startDate: dateKey, endDate: dateKey, weekdays: [0, 1, 2, 3, 4, 5, 6] };
-      var list = (state.tuition.payments || []).filter(function(row) {
-        var key = getTuitionBriefDateKeyForRow_(row, filters.basis);
-        if (!key) return false;
-        if (filters.startDate && key < filters.startDate) return false;
-        if (filters.endDate && key > filters.endDate) return false;
-        return filters.weekdays.indexOf(getTuitionDateWeekday_(key)) !== -1;
-      });
+      var sourceRows = (state.tuition.payments || []).slice();
       var todayKey = getTodayDateKey_();
       if (filters.basis === "paid" && filters.startDate <= todayKey && filters.endDate >= todayKey && filters.weekdays.indexOf(getTuitionDateWeekday_(todayKey)) !== -1) {
-        var merged = list.slice();
+        var merged = sourceRows.slice();
         var keySet = {};
         merged.forEach(function(row) {
           var k = [
@@ -35158,8 +35195,15 @@
           merged.push(row);
           keySet[k] = true;
         });
-        list = merged;
+        sourceRows = merged;
       }
+      var list = buildTuitionEffectivePaymentRows_(sourceRows).filter(function(row) {
+        var key = getTuitionBriefDateKeyForRow_(row, filters.basis);
+        if (!key) return false;
+        if (filters.startDate && key < filters.startDate) return false;
+        if (filters.endDate && key > filters.endDate) return false;
+        return filters.weekdays.indexOf(getTuitionDateWeekday_(key)) !== -1;
+      });
       var guidedStudents = {};
       (state.tuition.rows || []).forEach(function(row) {
         var key = parseTuitionInputDateKey_(row.lastContactAt, state.tuition.selectedMonth);
@@ -35195,7 +35239,7 @@
         totalReceived: totalReceived,
         totalRefund: totalRefund,
         netAmount: totalReceived - totalRefund,
-        count: list.length,
+        count: list.filter(function(row) { return !isTuitionAdjustmentPayment_(row); }).length,
         routeOrder: routeOrder,
         businessMap: businessMap,
         businessNames: businessNames,

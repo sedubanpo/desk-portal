@@ -83,6 +83,9 @@ export function payment(source = {}) {
   const originMonth = monthName(source.originMonth || source.sourceMonth);
   const sourceMonth = monthName(source.sourceMonth || originMonth || monthFromDueDate(dueDate));
   const sourceDueMonth = monthName(source.sourceDueMonth || originMonth || monthFromDueDate(dueDate));
+  const isAdjustment = source.countsAsPayment === false || text(source.entryKind) === 'adjustment' ||
+    text(source.source) === 'desk_portal_adjustment' ||
+    (paymentType === '수강료 정정' && approvalNo === 'PORTAL-ADJ');
   return {
     rowNumber: Math.max(0, Math.trunc(number(source.rowNumber))),
     dueDate,
@@ -99,6 +102,10 @@ export function payment(source = {}) {
     sourceMonth,
     sourceDueMonth,
     requestId: clientRequestId(source.requestId || source.clientRequestId),
+    entryKind: isAdjustment ? 'adjustment' : 'payment',
+    countsAsPayment: !isAdjustment,
+    adjustmentForRequestId: clientRequestId(source.adjustmentForRequestId),
+    adjustmentForPaymentKey: text(source.adjustmentForPaymentKey, 500),
     createdAt: text(source.createdAt),
     updatedAt: text(source.updatedAt),
     source: text(source.source)
