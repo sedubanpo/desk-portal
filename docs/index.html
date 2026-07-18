@@ -7940,6 +7940,9 @@
     @media (max-width: 760px) {
       .tuition-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .tuition-choice-grid.contact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tuition-assistant-controls { grid-template-columns: 1fr; }
+      .tuition-assistant-head { align-items: flex-start; }
+      .tuition-assistant-head > div:last-child { flex-wrap: wrap; justify-content: flex-end; }
       .tuition-template-settings { grid-template-columns: 1fr; }
       .tuition-template-list { border-right: 0; border-bottom: 1px solid var(--ds-border); max-height: 160px; }
     }
@@ -19536,6 +19539,8 @@
       state.tuition.templateSettingsId = tuitionAssistantTemplateSelectEl && tuitionAssistantTemplateSelectEl.value || state.tuition.templateSettingsId;
       renderTuitionTemplateSettings_();
       tuitionTemplateSettingsModalEl.style.display = "flex";
+      var settingsBox = tuitionTemplateSettingsModalEl.querySelector(".modal-box");
+      if (settingsBox) settingsBox.scrollTop = 0;
       refreshLucideIcons_();
     }
 
@@ -36188,6 +36193,8 @@
       renderTuitionAssistantTemplates_();
       updateTuitionAssistantDraft_();
       tuitionContactModalEl.style.display = "flex";
+      var contactBox = tuitionContactModalEl.querySelector(".modal-box");
+      if (contactBox) contactBox.scrollTop = 0;
       refreshLucideIcons_();
     }
 
@@ -36204,6 +36211,8 @@
       tuitionPaymentApprovalNoEl.value = "";
       tuitionPaymentIssueMemoEl.value = "";
       tuitionPaymentModalEl.style.display = "flex";
+      var paymentBox = tuitionPaymentModalEl.querySelector(".modal-box");
+      if (paymentBox) paymentBox.scrollTop = 0;
     }
 
     function findTuitionRowByStudent(studentName) {
