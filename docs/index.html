@@ -7482,6 +7482,9 @@
       text-decoration: underline;
       text-underline-offset: 2px;
     }
+    .tuition-student-name.tuition-name-link {
+      font-weight: 950;
+    }
     .tuition-shell {
       gap: 12px;
       background: linear-gradient(180deg, #ffffff 0%, #fbfdfa 100%);
@@ -7927,7 +7930,8 @@
     }
     .tuition-amount-cell.is-editable:active { background: var(--ds-border-soft); }
     .tuition-amount-cell.is-editable:focus-visible { outline: 3px solid var(--ds-ring); outline-offset: 2px; }
-    .tuition-amount-cell.is-editable i {
+    .tuition-amount-cell.is-editable i,
+    .tuition-amount-cell.is-editable svg {
       width: 11px;
       height: 11px;
       min-width: 11px;
@@ -7936,7 +7940,9 @@
       transition: opacity 140ms cubic-bezier(0.2, 0, 0, 1);
     }
     .tuition-amount-cell.is-editable:hover i,
-    .tuition-amount-cell.is-editable:focus-visible i { opacity: 1; }
+    .tuition-amount-cell.is-editable:hover svg,
+    .tuition-amount-cell.is-editable:focus-visible i,
+    .tuition-amount-cell.is-editable:focus-visible svg { opacity: 1; }
     .tuition-choice-field { grid-column: 1 / -1; }
     .tuition-choice-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--ds-space-2); }
     .tuition-choice-grid.contact { grid-template-columns: repeat(4, minmax(0, 1fr)); }
