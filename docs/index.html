@@ -6896,6 +6896,10 @@
       white-space: nowrap;
       vertical-align: middle;
     }
+    .tuition-table tbody td {
+      color: #203247;
+      font-weight: 800;
+    }
     .tuition-table th {
       background: #f5f9f7;
       color: #3f4d60;
@@ -7077,7 +7081,7 @@
     }
     .tuition-student-name {
       font-size: 13px;
-      font-weight: 800;
+      font-weight: 950;
       color: #102133;
     }
     .tuition-student-carryover {
@@ -7150,6 +7154,11 @@
       padding: 6px 8px;
       min-width: 96px;
     }
+    .tuition-amount-copy {
+      display: grid;
+      min-width: 0;
+      gap: 2px;
+    }
     .tuition-amount-cell .k {
       font-size: 10px;
       font-weight: 800;
@@ -7161,6 +7170,8 @@
       font-weight: 800;
       color: #0f172a;
       line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
     .tuition-amount-cell.guide .v { color: #1d4ed8; }
     .tuition-amount-cell.collected .v { color: #0369a1; }
@@ -7182,13 +7193,21 @@
     }
     .tuition-col-contact {
       white-space: normal !important;
-      min-width: 240px;
+      width: 136px;
+      min-width: 136px;
+      max-width: 136px;
+    }
+    .tuition-col-contact-head {
+      width: 136px;
+      min-width: 136px;
+      max-width: 136px;
     }
     .tuition-contact-last {
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 900;
       color: #1f3a5f;
       margin-bottom: 3px;
+      white-space: nowrap;
     }
     .tuition-contact-memo {
       font-size: 11px;
@@ -7889,7 +7908,7 @@
     .tuition-amount-cell.is-editable {
       position: relative;
       display: inline-grid;
-      grid-template-columns: minmax(0, 1fr) 18px;
+      grid-template-columns: minmax(0, 1fr) 12px;
       align-items: center;
       column-gap: var(--ds-space-1);
       width: 100%;
@@ -7909,8 +7928,9 @@
     .tuition-amount-cell.is-editable:active { background: var(--ds-border-soft); }
     .tuition-amount-cell.is-editable:focus-visible { outline: 3px solid var(--ds-ring); outline-offset: 2px; }
     .tuition-amount-cell.is-editable i {
-      width: 14px;
-      height: 14px;
+      width: 11px;
+      height: 11px;
+      min-width: 11px;
       color: var(--ds-primary);
       opacity: 0.62;
       transition: opacity 140ms cubic-bezier(0.2, 0, 0, 1);
@@ -14434,8 +14454,8 @@
 
     .tuition-amount-cell .v {
       font-variant-numeric: tabular-nums;
-      white-space: normal;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
+      overflow-wrap: normal;
     }
 
     .desk-daily-journal-mode .desk-journal-status-cards {
@@ -15378,7 +15398,7 @@
                     <th>순수납액</th>
                     <th>미납액</th>
                     <th>상태</th>
-                    <th>마지막 연락</th>
+                    <th class="tuition-col-contact-head">마지막 연락</th>
                     <th>연락횟수</th>
                     <th>안내/연락 기록</th>
                     <th>수납 입력</th>
@@ -34677,8 +34697,10 @@
       var editable = kind === "guide" || kind === "collected";
       var studentName = escapeHtml(formatStudentName(row && row.studentName));
       var inner =
-        '<span class="k">' + keyText + '</span>' +
-        '<span class="v">' + formatWon(amount || 0) + '</span>';
+        '<span class="tuition-amount-copy">' +
+          '<span class="k">' + keyText + '</span>' +
+          '<span class="v">' + formatWon(amount || 0) + '</span>' +
+        '</span>';
       if (!editable) return '<div class="tuition-amount-cell ' + kind + '">' + inner + '</div>';
       return '<button type="button" class="tuition-amount-cell ' + kind + ' is-editable" data-tuition-amount-edit="' + studentName + '" data-tuition-amount-focus="' + kind + '" title="' + keyText + ' 금액 수정">' +
         inner + '<i data-lucide="pencil" aria-hidden="true"></i></button>';

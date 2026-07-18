@@ -67,4 +67,10 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /return \(d\.getMonth\(\) \+ 1\) \+ "\/" \+ d\.getDate\(\)/);
   assert.match(source, /id="tuitionTemplateSettingsModal"/);
   assert.match(source, /ensureTuitionStudentPrefix_/);
+  assert.match(source, /class="tuition-amount-copy"/);
+  assert.match(source, /grid-template-columns: minmax\(0, 1fr\) 12px/);
+  assert.match(source, /\.tuition-amount-cell\.is-editable i \{[\s\S]*?width: 11px;[\s\S]*?height: 11px;/);
+  assert.match(source, /class="tuition-col-contact-head">마지막 연락<\/th>/);
+  assert.match(source, /\.tuition-col-contact \{[\s\S]*?width: 136px;[\s\S]*?min-width: 136px;[\s\S]*?max-width: 136px;/);
+  assert.match(source, /\.tuition-amount-cell \.v \{[\s\S]*?white-space: nowrap;/);
 });
