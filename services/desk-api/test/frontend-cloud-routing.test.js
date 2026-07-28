@@ -50,6 +50,20 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
   assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
 });
 
+test('selected-day schedule report uses responsive worker cards and distinguishes an empty connected calendar', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /class="desk-day-report-summary"/);
+  assert.match(source, /grid-template-columns: repeat\(auto-fit, minmax\(360px, 1fr\)\)/);
+  assert.match(source, /container-type: inline-size/);
+  assert.match(source, /@container \(min-width: 1400px\)/);
+  assert.match(source, /class="desk-day-report-worker-head"/);
+  assert.match(source, /renderDeskDayReportSummary_\(dayItems, workerCount, countedHours\)/);
+  assert.match(source, /sourceName === "calendarApi"/);
+  assert.match(source, /연동 정상 · 일정 없음/);
+  assert.match(source, /checkedAt: new Date\(\)\.toISOString\(\)/);
+});
+
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

@@ -14906,6 +14906,343 @@
         text-align: left;
       }
     }
+
+    /* Selected-day report: dense operational summary that scales from laptop to wide desktop. */
+    .desk-day-copy-frame {
+      container-type: inline-size;
+      border: 0;
+      border-radius: 8px;
+      background: #f4f7f5;
+      padding: 16px;
+      box-shadow:
+        0 0 0 1px rgba(15, 47, 37, 0.08),
+        0 14px 34px rgba(15, 47, 37, 0.08);
+    }
+    .desk-day-report-head {
+      align-items: center;
+      border-bottom-color: #dfe8e3;
+      padding: 2px 2px 14px;
+    }
+    .desk-day-report-title {
+      font-size: 24px;
+      text-wrap: balance;
+    }
+    .desk-day-report-sub {
+      font-variant-numeric: tabular-nums;
+    }
+    .desk-day-report-actions {
+      border-radius: 8px;
+      padding: 3px;
+      background: #e8eeeb;
+      border-color: #d7e1dc;
+    }
+    .desk-day-report-date-btn {
+      min-width: 54px;
+      min-height: 36px;
+      border-radius: 6px;
+      transition: background-color 140ms ease, color 140ms ease, transform 140ms ease;
+    }
+    .desk-day-report-date-btn:active {
+      transform: scale(0.96);
+    }
+    .desk-day-report-date-btn.active {
+      background: #fff;
+      color: #0d684d;
+      box-shadow: 0 1px 4px rgba(15, 47, 37, 0.12);
+    }
+    .desk-day-report-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+    @container (min-width: 1400px) {
+      .desk-day-report-grid {
+        grid-template-columns: minmax(0, 1.22fr) minmax(320px, 0.78fr);
+      }
+    }
+    .desk-day-phone-schedule,
+    .desk-day-calendar-placeholder {
+      border: 0;
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+      box-shadow:
+        0 0 0 1px rgba(15, 47, 37, 0.08),
+        0 8px 22px rgba(15, 47, 37, 0.05);
+    }
+    .desk-day-phone-head {
+      align-items: center;
+      padding-bottom: 12px;
+    }
+    .desk-day-phone-head strong {
+      font-size: 18px;
+    }
+    .desk-day-phone-head span {
+      margin-top: 3px;
+    }
+    .desk-day-phone-count {
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .desk-day-report-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid #e1e9e5;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f9fbfa;
+    }
+    .desk-day-report-stat {
+      min-width: 0;
+      padding: 11px 12px;
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      border-right: 1px solid #e1e9e5;
+    }
+    .desk-day-report-stat:last-child {
+      border-right: 0;
+    }
+    .desk-day-report-stat-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e8f5ef;
+      color: #0d684d;
+    }
+    .desk-day-report-stat-icon svg {
+      width: 15px;
+      height: 15px;
+    }
+    .desk-day-report-stat.tone-blue .desk-day-report-stat-icon {
+      background: #eaf2ff;
+      color: #2563eb;
+    }
+    .desk-day-report-stat.tone-amber .desk-day-report-stat-icon {
+      background: #fff4dc;
+      color: #b45309;
+    }
+    .desk-day-report-stat.tone-slate .desk-day-report-stat-icon {
+      background: #edf1f5;
+      color: #475569;
+    }
+    .desk-day-report-stat-label {
+      display: block;
+      color: #718096;
+      font-size: 10px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+    .desk-day-report-stat-value {
+      display: block;
+      margin-top: 2px;
+      color: #142d3f;
+      font-size: 17px;
+      line-height: 1.1;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .desk-day-report-worker-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 10px;
+    }
+    .desk-day-report-worker-card {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      min-width: 0;
+      min-height: 174px;
+      border: 1px solid var(--desk-card-border, #d8e4de);
+      border-left: 4px solid var(--desk-card-accent, #0d684d);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--desk-card-tint, #fff) 36%, #fff);
+      padding: 13px;
+      box-shadow: 0 6px 16px rgba(15, 47, 37, 0.055);
+      transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+    }
+    .desk-day-report-worker-card:hover {
+      border-color: var(--desk-card-accent, #9bc8b6);
+      box-shadow: 0 10px 22px rgba(15, 47, 37, 0.09);
+      transform: translateY(-1px);
+    }
+    .desk-day-report-worker-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+    .desk-day-report-worker-identity {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+    .desk-day-report-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      background: var(--desk-card-tint, #edf7f2);
+      color: var(--desk-card-text, #0d684d);
+      border: 1px solid var(--desk-card-border, #cfe3da);
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .desk-day-report-worker-line {
+      min-width: 0;
+      gap: 6px;
+    }
+    .desk-day-report-worker-name {
+      font-size: 17px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desk-day-report-duration {
+      flex: 0 0 auto;
+      border-radius: 6px;
+      background: #f1f5f3;
+      color: #465d70;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .desk-day-report-time {
+      min-width: 0;
+      border: 0;
+      border-radius: 7px;
+      background: #f4f7f5;
+      padding: 10px 11px;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      color: #173042;
+    }
+    .desk-day-report-time-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: var(--desk-card-text, #0d684d);
+      box-shadow: 0 0 0 1px rgba(15, 47, 37, 0.08);
+    }
+    .desk-day-report-time-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+    .desk-day-report-time strong {
+      min-width: 0;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .desk-day-report-time strong span {
+      display: inline;
+      white-space: normal;
+    }
+    .desk-day-report-worker-main {
+      display: contents;
+    }
+    .desk-day-report-worker-note {
+      margin: auto 0 0;
+      color: #4b6072;
+      font-size: 12px;
+      line-height: 1.45;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+    .desk-day-report-coverage {
+      margin-top: -2px;
+    }
+    .desk-day-report-coverage-chip {
+      min-height: 25px;
+      border-radius: 6px;
+      padding: 4px 7px;
+      font-size: 11px;
+    }
+    .desk-day-report-coverage-chip.solo {
+      min-height: 27px;
+      border-radius: 6px;
+    }
+    .desk-day-report-coverage-chip.solo::before {
+      width: 17px;
+      height: 17px;
+      margin-right: 5px;
+      font-size: 10px;
+    }
+    .desk-day-report-worker-card.is-unavailable {
+      opacity: 0.82;
+      filter: grayscale(0.48) saturate(0.62);
+    }
+    .desk-day-report-worker-card.is-unavailable .desk-day-report-time {
+      background: #e9edf1;
+      color: #475569;
+      box-shadow: none;
+    }
+    .desk-day-calendar-placeholder-head {
+      padding-bottom: 12px;
+    }
+    .desk-day-calendar-status.connected {
+      border-color: #a8dbc5;
+      background: #eaf8f1;
+      color: #0d684d;
+    }
+    .desk-day-calendar-placeholder-sub {
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 1800px) {
+      .desk-day-report-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-day-report-worker-card {
+        display: flex;
+      }
+    }
+    @media (max-width: 980px) {
+      .desk-day-report-worker-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    @media (max-width: 720px) {
+      .desk-day-copy-frame {
+        padding: 10px;
+      }
+      .desk-day-report-head {
+        align-items: flex-start;
+      }
+      .desk-day-report-title {
+        font-size: 20px;
+      }
+      .desk-day-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .desk-day-report-stat:nth-child(2) {
+        border-right: 0;
+      }
+      .desk-day-report-stat:nth-child(-n + 2) {
+        border-bottom: 1px solid #e1e9e5;
+      }
+      .desk-day-report-worker-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .desk-day-report-worker-card {
+        min-height: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -24422,7 +24759,8 @@
             success: false,
             message: res && res.message ? res.message : "캘린더 일정을 불러오지 못했습니다.",
             events: [],
-            warnings: []
+            warnings: [],
+            checkedAt: new Date().toISOString()
           };
           return;
         }
@@ -24430,14 +24768,16 @@
           success: true,
           events: Array.isArray(res.events) ? res.events : [],
           warnings: Array.isArray(res.warnings) ? res.warnings : [],
-          sources: res.sources || {}
+          sources: res.sources || {},
+          checkedAt: new Date().toISOString()
         };
       }).catch(function(err) {
         state.desk.calendarEventsByDate[safeDateKey] = {
           success: false,
           message: err && err.message ? err.message : String(err || "캘린더 조회 오류"),
           events: [],
-          warnings: []
+          warnings: [],
+          checkedAt: new Date().toISOString()
         };
       }).finally(function() {
         delete state.desk.calendarEventsLoading[safeDateKey];
@@ -24889,17 +25229,54 @@
       var tone = getDeskShiftTone_(item);
       var memo = item.note || getDeskToneLabel_(tone) || "메모 없음";
       var unavailableClass = item.unavailable ? " is-unavailable" : "";
+      var workerName = String(item.worker || "-").trim() || "-";
+      var initial = workerName.slice(0, 1);
+      var timeIcon = item.unavailable ? "calendar-x-2" : (item.resident ? "building-2" : "clock-3");
       return '<article class="desk-day-report-worker-card' + unavailableClass + '" style="' + escapeHtml(getDeskShiftCardStyle_(item)) + '">' +
-        '<div class="desk-day-report-time">' +
-          '<strong>' + formatDeskReportShiftTimeHtml_(item) + '</strong>' +
+        '<div class="desk-day-report-worker-head">' +
+          '<div class="desk-day-report-worker-identity">' +
+            '<span class="desk-day-report-avatar" aria-hidden="true">' + escapeHtml(initial) + '</span>' +
+            '<div class="desk-day-report-worker-line"><strong class="desk-day-report-worker-name">' + escapeHtml(workerName) + '</strong>' + getDeskRoleBadgeHtml_(item) + '</div>' +
+          '</div>' +
           '<span class="desk-day-report-duration">' + escapeHtml(formatDeskReportDuration_(item)) + '</span>' +
         '</div>' +
+        '<div class="desk-day-report-time">' +
+          '<span class="desk-day-report-time-icon" aria-hidden="true"><i data-lucide="' + timeIcon + '"></i></span>' +
+          '<strong>' + formatDeskReportShiftTimeHtml_(item) + '</strong>' +
+        '</div>' +
         '<div class="desk-day-report-worker-main">' +
-          '<div class="desk-day-report-worker-line"><strong class="desk-day-report-worker-name">' + escapeHtml(item.worker || "-") + '</strong>' + getDeskRoleBadgeHtml_(item) + '</div>' +
           renderDeskCoverageSummaryHtml_(item, dayItems) +
-          '<p>' + escapeHtml(memo) + '</p>' +
+          '<p class="desk-day-report-worker-note">' + escapeHtml(memo) + '</p>' +
         '</div>' +
       '</article>';
+    }
+
+    function renderDeskDayReportSummary_(dayItems, workerCount, countedHours) {
+      var unavailableCount = (dayItems || []).filter(function(item) { return !!item.unavailable; }).length;
+      var residentCount = (dayItems || []).filter(function(item) { return !!item.resident && !item.unavailable; }).length;
+      var stats = [
+        { label: "근무자", value: workerCount + "명", icon: "users", tone: "" },
+        { label: "집계 시간", value: formatDeskHours_(countedHours), icon: "clock-3", tone: " tone-blue" },
+        { label: "상주 근무", value: residentCount + "명", icon: "building-2", tone: " tone-amber" },
+        { label: "근무 불가", value: unavailableCount + "명", icon: "calendar-x-2", tone: " tone-slate" }
+      ];
+      return '<div class="desk-day-report-summary" aria-label="선택 날짜 근무 요약">' + stats.map(function(stat) {
+        return '<div class="desk-day-report-stat' + stat.tone + '">' +
+          '<span class="desk-day-report-stat-icon" aria-hidden="true"><i data-lucide="' + stat.icon + '"></i></span>' +
+          '<span><span class="desk-day-report-stat-label">' + escapeHtml(stat.label) + '</span>' +
+          '<strong class="desk-day-report-stat-value">' + escapeHtml(stat.value) + '</strong></span>' +
+        '</div>';
+      }).join("") + '</div>';
+    }
+
+    function formatDeskCalendarCheckedAt_(value) {
+      var date = new Date(value || "");
+      if (Number.isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).format(date);
     }
 
     function renderDeskReportCalendarPlaceholder_(dateKey) {
@@ -24908,13 +25285,16 @@
       var isLoading = !!state.desk.calendarEventsLoading[calendarDateKey];
       var events = calendarState && Array.isArray(calendarState.events) ? calendarState.events : [];
       var warningText = calendarState && calendarState.warnings && calendarState.warnings.length ? calendarState.warnings.join(" · ") : "";
-      var statusClass = isLoading ? " loading" : (calendarState && !calendarState.success ? " error" : "");
-      var statusText = isLoading ? "불러오는 중" : (calendarState && !calendarState.success ? "확인 필요" : (events.length ? (events.length + "건") : "일정 없음"));
+      var sourceName = calendarState && calendarState.sources ? String(calendarState.sources.source || "") : "";
+      var connected = !!(calendarState && calendarState.success && sourceName === "calendarApi");
+      var checkedAt = formatDeskCalendarCheckedAt_(calendarState && calendarState.checkedAt);
+      var statusClass = isLoading ? " loading" : (calendarState && !calendarState.success ? " error" : (connected ? " connected" : ""));
+      var statusText = isLoading ? "불러오는 중" : (calendarState && !calendarState.success ? "확인 필요" : (events.length ? (events.length + "건") : (connected ? "연동 정상" : "설정 확인")));
       return '<aside class="desk-day-calendar-placeholder">' +
         '<div class="desk-day-calendar-placeholder-head">' +
           '<div>' +
             '<div class="desk-day-calendar-placeholder-title">구글 캘린더</div>' +
-            '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(calendarDateKey, true)) + ' 반포관 데스크 일정입니다.</div>' +
+            '<div class="desk-day-calendar-placeholder-sub">' + escapeHtml(formatDeskDateLabel_(calendarDateKey, true)) + ' · 반포관 데스크' + (checkedAt ? (' · ' + escapeHtml(checkedAt) + ' 확인') : '') + '</div>' +
           '</div>' +
           '<div class="desk-day-calendar-head-actions">' +
             '<span class="desk-day-calendar-status' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
@@ -24933,7 +25313,9 @@
         return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="alert-circle"></i></span><div><strong>캘린더 연동 확인 필요</strong><span>' + escapeHtml(calendarState.message || "일정을 불러오지 못했습니다.") + '</span></div></div>';
       }
       if (!events.length) {
-        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="calendar-days"></i></span><div><strong>표시할 일정 없음</strong><span>반포관 데스크에 해당 날짜 일정이 없습니다.</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
+        var sourceName = calendarState && calendarState.sources ? String(calendarState.sources.source || "") : "";
+        var connected = !!(calendarState && calendarState.success && sourceName === "calendarApi");
+        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="' + (connected ? 'calendar-check-2' : 'calendar-days') + '"></i></span><div><strong>' + (connected ? '연동 정상 · 일정 없음' : '표시할 일정 없음') + '</strong><span>' + (connected ? '선택한 날짜에는 등록된 구글 캘린더 일정이 없습니다.' : '반포관 데스크에 해당 날짜 일정이 없습니다.') + '</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
       }
       return events.map(function(item) {
         return '<div class="desk-day-calendar-slot source-calendar">' +
@@ -24996,7 +25378,8 @@
           '</div>' +
           '<div class="desk-day-report-grid">' +
             '<section class="desk-day-phone-schedule">' +
-              '<div class="desk-day-phone-head"><div><strong>근무자 목록</strong><span>공유 이미지에서 세로로 읽히는 일정입니다.</span></div><span class="desk-day-phone-count">' + dayItems.length + '건</span></div>' +
+              '<div class="desk-day-phone-head"><div><strong>근무자 목록</strong><span>선택 날짜 근무 배치 현황</span></div><span class="desk-day-phone-count">' + dayItems.length + '건</span></div>' +
+              renderDeskDayReportSummary_(dayItems, workerCount, countedHours) +
               '<div class="desk-day-report-worker-list">' + (dayItems.length ? dayItems.map(function(item) { return renderDeskDayReportWorkerCard_(item, dayItems); }).join("") : '<div class="desk-empty desk-selected-empty"><i data-lucide="calendar-plus"></i><strong>등록된 근무자가 없습니다.</strong><span>일정을 추가하면 이 영역에 세로 목록으로 표시됩니다.</span></div>') + '</div>' +
             '</section>' +
             renderDeskReportCalendarPlaceholder_(dateKey) +
