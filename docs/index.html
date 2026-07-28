@@ -28448,6 +28448,12 @@
       if (!safeDateKey || safeDateKey === DESK_ROUTINE_TEMPLATE_KEY) return;
       var workerNames = (workers || []).map(function(item) { return item.worker || item; }).filter(Boolean);
       var workerKey = workerNames.map(normalizeDeskWorkerKey_).sort().join("|");
+      var pendingWorkerNames = getDeskKnownWorkers_().concat(workerNames).filter(function(name, index, source) {
+        var key = normalizeDeskWorkerKey_(name);
+        return key && source.findIndex(function(candidate) {
+          return normalizeDeskWorkerKey_(candidate) === key;
+        }) === index;
+      });
       if (state.desk.daily.carryoverDateKey === safeDateKey && state.desk.daily.carryoverWorkerKey === workerKey) return;
       if (state.desk.daily.carryoverLoadingDateKey === safeDateKey + "::" + workerKey) return;
       state.desk.daily.carryoverLoadingDateKey = safeDateKey + "::" + workerKey;
@@ -28461,7 +28467,7 @@
         return [];
       });
 
-      var serverScan = withDeskTimeout_(fetchDeskDailyPendingTasksRealtime_(safeDateKey, []), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS)
+      var serverScan = withDeskTimeout_(fetchDeskDailyPendingTasksRealtime_(safeDateKey, pendingWorkerNames), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS)
         .catch(function() {
           if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
             return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {

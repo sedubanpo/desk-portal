@@ -44,7 +44,8 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /if \(!\(workerNames \|\| \[\]\)\.length\) return true;/);
-  assert.match(source, /fetchDeskDailyPendingTasksRealtime_\(safeDateKey, \[\]\)/);
+  assert.match(source, /var pendingWorkerNames = getDeskKnownWorkers_\(\)\.concat\(workerNames\)/);
+  assert.match(source, /fetchDeskDailyPendingTasksRealtime_\(safeDateKey, pendingWorkerNames\)/);
   assert.match(source, /state\.desk\.daily\.carryoverDateKey === dateKey/);
   assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
 });
