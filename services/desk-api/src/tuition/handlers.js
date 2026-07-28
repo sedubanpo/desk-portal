@@ -56,6 +56,7 @@ export const TUITION_READ_METHODS = new Set([
 ]);
 
 export const TUITION_WRITE_METHODS = new Set([
+  'createTuitionMonth',
   'saveTuitionStatusOnly', 'saveTuitionFollowup', 'saveTuitionStudentMemo',
   'saveTuitionAmountAdjustment', 'appendTuitionPaymentEntry', 'deleteTuitionPaymentEntry'
 ]);
@@ -84,6 +85,67 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const selectedMonth = monthName(payload.monthName) || months[0];
       if (!selectedMonth) return failure('Firestore 수강료 월 인덱스가 비어 있습니다. 수강료 Firebase 마이그레이션을 먼저 실행해 주세요.');
       return buildMonthSummary(store, { ...payload, monthName: selectedMonth, months: months.length ? months : [selectedMonth] });
+    },
+
+    async createTuitionMonth(payload = {}, identity = {}) {
+      const month = monthName(payload.monthName);
+      const requestId = requiredRequestId(payload);
+      if (!month) return failure('생성할 수강료 월 정보가 올바르지 않습니다.');
+      if (!requestId) return failure('월 생성 요청 식별자가 없습니다. 다시 시도해 주세요.');
+
+      const studentDocuments = await loadActiveStudentDocuments(store);
+      const rowsByName = new Map();
+      studentDocuments.filter(isActiveStudent).map(studentMasterTuitionRow).filter(Boolean).forEach(row => {
+        if (!rowsByName.has(row.studentName)) rowsByName.set(row.studentName, row);
+      });
+      const rows = [...rowsByName.values()].sort((a, b) => a.studentName.localeCompare(b.studentName, 'ko'));
+      const timestamp = nowIso();
+      const today = formatDateKey(nowDate(), timeZone);
+      const keys = {
+        snapshot: key(COLLECTIONS.snapshots, snapshotId(month)),
+        monthIndex: key(COLLECTIONS.monthIndex, monthIndexId(month)),
+        recent: key(COLLECTIONS.paymentIndexes, 'recent'),
+        payments: key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month)),
+        followups: key(COLLECTIONS.monthlyIndexes, followupIndexId(month)),
+        charges: key(COLLECTIONS.monthlyIndexes, `charges_${month}`)
+      };
+      const result = await store.transaction(Object.values(keys), documents => {
+        if (documents[keys.snapshot]?.success && Array.isArray(documents[keys.snapshot].rows)) {
+          return { result: { created: false } };
+        }
+        const stats = summaryStats(rows, []);
+        const recentPayments = mergePayments(documents[keys.recent]?.payments || []);
+        return {
+          writes: {
+            [keys.snapshot]: {
+              success: true,
+              selectedMonth: month,
+              rows,
+              payments: [],
+              allPayments: recentPayments,
+              todayPayments: recentPayments.filter(row => paidDateKey(row) === today),
+              kpi: stats.kpi,
+              chart: stats.chart,
+              snapshot: {
+                source: 'desk_portal_month_creation',
+                computedAt: timestamp,
+                schemaVersion: 'v4',
+                requestId,
+                actorUid: text(identity.uid),
+                actorName: text(identity.name)
+              }
+            },
+            [keys.monthIndex]: monthIndexDocument(month, timestamp, 'tuition_month_creation'),
+            [keys.payments]: { monthName: month, payments: [], seeded: true, updatedAt: timestamp },
+            [keys.followups]: { monthName: month, rows: [], seeded: true, updatedAt: timestamp },
+            [keys.charges]: { monthName: month, rows: [], seeded: true, updatedAt: timestamp }
+          },
+          result: { created: true }
+        };
+      });
+      const months = await loadMonths(store);
+      const summary = await buildMonthSummary(store, { monthName: month, months });
+      return { ...summary, created: result.created };
     },
 
     async getTuitionStudentMemoNotes(payload = {}) {
@@ -867,6 +929,7 @@ function paidMonthLabel(row) {
 
 function errorLabel(name) {
   const labels = {
+    createTuitionMonth: '수강료 월 생성 오류',
     getTuitionBootstrapData: '수강료 초기 데이터 로드 오류', getTuitionMonthSummary: '수강료 요약 조회 오류',
     getTuitionStudentMonthlyHistory: '학생 월별 이력 조회 오류', getTuitionStudentMemoNotes: '수강료 메모 조회 오류',
     getTuitionGuideDashboard: '안내 대시보드 조회 오류', getTuitionMonthlySalesOverview: '월별 매출 집계 오류',

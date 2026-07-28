@@ -53,7 +53,7 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
-  assert.match(source, /\^\(save\|delete\|append\|update\|batchUpdate\|adjust\|add\)/);
+  assert.match(source, /\^\(create\|save\|delete\|append\|update\|batchUpdate\|adjust\|add\)/);
   assert.match(source, /addDeskRecruitingApplicantComment: true/);
   assert.match(source, /storageId: applicant && applicant\.storageId \|\| id/);
   assert.match(source, /data-desk-hr-storage-id/);
@@ -90,4 +90,8 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /var all = buildTuitionEffectivePaymentRows_\(state\.tuition\.payments \|\| \[\]\)/);
   assert.match(source, /var list = buildTuitionEffectivePaymentRows_\(sourceRows\)\.filter/);
   assert.match(source, /count: list\.filter\(function\(row\) \{ return !isTuitionAdjustmentPayment_\(row\); \}\)\.length/);
+  assert.match(source, /id="tuitionMonthCreateBtn"/);
+  assert.match(source, /createTuitionMonth: true/);
+  assert.match(source, /function formatTuitionMonthLabel_/);
+  assert.match(source, /return year \+ "-" \+ parseInt\(match\[2\], 10\) \+ "월"/);
 });

@@ -108,6 +108,50 @@ test('month summary merges newly registered active students without reviving ina
   assert.equal(result.kpi.totalStudents, 2);
 });
 
+test('creating a tuition month seeds active students and never overwrites an existing month', async () => {
+  const seed = tuitionSeed();
+  seed.documents['students/active-a'] = {
+    studentId: 'active-a', studentName: '신유진', school: '세화여고', grade: '2',
+    status: 'ACTIVE', active: true
+  };
+  seed.documents['students/active-b'] = {
+    studentId: 'active-b', studentName: '송태영', school: '세화고', grade: '1',
+    status: '등록', active: true
+  };
+  seed.documents['students/stopped'] = {
+    studentId: 'stopped', studentName: '이중지', status: 'STOPPED', active: false
+  };
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-28T06:00:00.000Z') });
+
+  const created = await handlers.createTuitionMonth({
+    monthName: '26-08s',
+    clientRequestId: 'create-26-08'
+  }, { uid: 'staff-1', name: '관리자' });
+  assert.equal(created.success, true);
+  assert.equal(created.created, true);
+  assert.equal(created.selectedMonth, '26-08s');
+  assert.deepEqual(created.months, ['26-08s', '26-07s']);
+  assert.deepEqual(created.rows.map(row => row.studentName), ['송태영', '신유진']);
+  assert.equal(created.rows.every(row => row.guideAmount === 0 && row.unpaidStatus === '안내이전'), true);
+  assert.equal(created.allPayments.length, 1);
+  assert.equal(store.dump()['tuitionPaymentReadIndexes/payment_month_26-08s'].seeded, true);
+
+  const existingSnapshot = store.dump()[`tuitionMonthSnapshots/${snapshotId('26-08s')}`];
+  existingSnapshot.rows[0].guideAmount = 999;
+  const repeatedStore = memoryStore({
+    ...store.dump(),
+    [`tuitionMonthSnapshots/${snapshotId('26-08s')}`]: existingSnapshot
+  });
+  const repeated = await createTuitionHandlers({ store: repeatedStore }).createTuitionMonth({
+    monthName: '26-08s',
+    clientRequestId: 'create-26-08-again'
+  });
+  assert.equal(repeated.success, true);
+  assert.equal(repeated.created, false);
+  assert.equal(repeatedStore.dump()[`tuitionMonthSnapshots/${snapshotId('26-08s')}`].rows[0].guideAmount, 999);
+});
+
 test('active student queries find a canonical record beyond the first 1000 alias documents', async () => {
   const seed = tuitionSeed();
   for (let index = 0; index < 1001; index += 1) {
