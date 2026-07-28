@@ -57,6 +57,20 @@ test('journal task write updates the day record and pending index together', asy
   assert.equal(store.dump().desk_portal.daily_pending_tasks?.['task-1'], undefined);
 });
 
+test('pending task read returns every assignee when the worker filter is empty', async () => {
+  const store = memoryStore({ desk_portal: { daily_pending_tasks: {
+    'task-on-duty': { id: 'task-on-duty', dateKey: '2026-07-14', worker: '안종성', title: '당일 담당 업무', completed: false },
+    'task-off-duty': { id: 'task-off-duty', dateKey: '2026-07-13', worker: '이민현', title: '다음 근무일 확인 업무', completed: false }
+  } } });
+  const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });
+
+  const all = await handlers.getDeskDailyJournalPendingTasks({ beforeDateKey: '2026-07-15', workers: [] });
+  assert.deepEqual(all.tasks.map(item => item.id).sort(), ['task-off-duty', 'task-on-duty']);
+
+  const filtered = await handlers.getDeskDailyJournalPendingTasks({ beforeDateKey: '2026-07-15', workers: ['안종성'] });
+  assert.deepEqual(filtered.tasks.map(item => item.id), ['task-on-duty']);
+});
+
 test('supply quantity adjustment uses a transaction and clamps to stock bounds', async () => {
   const store = memoryStore({ desk_portal: { supplies: { consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', qty: 1, maxQty: 3, safetyQty: 1, unit: '권' }], assets: [] } } });
   let transactions = 0;

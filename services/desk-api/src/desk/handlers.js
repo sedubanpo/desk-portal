@@ -117,7 +117,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const add = (raw, id, fallbackDate) => {
         const task = dailyTask(raw, id, fallbackDate, now());
         if (!task.id || seen.has(task.id) || !task.dateKey || task.dateKey >= before || task.completed) return;
-        if (!isSharedTask(task) && (!workers.size || !workers.has(workerKey(task.worker)))) return;
+        if (!isSharedTask(task) && workers.size && !workers.has(workerKey(task.worker))) return;
         seen.add(task.id);
         tasks.push(task);
       };

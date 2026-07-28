@@ -28376,6 +28376,7 @@
       var safeDateKey = String(beforeDateKey || "").trim();
       if (!task || !task.dateKey || task.dateKey >= safeDateKey || task.completed) return false;
       if (isDeskSharedTask_(task)) return true;
+      if (!(workerNames || []).length) return true;
       return (workerNames || []).some(function(name) { return isSameDeskWorkerName_(task.worker, name); });
     }
 
@@ -28460,7 +28461,7 @@
         return [];
       });
 
-      var serverScan = withDeskTimeout_(fetchDeskDailyPendingTasksRealtime_(safeDateKey, workerNames), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS)
+      var serverScan = withDeskTimeout_(fetchDeskDailyPendingTasksRealtime_(safeDateKey, []), DESK_DAILY_CARRYOVER_SERVER_TIMEOUT_MS)
         .catch(function() {
           if (DESK_DAILY_CLIENT_RTDB_FALLBACK_ENABLED) {
             return fetchDeskDailyCarryoverTasksFromRealtimeRoot_(safeDateKey, workerNames).then(function(items) {
@@ -28995,6 +28996,11 @@
       getDeskDailyJournalTasks_(dateKey).forEach(function(item) {
         if (!isDeskSharedTask_(item)) pushName(item.worker);
       });
+      if (state.desk.daily.carryoverDateKey === dateKey) {
+        (state.desk.daily.carryoverTasks || []).forEach(function(item) {
+          if (!item.completed && !isDeskSharedTask_(item) && item.dateKey < dateKey) pushName(item.worker);
+        });
+      }
       getDeskDailyJournalMemos_(dateKey).forEach(function(item) { pushName(item.worker); });
       if (deskJournalAssignedWorkerEl) pushName(deskJournalAssignedWorkerEl.value);
       if (deskJournalMemoWorkerEl) pushName(deskJournalMemoWorkerEl.value);

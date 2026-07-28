@@ -40,6 +40,15 @@ test('supply management keeps every academy branch visible without inventory row
   assert.match(source, /\(state\.desk\.supplies\.consumables \|\| \[\]\)\.forEach/);
 });
 
+test('unfinished assignments remain visible when the assignee is not scheduled today', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /if \(!\(workerNames \|\| \[\]\)\.length\) return true;/);
+  assert.match(source, /fetchDeskDailyPendingTasksRealtime_\(safeDateKey, \[\]\)/);
+  assert.match(source, /state\.desk\.daily\.carryoverDateKey === dateKey/);
+  assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
+});
+
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
