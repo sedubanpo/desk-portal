@@ -10,6 +10,9 @@
     "tests": "58/58 passed",
     "inlineScript": "parsed",
     "viewport1440": "no document or table overflow",
-    "viewport1920": "no document or table overflow"
+    "viewport1920": "no document or table overflow",
+    "cloudRunRevision": "desk-portal-api-00016-cgd",
+    "githubPagesCommit": "55b64bb",
+    "productionMarkers": "verified"
   }
 }
