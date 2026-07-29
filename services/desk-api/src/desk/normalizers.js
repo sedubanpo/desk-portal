@@ -65,6 +65,12 @@ export function compareScheduleEntries(left, right) {
 }
 
 export function dailyTask(item = {}, fallbackId = '', fallbackDateKey = '', now = new Date().toISOString()) {
+  const completed = Boolean(item.completed);
+  const deleted = Boolean(item.deleted);
+  const requestedStatus = String(item.progressStatus || '').trim();
+  const progressStatus = completed
+    ? '완료'
+    : (['대기', '진행 중', '확인 필요'].includes(requestedStatus) ? requestedStatus : (item.unresolvedReason ? '확인 필요' : '대기'));
   const task = {
     id: String(item.id || fallbackId || newId()).trim(),
     dateKey: dateKey(item.dateKey || fallbackDateKey),
@@ -72,16 +78,30 @@ export function dailyTask(item = {}, fallbackId = '', fallbackDateKey = '', now 
     category: String(item.category || '일반').trim(),
     title: String(item.title || '').trim(),
     note: String(item.note || '').trim(),
-    completed: Boolean(item.completed),
+    completed,
+    deleted,
+    progressStatus,
     unresolvedReason: String(item.unresolvedReason || '').trim(),
+    nextAction: String(item.nextAction || '').trim(),
     ackWorkers: workerNames(item.ackWorkers),
     hiddenFromWorkerBand: Boolean(item.hiddenFromWorkerBand),
     sortOrder: finiteNumber(item.sortOrder),
     targetWorkers: workerNames(item.targetWorkers),
     createdAt: String(item.createdAt || now).trim(),
-    updatedAt: String(item.updatedAt || item.createdAt || now).trim()
+    createdByUid: String(item.createdByUid || '').trim(),
+    createdByName: String(item.createdByName || '').trim(),
+    updatedAt: String(item.updatedAt || item.createdAt || now).trim(),
+    updatedByUid: String(item.updatedByUid || '').trim(),
+    updatedByName: String(item.updatedByName || '').trim(),
+    completedAt: String(item.completedAt || '').trim(),
+    deletedAt: String(item.deletedAt || '').trim(),
+    deletedByUid: String(item.deletedByUid || '').trim(),
+    deletedByName: String(item.deletedByName || '').trim()
   };
-  if (task.completed) task.unresolvedReason = '';
+  if (task.completed) {
+    task.unresolvedReason = '';
+    task.nextAction = '';
+  }
   return task;
 }
 

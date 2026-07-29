@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "criteria": {
+    "C001": "passed",
+    "C002": "passed",
+    "C003": "passed",
+    "C004": "passed"
+  },
+  "verification": {
+    "tests": "58/58 passed",
+    "inlineScript": "parsed",
+    "viewport1440": "no document or table overflow",
+    "viewport1920": "no document or table overflow"
+  }
+}

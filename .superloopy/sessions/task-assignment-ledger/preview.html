@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>업무 배정 원장 시각 점검</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#edf3f0;color:#0f172a;font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-weight:700}
+    .shell{display:grid;grid-template-columns:210px minmax(0,1fr);min-height:100vh}.side{background:#063c30;color:#fff;padding:24px 18px}.brand{font-size:17px;font-weight:900}.side h1{margin:28px 0 8px;font-size:25px}.side p{margin:0;color:#b7d5ca;font-size:12px;line-height:1.6}.nav{margin-top:28px;display:grid;gap:5px}.nav div{padding:11px 12px;border-radius:5px;color:#cbe1d9;font-size:13px}.nav .on{background:#fff;color:#063c30}.main{min-width:0;padding:22px}.top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px}.top h2{margin:0;font-size:25px}.top p{margin:6px 0 0;color:#64748b;font-size:13px}.tabs{display:flex;border-bottom:1px solid #cbdad3;margin-bottom:14px}.tabs span{padding:10px 15px;color:#64748b;font-size:13px}.tabs .on{border-bottom:3px solid #0d684d;color:#0d684d}
+    .ledger{border:1px solid #d8e4de;border-radius:6px;overflow:hidden;background:#fff}.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:16px;border-bottom:1px solid #d8e4de;background:#f8fbf9}.title{font-size:17px;font-weight:900}.sub{margin-top:4px;color:#64748b;font-size:12px}.filters{display:grid;grid-template-columns:minmax(180px,1fr) 126px;gap:8px;width:min(440px,100%)}input,select{min-height:36px;border:1px solid #d5e1db;border-radius:5px;background:#fff;color:#0f172a;font:800 12px inherit;padding:0 10px}.summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-bottom:1px solid #d8e4de}.stat{padding:12px 16px;border-right:1px solid #e6eeea}.stat span{display:block;color:#64748b;font-size:11px}.stat strong{display:block;margin-top:3px;font-size:18px;font-variant-numeric:tabular-nums}.stat.att strong{color:#c2410c}.wrap{overflow-x:auto}table{width:100%;min-width:1180px;border-collapse:collapse;table-layout:fixed}th{height:38px;padding:0 10px;border-right:1px solid #e4ece8;border-bottom:1px solid #d8e4de;background:#f1f6f3;color:#475569;font-size:11px;text-align:left;white-space:nowrap}td{padding:10px;border-right:1px solid #edf2ef;border-bottom:1px solid #e6eeea;font-size:12px;line-height:1.4;vertical-align:top}.task{font-size:13px;font-weight:900}.meta{margin-top:4px;color:#64748b;font-size:11px}.follow{display:grid;gap:6px}.follow input{width:100%}.save{width:34px;height:34px;border:1px solid #b8d4c8;border-radius:5px;background:#fff;color:#0d684d;font-size:16px}.deleted td{background:#f8fafc;color:#94a3b8}.status{display:inline-flex;align-items:center;min-height:24px;padding:0 7px;border-left:3px solid #94a3b8;background:#f8fafc;font-size:11px}.error{color:#b91c1c}.deleted .status{border-color:#dc2626;color:#b91c1c;background:#fef2f2}
+    @media(max-width:900px){.shell{grid-template-columns:1fr}.side{display:none}.main{padding:14px}.head{align-items:stretch;flex-direction:column}.filters{width:100%}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side"><div class="brand">S-LMS 데스크 포털</div><h1>데스크 관리</h1><p>업무 배정과 근무 기록을 한 화면에서 관리합니다.</p><div class="nav"><div>일일 업무일지</div><div class="on">업무 관리자</div><div>월별 근무표</div><div>물품 관리</div></div></aside>
+    <main class="main">
+      <div class="top"><div><h2>업무 관리자</h2><p>모든 배정과 처리 이력을 날짜와 관계없이 확인합니다.</p></div></div>
+      <div class="tabs"><span>업무 배정</span><span>루틴 업무</span><span class="on">배정 원장</span></div>
+      <section class="ledger">
+        <div class="head"><div><div class="title">업무 배정 원장</div><div class="sub">저장된 배정과 완료, 삭제 이력을 한 화면에서 확인합니다.</div></div><div class="filters"><input value="" placeholder="업무, 입력자, 담당자 검색"><select><option>전체</option></select></div></div>
+        <div class="summary"><div class="stat"><span>전체 배정</span><strong>56</strong></div><div class="stat"><span>미완료</span><strong>26</strong></div><div class="stat att"><span>후속 확인</span><strong>4</strong></div><div class="stat"><span>완료</span><strong>27</strong></div><div class="stat"><span>삭제 이력</span><strong>3</strong></div></div>
+        <div class="wrap"><table><colgroup><col style="width:25%"><col style="width:9%"><col style="width:9%"><col style="width:13%"><col style="width:13%"><col style="width:26%"><col style="width:5%"></colgroup><thead><tr><th>업무 / 메모</th><th>입력자</th><th>담당자</th><th>배정 일시</th><th>진행 상태</th><th>미해결 사유 / 후속 단계</th><th>저장</th></tr></thead><tbody>
+          <tr><td><div class="task">전체학원 원본 자료 및 당일특이사항 확인</div><div class="meta">업무 시작 전 자료 확인</div></td><td>예스영어학원 관리자</td><td>안종성</td><td>7/29(수) 14:12<div class="meta">업무일 2026-07-29</div></td><td><select><option>진행 중</option></select><div class="meta">수정 7/29 15:02</div></td><td><div class="follow"><input placeholder="미해결 사유"><input value="17시까지 확인 후 원지영에게 전달" placeholder="후속 단계"></div></td><td><button class="save">✓</button></td></tr>
+          <tr><td><div class="task">복도 청소 및 배송온 A4용지 정리</div><div class="meta error">서버 저장 확인 필요</div></td><td>홍성우</td><td>이동혁</td><td>7/29(수) 15:18<div class="meta">업무일 2026-07-29</div></td><td><select><option>확인 필요</option></select><div class="meta">수정 7/29 15:18</div></td><td><div class="follow"><input value="배송 수량이 발주와 다름"><input value="거래명세서 확인 후 7/30 오전 재확인"></div></td><td><button class="save">✓</button></td></tr>
+          <tr><td><div class="task">선규문의 누락 발생성 파악</div><div class="meta">담당자 확인 완료</div></td><td>예스영어학원 관리자</td><td>원지영</td><td>7/28(화) 16:30<div class="meta">업무일 2026-07-28</div></td><td><select><option>완료</option></select><div class="meta">수정 7/28 18:22</div></td><td><div class="meta">처리 완료</div></td><td><button class="save">✓</button></td></tr>
+          <tr class="deleted"><td><div class="task">테스트 배정</div><div class="meta">잘못 입력된 업무</div></td><td>홍성우</td><td>이성진</td><td>7/27(월) 12:05<div class="meta">업무일 2026-07-27</div></td><td><span class="status">삭제됨</span><div class="meta">수정 7/27 12:07</div></td><td><div class="meta">삭제 7/27 12:07 · 홍성우</div></td><td></td></tr>
+        </tbody></table></div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

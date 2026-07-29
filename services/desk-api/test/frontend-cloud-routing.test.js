@@ -50,6 +50,17 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
   assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
 });
 
+test('assignment ledger exposes ownership, progress, follow-up, and deletion history', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /data-desk-editor-tab="ledger">배정 원장/);
+  assert.match(source, /getDeskDailyJournalTaskLedger: true/);
+  assert.match(source, /업무 \/ 메모<\/th><th>입력자<\/th><th>담당자<\/th><th>배정 일시<\/th><th>진행 상태<\/th><th>미해결 사유 \/ 후속 단계/);
+  assert.match(source, /data-desk-ledger-next=/);
+  assert.match(source, /해결하지 못한 업무는 다음 후속 단계를 입력해 주세요/);
+  assert.match(source, /서버 저장 확인 필요/);
+});
+
 test('selected-day schedule report uses responsive worker cards and distinguishes an empty connected calendar', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

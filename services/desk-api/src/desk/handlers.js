@@ -34,6 +34,7 @@ export const DESK_READ_METHODS = new Set([
   'getDeskCalendarEvents',
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
+  'getDeskDailyJournalTaskLedger',
   'getDeskSuppliesData',
   'getDeskRecruitingApplicantsData',
   'getDeskPortalConfig'
@@ -103,7 +104,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const key = dateKey(payload.dateKey);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       const stored = await store.get(`${PATHS.journal}/${key}`) || {};
-      const tasks = Object.entries(stored.tasks || {}).map(([id, item]) => dailyTask(item, id, key, now())).sort(compareDailyTasks);
+      const tasks = Object.entries(stored.tasks || {}).map(([id, item]) => dailyTask(item, id, key, now())).filter(item => !item.deleted).sort(compareDailyTasks);
       const memos = Object.entries(stored.memos || {}).map(([id, item]) => dailyMemo(item, id, key, now())).sort(compareDailyMemos);
       return { success: true, dateKey: key, tasks, memos };
     },
@@ -116,7 +117,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const tasks = [];
       const add = (raw, id, fallbackDate) => {
         const task = dailyTask(raw, id, fallbackDate, now());
-        if (!task.id || seen.has(task.id) || !task.dateKey || task.dateKey >= before || task.completed) return;
+        if (!task.id || seen.has(task.id) || !task.dateKey || task.dateKey >= before || task.completed || task.deleted) return;
         if (!isSharedTask(task) && workers.size && !workers.has(workerKey(task.worker))) return;
         seen.add(task.id);
         tasks.push(task);
@@ -131,24 +132,81 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, beforeDateKey: before, includeSharedCarryover: true, tasks };
     },
 
-    async saveDeskDailyJournalTask(payload = {}) {
+    async getDeskDailyJournalTaskLedger(payload = {}) {
+      const stored = await store.get(PATHS.journal) || {};
+      const includeShared = Boolean(payload.includeShared);
+      const includeRoutine = Boolean(payload.includeRoutine);
+      const tasks = [];
+      for (const [storedDate, day] of Object.entries(stored)) {
+        for (const [id, raw] of Object.entries(day?.tasks || {})) {
+          const task = dailyTask(raw, id, storedDate, now());
+          if (!includeShared && isSharedTask(task)) continue;
+          if (!includeRoutine && (task.dateKey === '2099-12-31' || workerKey(task.worker) === workerKey('루틴업무'))) continue;
+          tasks.push(task);
+        }
+      }
+      tasks.sort((left, right) => {
+        const leftStamp = String(left.updatedAt || left.createdAt || left.dateKey);
+        const rightStamp = String(right.updatedAt || right.createdAt || right.dateKey);
+        return rightStamp.localeCompare(leftStamp) || right.id.localeCompare(left.id);
+      });
+      return {
+        success: true,
+        tasks,
+        summary: {
+          total: tasks.length,
+          pending: tasks.filter(item => !item.completed && !item.deleted).length,
+          completed: tasks.filter(item => item.completed && !item.deleted).length,
+          deleted: tasks.filter(item => item.deleted).length,
+          needsFollowup: tasks.filter(item => !item.completed && !item.deleted && (item.progressStatus === '확인 필요' || item.unresolvedReason || item.nextAction)).length
+        }
+      };
+    },
+
+    async saveDeskDailyJournalTask(payload = {}, identity = {}) {
       const key = dateKey(payload.dateKey || payload.task?.dateKey);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
-      const task = dailyTask(payload.task, payload.task?.id, key, now());
+      const stamp = now();
+      const existing = payload.task?.id ? await store.get(`${PATHS.journal}/${key}/tasks/${payload.task.id}`) : null;
+      const task = dailyTask({ ...(existing || {}), ...(payload.task || {}) }, payload.task?.id, key, stamp);
       if (!task.worker) return failure('업무 대상 근무자가 필요합니다.');
       if (!task.title) return failure('업무 제목을 입력해 주세요.');
+      task.createdAt = String(existing?.createdAt || task.createdAt || stamp);
+      task.createdByUid = String(existing?.createdByUid || task.createdByUid || identity.uid || '');
+      task.createdByName = String(existing?.createdByName || task.createdByName || identity.name || '');
+      task.updatedAt = stamp;
+      task.updatedByUid = String(identity.uid || task.updatedByUid || '');
+      task.updatedByName = String(identity.name || task.updatedByName || '');
+      task.completedAt = task.completed ? String(existing?.completedAt || stamp) : '';
+      task.deleted = false;
+      task.deletedAt = '';
+      task.deletedByUid = '';
+      task.deletedByName = '';
       const updates = { [`${PATHS.journal}/${key}/tasks/${task.id}`]: task, [`${PATHS.pending}/${task.id}`]: task.completed ? null : task };
       await store.update('', updates);
       return { success: true, dateKey: key, task };
     },
 
-    async deleteDeskDailyJournalTask(payload = {}) {
+    async deleteDeskDailyJournalTask(payload = {}, identity = {}) {
       const key = dateKey(payload.dateKey);
       const id = String(payload.id || '').trim();
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       if (!id) return failure('삭제할 업무 ID가 없습니다.');
-      await store.update('', { [`${PATHS.journal}/${key}/tasks/${id}`]: null, [`${PATHS.pending}/${id}`]: null });
-      return { success: true, dateKey: key, id };
+      const existing = await store.get(`${PATHS.journal}/${key}/tasks/${id}`);
+      if (!existing) return failure('삭제할 업무를 찾을 수 없습니다.');
+      const stamp = now();
+      const task = dailyTask({
+        ...existing,
+        deleted: true,
+        deletedAt: stamp,
+        deletedByUid: String(identity.uid || ''),
+        deletedByName: String(identity.name || ''),
+        updatedAt: stamp,
+        updatedByUid: String(identity.uid || ''),
+        updatedByName: String(identity.name || '')
+      }, id, key, stamp);
+      await store.update('', { [`${PATHS.journal}/${key}/tasks/${id}`]: task, [`${PATHS.pending}/${id}`]: null });
+      return { success: true, dateKey: key, id, task };
     },
 
     async saveDeskDailyJournalMemo(payload = {}) {
@@ -353,7 +411,7 @@ function failure(message) { return { success: false, message }; }
 function errorPrefix(name) {
   const labels = {
     getDeskScheduleMonthData: '근무표 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
-    getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
+    getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
     getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'
   };

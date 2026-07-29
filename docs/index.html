@@ -13129,6 +13129,203 @@
       opacity: 0.45;
       cursor: default;
     }
+    .desk-journal-layout.ledger-mode,
+    .desk-daily-journal-mode .desk-journal-layout.ledger-mode {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .desk-journal-layout.ledger-mode .desk-journal-side {
+      order: -1;
+    }
+    .desk-journal-layout.ledger-mode .desk-task-queue-card > .desk-card-title-row {
+      display: none;
+    }
+    .desk-journal-layout.ledger-mode .desk-journal-task-board {
+      gap: 0;
+    }
+    .desk-task-ledger {
+      min-width: 0;
+      border: 1px solid #d8e4de;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .desk-task-ledger-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 1px solid #d8e4de;
+      background: #f8fbf9;
+    }
+    .desk-task-ledger-title {
+      color: #0f172a;
+      font-size: 17px;
+      font-weight: 900;
+    }
+    .desk-task-ledger-sub {
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .desk-task-ledger-filters {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 126px;
+      gap: 8px;
+      width: min(440px, 100%);
+    }
+    .desk-task-ledger-filters input,
+    .desk-task-ledger-filters select,
+    .desk-task-ledger-table select,
+    .desk-task-ledger-table input {
+      min-height: 36px;
+      border: 1px solid #d5e1db;
+      border-radius: 5px;
+      background: #fff;
+      color: #0f172a;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 0 10px;
+      outline: none;
+    }
+    .desk-task-ledger-filters input:focus,
+    .desk-task-ledger-filters select:focus,
+    .desk-task-ledger-table select:focus,
+    .desk-task-ledger-table input:focus {
+      border-color: #0d684d;
+      box-shadow: 0 0 0 3px rgba(13, 104, 77, 0.1);
+    }
+    .desk-task-ledger-summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border-bottom: 1px solid #d8e4de;
+      background: #fff;
+    }
+    .desk-task-ledger-stat {
+      min-width: 0;
+      padding: 12px 16px;
+      border-right: 1px solid #e6eeea;
+    }
+    .desk-task-ledger-stat:last-child { border-right: 0; }
+    .desk-task-ledger-stat span {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .desk-task-ledger-stat strong {
+      display: block;
+      margin-top: 3px;
+      color: #0f172a;
+      font-size: 18px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .desk-task-ledger-stat.attention strong { color: #c2410c; }
+    .desk-task-ledger-table-wrap {
+      overflow-x: auto;
+    }
+    .desk-task-ledger-table {
+      width: 100%;
+      min-width: 1180px;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .desk-task-ledger-table th {
+      height: 38px;
+      padding: 0 10px;
+      border-right: 1px solid #e4ece8;
+      border-bottom: 1px solid #d8e4de;
+      background: #f1f6f3;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .desk-task-ledger-table td {
+      padding: 10px;
+      border-right: 1px solid #edf2ef;
+      border-bottom: 1px solid #e6eeea;
+      color: #1e293b;
+      font-size: 12px;
+      font-weight: 750;
+      line-height: 1.4;
+      vertical-align: top;
+    }
+    .desk-task-ledger-table tr:last-child td { border-bottom: 0; }
+    .desk-task-ledger-table tbody tr:hover td { background: #f8fbf9; }
+    .desk-task-ledger-table tr.is-deleted td {
+      background: #f8fafc;
+      color: #94a3b8;
+      text-decoration-color: #cbd5e1;
+    }
+    .desk-task-ledger-task {
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+    .desk-task-ledger-note,
+    .desk-task-ledger-meta {
+      margin-top: 4px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+    .desk-task-ledger-status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 7px;
+      border-left: 3px solid #94a3b8;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .desk-task-ledger-status.is-progress { border-color: #2563eb; color: #1d4ed8; background: #eff6ff; }
+    .desk-task-ledger-status.is-attention { border-color: #f97316; color: #c2410c; background: #fff7ed; }
+    .desk-task-ledger-status.is-done { border-color: #16a34a; color: #15803d; background: #f0fdf4; }
+    .desk-task-ledger-status.is-deleted { border-color: #dc2626; color: #b91c1c; background: #fef2f2; }
+    .desk-task-ledger-followup {
+      display: grid;
+      gap: 6px;
+    }
+    .desk-task-ledger-followup input { width: 100%; }
+    .desk-task-ledger-save {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #b8d4c8;
+      border-radius: 5px;
+      background: #fff;
+      color: #0d684d;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .desk-task-ledger-save:hover { background: #edf8f3; }
+    .desk-task-ledger-save svg { width: 15px; height: 15px; }
+    .desk-task-ledger-empty {
+      padding: 32px 16px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+    }
+    @media (max-width: 900px) {
+      .desk-task-ledger-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .desk-task-ledger-filters { width: 100%; }
+      .desk-task-ledger-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .desk-task-ledger-stat { border-bottom: 1px solid #e6eeea; }
+    }
     .desk-report-preview-card .desk-report-shell { grid-template-columns: 1fr; gap: 12px; align-items: start; }
     .desk-report-preview-card .desk-report-actions {
       display: grid;
@@ -17280,6 +17477,7 @@
                     <div class="desk-journal-editor-tabs" id="deskJournalEditorTabs">
                       <button class="desk-journal-editor-tab active" type="button" data-desk-editor-tab="shared">공지/공동업무</button>
                       <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="manager">업무 배정</button>
+                      <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="ledger">배정 원장</button>
                       <button class="desk-journal-editor-tab" type="button" data-desk-editor-tab="routine">루틴 업무</button>
                     </div>
                     <form id="deskJournalTaskForm" class="desk-journal-editor-panel">
@@ -17298,6 +17496,10 @@
                       <div class="field" style="margin-top:8px;">
                         <label for="deskJournalTaskNote">업무 메모</label>
                         <input id="deskJournalTaskNote" class="modal-input" type="text" placeholder="세부 기준, 전달 메모, 우선순위">
+                      </div>
+                      <div class="field" style="margin-top:8px;">
+                        <label for="deskJournalTaskNextAction">미완료 시 후속 단계</label>
+                        <input id="deskJournalTaskNextAction" class="modal-input" type="text" placeholder="예: 다음 근무일에 학부모 답변 확인">
                       </div>
                       <div class="desk-form-actions compact" style="margin-top:10px;">
                         <button class="modal-action primary" type="submit">업무 추가</button>
@@ -18177,7 +18379,7 @@
     var DESK_CLOUD_METHODS = {
       getDeskScheduleMonthData: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskCalendarEvents: true,
-      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
+      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskPortalConfig: true, saveDeskPortalConfig: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
@@ -18470,6 +18672,12 @@
           memoPageSize: 5,
           taskQueuePage: 1,
           taskQueuePageSize: 5,
+          taskLedger: [],
+          taskLedgerLoaded: false,
+          taskLedgerLoading: false,
+          taskLedgerSummary: null,
+          taskLedgerKeyword: "",
+          taskLedgerStatus: "전체",
           templateEditMode: false,
           memoTemplates: [],
           memoTemplatesLoaded: false,
@@ -18961,6 +19169,7 @@
     var deskJournalAssignedWorkerQuickEl = document.getElementById("deskJournalAssignedWorkerQuick");
     var deskJournalTaskTitleEl = document.getElementById("deskJournalTaskTitle");
     var deskJournalTaskNoteEl = document.getElementById("deskJournalTaskNote");
+    var deskJournalTaskNextActionEl = document.getElementById("deskJournalTaskNextAction");
     var deskJournalRoutinePanelEl = document.getElementById("deskJournalRoutinePanel");
     var deskJournalRoutineTitleEl = document.getElementById("deskJournalRoutineTitle");
     var deskJournalRoutineNoteEl = document.getElementById("deskJournalRoutineNote");
@@ -27270,6 +27479,13 @@
 
     function normalizeDeskDailyTask_(item) {
       var worker = canonicalizeDeskWorkerName_((item && item.worker) || "");
+      var completed = !!(item && item.completed);
+      var requestedStatus = String((item && item.progressStatus) || "").trim();
+      var progressStatus = completed
+        ? "완료"
+        : (["대기", "진행 중", "확인 필요"].indexOf(requestedStatus) !== -1
+          ? requestedStatus
+          : ((item && item.unresolvedReason) ? "확인 필요" : "대기"));
       return {
         id: String((item && item.id) || buildDeskShiftId_("journalTask", Date.now(), Math.random().toString(36).slice(2))),
         dateKey: String((item && item.dateKey) || "").trim(),
@@ -27277,14 +27493,26 @@
         category: String((item && item.category) || "일반").trim(),
         title: String((item && item.title) || "").trim(),
         note: String((item && item.note) || "").trim(),
-        completed: !!(item && item.completed),
+        completed: completed,
+        deleted: !!(item && item.deleted),
+        progressStatus: progressStatus,
         unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
+        nextAction: String((item && item.nextAction) || "").trim(),
         ackWorkers: normalizeDeskWorkerNameArray_(item && item.ackWorkers),
         hiddenFromWorkerBand: !!(item && item.hiddenFromWorkerBand),
         sortOrder: normalizeDeskTaskSortOrder_(item && item.sortOrder),
         targetWorkers: normalizeDeskWorkerNameArray_(item && item.targetWorkers),
         createdAt: String((item && item.createdAt) || ""),
-        updatedAt: String((item && item.updatedAt) || "")
+        createdByUid: String((item && item.createdByUid) || ""),
+        createdByName: String((item && item.createdByName) || ""),
+        updatedAt: String((item && item.updatedAt) || ""),
+        updatedByUid: String((item && item.updatedByUid) || ""),
+        updatedByName: String((item && item.updatedByName) || ""),
+        completedAt: String((item && item.completedAt) || ""),
+        deletedAt: String((item && item.deletedAt) || ""),
+        deletedByUid: String((item && item.deletedByUid) || ""),
+        deletedByName: String((item && item.deletedByName) || ""),
+        syncState: String((item && item.syncState) || "")
       };
     }
 
@@ -29988,6 +30216,7 @@
         deskJournalLayoutEl.classList.toggle("worker-focus", !isRoutineManager);
         deskJournalLayoutEl.classList.toggle("manager-mode", isRoutineManager);
         deskJournalLayoutEl.classList.toggle("overview-mode", isOverviewTab);
+        deskJournalLayoutEl.classList.toggle("ledger-mode", isRoutineManager && state.desk.daily.editorMode === "ledger");
       }
       if (deskJournalMemoEditorCardEl) {
         deskJournalMemoEditorCardEl.style.display = (isRoutineManager || isOverviewTab) ? "none" : "";
@@ -30014,6 +30243,7 @@
         deskJournalTaskEditorTitleEl.textContent =
           state.desk.daily.editorMode === "routine" ? "루틴 업무" :
           state.desk.daily.editorMode === "shared" ? "공지/공동업무 관리" :
+          state.desk.daily.editorMode === "ledger" ? "업무 배정 원장" :
           "업무 배정";
       }
       if (deskJournalTaskEditorSubEl) {
@@ -30022,6 +30252,8 @@
             ? "반복해서 쓰는 기본 업무를 따로 저장해 두고, 필요할 때 오늘 근무자에게 빠르게 배정합니다."
             : state.desk.daily.editorMode === "shared"
               ? "상단 공지 노출, 대상 근무자, 순서를 관리합니다."
+              : state.desk.daily.editorMode === "ledger"
+                ? "입력자, 담당자, 저장 시각, 진행 상태와 후속 단계를 전체 이력에서 확인합니다."
               : "업무 관리자 탭에서는 오늘 근무자에게 바로 배정할 업무를 추가합니다.";
       }
       if (deskRoutineMetaRowEl) {
@@ -30096,10 +30328,145 @@
       syncDeskMemoComposerState_();
     }
 
+    function getDeskTaskLedgerStatus_(item) {
+      if (item && item.deleted) return "삭제됨";
+      if (item && item.completed) return "완료";
+      var status = String(item && item.progressStatus || "").trim();
+      return ["대기", "진행 중", "확인 필요"].indexOf(status) !== -1 ? status : ((item && item.unresolvedReason) ? "확인 필요" : "대기");
+    }
+
+    function getDeskTaskLedgerStatusClass_(status) {
+      if (status === "완료") return "is-done";
+      if (status === "삭제됨") return "is-deleted";
+      if (status === "진행 중") return "is-progress";
+      if (status === "확인 필요") return "is-attention";
+      return "";
+    }
+
+    function loadDeskTaskLedger_(force) {
+      if (state.desk.daily.taskLedgerLoading) return;
+      if (state.desk.daily.taskLedgerLoaded && !force) return;
+      state.desk.daily.taskLedgerLoading = true;
+      state.desk.daily.taskLedgerError = "";
+      renderDeskDailyJournal_();
+      runServer("getDeskDailyJournalTaskLedger", {})
+        .then(function(res) {
+          if (!res || res.success === false) throw new Error(res && res.message ? res.message : "업무 배정 원장을 불러오지 못했습니다.");
+          state.desk.daily.taskLedger = (res.tasks || []).map(normalizeDeskDailyTask_);
+          state.desk.daily.taskLedgerSummary = res.summary || null;
+          state.desk.daily.taskLedgerLoaded = true;
+        })
+        .catch(function(err) {
+          state.desk.daily.taskLedgerError = err && err.message ? err.message : String(err);
+        })
+        .finally(function() {
+          state.desk.daily.taskLedgerLoading = false;
+          renderDeskDailyJournal_();
+        });
+    }
+
+    function renderDeskTaskLedger_() {
+      if (!deskJournalTaskBoardEl) return;
+      if (state.desk.daily.taskLedgerLoading && !state.desk.daily.taskLedgerLoaded) {
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">전체 업무 배정 이력을 불러오는 중입니다.</div>';
+        return;
+      }
+      if (state.desk.daily.taskLedgerError && !state.desk.daily.taskLedgerLoaded) {
+        deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">배정 원장을 불러오지 못했습니다. ' +
+          escapeHtml(state.desk.daily.taskLedgerError) +
+          '<div style="margin-top:10px;"><button class="modal-action ghost" type="button" data-desk-ledger-reload="1">다시 불러오기</button></div></div>';
+        return;
+      }
+      var allTasks = (state.desk.daily.taskLedger || []).slice();
+      var keyword = String(state.desk.daily.taskLedgerKeyword || "").trim().toLowerCase();
+      var statusFilter = String(state.desk.daily.taskLedgerStatus || "전체");
+      var visible = allTasks.filter(function(item) {
+        var status = getDeskTaskLedgerStatus_(item);
+        if (statusFilter !== "전체" && status !== statusFilter) return false;
+        if (!keyword) return true;
+        return [item.title, item.note, item.worker, item.createdByName, item.unresolvedReason, item.nextAction]
+          .join(" ").toLowerCase().indexOf(keyword) !== -1;
+      });
+      var summary = state.desk.daily.taskLedgerSummary || {
+        total: allTasks.length,
+        pending: allTasks.filter(function(item) { return !item.completed && !item.deleted; }).length,
+        completed: allTasks.filter(function(item) { return item.completed && !item.deleted; }).length,
+        deleted: allTasks.filter(function(item) { return item.deleted; }).length,
+        needsFollowup: allTasks.filter(function(item) { return !item.completed && !item.deleted && (item.unresolvedReason || item.nextAction || getDeskTaskLedgerStatus_(item) === "확인 필요"); }).length
+      };
+      var rowsHtml = visible.length ? visible.map(function(item) {
+        var status = getDeskTaskLedgerStatus_(item);
+        var creator = item.createdByName || "기록 없음";
+        var assignedAt = formatDeskJournalDateTime_(item.createdAt || item.dateKey || "") || item.dateKey || "-";
+        var updatedAt = formatDeskJournalDateTime_(item.updatedAt || "") || "-";
+        var deletedMeta = item.deleted
+          ? '<div class="desk-task-ledger-meta">삭제 ' + escapeHtml(formatDeskJournalDateTime_(item.deletedAt || "") || "-") + ' · ' + escapeHtml(item.deletedByName || "기록 없음") + '</div>'
+          : '';
+        var syncMeta = item.syncState === "error"
+          ? '<div class="desk-task-ledger-meta" style="color:#b91c1c;">서버 저장 확인 필요</div>'
+          : (item.syncState === "saving" ? '<div class="desk-task-ledger-meta" style="color:#1d4ed8;">서버 저장 중</div>' : '');
+        var statusControl = item.deleted
+          ? '<span class="desk-task-ledger-status is-deleted">삭제됨</span>'
+          : '<select data-desk-ledger-status="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.title) + ' 진행 상태">' +
+              ["대기", "진행 중", "확인 필요", "완료"].map(function(value) {
+                return '<option value="' + value + '"' + (value === status ? ' selected' : '') + '>' + value + '</option>';
+              }).join("") +
+            '</select>';
+        var followupControl = item.deleted
+          ? '<div class="desk-task-ledger-meta">' + escapeHtml(item.unresolvedReason || item.nextAction || "삭제된 업무") + '</div>'
+          : '<div class="desk-task-ledger-followup">' +
+              '<input type="text" data-desk-ledger-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="미해결 사유">' +
+              '<input type="text" data-desk-ledger-next="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.nextAction || "") + '" placeholder="후속 단계">' +
+            '</div>';
+        return '<tr class="' + (item.deleted ? 'is-deleted' : '') + '">' +
+          '<td><div class="desk-task-ledger-task">' + escapeHtml(item.title || "-") + '</div>' +
+            (item.note ? '<div class="desk-task-ledger-note">' + escapeHtml(item.note) + '</div>' : '') + syncMeta + '</td>' +
+          '<td>' + escapeHtml(creator) + '</td>' +
+          '<td>' + escapeHtml(item.worker || "-") + '</td>' +
+          '<td><div>' + escapeHtml(assignedAt) + '</div><div class="desk-task-ledger-meta">업무일 ' + escapeHtml(item.dateKey || "-") + '</div></td>' +
+          '<td>' + statusControl + '<div class="desk-task-ledger-meta">수정 ' + escapeHtml(updatedAt) + '</div></td>' +
+          '<td>' + followupControl + deletedMeta + '</td>' +
+          '<td>' + (item.deleted ? '' : '<button class="desk-task-ledger-save" type="button" data-desk-ledger-save="' + escapeHtml(item.id) + '" title="상태와 후속 단계 저장"><i data-lucide="save"></i></button>') + '</td>' +
+        '</tr>';
+      }).join("") : '<tr><td colspan="7"><div class="desk-task-ledger-empty">조건에 맞는 업무 배정이 없습니다.</div></td></tr>';
+      deskJournalTaskBoardEl.innerHTML = '<section class="desk-task-ledger">' +
+        '<div class="desk-task-ledger-head">' +
+          '<div><div class="desk-task-ledger-title">업무 배정 원장</div><div class="desk-task-ledger-sub">저장된 배정과 완료, 삭제 이력을 한 화면에서 확인합니다.</div></div>' +
+          '<div class="desk-task-ledger-filters">' +
+            '<input type="search" value="' + escapeHtml(state.desk.daily.taskLedgerKeyword || "") + '" data-desk-ledger-keyword="1" placeholder="업무, 입력자, 담당자 검색">' +
+            '<select data-desk-ledger-filter="1">' +
+              ["전체", "대기", "진행 중", "확인 필요", "완료", "삭제됨"].map(function(value) {
+                return '<option value="' + value + '"' + (value === statusFilter ? ' selected' : '') + '>' + value + '</option>';
+              }).join("") +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="desk-task-ledger-summary">' +
+          '<div class="desk-task-ledger-stat"><span>전체 배정</span><strong>' + escapeHtml(String(summary.total || 0)) + '</strong></div>' +
+          '<div class="desk-task-ledger-stat"><span>미완료</span><strong>' + escapeHtml(String(summary.pending || 0)) + '</strong></div>' +
+          '<div class="desk-task-ledger-stat attention"><span>후속 확인</span><strong>' + escapeHtml(String(summary.needsFollowup || 0)) + '</strong></div>' +
+          '<div class="desk-task-ledger-stat"><span>완료</span><strong>' + escapeHtml(String(summary.completed || 0)) + '</strong></div>' +
+          '<div class="desk-task-ledger-stat"><span>삭제 이력</span><strong>' + escapeHtml(String(summary.deleted || 0)) + '</strong></div>' +
+        '</div>' +
+        '<div class="desk-task-ledger-table-wrap"><table class="desk-task-ledger-table">' +
+          '<colgroup><col style="width:25%"><col style="width:9%"><col style="width:9%"><col style="width:13%"><col style="width:13%"><col style="width:26%"><col style="width:5%"></colgroup>' +
+          '<thead><tr><th>업무 / 메모</th><th>입력자</th><th>담당자</th><th>배정 일시</th><th>진행 상태</th><th>미해결 사유 / 후속 단계</th><th>저장</th></tr></thead>' +
+          '<tbody>' + rowsHtml + '</tbody></table></div>' +
+      '</section>';
+      refreshLucideIcons_();
+    }
+
     function renderDeskDailyTaskBoard_(tasks) {
       if (!deskJournalTaskBoardEl) return;
       var selectedWorker = state.desk.daily.selectedWorker || "전체";
       var isManagerTab = selectedWorker === DESK_ROUTINE_TAB_KEY;
+      if (isManagerTab && state.desk.daily.editorMode === "ledger") {
+        renderDeskTaskLedger_();
+        if (!state.desk.daily.taskLedgerLoaded && !state.desk.daily.taskLedgerLoading && !state.desk.daily.taskLedgerError) {
+          setTimeout(function() { loadDeskTaskLedger_(false); }, 0);
+        }
+        return;
+      }
       if (isManagerTab && state.desk.daily.editorMode === "routine") {
         renderDeskRoutineTaskBoard_();
         return;
@@ -30185,7 +30552,8 @@
           (isExpanded ? '<div class="desk-queue-detail">' +
             (item.note ? '<div class="desk-muted desk-queue-note">' + escapeHtml(item.note) + '</div>' : '<div class="desk-muted desk-queue-note">상세 메모가 없습니다.</div>') +
             (!item.completed && !isShared
-              ? '<div class="field desk-queue-reason"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 어려운 사유를 입력해주세요"></div>'
+              ? '<div class="field desk-queue-reason"><label>미해결 사유</label><input class="modal-input" type="text" data-desk-journal-task-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="진행이 어려운 사유를 입력해 주세요"></div>' +
+                '<div class="field desk-queue-reason"><label>후속 단계</label><input class="modal-input" type="text" data-desk-journal-task-next="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.nextAction || "") + '" placeholder="다음 담당자, 확인 일시, 재시도 방법"></div>'
               : '') +
             '<div class="desk-task-actions">' +
               (!item.completed && !isShared ? '<button class="modal-action ghost" type="button" data-desk-journal-task-save="' + escapeHtml(item.id) + '"><i data-lucide="check-square"></i>사유 저장</button>' : '') +
@@ -31313,10 +31681,12 @@
       var worker = String(deskJournalAssignedWorkerEl && deskJournalAssignedWorkerEl.value || "").trim();
       var title = String(deskJournalTaskTitleEl && deskJournalTaskTitleEl.value || "").trim();
       var note = String(deskJournalTaskNoteEl && deskJournalTaskNoteEl.value || "").trim();
+      var nextAction = String(deskJournalTaskNextActionEl && deskJournalTaskNextActionEl.value || "").trim();
       return {
         worker: worker,
         title: title,
-        note: note
+        note: note,
+        nextAction: nextAction
       };
     }
 
@@ -31353,6 +31723,7 @@
       if (deskJournalAssignedWorkerEl) deskJournalAssignedWorkerEl.value = "";
       if (deskJournalTaskTitleEl) deskJournalTaskTitleEl.value = "";
       if (deskJournalTaskNoteEl) deskJournalTaskNoteEl.value = "";
+      if (deskJournalTaskNextActionEl) deskJournalTaskNextActionEl.value = "";
     }
 
     function clearDeskRoutineTaskDraft_() {
@@ -31399,7 +31770,9 @@
         title: title,
         note: note,
         completed: false,
-        unresolvedReason: ""
+        progressStatus: "대기",
+        unresolvedReason: "",
+        nextAction: draft.nextAction
       }, function() {
         clearDeskDailyTaskDraft_();
         state.desk.daily.selectedWorker = worker;
@@ -31557,8 +31930,18 @@
       var item = normalizeDeskDailyTask_(task);
       var preserveViewDateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var stamp = buildDeskCurrentDateTimeForKey_(item.dateKey || (state.desk.daily.dateKey || getDeskDateKey_(new Date())));
+      var identity = state.cloudIdentity || {};
       if (!item.createdAt) item.createdAt = stamp;
+      if (!item.createdByUid) item.createdByUid = String(identity.uid || "");
+      if (!item.createdByName) item.createdByName = String(identity.name || "");
       item.updatedAt = stamp;
+      item.updatedByUid = String(identity.uid || item.updatedByUid || "");
+      item.updatedByName = String(identity.name || item.updatedByName || "");
+      item.progressStatus = item.completed ? "완료" : (item.progressStatus || "대기");
+      item.syncState = "saving";
+      state.desk.daily.taskLedger = (state.desk.daily.taskLedger || []).filter(function(row) {
+        return row.id !== item.id;
+      }).concat([item]);
       var existingTasks = getDeskDailyJournalTasks_(item.dateKey).filter(function(row) {
         return row.id !== item.id;
       });
@@ -31585,16 +31968,30 @@
         label: "desk daily task save"
       })
         .then(function(result) {
-          if (!result) return null;
+          var ledgerItem = (state.desk.daily.taskLedger || []).find(function(row) { return row.id === item.id; });
+          if (!result) {
+            if (ledgerItem) ledgerItem.syncState = "error";
+            renderDeskDailyJournal_();
+            return null;
+          }
+          if (ledgerItem) ledgerItem.syncState = "";
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(item.dateKey).then(function() {
             forgetDeskDailyPendingTaskMutation_(item.id);
+            if (state.desk.daily.taskLedgerLoaded) loadDeskTaskLedger_(true);
           });
         });
     }
 
     function deleteDeskDailyTask_(taskId, overrideDateKey) {
       var dateKey = overrideDateKey || state.desk.daily.dateKey || getDeskDateKey_(new Date());
+      var ledgerTask = (state.desk.daily.taskLedger || []).find(function(item) { return item.id === taskId; });
+      if (ledgerTask) {
+        ledgerTask.deleted = true;
+        ledgerTask.deletedAt = buildDeskCurrentDateTimeForKey_(dateKey);
+        ledgerTask.deletedByName = String(state.cloudIdentity && state.cloudIdentity.name || "");
+        ledgerTask.syncState = "saving";
+      }
       var tasks = getDeskDailyJournalTasks_(dateKey).filter(function(item) { return item.id !== taskId; });
       state.desk.daily.carryoverTasks = (state.desk.daily.carryoverTasks || []).filter(function(item) { return item.id !== taskId; });
       rememberDeskDailyPendingTaskDelete_(dateKey, taskId);
@@ -31607,10 +32004,19 @@
         label: "desk daily task delete"
       })
         .then(function(result) {
-          if (!result) return null;
+          if (!result) {
+            if (ledgerTask) {
+              ledgerTask.deleted = false;
+              ledgerTask.syncState = "error";
+            }
+            renderDeskDailyJournal_();
+            return null;
+          }
+          if (ledgerTask) ledgerTask.syncState = "";
           setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(dateKey).then(function() {
             forgetDeskDailyPendingTaskMutation_(taskId);
+            if (state.desk.daily.taskLedgerLoaded) loadDeskTaskLedger_(true);
           });
         });
     }
@@ -33062,6 +33468,7 @@
           state.desk.daily.editorMode = btn.getAttribute("data-desk-editor-tab") || "manager";
           state.desk.daily.taskQueuePage = 1;
           renderDeskDailyJournal_();
+          if (state.desk.daily.editorMode === "ledger") loadDeskTaskLedger_(false);
         });
       }
       if (deskJournalSaveRoutineBtnEl) {
@@ -33107,6 +33514,12 @@
       }
       if (deskJournalTaskBoardEl) {
         deskJournalTaskBoardEl.addEventListener("change", function(event) {
+          var ledgerFilter = event.target.closest("[data-desk-ledger-filter]");
+          if (ledgerFilter) {
+            state.desk.daily.taskLedgerStatus = ledgerFilter.value || "전체";
+            renderDeskDailyJournal_();
+            return;
+          }
           var toggle = event.target.closest("[data-desk-journal-task-toggle]");
           if (!toggle) return;
           var taskId = toggle.getAttribute("data-desk-journal-task-toggle") || "";
@@ -33115,10 +33528,42 @@
           var reasonInput = deskJournalTaskBoardEl.querySelector('[data-desk-journal-task-reason="' + taskId + '"]');
           upsertDeskDailyTask_(Object.assign({}, current, {
             completed: !!toggle.checked,
-            unresolvedReason: toggle.checked ? "" : String(reasonInput && reasonInput.value || "").trim()
+            progressStatus: toggle.checked ? "완료" : "대기",
+            unresolvedReason: toggle.checked ? "" : String(reasonInput && reasonInput.value || "").trim(),
+            nextAction: toggle.checked ? "" : current.nextAction
           }));
         });
         deskJournalTaskBoardEl.addEventListener("click", function(event) {
+          var ledgerReloadBtn = event.target.closest("[data-desk-ledger-reload]");
+          if (ledgerReloadBtn) {
+            state.desk.daily.taskLedgerError = "";
+            loadDeskTaskLedger_(true);
+            return;
+          }
+          var ledgerSaveBtn = event.target.closest("[data-desk-ledger-save]");
+          if (ledgerSaveBtn) {
+            var ledgerId = ledgerSaveBtn.getAttribute("data-desk-ledger-save") || "";
+            var ledgerTask = (state.desk.daily.taskLedger || []).find(function(item) { return item.id === ledgerId; });
+            if (!ledgerTask) return;
+            var ledgerStatusEl = deskJournalTaskBoardEl.querySelector('[data-desk-ledger-status="' + ledgerId + '"]');
+            var ledgerReasonEl = deskJournalTaskBoardEl.querySelector('[data-desk-ledger-reason="' + ledgerId + '"]');
+            var ledgerNextEl = deskJournalTaskBoardEl.querySelector('[data-desk-ledger-next="' + ledgerId + '"]');
+            var ledgerStatus = String(ledgerStatusEl && ledgerStatusEl.value || "대기");
+            var ledgerReason = String(ledgerReasonEl && ledgerReasonEl.value || "").trim();
+            var ledgerNext = String(ledgerNextEl && ledgerNextEl.value || "").trim();
+            if (ledgerStatus === "확인 필요" && !ledgerNext) {
+              alert("해결하지 못한 업무는 다음 후속 단계를 입력해 주세요.");
+              if (ledgerNextEl) ledgerNextEl.focus();
+              return;
+            }
+            upsertDeskDailyTask_(Object.assign({}, ledgerTask, {
+              completed: ledgerStatus === "완료",
+              progressStatus: ledgerStatus,
+              unresolvedReason: ledgerStatus === "완료" ? "" : ledgerReason,
+              nextAction: ledgerStatus === "완료" ? "" : ledgerNext
+            }));
+            return;
+          }
           var routineFilterBtn = event.target.closest("[data-desk-routine-filter]");
           if (routineFilterBtn) {
             state.desk.daily.routineLabelFilter = routineFilterBtn.getAttribute("data-desk-routine-filter") || "전체";
@@ -33202,9 +33647,18 @@
             var currentTask = findDeskDailyTaskById_(saveId);
             if (!currentTask) return;
             var input = deskJournalTaskBoardEl.querySelector('[data-desk-journal-task-reason="' + saveId + '"]');
+            var nextActionInput = deskJournalTaskBoardEl.querySelector('[data-desk-journal-task-next="' + saveId + '"]');
+            var nextAction = String(nextActionInput && nextActionInput.value || "").trim();
+            if (!nextAction) {
+              alert("해결하지 못한 업무는 다음 후속 단계를 입력해 주세요.");
+              if (nextActionInput) nextActionInput.focus();
+              return;
+            }
             upsertDeskDailyTask_(Object.assign({}, currentTask, {
               completed: false,
-              unresolvedReason: String(input && input.value || "").trim()
+              progressStatus: "확인 필요",
+              unresolvedReason: String(input && input.value || "").trim(),
+              nextAction: nextAction
             }));
             return;
           }
@@ -33215,7 +33669,9 @@
             if (!completeTask) return;
             upsertDeskDailyTask_(Object.assign({}, completeTask, {
               completed: true,
-              unresolvedReason: ""
+              progressStatus: "완료",
+              unresolvedReason: "",
+              nextAction: ""
             }));
             return;
           }
@@ -33236,8 +33692,21 @@
           if (!currentTask) return;
           upsertDeskDailyTask_(Object.assign({}, currentTask, {
             completed: false,
+            progressStatus: "확인 필요",
             unresolvedReason: String(reasonField.value || "").trim()
           }));
+        });
+        deskJournalTaskBoardEl.addEventListener("input", function(event) {
+          var ledgerKeyword = event.target.closest("[data-desk-ledger-keyword]");
+          if (!ledgerKeyword) return;
+          var cursor = ledgerKeyword.selectionStart;
+          state.desk.daily.taskLedgerKeyword = ledgerKeyword.value || "";
+          renderDeskTaskLedger_();
+          var nextInput = deskJournalTaskBoardEl.querySelector("[data-desk-ledger-keyword]");
+          if (nextInput) {
+            nextInput.focus();
+            if (typeof cursor === "number") nextInput.setSelectionRange(cursor, cursor);
+          }
         });
       }
       if (deskJournalMemoFormEl) {

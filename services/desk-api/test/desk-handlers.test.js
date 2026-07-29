@@ -53,8 +53,9 @@ test('journal task write updates the day record and pending index together', asy
   assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].title, '마감 점검');
   assert.equal(store.dump().desk_portal.daily_pending_tasks['task-1'].title, '마감 점검');
 
-  await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { ...saved.task, completed: true } });
+  await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { ...saved.task, completed: true } }, { uid: 'manager-1', name: '관리자' });
   assert.equal(store.dump().desk_portal.daily_pending_tasks?.['task-1'], undefined);
+  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].createdByName, '관리자');
 });
 
 test('pending task read returns every assignee when the worker filter is empty', async () => {
@@ -69,6 +70,24 @@ test('pending task read returns every assignee when the worker filter is empty',
 
   const filtered = await handlers.getDeskDailyJournalPendingTasks({ beforeDateKey: '2026-07-15', workers: ['안종성'] });
   assert.deepEqual(filtered.tasks.map(item => item.id), ['task-on-duty']);
+});
+
+test('task ledger includes completed and soft-deleted assignment history', async () => {
+  const store = memoryStore({ desk_portal: { daily_journal: {
+    '2026-07-14': { tasks: { completed: { id: 'completed', worker: '안종성', title: '완료 업무', completed: true } } },
+    '2026-07-15': { tasks: { pending: { id: 'pending', worker: '이민현', title: '확인 업무', progressStatus: '확인 필요', unresolvedReason: '답변 대기', nextAction: '7/16 재확인' } } }
+  } } });
+  const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });
+
+  await handlers.deleteDeskDailyJournalTask({ dateKey: '2026-07-15', id: 'pending' }, { uid: 'admin-1', name: '관리자' });
+  const ledger = await handlers.getDeskDailyJournalTaskLedger();
+
+  assert.equal(ledger.summary.total, 2);
+  assert.equal(ledger.summary.completed, 1);
+  assert.equal(ledger.summary.deleted, 1);
+  assert.equal(ledger.tasks.find(item => item.id === 'pending').deletedByName, '관리자');
+  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks.pending.deleted, true);
+  assert.equal(store.dump().desk_portal.daily_pending_tasks?.pending, undefined);
 });
 
 test('supply quantity adjustment uses a transaction and clamps to stock bounds', async () => {

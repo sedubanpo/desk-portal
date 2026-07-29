@@ -24,6 +24,7 @@ export const LEGACY_API_METHODS = Object.freeze([
   'deleteDeskScheduleEntry',
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
+  'getDeskDailyJournalTaskLedger',
   'saveDeskDailyJournalTask',
   'deleteDeskDailyJournalTask',
   'saveDeskDailyJournalMemo',
@@ -48,7 +49,7 @@ export const LEGACY_API_METHODS = Object.freeze([
 export const MIGRATION_STATE = Object.freeze({
   phase: 5,
   legacyMethods: LEGACY_API_METHODS.length,
-  migratedBusinessMethods: 43,
+  migratedBusinessMethods: 44,
   migratedDomains: Object.freeze(['schedule', 'dailyJournal', 'supplies', 'recruiting', 'tuition', 'payroll', 'googleWorkspace']),
   maintenanceOnlyLegacyMethods: Object.freeze([
     'backfillTuitionMonthSnapshots',

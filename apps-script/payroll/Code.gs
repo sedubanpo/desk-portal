@@ -89,6 +89,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   deleteDeskScheduleEntry: true,
   getDeskDailyJournalData: true,
   getDeskDailyJournalPendingTasks: true,
+  getDeskDailyJournalTaskLedger: true,
   saveDeskDailyJournalTask: true,
   deleteDeskDailyJournalTask: true,
   saveDeskDailyJournalMemo: true,
@@ -183,6 +184,7 @@ function handlePayrollApiRequest_(params) {
       deleteDeskScheduleEntry: deleteDeskScheduleEntry,
       getDeskDailyJournalData: getDeskDailyJournalData,
       getDeskDailyJournalPendingTasks: getDeskDailyJournalPendingTasks,
+      getDeskDailyJournalTaskLedger: getDeskDailyJournalTaskLedger,
       saveDeskDailyJournalTask: saveDeskDailyJournalTask,
       deleteDeskDailyJournalTask: deleteDeskDailyJournalTask,
       saveDeskDailyJournalMemo: saveDeskDailyJournalMemo,
@@ -1437,6 +1439,38 @@ function getDeskDailyJournalPendingTasks(payload) {
   }
 }
 
+function getDeskDailyJournalTaskLedger() {
+  try {
+    var stored = firebaseRequestWithServiceAccount_("get", DESK_DAILY_JOURNAL_ROOT_PATH) || {};
+    var tasks = [];
+    Object.keys(stored).forEach(function(dateKey) {
+      var tasksMap = stored[dateKey] && stored[dateKey].tasks ? stored[dateKey].tasks : {};
+      Object.keys(tasksMap).forEach(function(id) {
+        var task = normalizeDeskDailyJournalTask_(tasksMap[id], id, dateKey);
+        if (isDeskDailyJournalSharedTask_(task)) return;
+        if (task.dateKey === "2099-12-31" || normalizeDeskWorkerNameKey_(task.worker) === normalizeDeskWorkerNameKey_("루틴업무")) return;
+        tasks.push(task);
+      });
+    });
+    tasks.sort(function(left, right) {
+      return String(right.updatedAt || right.createdAt || right.dateKey).localeCompare(String(left.updatedAt || left.createdAt || left.dateKey));
+    });
+    return {
+      success: true,
+      tasks: tasks,
+      summary: {
+        total: tasks.length,
+        pending: tasks.filter(function(item) { return !item.completed && !item.deleted; }).length,
+        completed: tasks.filter(function(item) { return item.completed && !item.deleted; }).length,
+        deleted: tasks.filter(function(item) { return item.deleted; }).length,
+        needsFollowup: tasks.filter(function(item) { return !item.completed && !item.deleted && (item.progressStatus === "확인 필요" || item.unresolvedReason || item.nextAction); }).length
+      }
+    };
+  } catch (e) {
+    return { success: false, message: "업무 배정 원장 조회 오류: " + e.message };
+  }
+}
+
 function syncDeskDailyJournalPendingTaskIndex_(task) {
   if (!task || !task.id) return;
   if (task.completed) {
@@ -1516,13 +1550,24 @@ function normalizeDeskDailyJournalTask_(item, fallbackId, dateKey) {
     title: String((item && item.title) || "").trim(),
     note: String((item && item.note) || "").trim(),
     completed: !!(item && item.completed),
+    deleted: !!(item && item.deleted),
+    progressStatus: String((item && item.progressStatus) || ((item && item.completed) ? "완료" : ((item && item.unresolvedReason) ? "확인 필요" : "대기"))).trim(),
     unresolvedReason: String((item && item.unresolvedReason) || "").trim(),
+    nextAction: String((item && item.nextAction) || "").trim(),
     ackWorkers: normalizeDeskDailyWorkerNameArray_(item && item.ackWorkers),
     hiddenFromWorkerBand: !!(item && item.hiddenFromWorkerBand),
     sortOrder: normalizeDeskDailyTaskSortOrder_(item && item.sortOrder),
     targetWorkers: normalizeDeskDailyWorkerNameArray_(item && item.targetWorkers),
     createdAt: String((item && item.createdAt) || now).trim(),
-    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim()
+    createdByUid: String((item && item.createdByUid) || "").trim(),
+    createdByName: String((item && item.createdByName) || "").trim(),
+    updatedAt: String((item && item.updatedAt) || (item && item.createdAt) || now).trim(),
+    updatedByUid: String((item && item.updatedByUid) || "").trim(),
+    updatedByName: String((item && item.updatedByName) || "").trim(),
+    completedAt: String((item && item.completedAt) || "").trim(),
+    deletedAt: String((item && item.deletedAt) || "").trim(),
+    deletedByUid: String((item && item.deletedByUid) || "").trim(),
+    deletedByName: String((item && item.deletedByName) || "").trim()
   };
   if (task.completed) {
     task.unresolvedReason = "";
