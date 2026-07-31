@@ -11222,45 +11222,82 @@
       padding: 16px;
     }
     .priv-modal-box {
-      width: min(460px, 100%);
-      border-radius: 18px;
-      border: 1px solid rgba(185, 246, 210, 0.45);
-      background: linear-gradient(180deg, rgba(10, 47, 36, 0.98), rgba(13, 67, 50, 0.98));
-      box-shadow: 0 24px 52px rgba(2, 20, 16, 0.52);
-      color: #ecfdf5;
-      padding: 18px;
+      width: min(420px, 100%);
+      border-radius: 8px;
+      border: 1px solid #b8d8ca;
+      background: #ffffff;
+      box-shadow: 0 24px 52px rgba(2, 20, 16, 0.36);
+      color: #10261f;
+      padding: 24px;
+      transform-origin: center;
+      animation: payroll-gate-in 180ms ease-out both;
     }
+    .priv-modal-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      background: #e8f5ef;
+      color: #0d684d;
+      border: 1px solid #c6e3d6;
+    }
+    .priv-modal-icon svg { width: 22px; height: 22px; }
     .priv-modal-title {
       margin: 0 0 6px;
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 900;
     }
     .priv-modal-desc {
       margin: 0 0 10px;
       font-size: 13px;
-      color: rgba(236, 253, 245, 0.92);
+      color: #5b6f67;
       line-height: 1.45;
       font-weight: 700;
     }
-    .priv-modal-input {
+    .priv-pin-inputs {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .priv-pin-input {
       width: 100%;
-      border: 1px solid rgba(187, 247, 208, 0.5);
-      border-radius: 11px;
-      padding: 11px 12px;
-      background: rgba(255, 255, 255, 0.12);
-      color: #fff;
-      font-size: 14px;
+      min-width: 0;
+      aspect-ratio: 1 / 1.08;
+      border: 1px solid #cbd9d2;
+      border-radius: 8px;
+      padding: 0;
+      background: #f7faf8;
+      color: #123a2e;
+      font-size: 24px;
+      font-weight: 900;
+      text-align: center;
       outline: none;
       font-family: inherit;
+      caret-color: #0d684d;
+      transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
     }
-    .priv-modal-input::placeholder {
-      color: rgba(236, 253, 245, 0.72);
+    .priv-pin-input:focus {
+      border-color: #0d684d;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(13, 104, 77, 0.13);
+    }
+    .priv-pin-input.is-filled {
+      border-color: #79ad98;
+      background: #edf7f2;
+    }
+    .priv-pin-inputs.is-error .priv-pin-input {
+      border-color: #dc615d;
+      background: #fff5f4;
+      animation: payroll-pin-shake 180ms ease-in-out;
     }
     .priv-modal-error {
       margin-top: 8px;
       min-height: 18px;
       font-size: 12px;
-      color: #fecaca;
+      color: #b42318;
       font-weight: 700;
     }
     .priv-modal-actions {
@@ -11270,23 +11307,42 @@
       gap: 8px;
     }
     .priv-modal-btn {
-      border: 0;
-      border-radius: 10px;
-      padding: 9px 14px;
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 0 16px;
+      border: 1px solid #cbd9d2;
+      background: #fff;
+      color: #40544c;
+      font: inherit;
       font-size: 13px;
-      font-weight: 900;
+      font-weight: 800;
       cursor: pointer;
     }
-    .priv-modal-btn.cancel {
-      background: rgba(255, 255, 255, 0.16);
-      color: #ecfdf5;
-      border: 1px solid rgba(187, 247, 208, 0.3);
-    }
     .priv-modal-btn.confirm {
-      background: #d1fae5;
-      color: #065f46;
+      border-color: #0d684d;
+      background: #0d684d;
+      color: #fff;
     }
-
+    .priv-modal-btn.confirm:disabled { opacity: 0.46; cursor: default; }
+    .payroll-lock-btn {
+      width: 42px;
+      min-width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #c9d8d0;
+      border-radius: 8px;
+      background: #f7faf8;
+      color: #365d50;
+      cursor: pointer;
+    }
+    .payroll-lock-btn:hover { background: #edf7f2; border-color: #91b8a7; }
+    .payroll-lock-btn svg { width: 18px; height: 18px; }
+    @keyframes payroll-gate-in { from { opacity: 0; transform: translateY(8px) scale(.985); } }
+    @keyframes payroll-pin-shake { 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .priv-modal-box, .priv-pin-inputs.is-error .priv-pin-input { animation: none; }
+    }
     /* Final desk console overrides: keep the monthly desk screen compact and non-folder-like. */
     body { background: #e8f0eb; padding: 0; }
     .app-shell {
@@ -15849,6 +15905,7 @@
           <div class="message" id="updatedAt">-</div>
         </div>
         <button class="refresh-btn" id="refreshBtn" type="button">데이터 새로고침</button>
+        <button class="payroll-lock-btn" id="payrollLockBtn" type="button" title="강사 시수 정산 잠그기" aria-label="강사 시수 정산 잠그기"><i data-lucide="lock-keyhole" aria-hidden="true"></i></button>
       </section>
 
       <section class="teacher-bar" id="teacherBar">
@@ -18045,11 +18102,19 @@
   </div>
 
   <div class="priv-modal-overlay" id="privGateModal">
-    <div class="priv-modal-box">
+    <div class="priv-modal-box" role="dialog" aria-modal="true" aria-labelledby="privGateTitle" aria-describedby="privGateDesc">
+      <div class="priv-modal-icon"><i data-lucide="shield-check" aria-hidden="true"></i></div>
       <h3 class="priv-modal-title" id="privGateTitle">권한 확인</h3>
       <p class="priv-modal-desc" id="privGateDesc">접근 비밀번호를 입력하세요.</p>
-      <input class="priv-modal-input" id="privGateInput" type="password" autocomplete="current-password" placeholder="비밀번호 입력">
-      <div class="priv-modal-error" id="privGateError"></div>
+      <div class="priv-pin-inputs" id="privPinInputs" role="group" aria-label="6자리 비밀번호">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="비밀번호 첫 번째 자리">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="비밀번호 두 번째 자리">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="비밀번호 세 번째 자리">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="비밀번호 네 번째 자리">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="비밀번호 다섯 번째 자리">
+        <input class="priv-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="비밀번호 여섯 번째 자리">
+      </div>
+      <div class="priv-modal-error" id="privGateError" role="alert" aria-live="polite"></div>
       <div class="priv-modal-actions">
         <button class="priv-modal-btn cancel" id="privGateCancelBtn" type="button">취소</button>
         <button class="priv-modal-btn confirm" id="privGateConfirmBtn" type="button">확인</button>
@@ -18837,6 +18902,9 @@
       payroll: {
         loaded: false,
         loadingPromise: null,
+        unlockToken: "",
+        unlockExpiresAt: 0,
+        unlockPromise: null,
         settingsLoaded: false,
         settingsLoadingPromise: null,
         overrideSavingPromise: null,
@@ -19144,6 +19212,7 @@
     var detailTabBtnEl = document.getElementById("detailTabBtn");
     var trackerTabBtnEl = document.getElementById("trackerTabBtn");
     var printPayslipBtnEl = document.getElementById("printPayslipBtn");
+    var payrollLockBtnEl = document.getElementById("payrollLockBtn");
     var openSettingsBtnEl = document.getElementById("openSettingsBtn");
     var closeSettingsBtnEl = document.getElementById("closeSettingsBtn");
     var closeSettingsBtn2El = document.getElementById("closeSettingsBtn2");
@@ -19731,7 +19800,8 @@
     var privGateModalEl = document.getElementById("privGateModal");
     var privGateTitleEl = document.getElementById("privGateTitle");
     var privGateDescEl = document.getElementById("privGateDesc");
-    var privGateInputEl = document.getElementById("privGateInput");
+    var privPinInputsEl = document.getElementById("privPinInputs");
+    var privPinInputEls = privPinInputsEl ? privPinInputsEl.querySelectorAll(".priv-pin-input") : [];
     var privGateErrorEl = document.getElementById("privGateError");
     var privGateCancelBtnEl = document.getElementById("privGateCancelBtn");
     var privGateConfirmBtnEl = document.getElementById("privGateConfirmBtn");
@@ -19797,7 +19867,7 @@
       renderDeskLayout_();
       var gateOpen = entryGateEl && entryGateEl.style.display !== "none";
       if (state.activeModule === "tuition" && !gateOpen) ensureTuitionLoaded();
-      if (state.activeModule === "teacher" && !gateOpen && state.privilegedAccessKey) ensurePayrollLoaded_();
+      if (state.activeModule === "teacher" && !gateOpen && isPayrollUnlocked_()) ensurePayrollLoaded_();
     }
 
     function shouldDeferPortalDataLoad_() {
@@ -34535,6 +34605,13 @@
       printPayslipBtnEl.addEventListener("click", function() {
         printPayslip();
       });
+      if (payrollLockBtnEl) {
+        payrollLockBtnEl.addEventListener("click", function() {
+          clearPayrollUnlock_();
+          state.activeModule = "expense";
+          renderModuleLayout();
+        });
+      }
 
       openSettingsBtnEl.addEventListener("click", function() {
         requestPrivilegedAccess_("설정 센터", function() {
@@ -34781,8 +34858,30 @@
 
       privGateCancelBtnEl.addEventListener("click", closePrivilegedGate_);
       privGateConfirmBtnEl.addEventListener("click", submitPrivilegedGate_);
-      privGateInputEl.addEventListener("keydown", function(event) {
-        if (event.key === "Enter") submitPrivilegedGate_();
+      Array.prototype.forEach.call(privPinInputEls, function(input, index) {
+        input.addEventListener("input", function() {
+          input.value = String(input.value || "").replace(/\D/g, "").slice(-1);
+          input.classList.toggle("is-filled", !!input.value);
+          privPinInputsEl.classList.remove("is-error");
+          privGateErrorEl.textContent = "";
+          if (input.value && index < privPinInputEls.length - 1) privPinInputEls[index + 1].focus();
+          syncPayrollPinButton_();
+          if (getPayrollPin_().length === 6) submitPrivilegedGate_();
+        });
+        input.addEventListener("keydown", function(event) {
+          if (event.key === "Backspace" && !input.value && index > 0) privPinInputEls[index - 1].focus();
+          if (event.key === "ArrowLeft" && index > 0) privPinInputEls[index - 1].focus();
+          if (event.key === "ArrowRight" && index < privPinInputEls.length - 1) privPinInputEls[index + 1].focus();
+          if (event.key === "Enter") submitPrivilegedGate_();
+        });
+        input.addEventListener("paste", function(event) {
+          var digits = String((event.clipboardData || window.clipboardData).getData("text") || "").replace(/\D/g, "").slice(0, 6);
+          if (!digits) return;
+          event.preventDefault();
+          setPayrollPin_(digits);
+          privPinInputEls[Math.min(digits.length, 6) - 1].focus();
+          if (digits.length === 6) submitPrivilegedGate_();
+        });
       });
       privGateModalEl.addEventListener("click", function(event) {
         if (event.target === privGateModalEl) closePrivilegedGate_();
@@ -38268,27 +38367,66 @@
           showClientMessage(featureName + " 권한이 없습니다. 관리자에게 문의하세요.");
           return;
         }
+        if (featureName === "강사 시수 정산" && !isPayrollUnlocked_()) {
+          openPayrollPinGate_(featureName, onSuccess);
+          return;
+        }
         state.privilegedAccessKey = "firebase-role";
         if (typeof onSuccess === "function") onSuccess();
         return;
       }
+      openPayrollPinGate_(featureName, onSuccess);
+    }
+
+    function openPayrollPinGate_(featureName, onSuccess) {
       pendingPrivilegedAction_ = { featureName: featureName, onSuccess: onSuccess };
-      privGateTitleEl.textContent = "권한 확인";
-      privGateDescEl.textContent = featureName + " 접근 비밀번호를 입력하세요.";
+      privGateTitleEl.textContent = featureName === "강사 시수 정산" ? "강사 시수 정산 잠금" : "권한 확인";
+      privGateDescEl.textContent = "보호된 급여 정보입니다. 6자리 비밀번호를 입력하세요.";
       privGateErrorEl.textContent = "";
-      privGateInputEl.value = "";
-      privGateConfirmBtnEl.disabled = false;
-      privGateConfirmBtnEl.textContent = "확인";
+      privPinInputsEl.classList.remove("is-error");
+      setPayrollPin_("");
+      privGateConfirmBtnEl.disabled = true;
+      privGateConfirmBtnEl.textContent = "잠금 해제";
       privGateModalEl.style.display = "flex";
-      setTimeout(function() { privGateInputEl.focus(); }, 20);
+      if (window.lucide) window.lucide.createIcons();
+      setTimeout(function() { if (privPinInputEls[0]) privPinInputEls[0].focus(); }, 20);
+    }
+
+    function getPayrollPin_() {
+      return Array.prototype.map.call(privPinInputEls, function(input) { return String(input.value || ""); }).join("");
+    }
+
+    function setPayrollPin_(digits) {
+      var values = String(digits || "").replace(/\D/g, "").slice(0, 6).split("");
+      Array.prototype.forEach.call(privPinInputEls, function(input, index) {
+        input.value = values[index] || "";
+        input.classList.toggle("is-filled", !!input.value);
+      });
+      syncPayrollPinButton_();
+    }
+
+    function syncPayrollPinButton_() {
+      if (state.payroll.unlockPromise) return;
+      privGateConfirmBtnEl.disabled = getPayrollPin_().length !== 6;
+    }
+
+    function isPayrollUnlocked_() {
+      return !!state.payroll.unlockToken && Number(state.payroll.unlockExpiresAt || 0) > Date.now() + 5000;
+    }
+
+    function clearPayrollUnlock_() {
+      state.payroll.unlockToken = "";
+      state.payroll.unlockExpiresAt = 0;
+      state.privilegedAccessKey = "";
     }
 
     function closePrivilegedGate_() {
       privGateModalEl.style.display = "none";
       privGateErrorEl.textContent = "";
-      privGateInputEl.value = "";
-      privGateConfirmBtnEl.disabled = false;
-      privGateConfirmBtnEl.textContent = "확인";
+      privPinInputsEl.classList.remove("is-error");
+      setPayrollPin_("");
+      privGateConfirmBtnEl.disabled = true;
+      privGateConfirmBtnEl.textContent = "잠금 해제";
       pendingPrivilegedAction_ = null;
     }
 
@@ -38297,9 +38435,10 @@
         closePrivilegedGate_();
         return;
       }
-      var password = String(privGateInputEl.value || "").trim();
-      if (!password) {
-        privGateErrorEl.textContent = "비밀번호를 입력해 주세요.";
+      if (state.payroll.unlockPromise) return state.payroll.unlockPromise;
+      var password = getPayrollPin_();
+      if (password.length !== 6) {
+        privGateErrorEl.textContent = "6자리 숫자를 모두 입력해 주세요.";
         return;
       }
       privGateErrorEl.textContent = "";
@@ -38307,10 +38446,15 @@
       privGateConfirmBtnEl.textContent = "확인 중...";
 
       var done = function(ok, msg) {
-        privGateConfirmBtnEl.disabled = false;
-        privGateConfirmBtnEl.textContent = "확인";
+        state.payroll.unlockPromise = null;
+        privGateConfirmBtnEl.textContent = "잠금 해제";
         if (!ok) {
           privGateErrorEl.textContent = msg || "비밀번호가 올바르지 않습니다.";
+          privPinInputsEl.classList.remove("is-error");
+          void privPinInputsEl.offsetWidth;
+          privPinInputsEl.classList.add("is-error");
+          setPayrollPin_("");
+          if (privPinInputEls[0]) privPinInputEls[0].focus();
           return;
         }
         var action = pendingPrivilegedAction_;
@@ -38318,14 +38462,17 @@
         if (action && typeof action.onSuccess === "function") action.onSuccess();
       };
 
-      runServer("verifyPayrollPrivilegedPassword", password)
+      state.payroll.unlockPromise = unlockPayrollCloud_(password)
         .then(function(res) {
-          if (res && res.success) state.privilegedAccessKey = res.token || password;
-          done(!!(res && res.success), "비밀번호가 올바르지 않습니다.");
+          state.payroll.unlockToken = String(res.unlockToken || "");
+          state.payroll.unlockExpiresAt = new Date(res.expiresAt || 0).getTime();
+          state.privilegedAccessKey = "firebase-role";
+          done(isPayrollUnlocked_(), "잠금 정보를 확인할 수 없습니다.");
         })
         .catch(function(err) {
-          done(false, "비밀번호 확인 오류: " + (err && err.message ? err.message : String(err)));
+          done(false, err && err.message ? err.message : "비밀번호를 확인하지 못했습니다.");
         });
+      return state.payroll.unlockPromise;
     }
 
     function refreshSummary(isMonthRefresh, options) {
@@ -38377,7 +38524,7 @@
     }
 
     function ensureTeacherSettingsLoaded_() {
-      if (!state.privilegedAccessKey && !canUseGoogleScript()) return Promise.resolve();
+      if (!isPayrollUnlocked_() && !canUseGoogleScript()) return Promise.resolve();
       if (state.payroll.settingsLoaded) return Promise.resolve();
       if (state.payroll.settingsLoadingPromise) return state.payroll.settingsLoadingPromise;
       return loadSettings();
@@ -39057,9 +39204,11 @@
           oneToOneGuide = " / 1:1 비율 " + clampNumber(toNumber(cfg.oneToOneRatioPercent, 50), 0, 100) + "%";
         }
       }
-      document.getElementById("kpiPaySub").textContent = state.salaryMode === "ratio"
-        ? "비율제 " + toNumber(state.ratioPercent, 50) + "% 적용"
-        : "시급제: 일자별 순수수업시간 x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide;
+      document.getElementById("kpiPaySub").textContent = kpi.mixedTeacherModes
+        ? "강사별 급여 방식 합산"
+        : (state.salaryMode === "ratio"
+          ? "비율제 " + toNumber(state.ratioPercent, 50) + "% 적용"
+          : "시급제: 일자별 순수수업시간 x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide);
       document.getElementById("kpiLessons").textContent = (kpi.recognizedLessons || 0) + "건";
       document.getElementById("kpiLessonsSub").textContent = "전체 " + (kpi.totalLessons || 0) + "건";
       document.getElementById("kpiPureHours").textContent = formatHours(kpi.pureTeachingHours || 0) + "h";
@@ -39168,9 +39317,15 @@
     }
 
     function renderModeState() {
+      var mixedMode = !state.selectedTeacher;
       var ratioActive = state.salaryMode === "ratio";
       modeRatioBtnEl.classList.toggle("active", ratioActive);
       modeHourlyBtnEl.classList.toggle("active", !ratioActive);
+      modeRatioBtnEl.disabled = mixedMode;
+      modeHourlyBtnEl.disabled = mixedMode;
+      ratioInputEl.disabled = mixedMode;
+      hourlyInputEl.disabled = mixedMode;
+      printPayslipBtnEl.disabled = mixedMode;
       var oneToOneGuide = "";
       if (!ratioActive && state.selectedTeacher) {
         var cfg = (state.teacherSettings || {})[state.selectedTeacher] || {};
@@ -39178,13 +39333,13 @@
           oneToOneGuide = " + 1:1 비율 " + clampNumber(toNumber(cfg.oneToOneRatioPercent, 50), 0, 100) + "%";
         }
       }
-	      document.getElementById("salaryGuide").textContent = ratioActive
-	        ? "비율제: 인정 순매출 x " + toNumber(state.ratioPercent, 50) + "%"
-	        : (state.selectedTeacher
-	          ? "시급제: 일자별 순수 수업시간(중복 제외) x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide
-	          : "시급제 전체 강사 조회는 참고용입니다. 강사별 선택 후 정산액을 확인해 주세요.");
-      document.getElementById("ratioField").style.opacity = ratioActive ? "1" : "0.55";
-      document.getElementById("hourlyField").style.opacity = ratioActive ? "0.55" : "1";
+	      document.getElementById("salaryGuide").textContent = mixedMode
+          ? "강사별 설정된 비율제·시급제를 합산합니다."
+          : (ratioActive
+	          ? "비율제: 인정 순매출 x " + toNumber(state.ratioPercent, 50) + "%"
+	          : "시급제: 일자별 순수 수업시간(중복 제외) x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide);
+      document.getElementById("ratioField").style.opacity = mixedMode || !ratioActive ? "0.55" : "1";
+      document.getElementById("hourlyField").style.opacity = mixedMode || ratioActive ? "0.55" : "1";
     }
 
     function renderCalendar(calendarData) {
@@ -40171,6 +40326,10 @@
     }
 
     function printPayslip() {
+      if (!state.selectedTeacher) {
+        alert("급여 내역서를 출력할 강사를 먼저 선택해 주세요.");
+        return;
+      }
       var summary = state.currentSummary;
       if (!summary || !summary.kpi) {
         alert("출력할 데이터가 없습니다.");
@@ -40275,6 +40434,7 @@
       if (!canUseDeskCloudApi_(fnName)) return Promise.reject(new Error("Cloud API 로그인이 필요합니다."));
       return state.firebaseUser.getIdToken().then(function(token) {
         var headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
+        if (isPayrollCloudMethod_(fnName)) headers["x-payroll-unlock-token"] = state.payroll.unlockToken || "";
         if (isRunServerWriteApi_(fnName)) headers["x-idempotency-key"] = createDeskIdempotencyKey_(fnName, payload);
         return fetch(DESK_CLOUD_API_BASE + "/v1/desk/" + encodeURIComponent(fnName), {
           method: "POST",
@@ -40287,11 +40447,38 @@
             var error = new Error(body && body.error && body.error.message ? body.error.message : "Cloud API 호출에 실패했습니다.");
             error.requestTransmitted = true;
             error.status = response.status;
+            error.code = body && body.error ? body.error.code : "";
+            if (error.code === "payroll_unlock_required") clearPayrollUnlock_();
             throw error;
           }
           return body || {};
         });
       });
+    }
+
+    function unlockPayrollCloud_(pin) {
+      if (!state.cloudApiReady || !state.firebaseUser) return Promise.reject(new Error("로그인이 필요합니다."));
+      return state.firebaseUser.getIdToken().then(function(token) {
+        return fetch(DESK_CLOUD_API_BASE + "/v1/payroll/unlock", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: String(pin || "") })
+        });
+      }).then(function(response) {
+        return response.json().catch(function() { return {}; }).then(function(body) {
+          if (!response.ok) {
+            var error = new Error(body && body.error && body.error.message ? body.error.message : "비밀번호를 확인하지 못했습니다.");
+            error.status = response.status;
+            error.code = body && body.error ? body.error.code : "";
+            throw error;
+          }
+          return body || {};
+        });
+      });
+    }
+
+    function isPayrollCloudMethod_(fnName) {
+      return /^(getPayroll|savePayroll)/.test(String(fnName || ""));
     }
 
     function runServer(fnName, payload) {

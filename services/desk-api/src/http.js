@@ -40,7 +40,7 @@ export function createCorsMiddleware(allowedOrigins) {
     res.set({
       'access-control-allow-origin': origin,
       'access-control-allow-credentials': 'true',
-      'access-control-allow-headers': 'authorization, content-type, x-idempotency-key, x-request-id',
+      'access-control-allow-headers': 'authorization, content-type, x-idempotency-key, x-payroll-unlock-token, x-request-id',
       'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS',
       'access-control-max-age': '600',
       vary: 'Origin'

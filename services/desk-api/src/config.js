@@ -19,6 +19,9 @@ export function loadConfig(env = process.env) {
     projectId: env.FIREBASE_PROJECT_ID || env.GOOGLE_CLOUD_PROJECT || '',
     legacyRtdbUrl: String(env.LEGACY_RTDB_URL || '').trim().replace(/\/+$/, ''),
     payrollSpreadsheetId: String(env.PAYROLL_SPREADSHEET_ID || DEFAULT_PAYROLL_SPREADSHEET_ID).trim(),
+    payrollAccessPin: String(env.PAYROLL_ACCESS_PIN || '').trim(),
+    payrollUnlockSecret: String(env.PAYROLL_UNLOCK_SECRET || '').trim(),
+    payrollUnlockTtlSeconds: Number(env.PAYROLL_UNLOCK_TTL_SECONDS) || 1800,
     deskCalendarId: String(env.DESK_CALENDAR_ID || DEFAULT_DESK_CALENDAR_ID).trim(),
     workspaceServiceAccountEmail: String(env.GOOGLE_WORKSPACE_SERVICE_ACCOUNT || '').trim(),
     allowedOrigins: configuredOrigins.length

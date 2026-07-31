@@ -24,6 +24,11 @@ function testApp(overrides = {}) {
         permissions: { canManageSchedules: true, canManageAccounts: false }
       }
     }),
+    payrollAccess: {
+      verifyPin: (_key, pin) => ({ ok: pin === '030606', lockedUntil: 0 }),
+      issue: uid => ({ token: `unlock-${uid}`, expiresAt: Date.now() + 1800000 }),
+      verify: (uid, token) => token === `unlock-${uid}`
+    },
     ...overrides
   });
 }
@@ -199,9 +204,42 @@ test('payroll methods require admin or explicit payroll permission', async () =>
     deskHandlers: { getPayrollSettings: async (_payload, identity) => ({ success: true, role: identity.role }) }
   });
   const allowedResponse = await request(allowed).post('/v1/desk/getPayrollSettings')
-    .set('authorization', 'Bearer valid-token').send({ payload: {} }).expect(200);
+    .set('authorization', 'Bearer valid-token').set('x-payroll-unlock-token', 'unlock-staff-1').send({ payload: {} }).expect(200);
   assert.equal(allowedResponse.body.success, true);
   assert.equal(allowedResponse.body.role, 'STAFF');
+});
+
+test('payroll unlock requires permission and a valid six-digit PIN', async () => {
+  const denied = await request(testApp()).post('/v1/payroll/unlock')
+    .set('authorization', 'Bearer valid-token').send({ pin: '030606' }).expect(403);
+  assert.equal(denied.body.error.code, 'payroll_access_required');
+
+  const allowedApp = testApp({
+    loadAccount: async () => ({
+      account: { role: 'STAFF', status: 'ACTIVE', name: '급여 담당자' },
+      access: { apps: { deskPortal: true }, permissions: { canManagePayroll: true } }
+    })
+  });
+  const invalid = await request(allowedApp).post('/v1/payroll/unlock')
+    .set('authorization', 'Bearer valid-token').send({ pin: '111111' }).expect(401);
+  assert.equal(invalid.body.error.code, 'payroll_pin_invalid');
+
+  const valid = await request(allowedApp).post('/v1/payroll/unlock')
+    .set('authorization', 'Bearer valid-token').send({ pin: '030606' }).expect(200);
+  assert.equal(valid.body.unlockToken, 'unlock-staff-1');
+});
+
+test('payroll methods reject missing or invalid unlock tokens', async () => {
+  const app = testApp({
+    loadAccount: async () => ({
+      account: { role: 'ADMIN', status: 'ACTIVE', name: '관리자' },
+      access: { apps: { deskPortal: true }, permissions: {} }
+    }),
+    deskHandlers: { getPayrollSettings: async () => ({ success: true }) }
+  });
+  const missing = await request(app).post('/v1/desk/getPayrollSettings')
+    .set('authorization', 'Bearer valid-token').send({ payload: {} }).expect(401);
+  assert.equal(missing.body.error.code, 'payroll_unlock_required');
 });
 
 test('tuition writes dispatch with staff identity and idempotency context', async () => {

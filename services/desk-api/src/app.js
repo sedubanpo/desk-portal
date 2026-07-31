@@ -5,6 +5,7 @@ import { DESK_METHODS, DESK_WRITE_METHODS } from './desk/handlers.js';
 import { ApiError } from './http.js';
 import { TUITION_METHODS, TUITION_WRITE_METHODS } from './tuition/handlers.js';
 import { PAYROLL_METHODS, PAYROLL_WRITE_METHODS } from './payroll/handlers.js';
+import { createPayrollAccess } from './payroll/access.js';
 import {
   createCorsMiddleware,
   errorHandler,
@@ -13,9 +14,18 @@ import {
   securityHeaders
 } from './http.js';
 
-export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation() }) {
+export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess }) {
   const app = express();
   const requireStaff = createRequireStaff({ verifyIdToken, loadAccount });
+  const payrollGate = payrollAccess || createPayrollAccess({
+    pin: config.payrollAccessPin,
+    secret: config.payrollUnlockSecret,
+    ttlSeconds: config.payrollUnlockTtlSeconds
+  });
+
+  function hasPayrollPermission(identity) {
+    return identity.role === 'ADMIN' || identity.permissions?.canManagePayroll === true;
+  }
 
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -42,6 +52,22 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     res.json({ ok: true, migration: MIGRATION_STATE });
   });
 
+  app.post('/v1/payroll/unlock', requireStaff, (req, res, next) => {
+    if (!hasPayrollPermission(req.identity)) {
+      return next(new ApiError(403, 'payroll_access_required', '급여 정산 관리 권한이 필요합니다.'));
+    }
+    const key = `${req.identity.uid}:${req.ip || 'unknown'}`;
+    const result = payrollGate.verifyPin(key, req.body?.pin);
+    if (!result.ok) {
+      if (result.lockedUntil) {
+        return next(new ApiError(429, 'payroll_pin_locked', '입력 횟수를 초과했습니다. 15분 후 다시 시도해 주세요.'));
+      }
+      return next(new ApiError(401, 'payroll_pin_invalid', '비밀번호가 올바르지 않습니다.'));
+    }
+    const unlock = payrollGate.issue(req.identity.uid);
+    return res.json({ ok: true, unlockToken: unlock.token, expiresAt: new Date(unlock.expiresAt).toISOString() });
+  });
+
   app.post('/v1/desk/:method', requireStaff, async (req, res, next) => {
     const method = String(req.params.method || '').trim();
     const supportedMethods = new Set([...DESK_METHODS, ...TUITION_METHODS, ...PAYROLL_METHODS]);
@@ -49,8 +75,11 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     if (!supportedMethods.has(method) || typeof deskHandlers[method] !== 'function') {
       return next(new ApiError(404, 'desk_method_not_found', '아직 Cloud Run으로 이전되지 않은 데스크 기능입니다.'));
     }
-    if (PAYROLL_METHODS.includes(method) && req.identity.role !== 'ADMIN' && req.identity.permissions?.canManagePayroll !== true) {
+    if (PAYROLL_METHODS.includes(method) && !hasPayrollPermission(req.identity)) {
       return next(new ApiError(403, 'payroll_access_required', '급여 정산 관리 권한이 필요합니다.'));
+    }
+    if (PAYROLL_METHODS.includes(method) && !payrollGate.verify(req.identity.uid, req.get('x-payroll-unlock-token'))) {
+      return next(new ApiError(401, 'payroll_unlock_required', '강사 시수 정산 잠금을 다시 풀어 주세요.'));
     }
     const execute = () => deskHandlers[method](req.body?.payload ?? req.body ?? {}, req.identity);
     try {

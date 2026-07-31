@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const frontendPath = new URL('../../../docs/index.html', import.meta.url);
 
-test('Firebase identity replaces the Apps Script payroll password gate', async () => {
+test('Firebase identity and the server-issued six-digit PIN token protect payroll', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /cloudIdentity:\s*null/);
@@ -12,7 +12,13 @@ test('Firebase identity replaces the Apps Script payroll password gate', async (
   assert.match(source, /identity\.permissions\.canManagePayroll === true/);
   assert.match(source, /state\.privilegedAccessKey = "firebase-role"/);
   assert.match(source, /if \(state\.cloudApiReady && state\.firebaseUser\)/);
-  assert.match(source, /autocomplete="current-password"/);
+  assert.match(source, /id="privPinInputs"/);
+  assert.match(source, /inputmode="numeric"/);
+  assert.match(source, /\/v1\/payroll\/unlock/);
+  assert.match(source, /x-payroll-unlock-token/);
+  assert.match(source, /강사별 급여 방식 합산/);
+  assert.match(source, /급여 내역서를 출력할 강사를 먼저 선택/);
+  assert.doesNotMatch(source, /030606/);
   assert.match(source, /var days = Array\.isArray\(week\)/);
 });
 

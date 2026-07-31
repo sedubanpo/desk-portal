@@ -60,6 +60,32 @@ test('payroll parser and ratio summary preserve recognition, overlap, and cancel
   assert.equal(summary.rows.find(row => row.name === '박학생').recognized, false);
 });
 
+test('all-teacher summary applies each teacher pay mode and keeps their overlapping hours separate', () => {
+  const mixedSource = {
+    headers: source.headers,
+    values: [
+      ['비율학생', '7/1', '수학-정규', '출석', '반포', '비율강사', '10:00', '12:00', '2', '100000', '200000', '', ''],
+      ['시급학생', '7/1', '영어-정규', '출석', '반포', '시급강사', '10:00', '12:00', '2', '100000', '200000', '', ''],
+      ['시급학생2', '7/1', '국어-정규', '출석', '반포', '시급강사2', '10:00', '12:00', '2', '100000', '200000', '', '']
+    ]
+  };
+  const meta = parsePayrollMonthName('26-07');
+  const summary = buildPayrollSummary(parsePayrollRows(mixedSource, meta), meta, {
+    salaryMode: 'ratio', ratioPercent: 50, hourlyRate: 30000,
+    teacherSettings: {
+      '비율강사': { salaryMode: 'ratio' },
+      '시급강사': { salaryMode: 'hourly', hourlyRate: 40000 },
+      '시급강사2': { salaryMode: 'hourly', hourlyRate: 40000 }
+    },
+    effectiveOverrides: {}
+  });
+  assert.equal(summary.kpi.pureTeachingHours, 6);
+  assert.equal(summary.kpi.ratioPay, 100000);
+  assert.equal(summary.kpi.hourlyPay, 160000);
+  assert.equal(summary.kpi.estimatedPay, 260000);
+  assert.equal(summary.kpi.mixedTeacherModes, true);
+});
+
 test('payroll month handler reads Google Sheets and returns the legacy response shape', async () => {
   const handlers = createPayrollHandlers({ store: memoryStore(), sheets: sheets(), now: () => new Date('2026-07-15T05:00:00Z') });
   const response = await handlers.getPayrollMonthSummary({ monthName: '26-07', salaryMode: 'ratio', ratioPercent: 50 });

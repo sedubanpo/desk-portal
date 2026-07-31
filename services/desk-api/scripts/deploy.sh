@@ -26,6 +26,7 @@ gcloud services enable \
   artifactregistry.googleapis.com \
   iamcredentials.googleapis.com \
   identitytoolkit.googleapis.com \
+  secretmanager.googleapis.com \
   sheets.googleapis.com \
   calendar-json.googleapis.com \
   --project "${PROJECT_ID}" \
@@ -63,6 +64,19 @@ for attempt in {1..12}; do
     exit 1
   fi
   sleep 5
+done
+
+for secret in desk-payroll-access-pin desk-payroll-unlock-secret; do
+  if ! gcloud secrets describe "${secret}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
+    echo "Secret Manager에 ${secret} 비밀값을 먼저 등록하세요." >&2
+    exit 2
+  fi
+  gcloud secrets add-iam-policy-binding "${secret}" \
+    --project "${PROJECT_ID}" \
+    --member "serviceAccount:${RUNTIME_SERVICE_ACCOUNT}" \
+    --role roles/secretmanager.secretAccessor \
+    --condition=None \
+    --quiet >/dev/null
 done
 
 for attempt in {1..6}; do
@@ -157,6 +171,7 @@ gcloud run deploy "${SERVICE}" \
   --max-instances 10 \
   --timeout 30s \
   --set-env-vars "^|^NODE_ENV=production|FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}|LEGACY_RTDB_URL=${LEGACY_RTDB_URL}|ALLOWED_ORIGINS=${ALLOWED_ORIGINS}|CHECK_REVOKED_TOKENS=true|PAYROLL_SPREADSHEET_ID=1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E|DESK_CALENDAR_ID=1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com|GOOGLE_WORKSPACE_SERVICE_ACCOUNT=${RUNTIME_SERVICE_ACCOUNT}" \
+  --set-secrets "PAYROLL_ACCESS_PIN=desk-payroll-access-pin:latest,PAYROLL_UNLOCK_SECRET=desk-payroll-unlock-secret:latest" \
   --quiet
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE}" \
