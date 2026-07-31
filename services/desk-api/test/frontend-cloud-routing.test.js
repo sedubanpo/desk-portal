@@ -129,6 +129,13 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /var list = buildTuitionEffectivePaymentRows_\(sourceRows\)\.filter/);
   assert.match(source, /count: list\.filter\(function\(row\) \{ return !isTuitionAdjustmentPayment_\(row\); \}\)\.length/);
   assert.match(source, /id="tuitionMonthCreateBtn"/);
+  assert.match(source, /class="tuition-month-search"/);
+  assert.match(source, /id="tuitionKeywordInput" type="search"/);
+  assert.match(source, /id="tuitionKeywordClearBtn"/);
+  assert.match(source, /\.tuition-month-search \{[\s\S]*?border: 2px solid #238b68;/);
+  assert.match(source, /\.tuition-month-create-btn \{[\s\S]*?width: 42px;[\s\S]*?height: 42px;/);
+  assert.match(source, /tuitionKeywordClearBtnEl\.hidden = !state\.tuition\.keyword/);
+  assert.doesNotMatch(source, /<span>다음 달 시작<\/span>/);
   assert.match(source, /id="tuitionMonthGrid" role="tablist"/);
   assert.match(source, /id="tuitionYearLabel"/);
   assert.doesNotMatch(source, /id="tuitionMonthSelect"/);
