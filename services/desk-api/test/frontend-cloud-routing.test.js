@@ -22,6 +22,28 @@ test('Firebase identity and the server-issued six-digit PIN token protect payrol
   assert.match(source, /var days = Array\.isArray\(week\)/);
 });
 
+test('teacher payroll exposes an unfiltered monthly sales and teacher-pay analysis', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /id="openPayrollMonthlyAnalysisBtn"/);
+  assert.match(source, /id="payrollMonthlyAnalysisModal"/);
+  assert.match(source, /getPayrollMonthlyAnalysis: true/);
+  assert.match(source, /runServer\("getPayrollMonthlyAnalysis", \{/);
+  assert.match(source, /ratioPercent: state\.ratioPercent/);
+  assert.match(source, /teacherSettings: state\.teacherSettings \|\| \{\}/);
+  assert.match(source, /analysis\.inputSignature === inputSignature/);
+  assert.match(source, /state\.payroll\.monthlyAnalysis\.loaded = false/);
+  assert.match(source, /state\.payroll\.monthlyAnalysis\.inputSignature = ""/);
+  assert.match(source, /전체 강사 · 필터 미적용 · 현재 저장 규칙/);
+  assert.match(source, /인정 순매출\(정산 기준\)/);
+  assert.match(source, /규칙 적용 예상 강사비/);
+  assert.match(source, /강사비 차감 잔여액/);
+  assert.match(source, /임대료, 관리비, 세금 등 다른 운영비가 반영되지 않습니다/);
+  assert.match(source, /balance-negative/);
+  assert.match(source, /일부 " \+ analysis\.failedMonths\.length \+ "개월 제외/);
+  assert.match(source, /\.desk-global-tools \{\s*display: none;/);
+});
+
 test('production frontend has no Apps Script or direct RTDB transport fallback', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

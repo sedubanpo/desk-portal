@@ -13,6 +13,7 @@ import {
 export const PAYROLL_METHODS = Object.freeze([
   'getPayrollBootstrapData',
   'getPayrollMonthSummary',
+  'getPayrollMonthlyAnalysis',
   'getPayrollSettings',
   'savePayrollSettings',
   'savePayrollOverrides'
@@ -72,6 +73,69 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
       };
     },
 
+    async getPayrollMonthlyAnalysis(payload = {}) {
+      const months = await sheets.listPayrollMonths();
+      if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
+      const limit = Math.min(24, Math.max(1, Math.trunc(Number(payload.limit) || 12)));
+      const selectedMonths = months.slice(0, limit);
+      const settings = await store.getSettings();
+      const calculationPayload = {
+        ratioPercent: payload.ratioPercent,
+        hourlyRate: payload.hourlyRate
+      };
+      const results = await Promise.all(selectedMonths.map(async monthName => {
+        try {
+          const monthMeta = parsePayrollMonthName(monthName);
+          if (!monthMeta) throw new Error('invalid month tab name');
+          const [source, overrides] = await Promise.all([
+            sheets.readPayrollMonth(monthName),
+            store.getOverrides(monthName)
+          ]);
+          const parsedRows = parsePayrollRows(source, monthMeta);
+          const summary = buildPayrollSummary(parsedRows, monthMeta, payrollOptions(calculationPayload, settings, overrides));
+          const kpi = summary.kpi || {};
+          const teacherCount = new Set((summary.rows || [])
+            .filter(row => row.recognized && row.teacher)
+            .map(row => row.teacher)).size;
+          const netSales = Math.round(Number(kpi.netSales) || 0);
+          const estimatedPay = Math.round(Number(kpi.estimatedPay) || 0);
+          return { row: {
+            monthName,
+            monthLabel: `${monthMeta.year}년 ${monthMeta.month}월`,
+            grossSales: Math.round(Number(kpi.grossSales) || 0),
+            discount: Math.round(Number(kpi.discount) || 0),
+            netSales,
+            estimatedPay,
+            balanceAfterTeacherPay: netSales - estimatedPay,
+            teacherPayRate: netSales > 0 ? Math.round((estimatedPay / netSales) * 1000) / 10 : null,
+            recognizedHours: Number(kpi.recognizedHours) || 0,
+            pureTeachingHours: Number(kpi.pureTeachingHours) || 0,
+            recognizedLessons: Number(kpi.recognizedLessons) || 0,
+            canceledAmount: Math.round(Number(kpi.canceledAmount) || 0),
+            teacherCount
+          } };
+        } catch (error) {
+          return { failure: { monthName, message: String(error?.message || error) } };
+        }
+      }));
+      const rows = results.filter(result => result.row).map(result => result.row);
+      const failedMonths = results.filter(result => result.failure).map(result => result.failure);
+      if (!rows.length) return successFailure('월별 정산 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      rows.reverse();
+      return {
+        success: true,
+        rows,
+        months,
+        failedMonths,
+        scope: 'all-teachers-unfiltered',
+        ruleBasis: 'current-saved-teacher-settings',
+        ratioPercent: payrollOptions(calculationPayload, settings, {}).ratioPercent,
+        hourlyRate: payrollOptions(calculationPayload, settings, {}).hourlyRate,
+        source: 'google-sheets-api',
+        generatedAt: now().toISOString()
+      };
+    },
+
     async savePayrollSettings(payload = {}, identity = {}) {
       const clientRequestId = requestId(payload);
       if (!clientRequestId) return successFailure('저장 요청 식별자가 없습니다. 다시 시도해 주세요.');
@@ -97,6 +161,6 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
 
   return Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, async (payload, identity) => {
     try { return await handler(payload, identity); }
-    catch (error) { return successFailure(`${name === 'getPayrollMonthSummary' ? '정산 데이터 계산' : '급여 처리'} 오류: ${error.message}`); }
+    catch (error) { return successFailure(`${/^getPayrollMonth/.test(name) ? '정산 데이터 계산' : '급여 처리'} 오류: ${error.message}`); }
   }]));
 }

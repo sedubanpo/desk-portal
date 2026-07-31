@@ -13,7 +13,7 @@ function fakeAuth() {
           if (url.includes('/calendar/v3/')) {
             return { data: { items: [{ id: 'event-1', summary: '데스크 회의', start: { dateTime: '2026-07-15T10:00:00+09:00' }, end: { dateTime: '2026-07-15T11:00:00+09:00' } }] } };
           }
-          return { data: { sheets: [{ properties: { title: '26-07' } }, { properties: { title: '메모' } }, { properties: { title: '26-06' } }] } };
+          return { data: { sheets: [{ properties: { title: '26-07' } }, { properties: { title: '2027-01' } }, { properties: { title: '메모' } }, { properties: { title: '26-12' } }, { properties: { title: '2025-12' } }, { properties: { title: '26-06' } }] } };
         }
       };
     }
@@ -22,7 +22,7 @@ function fakeAuth() {
 
 test('Google Workspace reader returns payroll months, rows, and normalized calendar events', async () => {
   const reader = createGoogleWorkspaceReader({ spreadsheetId: 'sheet-1', calendarId: 'calendar-1', auth: fakeAuth() });
-  assert.deepEqual(await reader.listPayrollMonths(), ['26-07', '26-06']);
+  assert.deepEqual(await reader.listPayrollMonths(), ['2027-01', '26-12', '26-07', '26-06', '2025-12']);
   assert.deepEqual(await reader.readPayrollMonth('26-07'), {
     range: "'26-07'!A:M",
     headers: ['이름', '수업일'],

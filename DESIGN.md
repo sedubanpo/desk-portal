@@ -59,6 +59,8 @@ Base unit is 4px.
 - Segmented controls: same height across items, active state uses green fill or green underline, inactive state remains white.
 - Cards: 8-12px radius, `--ds-border`, white or subtle surface, no nested decorative card effect.
 - Tables: sticky header when scrollable, tabular numerals, amount cells use right or compact block alignment, horizontal overflow only inside the table wrapper.
+- Teacher payroll workspace: the page header owns monthly analysis and lock actions; filters sit in one 8px operational toolbar; the five primary metrics share one bordered strip with separators instead of five floating cards. The expected-pay metric uses a quiet green emphasis, and all dynamic amounts use tabular numerals.
+- Payroll monthly analysis: the modal uses four compact KPI cards, one combined monthly chart, and one sticky-axis table. Revenue is labelled `인정 순매출(정산 기준)`, teacher expense is labelled `규칙 적용 예상 강사비`, and the difference is labelled `강사비 차감 잔여액`, never profit. A warm note discloses that other operating expenses are excluded.
 - Report schedule cards: time block gets fixed readable width, worker detail gets remaining width, unavailable workers use low-saturation dim treatment.
 
 ## Motion

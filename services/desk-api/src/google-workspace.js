@@ -92,7 +92,13 @@ export function createGoogleWorkspaceReader({
       return (data.sheets || [])
         .map(item => String(item?.properties?.title || '').trim())
         .filter(title => /^(\d{2}|\d{4})-(\d{2})$/.test(title))
-        .sort((a, b) => b.localeCompare(a));
+        .sort((a, b) => {
+          const [aYearRaw, aMonthRaw] = a.split('-');
+          const [bYearRaw, bMonthRaw] = b.split('-');
+          const aYear = Number(aYearRaw.length === 2 ? `20${aYearRaw}` : aYearRaw);
+          const bYear = Number(bYearRaw.length === 2 ? `20${bYearRaw}` : bYearRaw);
+          return bYear - aYear || Number(bMonthRaw) - Number(aMonthRaw);
+        });
     },
 
     async readPayrollMonth(monthName) {

@@ -99,6 +99,70 @@ test('payroll month handler reads Google Sheets and returns the legacy response 
   assert.ok(response.overrideSignature);
 });
 
+test('monthly analysis loads each month without screen filters and returns teacher-pay balances', async () => {
+  const monthSources = {
+    '26-07': source,
+    '26-06': {
+      headers: source.headers,
+      values: [
+        ['윤학생', '6/3', '영어-정규', '출석', '반포', '시급강사', '10:00', '12:00', '2', '100000', '200000', '', '10%']
+      ]
+    }
+  };
+  const handlers = createPayrollHandlers({
+    store: memoryStore({ settings: {
+      '김강사': { salaryMode: 'ratio' },
+      '시급강사': { salaryMode: 'hourly', hourlyRate: 40000 }
+    } }),
+    sheets: {
+      async listPayrollMonths() { return ['26-07', '26-06']; },
+      async readPayrollMonth(month) { return structuredClone(monthSources[month]); }
+    },
+    now: () => new Date('2026-07-31T12:00:00Z')
+  });
+
+  const response = await handlers.getPayrollMonthlyAnalysis({ limit: 12, teacherName: '무시할화면필터', ratioPercent: 60, hourlyRate: 30000 });
+  assert.equal(response.success, true);
+  assert.equal(response.scope, 'all-teachers-unfiltered');
+  assert.deepEqual(response.rows.map(row => row.monthName), ['26-06', '26-07']);
+  assert.deepEqual(response.rows[0], {
+    monthName: '26-06', monthLabel: '2026년 6월', grossSales: 200000, discount: 20000,
+    netSales: 180000, estimatedPay: 80000, balanceAfterTeacherPay: 100000,
+    teacherPayRate: 44.4, recognizedHours: 2, pureTeachingHours: 2,
+    recognizedLessons: 1, canceledAmount: 0, teacherCount: 1
+  });
+  assert.equal(response.rows[1].netSales, 400000);
+  assert.equal(response.rows[1].estimatedPay, 240000);
+  assert.equal(response.rows[1].canceledAmount, 200000);
+  assert.equal(response.ratioPercent, 60);
+  assert.equal(response.ruleBasis, 'current-saved-teacher-settings');
+  assert.deepEqual(response.failedMonths, []);
+});
+
+test('monthly analysis preserves healthy months and marks a zero-net pay rate as unavailable', async () => {
+  const handlers = createPayrollHandlers({
+    store: memoryStore({ settings: { '시급강사': { salaryMode: 'hourly', hourlyRate: 40000 } } }),
+    sheets: {
+      async listPayrollMonths() { return ['26-07', '26-06']; },
+      async readPayrollMonth(month) {
+        if (month === '26-06') throw new Error('temporary Sheets failure');
+        return {
+          headers: source.headers,
+          values: [['무료학생', '7/1', '영어-정규', '출석', '반포', '시급강사', '10:00', '12:00', '2', '0', '0', '', '']]
+        };
+      }
+    }
+  });
+
+  const response = await handlers.getPayrollMonthlyAnalysis({ limit: 12 });
+  assert.equal(response.success, true);
+  assert.equal(response.rows.length, 1);
+  assert.equal(response.rows[0].estimatedPay, 80000);
+  assert.equal(response.rows[0].balanceAfterTeacherPay, -80000);
+  assert.equal(response.rows[0].teacherPayRate, null);
+  assert.deepEqual(response.failedMonths.map(item => item.monthName), ['26-06']);
+});
+
 test('settings and overrides replay the same business request without a second mutation', async () => {
   const store = memoryStore();
   const handlers = createPayrollHandlers({ store, sheets: sheets(), now: () => new Date('2026-07-15T05:00:00Z') });
