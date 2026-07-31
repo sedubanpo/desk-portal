@@ -129,6 +129,17 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /var list = buildTuitionEffectivePaymentRows_\(sourceRows\)\.filter/);
   assert.match(source, /count: list\.filter\(function\(row\) \{ return !isTuitionAdjustmentPayment_\(row\); \}\)\.length/);
   assert.match(source, /id="tuitionMonthCreateBtn"/);
+  assert.match(source, /id="tuitionMonthGrid" role="tablist"/);
+  assert.match(source, /id="tuitionYearLabel"/);
+  assert.doesNotMatch(source, /id="tuitionMonthSelect"/);
+  assert.match(source, /Array\.from\(\{ length: 12 \}/);
+  assert.match(source, /item && item\.generated && item\.hasData/);
+  assert.match(source, /className = "tuition-month-btn"/);
+  assert.match(source, /state\.tuition\.briefingPayments/);
+  assert.match(source, /state\.tuition\.briefingRows/);
+  assert.match(source, /state\.tuition\.briefingMonths/);
+  assert.match(source, /usesBriefingBundle \? state\.tuition\.briefingPayments/);
+  assert.match(source, /포함 월 ·/);
   assert.match(source, /createTuitionMonth: true/);
   assert.match(source, /function formatTuitionMonthLabel_/);
   assert.match(source, /return year \+ "-" \+ parseInt\(match\[2\], 10\) \+ "월"/);

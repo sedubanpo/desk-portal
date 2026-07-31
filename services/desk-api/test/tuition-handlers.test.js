@@ -84,6 +84,42 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 
+test('month summary exposes the latest two generated months for briefing', async () => {
+  const seed = tuitionSeed();
+  const augustPayment = {
+    dueDate: '26-08-01', studentName: '신유진', itemName: '납부금액', amount: -200000,
+    paidAt: '7/31', business: '반포', paymentType: '현장카드', approvalNo: 'aug-1',
+    inputAt: '7/31 15:00', originMonth: '26-08s', sourceMonth: '26-08s', sourceDueMonth: '26-08s',
+    requestId: 'august-payment', source: 'desk_portal'
+  };
+  seed.documents['tuitionMonthIndex/tmi_26-08s'] = { monthName: '26-08s' };
+  seed.documents[`tuitionMonthSnapshots/${snapshotId('26-08s')}`] = {
+    success: true,
+    selectedMonth: '26-08s',
+    rows: [{
+      studentName: '신유진', school: '세화여고', grade: '2', guideAmount: 200000,
+      collectedAmount: 200000, outstandingAmount: 0, paymentCount: 1, unpaidStatus: '납부완료',
+      contactCount: 1, lastContactAt: '2026-07-31T05:00:00.000Z', lastContactMemo: '', lastUpdatedAt: ''
+    }],
+    payments: [augustPayment],
+    allPayments: [augustPayment],
+    todayPayments: [augustPayment]
+  };
+  seed.documents['tuitionPaymentReadIndexes/payment_month_26-08s'] = {
+    monthName: '26-08s', payments: [augustPayment], seeded: true
+  };
+
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) })
+    .getTuitionMonthSummary({ monthName: '26-08s' });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(result.briefingMonths, ['26-08s', '26-07s']);
+  assert.deepEqual(result.briefingPayments.map(row => row.requestId).sort(), ['august-payment', 'existing-payment']);
+  assert.deepEqual(result.briefingRows.map(row => row.sourceMonth).sort(), ['26-07s', '26-08s']);
+  assert.equal(result.monthAvailability.find(item => item.monthName === '26-08s')?.hasData, true);
+  assert.equal(result.monthAvailability.find(item => item.monthName === '26-07s')?.hasData, true);
+});
+
 test('month summary merges newly registered active students without reviving inactive students', async () => {
   const seed = tuitionSeed();
   seed.documents['students/new-active'] = {

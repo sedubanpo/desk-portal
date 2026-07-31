@@ -389,8 +389,11 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
 async function buildMonthSummary(store, payload) {
   const month = monthName(payload.monthName);
   const months = payload.months || await loadMonths(store);
+  const monthContext = payload.monthContext || await loadTuitionMonthContext(store, months);
   const snapshot = await store.get(key(COLLECTIONS.snapshots, snapshotId(month)));
-  if (!snapshot?.success || !Array.isArray(snapshot.rows)) return pendingSummary(month, months, 'summary-snapshot-missing');
+  if (!snapshot?.success || !Array.isArray(snapshot.rows)) {
+    return pendingSummary(month, months, 'summary-snapshot-missing', monthContext);
+  }
   const previousMonth = previousMonthName(month);
   const [memoDocuments, studentDocuments, recent, monthPayments, previousMonthPayments, followups, charges] = await Promise.all([
     store.list(COLLECTIONS.studentMemos, 500),
@@ -432,6 +435,10 @@ async function buildMonthSummary(store, payload) {
     chart: stats.chart,
     allPayments,
     payments,
+    monthAvailability: monthContext.monthAvailability,
+    briefingMonths: monthContext.briefingMonths,
+    briefingRows: monthContext.briefingRows,
+    briefingPayments: monthContext.briefingPayments,
     tuitionMemoWarnings: warnings,
     cache,
     indexStatus: buildIndexStatus(month, cache, recent, monthPayments, followups, charges)
@@ -775,9 +782,56 @@ async function loadSnapshots(store) {
   return snapshots.filter(Boolean);
 }
 
-function pendingSummary(month, months, reason) {
+async function loadTuitionMonthContext(store, months) {
+  const normalizedMonths = sortMonths(months);
+  const records = await Promise.all(normalizedMonths.map(async month => {
+    const [snapshot, paymentIndex] = await Promise.all([
+      store.get(key(COLLECTIONS.snapshots, snapshotId(month))),
+      store.get(key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month)))
+    ]);
+    const rows = snapshot?.success && Array.isArray(snapshot.rows) ? snapshot.rows : [];
+    const payments = mergePayments(
+      snapshot?.success && Array.isArray(snapshot.payments) ? snapshot.payments : [],
+      paymentIndex?.payments || []
+    ).map(row => ({ ...row, sourceMonth: monthName(row.sourceMonth) || month }));
+    return {
+      monthName: month,
+      generated: true,
+      hasData: rows.length > 0 || payments.length > 0,
+      rowCount: rows.length,
+      paymentCount: payments.length,
+      rows: rows.map(row => ({ ...structuredClone(row), sourceMonth: month })),
+      payments
+    };
+  }));
+  const briefingRecords = records.slice(0, 2);
+  return {
+    monthAvailability: records.map(({ rows, payments, ...record }) => record),
+    briefingMonths: briefingRecords.map(record => record.monthName),
+    briefingRows: briefingRecords.flatMap(record => record.rows),
+    briefingPayments: mergePayments(briefingRecords.flatMap(record => record.payments))
+  };
+}
+
+function pendingSummary(month, months, reason, monthContext = {}) {
   const stats = summaryStats([], []);
-  return { success: true, selectedMonth: month, months, ...stats, allPayments: [], todayPayments: [], rows: [], pendingSummary: true, pendingReason: reason, cache: { source: 'bootstrap-pending' }, indexStatus: buildIndexStatus(month, { source: 'bootstrap-pending' }) };
+  return {
+    success: true,
+    selectedMonth: month,
+    months,
+    ...stats,
+    allPayments: [],
+    todayPayments: [],
+    rows: [],
+    monthAvailability: monthContext.monthAvailability || [],
+    briefingMonths: monthContext.briefingMonths || [],
+    briefingRows: monthContext.briefingRows || [],
+    briefingPayments: monthContext.briefingPayments || [],
+    pendingSummary: true,
+    pendingReason: reason,
+    cache: { source: 'bootstrap-pending' },
+    indexStatus: buildIndexStatus(month, { source: 'bootstrap-pending' })
+  };
 }
 
 function buildIndexStatus(month, cache, recent, payments, followups, charges) {

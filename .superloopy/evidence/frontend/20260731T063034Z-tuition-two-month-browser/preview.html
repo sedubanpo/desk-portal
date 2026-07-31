@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>수강료 월 선택 및 두 달 브리핑 QA</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #edf3ef;
+      color: #172b3b;
+      font-family: Pretendard, "Noto Sans KR", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; letter-spacing: 0; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 210px minmax(0, 1fr); }
+    .rail { background: #063c31; color: #fff; padding: 24px 18px; }
+    .rail h1 { margin: 0 0 8px; font-size: 24px; }
+    .rail p { margin: 0; color: #bcd6ce; font-size: 13px; line-height: 1.6; }
+    .main { padding: 28px; min-width: 0; }
+    .shell { max-width: 1500px; margin: 0 auto; background: #fff; border: 1px solid #d7e5dc; border-radius: 8px; padding: 22px; }
+    .page-head { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
+    .page-head h2 { margin: 0 0 6px; font-size: 27px; }
+    .page-head p { margin: 0; color: #5b6f7e; font-size: 14px; }
+    .sync { text-align: right; color: #587080; font-size: 12px; font-weight: 800; }
+    .topbar {
+      display: grid;
+      grid-template-columns: .9fr .9fr minmax(300px, 1.35fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid #d7e5dc;
+      border-radius: 8px;
+      background: #fbfdfc;
+    }
+    .month-browser { grid-column: 1 / -1; display: grid; gap: 9px; padding-bottom: 11px; border-bottom: 1px solid #dce8e1; }
+    .month-head { display: grid; grid-template-columns: minmax(90px,1fr) auto minmax(90px,1fr); align-items: center; gap: 10px; }
+    .month-label { color: #284056; font-size: 13px; font-weight: 950; }
+    .year-nav { display: grid; grid-template-columns: 40px minmax(84px,auto) 40px; align-items: center; justify-content: center; gap: 4px; }
+    .year-nav strong { text-align: center; font-size: 15px; font-weight: 950; font-variant-numeric: tabular-nums; }
+    .icon-btn {
+      width: 40px; height: 40px; border: 1px solid #cbded4; border-radius: 8px; background: #fff;
+      color: #31566c; cursor: pointer;
+    }
+    .create-btn {
+      justify-self: end; min-height: 46px; border: 1px solid #bdd8cb; border-radius: 8px; background: #f6fbf8;
+      color: #0d684d; padding: 0 12px; font-size: 13px; font-weight: 900;
+    }
+    .month-grid { display: grid; grid-template-columns: repeat(12,minmax(52px,1fr)); gap: 6px; }
+    .month {
+      min-height: 42px; min-width: 0; border: 1px solid #cbded4; border-radius: 8px; background: #f7fbf9;
+      color: #264b5f; font-size: 13px; font-weight: 900;
+    }
+    .month.selected { border-color: #087455; background: #087455; color: #fff; box-shadow: 0 5px 12px rgba(8,116,85,.18); }
+    .month.off { border-color: #e1e6e3; background: #f2f4f3; color: #a2aaa6; }
+    .field { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 10px; min-width: 0; }
+    .field label { font-size: 13px; font-weight: 900; white-space: nowrap; }
+    .field select, .field input { min-width: 0; height: 46px; border: 1px solid #ccdcd3; border-radius: 8px; background: #fff; padding: 0 12px; font-weight: 800; }
+    .refresh { height: 46px; border: 0; border-radius: 8px; background: #087455; color: #fff; padding: 0 16px; font-weight: 900; }
+    .body-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-top: 14px; }
+    .panel { border: 1px solid #d7e5dc; border-radius: 8px; padding: 18px; background: #fff; }
+    .panel h3 { margin: 0 0 12px; font-size: 16px; }
+    .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .metric { background: #f5f9f7; border: 1px solid #e1ebe5; border-radius: 8px; padding: 16px; }
+    .metric span { display: block; color: #61736a; font-size: 12px; font-weight: 800; }
+    .metric strong { display: block; margin-top: 6px; font-size: 23px; font-variant-numeric: tabular-nums; }
+    .brief { border-color: #cfe0d6; background: #f9fcfa; }
+    .brief-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; }
+    .brief-head h3 { margin: 0 0 4px; }
+    .scope { color: #5a7066; font-size: 12px; font-weight: 800; }
+    .date { border: 1px solid #ceddd3; border-radius: 999px; background: #fff; padding: 8px 12px; font-size: 12px; font-weight: 900; }
+    .brief-kpis { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+    .brief-kpi { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid #e0e9e4; }
+    .brief-kpi span { display: block; color: #687971; font-size: 11px; font-weight: 800; }
+    .brief-kpi strong { display: block; margin-top: 5px; font-size: 18px; font-variant-numeric: tabular-nums; }
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      .rail { display: none; }
+      .main { padding: 14px; }
+      .month-grid { grid-template-columns: repeat(6,minmax(52px,1fr)); }
+      .body-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail"><h1>수강료 정산</h1><p>학생 수강료 현황, 수납 기록, 안내 대상을 한 화면에서 관리합니다.</p></aside>
+    <main class="main">
+      <section class="shell">
+        <header class="page-head">
+          <div><h2>수강료 정산</h2><p>월별 안내금액, 납부 대조, 미납 연락까지 한 화면에서 정리합니다.</p></div>
+          <div class="sync">마지막 동기화는 새로고침 시점 기준입니다.<br>student 탭 기준</div>
+        </header>
+        <section class="topbar">
+          <div class="month-browser">
+            <div class="month-head">
+              <span class="month-label">수강료 월</span>
+              <div class="year-nav"><button class="icon-btn" aria-label="이전 연도">‹</button><strong>2026년</strong><button class="icon-btn" aria-label="다음 연도">›</button></div>
+              <button class="create-btn">＋ 다음 달 시작</button>
+            </div>
+            <div class="month-grid" role="tablist">
+              <button class="month off" disabled>1월</button><button class="month off" disabled>2월</button>
+              <button class="month off" disabled>3월</button><button class="month off" disabled>4월</button>
+              <button class="month off" disabled>5월</button><button class="month">6월</button>
+              <button class="month">7월</button><button class="month selected">8월</button>
+              <button class="month off" disabled>9월</button><button class="month off" disabled>10월</button>
+              <button class="month off" disabled>11월</button><button class="month off" disabled>12월</button>
+            </div>
+          </div>
+          <div class="field"><label>미납 상태</label><select><option>전체</option></select></div>
+          <div class="field" style="grid-column:2/4"><label>학생 검색</label><input placeholder="학생명 / 학교 / 학년 검색"></div>
+          <button class="refresh">수강료 데이터 새로고침</button>
+        </section>
+        <div class="body-grid">
+          <section class="panel">
+            <h3>재원생 기준</h3>
+            <div class="metrics">
+              <div class="metric"><span>전체 재원생</span><strong>128명</strong></div>
+              <div class="metric"><span>납부완료</span><strong>119명</strong></div>
+              <div class="metric"><span>미납 학생</span><strong>9명</strong></div>
+            </div>
+          </section>
+          <section class="panel brief">
+            <div class="brief-head">
+              <div><h3>일일 수강료 수납 브리핑</h3><div class="scope">포함 월 · 26-8월 · 26-7월</div></div>
+              <div class="date">2026.07.31</div>
+            </div>
+            <div class="brief-kpis">
+              <div class="brief-kpi"><span>총 수납</span><strong>18,462,500원</strong></div>
+              <div class="brief-kpi"><span>순수납</span><strong>18,462,500원</strong></div>
+              <div class="brief-kpi"><span>결제 건수</span><strong>12건</strong></div>
+              <div class="brief-kpi"><span>안내 인원</span><strong>21명</strong></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

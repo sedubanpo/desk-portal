@@ -7564,6 +7564,108 @@
       align-items: center;
       padding: 11px 12px;
     }
+    .tuition-month-browser {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 9px;
+      min-width: 0;
+      padding-bottom: 11px;
+      border-bottom: 1px solid #dce8e1;
+    }
+    .tuition-month-browser-head {
+      display: grid;
+      grid-template-columns: minmax(90px, 1fr) auto minmax(90px, 1fr);
+      align-items: center;
+      gap: 10px;
+    }
+    .tuition-month-browser-label {
+      color: #284056;
+      font-size: 13px;
+      font-weight: 950;
+    }
+    .tuition-year-nav {
+      display: grid;
+      grid-template-columns: 40px minmax(84px, auto) 40px;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .tuition-year-nav strong {
+      color: #18364b;
+      font-size: 15px;
+      font-weight: 950;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .tuition-year-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #cbded4;
+      border-radius: 8px;
+      background: #fff;
+      color: #31566c;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+    .tuition-year-btn:hover {
+      background: #f1f8f4;
+      border-color: #9cc9b4;
+    }
+    .tuition-year-btn:active {
+      transform: scale(0.96);
+    }
+    .tuition-year-btn:focus-visible,
+    .tuition-month-btn:focus-visible {
+      outline: 3px solid var(--ds-ring);
+      outline-offset: 2px;
+    }
+    .tuition-year-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+    .tuition-month-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(52px, 1fr));
+      gap: 6px;
+      min-width: 0;
+    }
+    .tuition-month-btn {
+      min-width: 0;
+      min-height: 42px;
+      border: 1px solid #cbded4;
+      border-radius: 8px;
+      background: #f7fbf9;
+      color: #264b5f;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+      transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+    }
+    .tuition-month-btn:hover:not(:disabled) {
+      background: #eaf6f0;
+      border-color: #8fc4ab;
+    }
+    .tuition-month-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    .tuition-month-btn.is-selected {
+      border-color: #087455;
+      background: #087455;
+      color: #fff;
+      box-shadow: 0 5px 12px rgba(8, 116, 85, 0.18);
+    }
+    .tuition-month-btn.is-off,
+    .tuition-month-btn:disabled {
+      border-color: #e1e6e3;
+      background: #f2f4f3;
+      color: #a2aaa6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
     .tuition-topbar .field {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
@@ -7613,7 +7715,7 @@
       border-color: #8fc4ab;
     }
     .tuition-month-create-btn:active {
-      transform: scale(0.97);
+      transform: scale(0.96);
     }
     .tuition-month-create-btn:focus-visible {
       outline: 3px solid var(--ds-ring);
@@ -7627,6 +7729,25 @@
       width: 17px;
       height: 17px;
       flex: 0 0 auto;
+    }
+    @media (max-width: 920px) {
+      .tuition-month-grid {
+        grid-template-columns: repeat(6, minmax(52px, 1fr));
+      }
+    }
+    @media (max-width: 580px) {
+      .tuition-month-browser-head {
+        grid-template-columns: 1fr auto;
+      }
+      .tuition-month-browser-label {
+        display: none;
+      }
+      .tuition-year-nav {
+        justify-content: start;
+      }
+      .tuition-month-grid {
+        grid-template-columns: repeat(4, minmax(52px, 1fr));
+      }
     }
     .tuition-cards {
       grid-template-columns: 0.92fr 0.92fr 1.72fr;
@@ -8495,6 +8616,13 @@
       color: #0f172a;
       font-weight: 900;
       line-height: 1.25;
+    }
+    .tuition-daily-sub {
+      margin-top: 3px;
+      color: #5a7066;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.3;
     }
     .tuition-daily-date-nav {
       display: inline-flex;
@@ -15846,15 +15974,24 @@
             </div>
           </header>
           <section class="tuition-topbar">
-            <div class="field tuition-month-field">
-              <label for="tuitionMonthSelect">수강료 월</label>
-              <div class="tuition-month-control">
-                <select id="tuitionMonthSelect"></select>
+            <div class="tuition-month-browser">
+              <div class="tuition-month-browser-head">
+                <span class="tuition-month-browser-label">수강료 월</span>
+                <div class="tuition-year-nav" aria-label="수강료 연도 선택">
+                  <button class="tuition-year-btn" id="tuitionYearPrevBtn" type="button" title="이전 연도">
+                    <i data-lucide="chevron-left" aria-hidden="true"></i>
+                  </button>
+                  <strong id="tuitionYearLabel">-</strong>
+                  <button class="tuition-year-btn" id="tuitionYearNextBtn" type="button" title="다음 연도">
+                    <i data-lucide="chevron-right" aria-hidden="true"></i>
+                  </button>
+                </div>
                 <button class="tuition-month-create-btn" id="tuitionMonthCreateBtn" type="button" title="다음 달 수강료 정산 시작">
                   <i data-lucide="calendar-plus" aria-hidden="true"></i>
                   <span>다음 달 시작</span>
                 </button>
               </div>
+              <div class="tuition-month-grid" id="tuitionMonthGrid" role="tablist" aria-label="수강료 월"></div>
             </div>
             <div class="field">
               <label for="tuitionStatusFilter">미납 상태</label>
@@ -17865,7 +18002,10 @@
       </div>
       <article class="tuition-daily-card" id="tuitionBriefCapture" style="width:100%; box-shadow:none;">
         <div class="tuition-daily-head">
-          <h3 class="tuition-daily-title">일일 수강료 수납 브리핑</h3>
+          <div>
+            <h3 class="tuition-daily-title">일일 수강료 수납 브리핑</h3>
+            <div class="tuition-daily-sub" id="tuitionBriefMonthScope">포함 월 확인 중</div>
+          </div>
           <div class="tuition-daily-date-nav">
             <button class="tuition-daily-nav-btn" id="tuitionBriefPrevBtn" type="button">◀</button>
             <div class="tuition-daily-date-text" id="tuitionBriefDateText">-</div>
@@ -18800,10 +18940,17 @@
         loadingPromise: null,
         months: [],
         selectedMonth: "",
+        monthAvailability: [],
+        monthViewYear: 0,
         statusFilter: "",
         keyword: "",
         allRows: [],
         allPayments: [],
+        briefingMonths: [],
+        briefingRows: [],
+        briefingPayments: [],
+        briefingDateKeys: [],
+        briefingCursorDateKey: "",
         inactiveStudents: [],
         inactiveSearchKey: "",
         inactiveSearchLoading: false,
@@ -19333,7 +19480,10 @@
     var deskLiveFeedMoreBtnEl = document.getElementById("deskLiveFeedMoreBtn");
     var deskLiveFeedToggleBtnEl = document.getElementById("deskLiveFeedToggleBtn");
     var deskTaskAssignAlertStackEl = document.getElementById("deskTaskAssignAlertStack");
-    var tuitionMonthSelectEl = document.getElementById("tuitionMonthSelect");
+    var tuitionMonthGridEl = document.getElementById("tuitionMonthGrid");
+    var tuitionYearLabelEl = document.getElementById("tuitionYearLabel");
+    var tuitionYearPrevBtnEl = document.getElementById("tuitionYearPrevBtn");
+    var tuitionYearNextBtnEl = document.getElementById("tuitionYearNextBtn");
     var tuitionMonthCreateBtnEl = document.getElementById("tuitionMonthCreateBtn");
     var tuitionStatusFilterEl = document.getElementById("tuitionStatusFilter");
 	    var tuitionKeywordInputEl = document.getElementById("tuitionKeywordInput");
@@ -19434,6 +19584,7 @@
     var copyTuitionBriefTextBtnEl = document.getElementById("copyTuitionBriefTextBtn");
     var copyTuitionBriefImageBtnEl = document.getElementById("copyTuitionBriefImageBtn");
     var tuitionBriefCopyMsgEl = document.getElementById("tuitionBriefCopyMsg");
+    var tuitionBriefMonthScopeEl = document.getElementById("tuitionBriefMonthScope");
     var openTuitionCalendarBtnEl = document.getElementById("openTuitionCalendarBtn");
     var tuitionCalendarModalEl = document.getElementById("tuitionCalendarModal");
     var closeTuitionCalendarBtnEl = document.getElementById("closeTuitionCalendarBtn");
@@ -34330,8 +34481,22 @@
         refreshTuitionSummary(true);
       });
       tuitionMonthCreateBtnEl.addEventListener("click", createNextTuitionMonth_);
-      tuitionMonthSelectEl.addEventListener("change", function() {
-        state.tuition.selectedMonth = tuitionMonthSelectEl.value;
+      tuitionYearPrevBtnEl.addEventListener("click", function() {
+        state.tuition.monthViewYear = getTuitionMonthViewYear_() - 1;
+        renderTuitionMonthOptions();
+      });
+      tuitionYearNextBtnEl.addEventListener("click", function() {
+        state.tuition.monthViewYear = getTuitionMonthViewYear_() + 1;
+        renderTuitionMonthOptions();
+      });
+      tuitionMonthGridEl.addEventListener("click", function(event) {
+        var button = event.target.closest("[data-tuition-month]");
+        if (!button || button.disabled) return;
+        var monthName = button.getAttribute("data-tuition-month") || "";
+        if (!monthName || monthName === state.tuition.selectedMonth) return;
+        state.tuition.selectedMonth = monthName;
+        state.tuition.monthViewYear = parseTuitionMonthYear_(monthName).year;
+        renderTuitionMonthOptions();
         refreshTuitionSummary(false);
       });
       tuitionStatusFilterEl.addEventListener("change", function() {
@@ -34704,16 +34869,36 @@
     }
 
     function renderTuitionMonthOptions() {
-      tuitionMonthSelectEl.innerHTML = "";
-      (state.tuition.months || []).forEach(function(monthName) {
-        var option = document.createElement("option");
-        option.value = monthName;
-        option.textContent = formatTuitionMonthLabel_(monthName);
-        if (monthName === state.tuition.selectedMonth) option.selected = true;
-        tuitionMonthSelectEl.appendChild(option);
+      var year = getTuitionMonthViewYear_();
+      state.tuition.monthViewYear = year;
+      tuitionYearLabelEl.textContent = year + "년";
+      var availability = {};
+      (state.tuition.monthAvailability || []).forEach(function(item) {
+        availability[String(item.monthName || "")] = item;
       });
+      tuitionMonthGridEl.innerHTML = Array.from({ length: 12 }, function(_, index) {
+        var monthNumber = index + 1;
+        var monthName = String(year).slice(-2) + "-" + pad2(monthNumber) + "s";
+        var item = availability[monthName];
+        var available = !!(item && item.generated && item.hasData);
+        var selected = monthName === state.tuition.selectedMonth;
+        var className = "tuition-month-btn" + (selected ? " is-selected" : "") + (!available ? " is-off" : "");
+        var title = available
+          ? formatTuitionMonthLabel_(monthName) + " 수강료 정산 열기"
+          : formatTuitionMonthLabel_(monthName) + " 데이터 없음";
+        return '<button type="button" role="tab" class="' + className + '" data-tuition-month="' + monthName + '"' +
+          ' aria-selected="' + (selected ? "true" : "false") + '" title="' + title + '"' +
+          (!available ? " disabled" : "") + ">" + monthNumber + "월</button>";
+      }).join("");
       tuitionStatusFilterEl.value = state.tuition.statusFilter || "";
       tuitionKeywordInputEl.value = state.tuition.keyword || "";
+    }
+
+    function getTuitionMonthViewYear_() {
+      var year = toNumber(state.tuition.monthViewYear, 0);
+      if (year >= 2000 && year <= 2099) return year;
+      var selected = parseTuitionMonthYear_(state.tuition.selectedMonth || (state.tuition.months || [])[0] || "");
+      return selected.year || new Date().getFullYear();
     }
 
     function formatTuitionMonthLabel_(monthName) {
@@ -34748,6 +34933,7 @@
         state.tuition.loaded = true;
         state.tuition.months = res.months || state.tuition.months;
         state.tuition.selectedMonth = res.selectedMonth || monthName;
+        state.tuition.monthViewYear = parseTuitionMonthYear_(state.tuition.selectedMonth).year;
         state.tuition.statusFilter = "";
         state.tuition.keyword = "";
         state.tuition.lastWriteWarning = res.created
@@ -34767,6 +34953,10 @@
 	      state.tuition.pendingSummary = !!(data && data.pendingSummary);
 	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
       state.tuition.tuitionMemoWarnings = data && data.tuitionMemoWarnings ? data.tuitionMemoWarnings : {};
+      state.tuition.monthAvailability = (data.monthAvailability || state.tuition.monthAvailability || []).slice();
+      state.tuition.briefingMonths = (data.briefingMonths || []).slice();
+      state.tuition.briefingRows = (data.briefingRows || []).slice();
+      state.tuition.briefingPayments = (data.briefingPayments || []).slice();
 	      state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
@@ -34774,6 +34964,15 @@
       state.tuition.inactiveSearchLoading = false;
       state.tuition.todayPayments = (data.todayPayments || []).slice();
       state.tuition.dailyDateKeys = buildTuitionDailyDateKeys_(state.tuition.allPayments, state.tuition.selectedMonth, state.tuition.todayPayments);
+      state.tuition.briefingDateKeys = buildTuitionDailyDateKeys_(state.tuition.briefingPayments, state.tuition.selectedMonth, []);
+      if (state.tuition.briefingDateKeys.length) {
+        if (state.tuition.briefingDateKeys.indexOf(state.tuition.briefingCursorDateKey) === -1) {
+          state.tuition.briefingCursorDateKey = state.tuition.briefingDateKeys[state.tuition.briefingDateKeys.length - 1];
+        }
+      } else {
+        state.tuition.briefingCursorDateKey = "";
+      }
+      renderTuitionMonthOptions();
       state.tuition.calendarMonth = state.tuition.selectedMonth;
       if (state.tuition.dailyDateKeys.length) {
         if (state.tuition.dailyDateKeys.indexOf(state.tuition.dailyCursorDateKey) === -1) {
@@ -35923,7 +36122,7 @@
       var list = Array.isArray(payments) ? payments : [];
       var set = {};
       list.forEach(function(row) {
-        var key = parseTuitionPaidDateKey_(row.paidAt, monthName);
+        var key = parseTuitionPaidDateKey_(row.paidAt, getTuitionPaymentBaseMonth_(row) || monthName);
         if (key) set[key] = true;
       });
       var extra = Array.isArray(todayPayments) ? todayPayments : [];
@@ -36148,7 +36347,7 @@
 
     function normalizeTuitionBriefFilters_() {
       var defaults = state.tuition.briefFilters || {};
-      var currentKey = state.tuition.dailyCursorDateKey || (state.tuition.dailyDateKeys || [])[0] || getTodayDateKey_();
+      var currentKey = state.tuition.briefingCursorDateKey || (state.tuition.briefingDateKeys || [])[0] || getTodayDateKey_();
       var basis = String(defaults.basis || "paid");
       if (basis !== "input") basis = "paid";
       var startDate = String(defaults.startDate || currentKey || "").trim();
@@ -36348,8 +36547,13 @@
     }
 
     function moveTuitionBriefCursor_(step) {
-      moveTuitionDailyCursor_(step);
-      setTuitionBriefSingleDate_(state.tuition.dailyCursorDateKey);
+      var keys = state.tuition.briefingDateKeys || [];
+      if (!keys.length) return;
+      var idx = keys.indexOf(state.tuition.briefingCursorDateKey);
+      if (idx < 0) idx = keys.length - 1;
+      var next = clampNumber(idx + step, 0, keys.length - 1);
+      state.tuition.briefingCursorDateKey = keys[next];
+      setTuitionBriefSingleDate_(state.tuition.briefingCursorDateKey);
       renderTuitionBriefPopup_();
     }
 
@@ -36362,9 +36566,10 @@
     function buildTuitionDailyBreakdown_(dateKey, filtersOverride) {
       var routeOrder = ["계좌", "서울페이", "현장결제", "현금", "카드", "기타"];
       var filters = filtersOverride || { basis: "paid", startDate: dateKey, endDate: dateKey, weekdays: [0, 1, 2, 3, 4, 5, 6] };
-      var sourceRows = (state.tuition.payments || []).slice();
+      var usesBriefingBundle = !!filtersOverride;
+      var sourceRows = (usesBriefingBundle ? state.tuition.briefingPayments : state.tuition.payments || []).slice();
       var todayKey = getTodayDateKey_();
-      if (filters.basis === "paid" && filters.startDate <= todayKey && filters.endDate >= todayKey && filters.weekdays.indexOf(getTuitionDateWeekday_(todayKey)) !== -1) {
+      if (!usesBriefingBundle && filters.basis === "paid" && filters.startDate <= todayKey && filters.endDate >= todayKey && filters.weekdays.indexOf(getTuitionDateWeekday_(todayKey)) !== -1) {
         var merged = sourceRows.slice();
         var keySet = {};
         merged.forEach(function(row) {
@@ -36401,8 +36606,8 @@
         return filters.weekdays.indexOf(getTuitionDateWeekday_(key)) !== -1;
       });
       var guidedStudents = {};
-      (state.tuition.rows || []).forEach(function(row) {
-        var key = parseTuitionInputDateKey_(row.lastContactAt, state.tuition.selectedMonth);
+      (usesBriefingBundle ? state.tuition.briefingRows : state.tuition.rows || []).forEach(function(row) {
+        var key = parseTuitionInputDateKey_(row.lastContactAt, row.sourceMonth || state.tuition.selectedMonth);
         if (!key) return;
         if (filters.startDate && key < filters.startDate) return;
         if (filters.endDate && key > filters.endDate) return;
@@ -36586,7 +36791,7 @@
       tuitionBriefCopyMsgEl.textContent = "";
       state.tuition.briefDetailOpen = false;
       if (!state.tuition.briefFilters || !state.tuition.briefFilters.startDate) {
-        setTuitionBriefSingleDate_(state.tuition.dailyCursorDateKey || (state.tuition.dailyDateKeys || [])[0] || getTodayDateKey_());
+        setTuitionBriefSingleDate_(state.tuition.briefingCursorDateKey || (state.tuition.briefingDateKeys || [])[0] || getTodayDateKey_());
       }
       renderTuitionBriefPopup_();
       tuitionBriefPopupEl.style.display = "flex";
@@ -36598,10 +36803,10 @@
     }
 
     function renderTuitionBriefPopup_() {
-      var keys = state.tuition.dailyDateKeys || [];
-      var currentKey = state.tuition.dailyCursorDateKey || "";
+      var keys = state.tuition.briefingDateKeys || [];
+      var currentKey = state.tuition.briefingCursorDateKey || "";
       if (keys.length && keys.indexOf(currentKey) === -1) currentKey = keys[keys.length - 1];
-      state.tuition.dailyCursorDateKey = currentKey;
+      state.tuition.briefingCursorDateKey = currentKey;
       var filters = normalizeTuitionBriefFilters_();
       state.tuition.briefFilters = filters;
       syncTuitionBriefFilterControls_(filters);
@@ -36612,6 +36817,12 @@
       tuitionBriefDateTextEl.textContent = filters.startDate && filters.endDate && filters.startDate !== filters.endDate
         ? (formatTuitionDateLabel_(filters.startDate) + " ~ " + formatTuitionDateLabel_(filters.endDate))
         : (filters.startDate ? formatTuitionDateLabel_(filters.startDate) : "데이터 없음");
+      if (tuitionBriefMonthScopeEl) {
+        var monthLabels = (state.tuition.briefingMonths || []).map(formatTuitionMonthLabel_);
+        tuitionBriefMonthScopeEl.textContent = monthLabels.length
+          ? "포함 월 · " + monthLabels.join(" · ")
+          : "포함 가능한 월 데이터 없음";
+      }
 
       var daily = buildTuitionDailyBreakdown_(filters.startDate || currentKey, filters);
       tuitionBriefTotalEl.textContent = formatWon(daily.totalReceived);
@@ -36622,6 +36833,7 @@
       if (tuitionBriefFootEl) {
         tuitionBriefFootEl.textContent = "기준: " + (filters.basis === "input" ? "입력일자" : "납입일") + " · " +
           (filters.startDate && filters.endDate ? (formatTuitionDateLabel_(filters.startDate) + (filters.startDate === filters.endDate ? "" : (" ~ " + formatTuitionDateLabel_(filters.endDate)))) : "날짜 미선택") +
+          " · 포함 월 " + (state.tuition.briefingMonths || []).map(formatTuitionMonthLabel_).join(", ") +
           " · 선택 요일 " + filters.weekdays.length + "개 · 사업자 미입력 시 `반포`로 집계";
       }
       tuitionBriefRouteWrapEl.innerHTML = buildTuitionDailyBusinessesHtml_(daily);
