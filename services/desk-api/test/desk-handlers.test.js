@@ -153,11 +153,14 @@ test('supply quantity adjustment uses a transaction and clamps to stock bounds',
 test('full supply snapshot preserves custom purchase requests', async () => {
   const store = memoryStore();
   const result = await createDeskHandlers({ store }).saveDeskSuppliesSnapshot({ data: {
-    consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', qty: 1, maxQty: 3, safetyQty: 1, unit: '권' }],
-    assets: [],
+    consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', branch: '2관', qty: 1, maxQty: 3, safetyQty: 1, unit: '권', tags: ['문구', '#복사용지'] }],
+    assets: [{ id: 'tablet', type: '태블릿', productName: 'iPad', branch: '3관' }],
     purchaseCustomRequests: [{ id: 'custom-1', itemName: '테스트 요청', requestQty: 2 }]
   } });
   assert.equal(result.success, true);
+  assert.equal(result.data.consumables[0].branch, '2관');
+  assert.deepEqual(result.data.consumables[0].tags, ['#문구', '#복사용지']);
+  assert.equal(result.data.assets[0].branch, '3관');
   assert.deepEqual(result.data.purchaseCustomRequests, [{ id: 'custom-1', itemName: '테스트 요청', requestQty: 2 }]);
 });
 

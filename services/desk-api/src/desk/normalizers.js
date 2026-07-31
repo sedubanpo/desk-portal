@@ -141,17 +141,17 @@ export function isSharedTask(task) {
 }
 
 const DEFAULT_CONSUMABLES = [
-  { id: 'wet_tissue', itemName: '물티슈', productName: '데스크용 물티슈 100매', qty: 6, maxQty: 10, safetyQty: 4, unit: '개' },
-  { id: 'box_tissue', itemName: '곽티슈', productName: '클리넥스 200매', qty: 12, maxQty: 20, safetyQty: 8, unit: '개' },
-  { id: 'paper_cup', itemName: '종이컵', productName: '테이크아웃컵 1줄', qty: 5, maxQty: 8, safetyQty: 3, unit: '줄' },
-  { id: 'trash_bag', itemName: '쓰레기봉투', productName: '20L 검정봉투', qty: 3, maxQty: 6, safetyQty: 2, unit: '묶음' },
-  { id: 'sanitizer', itemName: '손소독제', productName: '대용량 리필 500ml', qty: 2, maxQty: 5, safetyQty: 2, unit: '병' },
-  { id: 'marker', itemName: '보드마카', productName: '화이트보드 마카 세트', qty: 4, maxQty: 8, safetyQty: 3, unit: '세트' }
+  { id: 'wet_tissue', itemName: '물티슈', productName: '데스크용 물티슈 100매', branch: '본관', qty: 6, maxQty: 10, safetyQty: 4, unit: '개', tags: ['#청소', '#데스크'] },
+  { id: 'box_tissue', itemName: '곽티슈', productName: '클리넥스 200매', branch: '본관', qty: 12, maxQty: 20, safetyQty: 8, unit: '개', tags: ['#상담', '#데스크'] },
+  { id: 'paper_cup', itemName: '종이컵', productName: '테이크아웃컵 1줄', branch: '2관', qty: 5, maxQty: 8, safetyQty: 3, unit: '줄', tags: ['#탕비', '#공용'] },
+  { id: 'trash_bag', itemName: '쓰레기봉투', productName: '20L 검정봉투', branch: '3관', qty: 3, maxQty: 6, safetyQty: 2, unit: '묶음', tags: ['#청소', '#분리수거'] },
+  { id: 'sanitizer', itemName: '손소독제', productName: '대용량 리필 500ml', branch: '본관', qty: 2, maxQty: 5, safetyQty: 2, unit: '병', tags: ['#위생', '#데스크'] },
+  { id: 'marker', itemName: '보드마카', productName: '화이트보드 마카 세트', branch: '2관', qty: 4, maxQty: 8, safetyQty: 3, unit: '세트', tags: ['#강의실', '#교구'] }
 ];
 const DEFAULT_ASSETS = [
-  { id: 'asset_desktop_1', type: '데스크탑', productName: 'DELL OptiPlex 데스크 PC', location: '반포관 데스크', manager: '데스크 공용', status: '정상', note: '학생 등록 및 결제 업무용' },
-  { id: 'asset_tablet_1', type: '태블릿', productName: 'iPad Air 5세대', location: '상담 테이블', manager: '상담용 공용', status: '정상', note: '학부모 상담 및 안내 자료' },
-  { id: 'asset_printer_1', type: '프린터', productName: 'HP LaserJet Pro', location: '데스크 뒤편', manager: '데스크 공용', status: '점검 필요', note: '토너 잔량 확인 필요' }
+  { id: 'asset_desktop_1', type: '데스크탑', branch: '본관', productName: 'DELL OptiPlex 데스크 PC', location: '반포관 데스크', manager: '데스크 공용', status: '정상', note: '학생 등록 및 결제 업무용' },
+  { id: 'asset_tablet_1', type: '태블릿', branch: '2관', productName: 'iPad Air 5세대', location: '상담 테이블', manager: '상담용 공용', status: '정상', note: '학부모 상담 및 안내 자료' },
+  { id: 'asset_printer_1', type: '프린터', branch: '3관', productName: 'HP LaserJet Pro', location: '데스크 뒤편', manager: '데스크 공용', status: '점검 필요', note: '토너 잔량 확인 필요' }
 ];
 
 export function supplyConsumable(item = {}, fallbackId = '') {
@@ -160,10 +160,12 @@ export function supplyConsumable(item = {}, fallbackId = '') {
     id: String(item.id || fallbackId || `desk_supply_${newId().slice(0, 8)}`).trim(),
     itemName: String(item.itemName || '품목명').trim(),
     productName: String(item.productName || '제품명 미입력').trim(),
+    branch: String(item.branch || '본관').trim() || '본관',
     qty: Math.max(0, Math.min(maxQty, Number(item.qty || 0))),
     maxQty,
     safetyQty: Math.max(0, Math.min(maxQty, Number(item.safetyQty || 0))),
-    unit: String(item.unit || '개').trim()
+    unit: String(item.unit || '개').trim(),
+    tags: normalizeSupplyTags(item.tags)
   };
 }
 
@@ -171,12 +173,18 @@ export function supplyAsset(item = {}, fallbackId = '') {
   return {
     id: String(item.id || fallbackId || newId()).trim(),
     type: String(item.type || '기타').trim(),
+    branch: String(item.branch || '본관').trim() || '본관',
     productName: String(item.productName || '제품명 미입력').trim(),
     location: String(item.location || '-').trim(),
     manager: String(item.manager || '-').trim(),
     status: String(item.status || '정상').trim(),
     note: String(item.note || '').trim()
   };
+}
+
+function normalizeSupplyTags(value) {
+  const source = Array.isArray(value) ? value : String(value || '').split(/[\s,]+/);
+  return [...new Set(source.map(tag => String(tag || '').trim()).filter(Boolean).map(tag => tag.startsWith('#') ? tag : `#${tag}`))];
 }
 
 export function suppliesData(stored) {
