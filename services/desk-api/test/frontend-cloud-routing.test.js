@@ -75,6 +75,19 @@ test('selected-day schedule report uses responsive worker cards and distinguishe
   assert.match(source, /checkedAt: new Date\(\)\.toISOString\(\)/);
 });
 
+test('monthly schedule exposes dated version history and account attribution per day', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /getDeskScheduleDayHistory: true/);
+  assert.match(source, /class="desk-day-version-btn"/);
+  assert.match(source, /data-desk-schedule-history=/);
+  assert.match(source, /최종 /);
+  assert.match(source, /버전 기록 시작 전/);
+  assert.match(source, /id="deskScheduleHistoryModal"/);
+  assert.match(source, /selected\.actorName \|\| "계정 정보 없음"/);
+  assert.match(source, /이 버전의 근무표/);
+});
+
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

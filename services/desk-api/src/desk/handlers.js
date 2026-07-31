@@ -8,6 +8,7 @@ import {
   dateKey,
   isSharedTask,
   monthKey,
+  newId,
   recruitingComment,
   recruitingApplicant,
   RETIRED_WORKERS,
@@ -21,6 +22,7 @@ import {
 
 const PATHS = Object.freeze({
   schedule: 'desk_portal/monthly_schedule',
+  scheduleHistory: 'desk_portal/monthly_schedule_history',
   journal: 'desk_portal/daily_journal',
   pending: 'desk_portal/daily_pending_tasks',
   supplies: 'desk_portal/supplies',
@@ -31,6 +33,7 @@ const PATHS = Object.freeze({
 
 export const DESK_READ_METHODS = new Set([
   'getDeskScheduleMonthData',
+  'getDeskScheduleDayHistory',
   'getDeskCalendarEvents',
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
@@ -64,28 +67,58 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const entriesMap = seeded ? Object.fromEntries(buildScheduleSeed(key).map(item => [item.id, item])) : source;
       const entries = Object.entries(entriesMap).map(([id, item]) => scheduleEntry(item, id))
         .filter(item => !RETIRED_WORKERS.has(item.worker)).sort(compareScheduleEntries);
-      return { success: true, monthKey: key, seeded, entries };
+      const history = await store.get(`${PATHS.scheduleHistory}/${key}`) || {};
+      return { success: true, monthKey: key, seeded, entries, latestVersions: latestScheduleVersions(history) };
     },
 
-    async saveDeskScheduleEntry(payload = {}) {
+    async getDeskScheduleDayHistory(payload = {}) {
+      const day = dateKey(payload.dateKey);
+      if (!day) return failure('dateKey가 올바르지 않습니다.');
+      const history = await store.get(`${PATHS.scheduleHistory}/${day.slice(0, 7)}/${day}`) || {};
+      const versions = Object.entries(history)
+        .map(([id, item]) => scheduleHistoryVersion(item, id))
+        .filter(item => item.id && item.createdAt)
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+      return { success: true, dateKey: day, versions };
+    },
+
+    async saveDeskScheduleEntry(payload = {}, identity = {}) {
       const entry = scheduleEntry(payload.entry, payload.entry?.id);
       const key = monthKey(payload.monthKey || entry.date.slice(0, 7));
       const invalid = validateSchedule(entry, key);
       if (invalid) return failure(invalid);
-      await store.set(`${PATHS.schedule}/${key}/entries/${entry.id}`, entry);
-      return { success: true, monthKey: key, entry };
+      const current = await scheduleEntriesMap(store, key);
+      const before = scheduleEntriesForDate(current, entry.date);
+      current[entry.id] = entry;
+      const after = scheduleEntriesForDate(current, entry.date);
+      const version = buildScheduleVersion({ date: entry.date, before, after, identity, now: now() });
+      await store.update('', {
+        [`${PATHS.schedule}/${key}/entries/${entry.id}`]: entry,
+        [`${PATHS.scheduleHistory}/${key}/${entry.date}/${version.id}`]: version
+      });
+      return { success: true, monthKey: key, entry, latestVersion: compactScheduleVersion(version) };
     },
 
-    async deleteDeskScheduleEntry(payload = {}) {
+    async deleteDeskScheduleEntry(payload = {}, identity = {}) {
       const key = monthKey(payload.monthKey);
       const id = String(payload.id || '').trim();
       if (!key) return failure('monthKey가 올바르지 않습니다.');
       if (!id) return failure('삭제할 일정 ID가 없습니다.');
-      await store.remove(`${PATHS.schedule}/${key}/entries/${id}`);
-      return { success: true, monthKey: key, id };
+      const current = await scheduleEntriesMap(store, key);
+      const existing = current[id];
+      if (!existing) return failure('삭제할 근무 일정을 찾을 수 없습니다.');
+      const before = scheduleEntriesForDate(current, existing.date);
+      delete current[id];
+      const after = scheduleEntriesForDate(current, existing.date);
+      const version = buildScheduleVersion({ date: existing.date, before, after, identity, now: now() });
+      await store.update('', {
+        [`${PATHS.schedule}/${key}/entries/${id}`]: null,
+        [`${PATHS.scheduleHistory}/${key}/${existing.date}/${version.id}`]: version
+      });
+      return { success: true, monthKey: key, id, latestVersion: compactScheduleVersion(version) };
     },
 
-    async batchUpdateDeskScheduleEntries(payload = {}) {
+    async batchUpdateDeskScheduleEntries(payload = {}, identity = {}) {
       const key = monthKey(payload.monthKey);
       if (!key) return failure('monthKey가 올바르지 않습니다.');
       const deleteIds = (Array.isArray(payload.deleteIds) ? payload.deleteIds : []).map(id => String(id || '').trim()).filter(Boolean);
@@ -94,10 +127,32 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         const invalid = validateSchedule(entry, key);
         if (invalid) return failure(invalid);
       }
-      const updates = Object.fromEntries(deleteIds.map(id => [id, null]));
-      for (const entry of entries) updates[entry.id] = entry;
-      if (Object.keys(updates).length) await store.update(`${PATHS.schedule}/${key}/entries`, updates);
-      return { success: true, monthKey: key, entries, deletedIds: deleteIds };
+      const current = await scheduleEntriesMap(store, key);
+      const affectedDates = new Set();
+      deleteIds.forEach(id => {
+        if (current[id]?.date) affectedDates.add(current[id].date);
+      });
+      entries.forEach(entry => affectedDates.add(entry.date));
+      const beforeByDate = Object.fromEntries([...affectedDates].map(day => [day, scheduleEntriesForDate(current, day)]));
+      deleteIds.forEach(id => delete current[id]);
+      entries.forEach(entry => { current[entry.id] = entry; });
+      const updates = {};
+      deleteIds.forEach(id => { updates[`${PATHS.schedule}/${key}/entries/${id}`] = null; });
+      entries.forEach(entry => { updates[`${PATHS.schedule}/${key}/entries/${entry.id}`] = entry; });
+      const latestVersions = {};
+      affectedDates.forEach(day => {
+        const version = buildScheduleVersion({
+          date: day,
+          before: beforeByDate[day] || [],
+          after: scheduleEntriesForDate(current, day),
+          identity,
+          now: now()
+        });
+        updates[`${PATHS.scheduleHistory}/${key}/${day}/${version.id}`] = version;
+        latestVersions[day] = compactScheduleVersion(version);
+      });
+      if (Object.keys(updates).length) await store.update('', updates);
+      return { success: true, monthKey: key, entries, deletedIds: deleteIds, latestVersions };
     },
 
     async getDeskDailyJournalData(payload = {}) {
@@ -408,9 +463,85 @@ async function mutateSupplies(store, mutation) {
 
 function failure(message) { return { success: false, message }; }
 
+async function scheduleEntriesMap(store, key) {
+  const stored = await store.get(`${PATHS.schedule}/${key}`);
+  const source = stored?.entries && typeof stored.entries === 'object' ? stored.entries : stored;
+  return Object.fromEntries(Object.entries(source || {}).map(([id, item]) => {
+    const entry = scheduleEntry(item, id);
+    return [entry.id, entry];
+  }).filter(([, item]) => item.id && item.date));
+}
+
+function scheduleEntriesForDate(entriesMap, day) {
+  return Object.values(entriesMap || {})
+    .filter(item => item.date === day && !RETIRED_WORKERS.has(item.worker))
+    .map(item => scheduleEntry(item, item.id))
+    .sort(compareScheduleEntries);
+}
+
+function scheduleHistoryVersion(item = {}, fallbackId = '') {
+  return {
+    id: String(item.id || fallbackId || '').trim(),
+    dateKey: dateKey(item.dateKey),
+    createdAt: String(item.createdAt || '').trim(),
+    actorUid: String(item.actorUid || '').trim(),
+    actorName: String(item.actorName || '계정 정보 없음').trim(),
+    summary: String(item.summary || '근무표 변경').trim(),
+    entries: (Array.isArray(item.entries) ? item.entries : []).map(entry => scheduleEntry(entry, entry?.id)).sort(compareScheduleEntries),
+    beforeEntries: (Array.isArray(item.beforeEntries) ? item.beforeEntries : []).map(entry => scheduleEntry(entry, entry?.id)).sort(compareScheduleEntries),
+    changes: item.changes && typeof item.changes === 'object' ? item.changes : { added: [], updated: [], deleted: [] }
+  };
+}
+
+function buildScheduleVersion({ date, before, after, identity = {}, now }) {
+  const beforeMap = Object.fromEntries((before || []).map(item => [item.id, item]));
+  const afterMap = Object.fromEntries((after || []).map(item => [item.id, item]));
+  const added = (after || []).filter(item => !beforeMap[item.id]);
+  const deleted = (before || []).filter(item => !afterMap[item.id]);
+  const updated = (after || []).filter(item => beforeMap[item.id] && JSON.stringify(beforeMap[item.id]) !== JSON.stringify(item))
+    .map(item => ({ before: beforeMap[item.id], after: item }));
+  const total = added.length + updated.length + deleted.length;
+  let summary = `근무 일정 ${total}건 변경`;
+  if (total === 1 && added.length) summary = `${added[0].worker} 일정 추가`;
+  if (total === 1 && updated.length) summary = `${updated[0].after.worker} 일정 수정`;
+  if (total === 1 && deleted.length) summary = `${deleted[0].worker} 일정 삭제`;
+  return scheduleHistoryVersion({
+    id: newId(),
+    dateKey: date,
+    createdAt: String(now || new Date().toISOString()),
+    actorUid: String(identity.uid || '').trim(),
+    actorName: String(identity.name || identity.email || '계정 정보 없음').trim(),
+    summary,
+    entries: after,
+    beforeEntries: before,
+    changes: { added, updated, deleted }
+  });
+}
+
+function compactScheduleVersion(version) {
+  return {
+    id: version.id,
+    dateKey: version.dateKey,
+    createdAt: version.createdAt,
+    actorUid: version.actorUid,
+    actorName: version.actorName,
+    summary: version.summary,
+    entryCount: version.entries.length
+  };
+}
+
+function latestScheduleVersions(history) {
+  return Object.fromEntries(Object.entries(history || {}).map(([day, versions]) => {
+    const latest = Object.entries(versions || {}).map(([id, item]) => scheduleHistoryVersion(item, id))
+      .filter(item => item.createdAt)
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
+    return latest ? [day, compactScheduleVersion(latest)] : null;
+  }).filter(Boolean));
+}
+
 function errorPrefix(name) {
   const labels = {
-    getDeskScheduleMonthData: '근무표 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
+    getDeskScheduleMonthData: '근무표 조회 오류', getDeskScheduleDayHistory: '근무표 버전 이력 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
     getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
     getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'

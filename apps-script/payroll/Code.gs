@@ -83,6 +83,7 @@ const PAYROLL_API_ALLOWED_METHODS = {
   appendTuitionPaymentEntry: true,
   deleteTuitionPaymentEntry: true,
   getDeskScheduleMonthData: true,
+  getDeskScheduleDayHistory: true,
   getDeskCalendarEvents: true,
   saveDeskScheduleEntry: true,
   batchUpdateDeskScheduleEntries: true,
@@ -178,6 +179,7 @@ function handlePayrollApiRequest_(params) {
       appendTuitionPaymentEntry: appendTuitionPaymentEntry,
       deleteTuitionPaymentEntry: deleteTuitionPaymentEntry,
       getDeskScheduleMonthData: getDeskScheduleMonthData,
+      getDeskScheduleDayHistory: getDeskScheduleDayHistory,
       getDeskCalendarEvents: getDeskCalendarEvents,
       saveDeskScheduleEntry: saveDeskScheduleEntry,
       batchUpdateDeskScheduleEntries: batchUpdateDeskScheduleEntries,
@@ -553,15 +555,62 @@ function getDeskScheduleMonthData(payload) {
       return normalizeDeskScheduleEntry_(entriesMap[id], id);
     }).sort(compareDeskScheduleEntries_);
 
+    var history = firebaseRequestWithServiceAccount_("get", "desk_portal/monthly_schedule_history/" + monthKey) || {};
+    var latestVersions = {};
+    Object.keys(history).forEach(function(dateKey) {
+      var versions = Object.keys(history[dateKey] || {}).map(function(id) {
+        return Object.assign({ id: id }, history[dateKey][id] || {});
+      }).filter(function(item) {
+        return !!item.createdAt;
+      }).sort(function(a, b) {
+        return String(b.createdAt).localeCompare(String(a.createdAt));
+      });
+      if (versions[0]) latestVersions[dateKey] = compactDeskScheduleVersion_(versions[0]);
+    });
+
     return {
       success: true,
       monthKey: monthKey,
       seeded: seeded,
-      entries: entries
+      entries: entries,
+      latestVersions: latestVersions
     };
   } catch (e) {
     return { success: false, message: "근무표 조회 오류: " + e.message };
   }
+}
+
+function getDeskScheduleDayHistory(payload) {
+  try {
+    var dateKey = normalizeDeskDateKey_(payload && payload.dateKey);
+    if (!dateKey) return { success: false, message: "dateKey가 올바르지 않습니다." };
+    var history = firebaseRequestWithServiceAccount_("get", "desk_portal/monthly_schedule_history/" + dateKey.slice(0, 7) + "/" + dateKey) || {};
+    var versions = Object.keys(history).map(function(id) {
+      var item = Object.assign({ id: id }, history[id] || {});
+      item.entries = Array.isArray(item.entries) ? item.entries.map(normalizeDeskScheduleEntry_) : [];
+      item.beforeEntries = Array.isArray(item.beforeEntries) ? item.beforeEntries.map(normalizeDeskScheduleEntry_) : [];
+      return item;
+    }).filter(function(item) {
+      return !!item.createdAt;
+    }).sort(function(a, b) {
+      return String(b.createdAt).localeCompare(String(a.createdAt));
+    });
+    return { success: true, dateKey: dateKey, versions: versions };
+  } catch (e) {
+    return { success: false, message: "근무표 버전 이력 조회 오류: " + e.message };
+  }
+}
+
+function compactDeskScheduleVersion_(version) {
+  return {
+    id: String(version.id || ""),
+    dateKey: String(version.dateKey || ""),
+    createdAt: String(version.createdAt || ""),
+    actorUid: String(version.actorUid || ""),
+    actorName: String(version.actorName || "계정 정보 없음"),
+    summary: String(version.summary || "근무표 변경"),
+    entryCount: Array.isArray(version.entries) ? version.entries.length : Number(version.entryCount || 0)
+  };
 }
 
 function getDeskCalendarEvents(payload) {

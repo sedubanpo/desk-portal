@@ -45,6 +45,54 @@ test('schedule validation rejects retired workers before any write', async () =>
   assert.deepEqual(store.dump(), {});
 });
 
+test('schedule writes retain dated versions with actor and exact day snapshots', async () => {
+  const store = memoryStore({ desk_portal: { monthly_schedule: { '2026-08': { entries: {
+    first: { id: 'first', date: '2026-08-01', worker: '안종성', role: '오후 데스크', start: '13:30', end: '21:00' }
+  } } } } });
+  let stamp = '2026-07-31T06:00:00.000Z';
+  const handlers = createDeskHandlers({ store, now: () => stamp });
+
+  const saved = await handlers.saveDeskScheduleEntry({
+    monthKey: '2026-08',
+    entry: { id: 'first', date: '2026-08-01', worker: '안종성', role: '오후 데스크', start: '14:00', end: '22:00' }
+  }, { uid: 'manager-1', name: '예스영어학원 관리자' });
+  assert.equal(saved.latestVersion.actorName, '예스영어학원 관리자');
+  assert.equal(saved.latestVersion.summary, '안종성 일정 수정');
+
+  stamp = '2026-07-31T07:00:00.000Z';
+  await handlers.saveDeskScheduleEntry({
+    monthKey: '2026-08',
+    entry: { id: 'second', date: '2026-08-01', worker: '이민현', role: '마감 담당', start: '16:00', end: '22:30' }
+  }, { uid: 'manager-2', name: '홍성우' });
+
+  const history = await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-01' });
+  assert.equal(history.versions.length, 2);
+  assert.equal(history.versions[0].actorName, '홍성우');
+  assert.equal(history.versions[0].entries.length, 2);
+  assert.equal(history.versions[1].beforeEntries[0].start, '13:30');
+  assert.equal(history.versions[1].entries[0].start, '14:00');
+
+  const month = await handlers.getDeskScheduleMonthData({ monthKey: '2026-08' });
+  assert.equal(month.latestVersions['2026-08-01'].createdAt, '2026-07-31T07:00:00.000Z');
+  assert.equal(month.latestVersions['2026-08-01'].entryCount, 2);
+});
+
+test('schedule batch writes one version for each affected date', async () => {
+  const store = memoryStore({ desk_portal: { monthly_schedule: { '2026-08': { entries: {
+    first: { id: 'first', date: '2026-08-01', worker: '안종성', start: '13:30', end: '21:00' },
+    second: { id: 'second', date: '2026-08-02', worker: '이민현', start: '16:00', end: '22:30' }
+  } } } } });
+  const handlers = createDeskHandlers({ store, now: () => '2026-07-31T08:00:00.000Z' });
+  const result = await handlers.batchUpdateDeskScheduleEntries({
+    monthKey: '2026-08',
+    deleteIds: ['first', 'second'],
+    entries: []
+  }, { uid: 'manager-1', name: '관리자' });
+  assert.deepEqual(Object.keys(result.latestVersions).sort(), ['2026-08-01', '2026-08-02']);
+  assert.equal((await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-01' })).versions[0].entries.length, 0);
+  assert.equal((await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-02' })).versions[0].summary, '이민현 일정 삭제');
+});
+
 test('journal task write updates the day record and pending index together', async () => {
   const store = memoryStore();
   const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });
