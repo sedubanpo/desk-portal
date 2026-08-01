@@ -1,0 +1,40 @@
+Daily Journal Operations - verification receipt
+
+Source and syntax
+- Inline browser script parse: 1 script, syntax OK
+- git diff --check: passed
+
+Frontend routing regression
+- node --test services/desk-api/test/frontend-cloud-routing.test.js
+- Result: 12 passed, 0 failed
+
+Focused desk-api behavior
+- node --test test/desk-handlers.test.js test/desk-store.test.js test/idempotency.test.js test/contracts.test.js
+- Result: 18 passed, 0 failed
+- Covered: task write and pending index, empty-worker all-assignee reads, completed/deleted ledger history, idempotent writes
+
+Full service suite note
+- npm test reached 55 passes.
+- 19 integration cases could not open a temporary 0.0.0.0 port in the sandbox (EPERM).
+- The failed cases were environment-bound server-listen tests; no backend source was changed for this task.
+
+Live browser behavior
+- Assignment Ledger: 53 total / 32 unfinished / 1 follow-up / 20 complete / 1 deleted
+- Ledger search: 김광수 -> 2 rows; clear -> 53 rows
+- Ledger status: 삭제됨 -> 1 row; reset -> 53 rows
+- Manager assignee: 홍성우 -> 23 rows
+- Manager follow-up filter: 23 rows
+- Shared search: 김광수 -> 1/1
+- Loading transition: 확인 중 -> 25건 / 1건
+- Stable samples: three consecutive 25건 / 1건 on both tested dates
+- Shared expanded state persisted across rerender/navigation
+- Browser console warnings/errors: none
+
+Responsive behavior
+- Desktop 1280px: no body overflow and no clipped ledger heading
+- Mobile 390px: body 375/375 with no body overflow
+- Mobile wide content scrolls only inside worker-tab and ledger regions
+
+Production data safety
+- Live browser checks were read-only.
+- Save/read/idempotency paths were exercised by focused unit tests rather than mutating live records.
