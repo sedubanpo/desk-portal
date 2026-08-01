@@ -31247,7 +31247,9 @@
       var carryoverLoading = String(state.desk.daily.carryoverLoadingDateKey || "").indexOf(dateKey + "::") === 0 &&
         state.desk.daily.carryoverDateKey !== dateKey;
       deskJournalSharedSummaryListEl.classList.remove("expanded");
-      if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = sharedTasks.length + "건";
+      if (deskJournalSharedSummaryCountEl) {
+        deskJournalSharedSummaryCountEl.textContent = carryoverLoading && !sharedTasks.length ? "확인 중" : (sharedTasks.length + "건");
+      }
       if (!sharedTasks.length) {
         deskJournalSharedSummaryListEl.innerHTML = carryoverLoading
           ? '<div class="desk-shared-summary-empty compact">이월된 공동 업무/공지를 확인하는 중입니다.</div>'

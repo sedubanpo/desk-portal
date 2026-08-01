@@ -82,6 +82,7 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
   assert.match(source, /state\.desk\.daily\.carryoverDateKey === dateKey/);
   assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
   assert.match(source, /deskJournalPendingSummaryEl\.textContent = isDeskDailyCarryoverLoading_/);
+  assert.match(source, /deskJournalSharedSummaryCountEl\.textContent = carryoverLoading && !sharedTasks\.length \? "확인 중"/);
 });
 
 test('assignment ledger exposes ownership, progress, follow-up, and deletion history', async () => {
