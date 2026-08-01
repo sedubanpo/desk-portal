@@ -125,6 +125,8 @@ test('shared work stays compact and preserves the explicitly opened item across 
   assert.match(source, /state\.desk\.daily\.openSharedTaskId === sharedId \? "" : sharedId/);
   assert.match(source, /grid-template-columns: auto minmax\(0, 1fr\) auto/);
   assert.match(source, /min-height: 48px/);
+  assert.match(source, /grid-template-columns: 72px minmax\(0, 1fr\) 72px/);
+  assert.match(source, /#deskJournalTodayBtn \{\s*grid-column: 1 \/ -1/);
 });
 
 test('selected-day schedule report uses responsive worker cards and distinguishes an empty connected calendar', async () => {
