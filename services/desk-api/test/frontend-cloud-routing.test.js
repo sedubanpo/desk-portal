@@ -112,6 +112,8 @@ test('daily journal manager keeps unresolved work visible while managing shared 
   assert.match(source, /deskJournalManagerBoardEl\.addEventListener\("click"/);
   assert.match(source, /deskJournalManagerBoardEl\.addEventListener\("input"/);
   assert.match(source, /completedItems = completedItems\.filter\(function\(item\)/);
+  assert.match(source, /document\.querySelectorAll\("\[data-desk-task-filter\]"\)[\s\S]*?btn\.addEventListener\("click"/);
+  assert.doesNotMatch(source, /desk-important-badge">이월 ' \+ escapeHtml\(item\.dateKey\)/);
 });
 
 test('shared work stays compact and preserves the explicitly opened item across renders', async () => {

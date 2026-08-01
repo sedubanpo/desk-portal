@@ -32058,7 +32058,6 @@
                 '<span class="desk-queue-due-pill">' + escapeHtml(deadlineText) + '</span>' +
                 (isHighlighted ? '<span class="desk-important-badge">새 배정</span>' : '') +
                 (meta.important ? '<span class="desk-important-badge">중요</span>' : '') +
-                (isCarryover ? '<span class="desk-important-badge">이월 ' + escapeHtml(item.dateKey) + '</span>' : '') +
               '</div>' +
             '</div>' +
             '<span class="desk-task-status ' + (isShared ? 'pending' : (item.completed ? 'done' : 'pending')) + '">' + escapeHtml(statusText) + '</span>' +
@@ -35095,6 +35094,14 @@
           renderDeskDailyJournal_();
         });
       }
+      Array.prototype.forEach.call(document.querySelectorAll("[data-desk-task-filter]"), function(btn) {
+        btn.addEventListener("click", function() {
+          state.desk.daily.taskQueueFilter = btn.getAttribute("data-desk-task-filter") || "전체";
+          state.desk.daily.taskQueuePage = 1;
+          state.desk.daily.expandedTaskIds = {};
+          renderDeskDailyJournal_();
+        });
+      });
       if (deskJournalSaveRoutineBtnEl) {
         deskJournalSaveRoutineBtnEl.addEventListener("click", function() {
           saveDeskRoutineTaskFromForm_();
@@ -35226,14 +35233,6 @@
             state.desk.daily.managerWorkerFilter = managerWorkerBtn.getAttribute("data-desk-manager-worker-filter") || "전체";
             state.desk.daily.taskQueuePage = 1;
             state.desk.daily.taskQueueExpanded = false;
-            state.desk.daily.expandedTaskIds = {};
-            renderDeskDailyJournal_();
-            return;
-          }
-          var taskFilterBtn = event.target.closest("[data-desk-task-filter]");
-          if (taskFilterBtn) {
-            state.desk.daily.taskQueueFilter = taskFilterBtn.getAttribute("data-desk-task-filter") || "전체";
-            state.desk.daily.taskQueuePage = 1;
             state.desk.daily.expandedTaskIds = {};
             renderDeskDailyJournal_();
             return;
