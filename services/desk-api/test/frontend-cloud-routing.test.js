@@ -72,21 +72,56 @@ test('unfinished assignments remain visible when the assignee is not scheduled t
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /if \(!\(workerNames \|\| \[\]\)\.length\) return true;/);
-  assert.match(source, /var pendingWorkerNames = getDeskKnownWorkers_\(\)\.concat\(workerNames\)/);
-  assert.match(source, /fetchDeskDailyPendingTasksRealtime_\(safeDateKey, pendingWorkerNames\)/);
+  assert.match(source, /var workerKey = "all";/);
+  assert.match(source, /fetchDeskDailyPendingTasksRealtime_\(safeDateKey, \[\]\)/);
+  assert.match(source, /Promise\.all\(\[quickScan, serverScan\]\)/);
+  assert.match(source, /carryoverRequestId/);
+  assert.match(source, /function moveDeskDailyDate_\(delta\) \{\s*resetDeskDailyCarryoverLoad_\(\);/);
+  assert.match(source, /deskJournalTodayBtnEl\.addEventListener\("click", function\(\) \{\s*resetDeskDailyCarryoverLoad_\(\);/);
+  assert.doesNotMatch(source, /quickScan\.then\(function\(items\)/);
   assert.match(source, /state\.desk\.daily\.carryoverDateKey === dateKey/);
   assert.match(source, /!item\.completed && !isDeskSharedTask_\(item\) && item\.dateKey < dateKey/);
+  assert.match(source, /deskJournalPendingSummaryEl\.textContent = isDeskDailyCarryoverLoading_/);
 });
 
 test('assignment ledger exposes ownership, progress, follow-up, and deletion history', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
-  assert.match(source, /data-desk-editor-tab="ledger">배정 원장/);
+  assert.doesNotMatch(source, /data-desk-editor-tab="ledger"/);
+  assert.match(source, /if \(selectedWorker === "전체"\) \{\s*renderDeskTaskLedger_\(\)/);
+  assert.match(source, /\.desk-journal-layout\.ledger-mode \.desk-journal-side \{\s*display: none !important/);
   assert.match(source, /getDeskDailyJournalTaskLedger: true/);
   assert.match(source, /업무 \/ 메모<\/th><th>입력자<\/th><th>담당자<\/th><th>배정 일시<\/th><th>진행 상태<\/th><th>미해결 사유 \/ 후속 단계/);
   assert.match(source, /data-desk-ledger-next=/);
+  assert.match(source, /aria-label="업무 배정 원장 검색"/);
+  assert.match(source, /aria-label="업무 배정 원장 진행 상태 필터"/);
   assert.match(source, /해결하지 못한 업무는 다음 후속 단계를 입력해 주세요/);
   assert.match(source, /서버 저장 확인 필요/);
+});
+
+test('daily journal manager keeps unresolved work visible while managing shared and routine work', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /id="deskJournalManagerBoard"/);
+  assert.match(source, /data-desk-task-filter="후속 필요"/);
+  assert.match(source, /data-desk-manager-worker-filter=/);
+  assert.match(source, /후속 단계 미입력/);
+  assert.match(source, /data-desk-shared-manager-search=/);
+  assert.match(source, /renderDeskJournalManagerBoard_\(visibleTasks\)/);
+  assert.match(source, /renderDeskSharedTaskManagerBoard_\(tasks, deskJournalManagerBoardEl\)/);
+  assert.match(source, /deskJournalManagerBoardEl\.addEventListener\("click"/);
+  assert.match(source, /deskJournalManagerBoardEl\.addEventListener\("input"/);
+  assert.match(source, /completedItems = completedItems\.filter\(function\(item\)/);
+});
+
+test('shared work stays compact and preserves the explicitly opened item across renders', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /openSharedTaskId/);
+  assert.match(source, /data-desk-shared-summary-id=/);
+  assert.match(source, /state\.desk\.daily\.openSharedTaskId === sharedId \? "" : sharedId/);
+  assert.match(source, /grid-template-columns: auto minmax\(0, 1fr\) auto/);
+  assert.match(source, /min-height: 48px/);
 });
 
 test('selected-day schedule report uses responsive worker cards and distinguishes an empty connected calendar', async () => {

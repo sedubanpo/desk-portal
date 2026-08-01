@@ -62,6 +62,11 @@ Base unit is 4px.
 - Teacher payroll workspace: the page header owns monthly analysis and lock actions; filters sit in one 8px operational toolbar; the five primary metrics share one bordered strip with separators instead of five floating cards. The expected-pay metric uses a quiet green emphasis, and all dynamic amounts use tabular numerals.
 - Payroll monthly analysis: the modal uses four compact KPI cards, one combined monthly chart, and one sticky-axis table. Revenue is labelled `인정 순매출(정산 기준)`, teacher expense is labelled `규칙 적용 예상 강사비`, and the difference is labelled `강사비 차감 잔여액`, never profit. A warm note discloses that other operating expenses are excluded.
 - Report schedule cards: time block gets fixed readable width, worker detail gets remaining width, unavailable workers use low-saturation dim treatment.
+- Daily journal counts: the page-level unresolved count is owned by the all-assignee carryover query. It displays `확인 중` until that single query settles and must never publish a partial quick-scan count.
+- Daily journal worker tabs: `전체` owns the full-width assignment ledger, `업무 관리자` owns unresolved follow-up plus notice/assignment/routine management, and a named worker owns quick input, that worker's queue, records, and report.
+- Daily journal shared work: the default band is one compact horizontal row. One explicitly selected item may open for details and acknowledgements; its state persists across polling renders.
+- Daily journal manager: unresolved ownership and follow-up stay visible in the left pane while the right pane switches among shared work, direct assignment, and routine templates. Assignee filters use 40px controls and count badges use tabular numerals.
+- Assignment ledger: the ledger takes the full working width, keeps a sticky table header inside its own scroll region, wraps long task and follow-up text, and reserves a stable 40px save action so columns do not shift.
 
 ## Motion
 
