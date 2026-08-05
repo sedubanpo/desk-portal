@@ -60,6 +60,31 @@ test('payroll parser and ratio summary preserve recognition, overlap, and cancel
   assert.equal(summary.rows.find(row => row.name === '박학생').recognized, false);
 });
 
+test('amount overrides recalculate gross, net, teacher pay, and canceled totals', () => {
+  const meta = parsePayrollMonthName('26-07');
+  const rows = parsePayrollRows(source, meta);
+  const recognizedRow = rows.find(row => row.name === '김학생');
+  const canceledRow = rows.find(row => row.name === '박학생');
+  const summary = buildPayrollSummary(rows, meta, {
+    salaryMode: 'ratio', ratioPercent: 50, hourlyRate: 30000,
+    teacherSettings: {},
+    effectiveOverrides: {
+      amountOverrides: [
+        { rowKey: recognizedRow.rowKey, amount: 25000 },
+        { rowKey: canceledRow.rowKey, amount: 0 }
+      ]
+    }
+  });
+
+  assert.equal(summary.kpi.grossSales, 225000);
+  assert.equal(summary.kpi.netSales, 225000);
+  assert.equal(summary.kpi.estimatedPay, 112500);
+  assert.equal(summary.kpi.canceledAmount, 0);
+  assert.equal(summary.rows.find(row => row.name === '김학생').amount, 25000);
+  assert.equal(summary.rows.find(row => row.name === '김학생').amountManuallyOverridden, true);
+  assert.equal(summary.rows.find(row => row.name === '박학생').amountManuallyOverridden, true);
+});
+
 test('all-teacher summary applies each teacher pay mode and keeps their overlapping hours separate', () => {
   const mixedSource = {
     headers: source.headers,
@@ -176,10 +201,15 @@ test('settings and overrides replay the same business request without a second m
   assert.equal(first.settings['김강사'].paidByMonth['26-07'], true);
   assert.equal(replay.duplicate, true);
 
-  const overridePayload = { clientRequestId: 'override-1', monthName: '26-07', freeIncludedRowKeys: ['26-07:2:test'] };
+  const overridePayload = {
+    clientRequestId: 'override-1', monthName: '26-07',
+    freeIncludedRowKeys: ['26-07:2:test'],
+    amountOverrides: [{ rowKey: '26-07:2:test', amount: 25000 }]
+  };
   const saved = await handlers.savePayrollOverrides(overridePayload, { uid: 'admin-1' });
   const duplicate = await handlers.savePayrollOverrides(overridePayload, { uid: 'admin-1' });
   assert.deepEqual(saved.overrides.freeIncludedRowKeys, ['26-07:2:test']);
+  assert.deepEqual(saved.overrides.amountOverrides, [{ rowKey: '26-07:2:test', amount: 25000 }]);
   assert.equal(duplicate.duplicate, true);
 });
 

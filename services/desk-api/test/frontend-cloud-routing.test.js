@@ -44,6 +44,20 @@ test('teacher payroll exposes an unfiltered monthly sales and teacher-pay analys
   assert.match(source, /\.desk-global-tools \{\s*display: none;/);
 });
 
+test('teacher payroll supports editable amounts and per-teacher individual-regular bulk updates', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /id="payrollBulkTeacherSelect"/);
+  assert.match(source, /id="payrollBulkAmountInput"/);
+  assert.match(source, /id="applyPayrollBulkAmountBtn"/);
+  assert.match(source, /class="payroll-amount-input"/);
+  assert.match(source, /amountOverrides: Object\.keys\(state\.amountOverrides\)/);
+  assert.match(source, /\(src\.amountOverrides \|\| \[\]\)\.forEach/);
+  assert.match(source, /function applyPayrollIndividualRegularAmount_\(\)/);
+  assert.match(source, /String\(row\.classType \|\| ""\)\.replace\(\/\\s\+\/g, ""\) === "개별정규"/);
+  assert.match(source, /savePayrollOverridesAndRefresh_\(\)/);
+});
+
 test('production frontend has no Apps Script or direct RTDB transport fallback', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

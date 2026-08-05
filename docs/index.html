@@ -10387,6 +10387,39 @@
       background: #f9fcfa;
     }
 
+    .payroll-amount-bulk-tool {
+      display: grid;
+      grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) auto minmax(120px, auto);
+      gap: 8px;
+      align-items: end;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e6ede8;
+      background: #f4f9f6;
+    }
+    .payroll-amount-bulk-tool .field { min-width: 0; }
+    .payroll-amount-bulk-status {
+      align-self: center;
+      color: #4d5d6e;
+      font-size: 12px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .payroll-amount-bulk-btn {
+      min-height: 40px;
+      border: 1px solid #0d684d;
+      border-radius: 8px;
+      padding: 0 14px;
+      background: #0d684d;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .payroll-amount-bulk-btn:hover { background: #0a563f; }
+    .payroll-amount-bulk-btn:focus-visible { outline: 3px solid rgba(44, 152, 113, 0.22); outline-offset: 2px; }
+    .payroll-amount-bulk-btn:disabled { border-color: #b8c7be; background: #dce5df; color: #718078; cursor: not-allowed; }
+
     .check-inline {
       display: inline-flex;
       align-items: center;
@@ -10420,6 +10453,7 @@
 
     .table-panel.collapsed .table-tools,
     .table-panel.collapsed .table-tabs,
+    .table-panel.collapsed .payroll-amount-bulk-tool,
     .table-panel.collapsed .table-filter-row,
     .table-panel.collapsed .tab-pane {
       display: none;
@@ -10713,6 +10747,29 @@
       color: #155e75;
       font-size: 10px;
       font-weight: 800;
+    }
+
+    .payroll-amount-edit-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .payroll-amount-input {
+      width: 104px;
+      border: 1px solid #c8d6cc;
+      border-radius: 8px;
+      padding: 4px 6px;
+      background: #fff;
+      color: #1f2937;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .payroll-amount-input:focus {
+      outline: none;
+      border-color: #2c9871;
+      box-shadow: 0 0 0 2px rgba(44, 152, 113, 0.16);
     }
 
     .meta-bar {
@@ -15324,6 +15381,8 @@
       .layout { grid-template-columns: 1fr; }
       .topbar { grid-template-columns: 1fr 1fr; }
       .table-filter-row { grid-template-columns: 1fr; }
+      .payroll-amount-bulk-tool { grid-template-columns: 1fr; }
+      .payroll-amount-bulk-status { white-space: normal; }
       .teacher-bar { grid-template-columns: 1fr 1fr; }
       .day-detail-summary { grid-template-columns: 1fr 1fr; }
       .tracker-summary { grid-template-columns: 1fr 1fr; }
@@ -16949,6 +17008,18 @@
         </div>
         <div class="tab-pane" id="detailTabPane">
         <div class="table-tools" id="columnToggleWrap"></div>
+        <div class="payroll-amount-bulk-tool">
+          <div class="field">
+            <label for="payrollBulkTeacherSelect">개별정규 강사</label>
+            <select id="payrollBulkTeacherSelect"></select>
+          </div>
+          <div class="field">
+            <label for="payrollBulkAmountInput">통일 금액(원)</label>
+            <input id="payrollBulkAmountInput" type="number" min="0" step="1000" inputmode="numeric" placeholder="25000">
+          </div>
+          <button class="payroll-amount-bulk-btn" id="applyPayrollBulkAmountBtn" type="button">일괄 적용</button>
+          <div class="payroll-amount-bulk-status" id="payrollBulkAmountStatus" aria-live="polite">대상 강사를 선택하세요.</div>
+        </div>
         <div class="table-filter-row">
           <div class="field">
             <label for="attendanceFilterSelect">출결 필터</label>
@@ -19886,6 +19957,7 @@
       hourlyRate: 30000,
       freeIncludedRowKeys: {},
       recognitionOverrides: {},
+      amountOverrides: {},
       settlementPercentOverrides: {},
       selectedDateKey: "",
       attendanceFilter: "",
@@ -20174,6 +20246,10 @@
     var classTypeFilterSelectEl = document.getElementById("classTypeFilterSelect");
     var detailStudentSearchInputEl = document.getElementById("detailStudentSearchInput");
     var suspectOnlyCheckEl = document.getElementById("suspectOnlyCheck");
+    var payrollBulkTeacherSelectEl = document.getElementById("payrollBulkTeacherSelect");
+    var payrollBulkAmountInputEl = document.getElementById("payrollBulkAmountInput");
+    var applyPayrollBulkAmountBtnEl = document.getElementById("applyPayrollBulkAmountBtn");
+    var payrollBulkAmountStatusEl = document.getElementById("payrollBulkAmountStatus");
     var ratioInputEl = document.getElementById("ratioInput");
     var hourlyInputEl = document.getElementById("hourlyInput");
     var modeRatioBtnEl = document.getElementById("modeRatioBtn");
@@ -35683,6 +35759,7 @@
         state.freeIncludedRowKeys = {};
         state.recognitionOverrides = {};
         state.rateAdjustments = {};
+        state.amountOverrides = {};
         state.settlementPercentOverrides = {};
         refreshSummary(false, { forceRefresh: true });
       });
@@ -35695,6 +35772,7 @@
         state.freeIncludedRowKeys = {};
         state.recognitionOverrides = {};
         state.rateAdjustments = {};
+        state.amountOverrides = {};
         state.settlementPercentOverrides = {};
         refreshSummary(true);
       });
@@ -35704,6 +35782,7 @@
         state.selectedTeacher = "";
         state.selectedDateKey = "";
         state.rateAdjustments = {};
+        state.amountOverrides = {};
         state.settlementPercentOverrides = {};
         refreshSummary(false);
       });
@@ -35712,6 +35791,7 @@
         state.selectedTeacher = teacherSelectEl.value;
         state.selectedDateKey = "";
         state.rateAdjustments = {};
+        state.amountOverrides = {};
         state.settlementPercentOverrides = {};
         ensureTeacherSettingsLoaded_().finally(function() {
           applyTeacherSettingPreset();
@@ -35743,6 +35823,10 @@
         state.suspectOnly = !!suspectOnlyCheckEl.checked;
         renderDerivedViews();
       });
+
+      payrollBulkTeacherSelectEl.addEventListener("change", updatePayrollBulkAmountStatus_);
+      payrollBulkAmountInputEl.addEventListener("input", updatePayrollBulkAmountStatus_);
+      applyPayrollBulkAmountBtnEl.addEventListener("click", applyPayrollIndividualRegularAmount_);
 
       window.addEventListener("scroll", hidePayrollTooltip, true);
 
@@ -40276,6 +40360,9 @@
         rateAdjustments: Object.keys(state.rateAdjustments).map(function(rowKey) {
           return { rowKey: rowKey, rate: toNumber(state.rateAdjustments[rowKey], 0) };
         }),
+        amountOverrides: Object.keys(state.amountOverrides).map(function(rowKey) {
+          return { rowKey: rowKey, amount: Math.max(0, Math.round(toNumber(state.amountOverrides[rowKey], 0))) };
+        }),
         settlementPercentOverrides: Object.keys(state.settlementPercentOverrides).map(function(rowKey) {
           return { rowKey: rowKey, percent: toNumber(state.settlementPercentOverrides[rowKey], 0) };
         })
@@ -40299,6 +40386,12 @@
         var rowKey = String((item && item.rowKey) || "").trim();
         var rate = toNumber(item && item.rate, 0);
         if (rowKey && rate > 0) state.rateAdjustments[rowKey] = rate;
+      });
+      state.amountOverrides = {};
+      (src.amountOverrides || []).forEach(function(item) {
+        var rowKey = String((item && item.rowKey) || "").trim();
+        var amount = Math.round(toNumber(item && item.amount, -1));
+        if (rowKey && amount >= 0) state.amountOverrides[rowKey] = amount;
       });
       state.settlementPercentOverrides = {};
       (src.settlementPercentOverrides || []).forEach(function(item) {
@@ -40615,11 +40708,83 @@
 
     function renderDerivedViews() {
       var rows = applyTableFilters(state.currentRows || []);
+      renderPayrollAmountBulkTool_();
       renderTable(rows);
       applyColumnVisibility();
       renderDayDetail(state.currentRows || []);
       renderRecoveryTracker(state.currentRows || []);
       document.getElementById("detailCountPill").textContent = rows.length + " rows";
+    }
+
+    function getPayrollIndividualRegularRows_(teacher) {
+      return (state.currentRows || []).filter(function(row) {
+        return row.teacher === teacher && String(row.classType || "").replace(/\s+/g, "") === "개별정규";
+      });
+    }
+
+    function renderPayrollAmountBulkTool_() {
+      if (!payrollBulkTeacherSelectEl) return;
+      var previous = payrollBulkTeacherSelectEl.value || state.selectedTeacher || "";
+      var teachers = [];
+      var seen = {};
+      (state.currentRows || []).forEach(function(row) {
+        var teacher = String(row.teacher || "").trim();
+        if (!teacher || seen[teacher] || String(row.classType || "").replace(/\s+/g, "") !== "개별정규") return;
+        seen[teacher] = true;
+        teachers.push(teacher);
+      });
+      teachers.sort(function(a, b) { return a.localeCompare(b, "ko"); });
+      payrollBulkTeacherSelectEl.innerHTML = '<option value="">강사 선택</option>' + teachers.map(function(teacher) {
+        return '<option value="' + escapeHtml(teacher) + '">' + escapeHtml(teacher) + "</option>";
+      }).join("");
+      payrollBulkTeacherSelectEl.value = teachers.indexOf(previous) >= 0 ? previous : (teachers.indexOf(state.selectedTeacher) >= 0 ? state.selectedTeacher : "");
+      updatePayrollBulkAmountStatus_();
+    }
+
+    function updatePayrollBulkAmountStatus_() {
+      if (!payrollBulkAmountStatusEl) return;
+      var teacher = payrollBulkTeacherSelectEl.value || "";
+      var amountText = String(payrollBulkAmountInputEl.value || "").trim();
+      var targetRows = teacher ? getPayrollIndividualRegularRows_(teacher) : [];
+      var validAmount = amountText !== "" && toNumber(amountText, -1) >= 0;
+      applyPayrollBulkAmountBtnEl.disabled = !teacher || !targetRows.length || !validAmount;
+      payrollBulkAmountStatusEl.textContent = teacher
+        ? (targetRows.length + "건 적용 대상")
+        : "대상 강사를 선택하세요.";
+    }
+
+    function applyPayrollIndividualRegularAmount_() {
+      var teacher = payrollBulkTeacherSelectEl.value || "";
+      var amount = Math.round(toNumber(payrollBulkAmountInputEl.value, -1));
+      if (!teacher || amount < 0) return;
+      applyPayrollBulkAmountBtnEl.disabled = true;
+      payrollBulkAmountStatusEl.textContent = "월 전체 대상 확인 중";
+      var lookupPayload = Object.assign({}, buildPayload({ includeLocalOverrides: true }), {
+        subjectFilter: "",
+        teacherName: teacher,
+        classTypeFilter: "",
+        forceRefresh: false
+      });
+      runServer("getPayrollMonthSummary", lookupPayload).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message ? res.message : "개별정규 수업 조회 실패");
+        var targetRows = (res.rows || []).filter(function(row) {
+          return row.teacher === teacher && String(row.classType || "").replace(/\s+/g, "") === "개별정규";
+        });
+        if (!targetRows.length) throw new Error("선택한 강사의 개별정규 수업이 없습니다.");
+        targetRows.forEach(function(row) {
+          var original = Math.round(toNumber(row.originalAmount, row.amount));
+          if (amount === original) delete state.amountOverrides[row.rowKey];
+          else state.amountOverrides[row.rowKey] = amount;
+        });
+        payrollBulkAmountStatusEl.textContent = targetRows.length + "건 저장 중";
+        return savePayrollOverridesAndRefresh_().then(function() {
+          payrollBulkAmountStatusEl.textContent = teacher + " · " + targetRows.length + "건 · " + formatWon(amount);
+        });
+      }).catch(function(err) {
+        payrollBulkAmountStatusEl.textContent = "일괄 적용 실패";
+        showClientMessage(err && err.message ? err.message : String(err));
+        applyPayrollBulkAmountBtnEl.disabled = false;
+      });
     }
 
     function renderTablePanelState() {
@@ -41392,6 +41557,17 @@
       '</span>';
     }
 
+    function buildPayrollAmountCell(row) {
+      var value = state.amountOverrides[row.rowKey];
+      if (value == null || value === "") value = row.amount;
+      var original = Math.round(toNumber(row.originalAmount, row.amount));
+      var badge = row.amountManuallyOverridden ? '<span class="rate-adjust-badge">수동</span>' : "";
+      return '<span class="payroll-amount-edit-wrap">' +
+        '<input class="payroll-amount-input" type="number" min="0" step="1000" inputmode="numeric" aria-label="' + escapeHtml(formatStudentName(row.name)) + ' 금액" data-amount-row-key="' + escapeHtml(row.rowKey) + '" data-base-amount="' + escapeHtml(String(original)) + '" value="' + escapeHtml(String(Math.round(toNumber(value, 0)))) + '">' +
+        badge +
+      '</span>';
+    }
+
     function showPayrollTooltip(target) {
       var text = target ? (target.getAttribute("data-tooltip") || "") : "";
       if (!text) return;
@@ -41436,6 +41612,7 @@
           : "-";
         var discountCell = buildPayrollDiscountCell(row);
         var settlementPercentCell = buildSettlementPercentCell(row);
+        var amountCell = buildPayrollAmountCell(row);
         var rateCell = formatWon(row.rate);
         if (row.autoRepriceEligible) {
           var inputVal = state.rateAdjustments[row.rowKey] || row.rate || row.suggestedRate || "";
@@ -41465,7 +41642,7 @@
             '<td data-col="hours">' + formatHours(row.hours) + "</td>" +
             '<td data-col="rate">' + rateCell + "</td>" +
             '<td data-col="settlementPercent">' + settlementPercentCell + "</td>" +
-            '<td data-col="amount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.amount) + "</span>") : formatWon(row.amount)) + "</td>" +
+            '<td data-col="amount">' + amountCell + "</td>" +
             '<td data-col="discount">' + discountCell + "</td>" +
             '<td data-col="netAmount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
             '<td data-col="suspect">' + suspectLabel + "</td>" +
@@ -41506,6 +41683,22 @@
           else state.settlementPercentOverrides[key] = value;
           savePayrollOverridesAndRefresh_();
         }, 320));
+      });
+
+      Array.prototype.forEach.call(document.querySelectorAll(".payroll-amount-input"), function(input) {
+        input.addEventListener("change", function(event) {
+          var key = String(event.target.dataset.amountRowKey || "");
+          var raw = String(event.target.value || "").trim();
+          var value = Math.round(toNumber(raw, -1));
+          var base = Math.round(toNumber(event.target.dataset.baseAmount, 0));
+          if (!key || raw === "" || value < 0) {
+            event.target.value = String(base);
+            return;
+          }
+          if (value === base) delete state.amountOverrides[key];
+          else state.amountOverrides[key] = value;
+          savePayrollOverridesAndRefresh_();
+        });
       });
 
       Array.prototype.forEach.call(body.querySelectorAll(".rate-suspect"), function(el) {
