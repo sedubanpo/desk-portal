@@ -216,6 +216,23 @@ test('staff identity drives the personal journal, account settings, Seoul clock,
   assert.doesNotMatch(source, /class="desk-global-search"/);
 });
 
+test('attendance controls, schedule permissions, and the global shared-work rotation are account-aware', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /id="deskClockInBtn"/);
+  assert.match(source, /id="deskClockOutBtn"/);
+  assert.match(source, /id="deskAttendanceCorrectionModal"/);
+  assert.match(source, /data-desk-view="attendance"/);
+  assert.match(source, /getDeskAttendanceMonthData: true/);
+  assert.match(source, /saveDeskAttendanceCorrectionDecision: true/);
+  assert.match(source, /permissions\[key\] === true/);
+  assert.match(source, /canManageSchedules/);
+  assert.match(source, /canManagePayroll/);
+  assert.match(source, /state\.desk\.daily\.tasks \|\| \[\]\)\.concat\(state\.desk\.daily\.carryoverTasks \|\| \[\]\)/);
+  assert.match(source, /등록된 공동 업무가 없습니다/);
+  assert.doesNotMatch(source, /오늘 등록된 공동 업무가 없습니다/);
+});
+
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

@@ -24,6 +24,9 @@ import {
 const PATHS = Object.freeze({
   schedule: 'desk_portal/monthly_schedule',
   scheduleHistory: 'desk_portal/monthly_schedule_history',
+  attendance: 'desk_portal/staff_attendance',
+  attendanceRequests: 'desk_portal/staff_attendance_requests',
+  attendanceAudit: 'desk_portal/staff_attendance_audit',
   journal: 'desk_portal/daily_journal',
   pending: 'desk_portal/daily_pending_tasks',
   supplies: 'desk_portal/supplies',
@@ -35,6 +38,7 @@ const PATHS = Object.freeze({
 export const DESK_READ_METHODS = new Set([
   'getDeskScheduleMonthData',
   'getDeskScheduleDayHistory',
+  'getDeskAttendanceMonthData',
   'getDeskCalendarEvents',
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
@@ -46,12 +50,19 @@ export const DESK_READ_METHODS = new Set([
 
 export const DESK_WRITE_METHODS = new Set([
   'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries',
+  'saveDeskAttendancePunch', 'saveDeskAttendanceCorrectionRequest', 'saveDeskAttendanceCorrectionDecision',
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
   'adjustDeskSupplyConsumable', 'saveDeskSupplyConsumable', 'deleteDeskSupplyConsumable',
   'saveDeskSupplyAsset', 'deleteDeskSupplyAsset', 'saveDeskSupplyPurchaseState', 'saveDeskSuppliesSnapshot',
   'saveDeskRecruitingApplicant', 'addDeskRecruitingApplicantComment', 'deleteDeskRecruitingApplicant',
   'saveDeskPortalConfig'
 ]);
+
+export const DESK_SCHEDULE_WRITE_METHODS = new Set([
+  'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries'
+]);
+
+export const DESK_ATTENDANCE_ADMIN_METHODS = new Set(['saveDeskAttendanceCorrectionDecision']);
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
 
@@ -81,6 +92,123 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         .filter(item => item.id && item.createdAt)
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
       return { success: true, dateKey: day, versions };
+    },
+
+    async getDeskAttendanceMonthData(payload = {}, identity = {}) {
+      const key = monthKey(payload.monthKey);
+      if (!key) return failure('monthKey가 올바르지 않습니다.');
+      const [recordTree, requestTree, auditTree] = await Promise.all([
+        store.get(`${PATHS.attendance}/${key}`),
+        store.get(`${PATHS.attendanceRequests}/${key}`),
+        store.get(`${PATHS.attendanceAudit}/${key}`)
+      ]);
+      const admin = identity.role === 'ADMIN';
+      const ownUid = String(identity.uid || '').trim();
+      const records = flattenAttendanceRecords(recordTree, key).filter(item => admin || item.uid === ownUid);
+      const requests = Object.entries(requestTree || {}).map(([id, item]) => attendanceRequest(item, id, key))
+        .filter(item => item.id && (admin || item.uid === ownUid)).sort(compareAttendanceRecords);
+      const audits = flattenAttendanceAudits(auditTree, key).filter(item => admin || item.uid === ownUid);
+      return { success: true, monthKey: key, records, requests, audits, summary: buildAttendanceSummary(records) };
+    },
+
+    async saveDeskAttendancePunch(payload = {}, identity = {}) {
+      const day = dateKey(payload.dateKey || seoulDateKey(now()));
+      const type = payload.type === 'clockOut' ? 'clockOut' : payload.type === 'clockIn' ? 'clockIn' : '';
+      if (!day) return failure('근태 일자가 올바르지 않습니다.');
+      if (!type) return failure('출근 또는 퇴근 유형이 필요합니다.');
+      const uid = String(identity.uid || '').trim();
+      if (!uid) return failure('로그인 계정을 확인할 수 없습니다.');
+      const path = `${PATHS.attendance}/${day.slice(0, 7)}/${day}/${uid}`;
+      const before = attendanceRecord(await store.get(path), uid, day);
+      if (before[type]) return failure(type === 'clockIn' ? '이미 출근 기록이 있습니다.' : '이미 퇴근 기록이 있습니다.');
+      const schedule = await attendanceScheduleForWorker(store, day, identity);
+      const stamp = now();
+      const after = attendanceRecord({
+        ...before,
+        uid,
+        name: identity.name || before.name,
+        role: identity.jobTitle || identity.position || before.role,
+        dateKey: day,
+        scheduledStart: schedule.start || before.scheduledStart,
+        scheduledEnd: schedule.end || before.scheduledEnd,
+        [type]: stamp,
+        updatedAt: stamp,
+        updatedByUid: uid,
+        updatedByName: identity.name || identity.email || '계정 정보 없음',
+        source: 'SELF_PUNCH'
+      }, uid, day);
+      const audit = buildAttendanceAudit({ action: type === 'clockIn' ? 'CLOCK_IN' : 'CLOCK_OUT', before, after, identity, now: stamp });
+      await store.update('', {
+        [path]: after,
+        [`${PATHS.attendanceAudit}/${day.slice(0, 7)}/${day}/${audit.id}`]: audit
+      });
+      return { success: true, record: after, audit };
+    },
+
+    async saveDeskAttendanceCorrectionRequest(payload = {}, identity = {}) {
+      const day = dateKey(payload.dateKey);
+      const requestedClockIn = normalizeTime(payload.requestedClockIn);
+      const requestedClockOut = normalizeTime(payload.requestedClockOut);
+      const reason = String(payload.reason || '').trim();
+      if (!day) return failure('정정 일자가 올바르지 않습니다.');
+      if (!requestedClockIn && !requestedClockOut) return failure('정정할 출근 또는 퇴근 시간을 입력해 주세요.');
+      if (!reason) return failure('정정 사유를 입력해 주세요.');
+      const uid = String(identity.uid || '').trim();
+      const id = `attendance_request_${newId()}`;
+      const stamp = now();
+      const request = attendanceRequest({
+        id, uid, name: identity.name || identity.email || '계정 정보 없음', dateKey: day,
+        requestedClockIn, requestedClockOut, reason, status: 'PENDING',
+        createdAt: stamp, updatedAt: stamp, createdByUid: uid
+      }, id, day.slice(0, 7));
+      const audit = buildAttendanceAudit({ action: 'CORRECTION_REQUESTED', before: {}, after: request, identity, now: stamp, reason });
+      await store.update('', {
+        [`${PATHS.attendanceRequests}/${day.slice(0, 7)}/${id}`]: request,
+        [`${PATHS.attendanceAudit}/${day.slice(0, 7)}/${day}/${audit.id}`]: audit
+      });
+      return { success: true, request, audit };
+    },
+
+    async saveDeskAttendanceCorrectionDecision(payload = {}, identity = {}) {
+      const key = monthKey(payload.monthKey || String(payload.dateKey || '').slice(0, 7));
+      const requestId = String(payload.requestId || '').trim();
+      const decision = payload.decision === 'REJECTED' ? 'REJECTED' : payload.decision === 'APPROVED' ? 'APPROVED' : '';
+      if (!key || !requestId || !decision) return failure('정정 요청과 처리 결과를 확인해 주세요.');
+      const requestPath = `${PATHS.attendanceRequests}/${key}/${requestId}`;
+      const stored = await store.get(requestPath);
+      if (!stored) return failure('정정 요청을 찾을 수 없습니다.');
+      const request = attendanceRequest(stored, requestId, key);
+      if (request.status !== 'PENDING') return failure('이미 처리된 정정 요청입니다.');
+      const stamp = now();
+      const adminNote = String(payload.adminNote || '').trim();
+      const decided = { ...request, status: decision, adminNote, decidedAt: stamp, updatedAt: stamp, decidedByUid: identity.uid || '', decidedByName: identity.name || identity.email || '관리자' };
+      const updates = { [requestPath]: decided };
+      let record = null;
+      let before = {};
+      if (decision === 'APPROVED') {
+        const recordPath = `${PATHS.attendance}/${key}/${request.dateKey}/${request.uid}`;
+        before = attendanceRecord(await store.get(recordPath), request.uid, request.dateKey);
+        record = attendanceRecord({
+          ...before,
+          uid: request.uid,
+          name: request.name || before.name,
+          dateKey: request.dateKey,
+          clockIn: request.requestedClockIn ? seoulLocalTimeIso(request.dateKey, request.requestedClockIn) : before.clockIn,
+          clockOut: request.requestedClockOut ? seoulLocalTimeIso(request.dateKey, request.requestedClockOut) : before.clockOut,
+          corrected: true,
+          correctionRequestId: request.id,
+          correctionReason: request.reason,
+          updatedAt: stamp,
+          updatedByUid: identity.uid || '',
+          updatedByName: identity.name || identity.email || '관리자',
+          source: 'CORRECTION_APPROVED'
+        }, request.uid, request.dateKey);
+        updates[recordPath] = record;
+      }
+      const audit = buildAttendanceAudit({ action: decision === 'APPROVED' ? 'CORRECTION_APPROVED' : 'CORRECTION_REJECTED', before, after: record || decided, identity, now: stamp, reason: request.reason, requestId });
+      updates[`${PATHS.attendanceAudit}/${key}/${request.dateKey}/${audit.id}`] = audit;
+      await store.update('', updates);
+      return { success: true, request: decided, record, audit };
     },
 
     async saveDeskScheduleEntry(payload = {}, identity = {}) {
@@ -566,6 +694,149 @@ function compactScheduleVersion(version) {
   };
 }
 
+function normalizeTime(value) {
+  const time = String(value || '').trim();
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : '';
+}
+
+function seoulDateKey(value) {
+  const date = new Date(value || Date.now());
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(date);
+}
+
+function seoulLocalTimeIso(day, time) {
+  const normalized = normalizeTime(time);
+  return normalized ? new Date(`${day}T${normalized}:00+09:00`).toISOString() : '';
+}
+
+function attendanceRecord(item = {}, fallbackUid = '', fallbackDate = '') {
+  const source = item && typeof item === 'object' ? item : {};
+  return {
+    uid: String(source.uid || fallbackUid || '').trim(),
+    name: String(source.name || '').trim(),
+    role: String(source.role || '').trim(),
+    dateKey: dateKey(source.dateKey || fallbackDate),
+    scheduledStart: normalizeTime(source.scheduledStart),
+    scheduledEnd: normalizeTime(source.scheduledEnd),
+    clockIn: String(source.clockIn || '').trim(),
+    clockOut: String(source.clockOut || '').trim(),
+    corrected: Boolean(source.corrected),
+    correctionRequestId: String(source.correctionRequestId || '').trim(),
+    correctionReason: String(source.correctionReason || '').trim(),
+    source: String(source.source || '').trim(),
+    updatedAt: String(source.updatedAt || '').trim(),
+    updatedByUid: String(source.updatedByUid || '').trim(),
+    updatedByName: String(source.updatedByName || '').trim()
+  };
+}
+
+function attendanceRequest(item = {}, fallbackId = '', fallbackMonth = '') {
+  const source = item && typeof item === 'object' ? item : {};
+  return {
+    id: String(source.id || fallbackId || '').trim(),
+    uid: String(source.uid || '').trim(),
+    name: String(source.name || '').trim(),
+    dateKey: dateKey(source.dateKey || `${fallbackMonth}-01`),
+    requestedClockIn: normalizeTime(source.requestedClockIn),
+    requestedClockOut: normalizeTime(source.requestedClockOut),
+    reason: String(source.reason || '').trim(),
+    status: ['PENDING', 'APPROVED', 'REJECTED'].includes(source.status) ? source.status : 'PENDING',
+    adminNote: String(source.adminNote || '').trim(),
+    createdAt: String(source.createdAt || '').trim(),
+    updatedAt: String(source.updatedAt || '').trim(),
+    createdByUid: String(source.createdByUid || '').trim(),
+    decidedAt: String(source.decidedAt || '').trim(),
+    decidedByUid: String(source.decidedByUid || '').trim(),
+    decidedByName: String(source.decidedByName || '').trim()
+  };
+}
+
+function compareAttendanceRecords(left, right) {
+  return String(right.dateKey || right.createdAt || '').localeCompare(String(left.dateKey || left.createdAt || '')) || String(left.name || '').localeCompare(String(right.name || ''), 'ko');
+}
+
+function flattenAttendanceRecords(tree, key) {
+  const records = [];
+  for (const [day, workers] of Object.entries(tree || {})) {
+    for (const [uid, item] of Object.entries(workers || {})) {
+      const record = attendanceRecord(item, uid, day);
+      if (record.uid && record.dateKey?.startsWith(key)) records.push(record);
+    }
+  }
+  return records.sort(compareAttendanceRecords);
+}
+
+function flattenAttendanceAudits(tree, key) {
+  const audits = [];
+  for (const [day, entries] of Object.entries(tree || {})) {
+    for (const [id, item] of Object.entries(entries || {})) {
+      if (!item || typeof item !== 'object') continue;
+      audits.push({ ...item, id: String(item.id || id), dateKey: dateKey(item.dateKey || day) });
+    }
+  }
+  return audits.filter(item => item.dateKey?.startsWith(key)).sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || '')));
+}
+
+function isoMinutes(value) {
+  const date = new Date(value || '');
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date).split(':').map(Number);
+  return parts[0] * 60 + parts[1];
+}
+
+function timeMinutes(value) {
+  const time = normalizeTime(value);
+  if (!time) return null;
+  const [hour, minute] = time.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+function buildAttendanceSummary(records) {
+  const grouped = new Map();
+  records.forEach(record => {
+    const current = grouped.get(record.uid) || { uid: record.uid, name: record.name, days: 0, completedDays: 0, lateDays: 0, earlyLeaveDays: 0, correctedDays: 0, workedMinutes: 0 };
+    current.name = record.name || current.name;
+    current.days += 1;
+    if (record.clockIn && record.clockOut) current.completedDays += 1;
+    if (record.corrected) current.correctedDays += 1;
+    const clockIn = isoMinutes(record.clockIn);
+    const clockOut = isoMinutes(record.clockOut);
+    const scheduledStart = timeMinutes(record.scheduledStart);
+    const scheduledEnd = timeMinutes(record.scheduledEnd);
+    if (clockIn !== null && scheduledStart !== null && clockIn > scheduledStart) current.lateDays += 1;
+    if (clockOut !== null && scheduledEnd !== null && clockOut < scheduledEnd) current.earlyLeaveDays += 1;
+    if (clockIn !== null && clockOut !== null && clockOut >= clockIn) current.workedMinutes += clockOut - clockIn;
+    grouped.set(record.uid, current);
+  });
+  return [...grouped.values()].sort((left, right) => String(left.name || '').localeCompare(String(right.name || ''), 'ko'));
+}
+
+async function attendanceScheduleForWorker(store, day, identity) {
+  const entries = Object.values(await scheduleEntriesMap(store, day.slice(0, 7)));
+  const names = [identity.name, identity.displayName].map(workerKey).filter(Boolean);
+  return entries.find(item => item.date === day && !item.resident && !item.unavailable && names.includes(workerKey(item.worker))) || {};
+}
+
+function buildAttendanceAudit({ action, before = {}, after = {}, identity = {}, now, reason = '', requestId = '' }) {
+  return {
+    id: `attendance_audit_${newId()}`,
+    action: String(action || '').trim(),
+    dateKey: dateKey(after.dateKey || before.dateKey),
+    uid: String(after.uid || before.uid || '').trim(),
+    name: String(after.name || before.name || '').trim(),
+    before,
+    after,
+    reason: String(reason || '').trim(),
+    requestId: String(requestId || after.id || '').trim(),
+    actorUid: String(identity.uid || '').trim(),
+    actorName: String(identity.name || identity.email || '계정 정보 없음').trim(),
+    createdAt: String(now || new Date().toISOString())
+  };
+}
+
 function latestScheduleVersions(history) {
   return Object.fromEntries(Object.entries(history || {}).map(([day, versions]) => {
     const latest = Object.entries(versions || {}).map(([id, item]) => scheduleHistoryVersion(item, id))
@@ -578,6 +849,7 @@ function latestScheduleVersions(history) {
 function errorPrefix(name) {
   const labels = {
     getDeskScheduleMonthData: '근무표 조회 오류', getDeskScheduleDayHistory: '근무표 버전 이력 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
+    getDeskAttendanceMonthData: '근태 현황 조회 오류', saveDeskAttendancePunch: '출퇴근 기록 오류', saveDeskAttendanceCorrectionRequest: '출퇴근 정정 요청 오류', saveDeskAttendanceCorrectionDecision: '출퇴근 정정 처리 오류',
     getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
     getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'

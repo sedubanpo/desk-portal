@@ -1,7 +1,12 @@
 import express from 'express';
 import { createRequireStaff } from './auth.js';
 import { MIGRATION_STATE } from './contracts.js';
-import { DESK_METHODS, DESK_WRITE_METHODS } from './desk/handlers.js';
+import {
+  DESK_ATTENDANCE_ADMIN_METHODS,
+  DESK_METHODS,
+  DESK_SCHEDULE_WRITE_METHODS,
+  DESK_WRITE_METHODS
+} from './desk/handlers.js';
 import { ApiError } from './http.js';
 import { TUITION_METHODS, TUITION_WRITE_METHODS } from './tuition/handlers.js';
 import { PAYROLL_METHODS, PAYROLL_WRITE_METHODS } from './payroll/handlers.js';
@@ -25,6 +30,10 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
 
   function hasPayrollPermission(identity) {
     return identity.role === 'ADMIN' || identity.permissions?.canManagePayroll === true;
+  }
+
+  function hasSchedulePermission(identity) {
+    return identity.role === 'ADMIN' || identity.permissions?.canManageSchedules === true;
   }
 
   app.disable('x-powered-by');
@@ -77,6 +86,12 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     }
     if (PAYROLL_METHODS.includes(method) && !hasPayrollPermission(req.identity)) {
       return next(new ApiError(403, 'payroll_access_required', '급여 정산 관리 권한이 필요합니다.'));
+    }
+    if (DESK_SCHEDULE_WRITE_METHODS.has(method) && !hasSchedulePermission(req.identity)) {
+      return next(new ApiError(403, 'schedule_access_required', '근무표 수정 권한이 필요합니다.'));
+    }
+    if (DESK_ATTENDANCE_ADMIN_METHODS.has(method) && req.identity.role !== 'ADMIN') {
+      return next(new ApiError(403, 'attendance_admin_required', '출퇴근 정정 요청은 관리자만 처리할 수 있습니다.'));
     }
     if (PAYROLL_METHODS.includes(method) && !payrollGate.verify(req.identity.uid, req.get('x-payroll-unlock-token'))) {
       return next(new ApiError(401, 'payroll_unlock_required', '강사 시수 정산 잠금을 다시 풀어 주세요.'));

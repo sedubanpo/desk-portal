@@ -93,6 +93,58 @@ test('schedule batch writes one version for each affected date', async () => {
   assert.equal((await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-02' })).versions[0].summary, '이민현 일정 삭제');
 });
 
+test('attendance punch, correction approval, and audit history remain linked', async () => {
+  const store = memoryStore({ desk_portal: { monthly_schedule: { '2026-08': { entries: {
+    shift: { id: 'shift', date: '2026-08-08', worker: '안종성', start: '09:30', end: '18:00' }
+  } } } } });
+  let stamp = '2026-08-08T00:31:00.000Z';
+  const handlers = createDeskHandlers({ store, now: () => stamp });
+  const staff = { uid: 'staff-1', name: '안종성', role: 'STAFF', staffPosition: '대리' };
+
+  const clockIn = await handlers.saveDeskAttendancePunch({ dateKey: '2026-08-08', type: 'clockIn' }, staff);
+  assert.equal(clockIn.success, true);
+  assert.equal(clockIn.record.scheduledStart, '09:30');
+  assert.equal(clockIn.record.clockIn, stamp);
+
+  stamp = '2026-08-08T09:10:00.000Z';
+  const clockOut = await handlers.saveDeskAttendancePunch({ dateKey: '2026-08-08', type: 'clockOut' }, staff);
+  assert.equal(clockOut.record.clockOut, stamp);
+
+  stamp = '2026-08-08T10:00:00.000Z';
+  const requested = await handlers.saveDeskAttendanceCorrectionRequest({
+    dateKey: '2026-08-08', requestedClockIn: '09:30', requestedClockOut: '18:00', reason: '현장 업무 후 기록'
+  }, staff);
+  assert.equal(requested.request.status, 'PENDING');
+
+  stamp = '2026-08-08T10:30:00.000Z';
+  const approved = await handlers.saveDeskAttendanceCorrectionDecision({
+    monthKey: '2026-08', requestId: requested.request.id, decision: 'APPROVED'
+  }, { uid: 'admin-1', name: '관리자', role: 'ADMIN' });
+  assert.equal(approved.request.status, 'APPROVED');
+  assert.equal(approved.record.corrected, true);
+  assert.equal(approved.record.clockIn, '2026-08-08T00:30:00.000Z');
+  assert.equal(approved.record.clockOut, '2026-08-08T09:00:00.000Z');
+
+  const staffMonth = await handlers.getDeskAttendanceMonthData({ monthKey: '2026-08' }, staff);
+  assert.equal(staffMonth.records.length, 1);
+  assert.equal(staffMonth.requests.length, 1);
+  assert.equal(staffMonth.audits.length, 4);
+  assert.equal(staffMonth.summary[0].correctedDays, 1);
+  assert.equal(staffMonth.summary[0].workedMinutes, 510);
+});
+
+test('staff attendance reads never expose another worker', async () => {
+  const store = memoryStore({ desk_portal: { staff_attendance: { '2026-08': { '2026-08-08': {
+    'staff-1': { uid: 'staff-1', name: '안종성', dateKey: '2026-08-08', clockIn: '2026-08-08T00:30:00.000Z' },
+    'staff-2': { uid: 'staff-2', name: '이민현', dateKey: '2026-08-08', clockIn: '2026-08-08T07:00:00.000Z' }
+  } } } } });
+  const result = await createDeskHandlers({ store }).getDeskAttendanceMonthData(
+    { monthKey: '2026-08' },
+    { uid: 'staff-1', name: '안종성', role: 'STAFF' }
+  );
+  assert.deepEqual(result.records.map(item => item.uid), ['staff-1']);
+});
+
 test('journal task write updates the day record and pending index together', async () => {
   const store = memoryStore();
   const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });

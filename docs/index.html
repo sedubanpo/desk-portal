@@ -17262,6 +17262,35 @@
         transition-duration: 0ms;
       }
     }
+    .desk-attendance-strip { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:12px; align-items:center; padding:10px 12px; border:1px solid #c9ddd4; background:#f4faf7; }
+    .desk-attendance-status { display:flex; align-items:center; gap:10px; min-width:0; }
+    .desk-attendance-status i { width:18px; color:#0c6b4d; }
+    .desk-attendance-status strong { display:block; font-size:13px; color:#173f33; }
+    .desk-attendance-status span { display:block; margin-top:2px; font-size:11px; color:#667a73; }
+    .desk-attendance-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    .desk-attendance-btn { min-height:32px; padding:0 11px; border:1px solid #b7d2c7; border-radius:6px; background:#fff; color:#245346; font-weight:700; font-size:12px; cursor:pointer; }
+    .desk-attendance-btn.primary { border-color:#0c6b4d; background:#0c6b4d; color:#fff; }
+    .desk-attendance-btn:disabled { opacity:.48; cursor:not-allowed; }
+    .desk-attendance-admin { display:grid; gap:12px; }
+    .desk-attendance-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid #d7e2dd; }
+    .desk-attendance-summary article { padding:12px; border-right:1px solid #d7e2dd; background:#fff; }
+    .desk-attendance-summary article:last-child { border-right:0; }
+    .desk-attendance-summary span { display:block; font-size:11px; color:#6e7c77; }
+    .desk-attendance-summary strong { display:block; margin-top:4px; font-size:18px; color:#173f33; font-variant-numeric:tabular-nums; }
+    .desk-attendance-table td, .desk-attendance-table th { padding:9px 10px; vertical-align:middle; }
+    .desk-attendance-state { font-weight:700; font-size:11px; }
+    .desk-attendance-state.pending { color:#ad5b00; }
+    .desk-attendance-state.approved { color:#08724f; }
+    .desk-attendance-state.rejected { color:#c83d3d; }
+    .desk-attendance-decision { display:flex; gap:5px; align-items:center; }
+    .desk-attendance-decision input { width:82px; min-height:30px; border:1px solid #cedbd5; border-radius:4px; }
+    @media (max-width:760px) {
+      .desk-attendance-strip { grid-template-columns:1fr; }
+      .desk-attendance-actions { justify-content:stretch; }
+      .desk-attendance-btn { flex:1; }
+      .desk-attendance-summary { grid-template-columns:repeat(2,1fr); }
+      .desk-attendance-summary article:nth-child(2) { border-right:0; }
+    }
   </style>
 </head>
 <body>
@@ -17364,9 +17393,9 @@
       <section class="module-tabs">
         <button class="module-tab active" type="button" data-module="expense">데스크 관리</button>
         <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
-        <button class="module-tab" type="button" data-module="teacher">강사 시수 정산</button>
+        <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab">강사 시수 정산</button>
         <div class="desk-global-tools" aria-label="데스크 포털 상태 도구">
-          <div class="desk-global-notice" id="deskGlobalNotice" aria-label="오늘 공동 업무 공지" aria-live="polite">
+          <div class="desk-global-notice" id="deskGlobalNotice" aria-label="공동 업무 공지" aria-live="polite">
             <i data-lucide="megaphone" aria-hidden="true"></i>
             <span class="desk-global-notice-copy" id="deskGlobalNoticeCopy">오늘 공동 업무를 확인하는 중입니다.</span>
             <span class="desk-global-notice-author" id="deskGlobalNoticeAuthor"></span>
@@ -17971,6 +18000,7 @@
               <section class="desk-view-tabs">
                 <button class="desk-view-tab active" type="button" data-desk-view="calendar">월간 캘린더</button>
                 <button class="desk-view-tab" type="button" data-desk-view="analytics">근무자 집계</button>
+                <button class="desk-view-tab" type="button" data-desk-view="attendance" data-attendance-admin-only="true">출퇴근 근태</button>
                 <button class="desk-view-tab" type="button" data-desk-view="editor">일정 편집</button>
                 <button class="desk-view-tab" type="button" data-desk-view="fixedSchedule">고정 스케줄</button>
               </section>
@@ -18039,6 +18069,26 @@
                     <div class="desk-analytics-overview-grid" id="deskAnalyticsOverviewGrid"></div>
                     <div class="desk-side-title">운영 하이라이트</div>
                     <div class="desk-highlight-list" id="deskAnalyticsHighlights"></div>
+                  </article>
+                </div>
+              </section>
+
+              <section class="desk-view-panel hidden" data-desk-view-panel="attendance" data-attendance-admin-only="true">
+                <div class="desk-attendance-admin">
+                  <div class="desk-attendance-summary" id="deskAttendanceAdminSummary"></div>
+                  <article class="desk-editor-card">
+                    <div class="desk-side-title">근무자별 월간 근태</div>
+                    <div class="desk-side-sub">실제 출퇴근, 지각·조퇴, 승인된 정정 기록을 월 단위로 확인합니다.</div>
+                    <div class="desk-table-wrap"><table class="desk-schedule-table desk-attendance-table"><thead><tr><th>근무자</th><th>기록일</th><th>정상 퇴근</th><th>지각</th><th>조퇴</th><th>정정</th><th>근무시간</th></tr></thead><tbody id="deskAttendanceSummaryBody"></tbody></table></div>
+                  </article>
+                  <article class="desk-editor-card">
+                    <div class="desk-side-title">출퇴근 정정 요청</div>
+                    <div class="desk-side-sub">요청 시간을 확인한 뒤 승인 또는 반려합니다. 처리 결과는 감사 이력에 남습니다.</div>
+                    <div class="desk-table-wrap"><table class="desk-schedule-table desk-attendance-table"><thead><tr><th>일자</th><th>근무자</th><th>요청 시간</th><th>사유</th><th>상태</th><th>처리</th></tr></thead><tbody id="deskAttendanceRequestBody"></tbody></table></div>
+                  </article>
+                  <article class="desk-editor-card">
+                    <div class="desk-side-title">최근 근태 변경 이력</div>
+                    <div class="desk-table-wrap"><table class="desk-schedule-table desk-attendance-table"><thead><tr><th>일시</th><th>근무자</th><th>작업</th><th>처리 계정</th><th>사유</th></tr></thead><tbody id="deskAttendanceAuditBody"></tbody></table></div>
                   </article>
                 </div>
               </section>
@@ -19185,6 +19235,14 @@
                 <button class="desk-nav-btn accent" id="deskJournalTodayBtn" type="button">오늘</button>
               </div>
             </header>
+            <section class="desk-attendance-strip" id="deskAttendanceStrip">
+              <div class="desk-attendance-status"><i data-lucide="scan-line"></i><div><strong id="deskAttendanceTodayTitle">오늘 근태를 확인하는 중입니다.</strong><span id="deskAttendanceTodayMeta">출퇴근 기록은 로그인 계정 기준으로 저장됩니다.</span></div></div>
+              <div class="desk-attendance-actions">
+                <button class="desk-attendance-btn primary" id="deskClockInBtn" type="button"><i data-lucide="log-in"></i> 출근</button>
+                <button class="desk-attendance-btn" id="deskClockOutBtn" type="button"><i data-lucide="log-out"></i> 퇴근</button>
+                <button class="desk-attendance-btn" id="openDeskAttendanceCorrectionBtn" type="button"><i data-lucide="clock-arrow-up"></i> 출퇴근 정정 요청</button>
+              </div>
+            </section>
             <div class="desk-journal-shell">
               <section class="desk-journal-statusbar">
                 <div class="desk-journal-status-cards">
@@ -19524,6 +19582,24 @@
         <button type="button" class="desk-live-feed-more" id="deskLiveFeedMoreBtn">전체 현황 더보기</button>
       </aside>
     </main>
+  </div>
+
+  <div class="modal-overlay" id="deskAttendanceCorrectionModal" style="display:none;">
+    <div class="modal-box" style="max-width:520px;" role="dialog" aria-modal="true" aria-labelledby="deskAttendanceCorrectionTitle">
+      <div class="modal-head">
+        <div><h3 class="modal-title" id="deskAttendanceCorrectionTitle">출퇴근 정정 요청</h3><div class="modal-sub">변경이 필요한 시간과 사유를 입력해 주세요. 관리자가 확인 후 반영합니다.</div></div>
+        <button class="modal-action ghost" id="closeDeskAttendanceCorrectionBtn" type="button">닫기</button>
+      </div>
+      <form id="deskAttendanceCorrectionForm">
+        <div class="desk-form-grid">
+          <div class="field"><label for="deskAttendanceCorrectionDate">근무일</label><input class="modal-input" id="deskAttendanceCorrectionDate" type="date" required></div>
+          <div class="field"><label for="deskAttendanceCorrectionClockIn">정정 출근</label><input class="modal-input" id="deskAttendanceCorrectionClockIn" type="time"></div>
+          <div class="field"><label for="deskAttendanceCorrectionClockOut">정정 퇴근</label><input class="modal-input" id="deskAttendanceCorrectionClockOut" type="time"></div>
+          <div class="field" style="grid-column:1/-1;"><label for="deskAttendanceCorrectionReason">정정 사유</label><textarea class="modal-input" id="deskAttendanceCorrectionReason" rows="3" maxlength="500" placeholder="예: 현장 업무로 퇴근 버튼을 누르지 못함" required></textarea></div>
+        </div>
+        <div class="modal-foot"><span class="desk-form-help" id="deskAttendanceCorrectionStatus"></span><div class="desk-form-actions"><button class="modal-action ghost" id="cancelDeskAttendanceCorrectionBtn" type="button">취소</button><button class="modal-action primary" type="submit">요청 제출</button></div></div>
+      </form>
+    </div>
   </div>
 
   <div class="modal-overlay" id="deskShiftModal" style="display:none;">
@@ -20346,6 +20422,7 @@
     };
     var DESK_CLOUD_METHODS = {
       getDeskScheduleMonthData: true, getDeskScheduleDayHistory: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
+      getDeskAttendanceMonthData: true, saveDeskAttendancePunch: true, saveDeskAttendanceCorrectionRequest: true, saveDeskAttendanceCorrectionDecision: true,
       getDeskCalendarEvents: true,
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskPortalConfig: true, saveDeskPortalConfig: true,
@@ -20557,6 +20634,9 @@
         selectedScheduleVersionId: "",
         calendarEventsByDate: {},
         calendarEventsLoading: {},
+        attendance: {
+          loadedMonths: {}, loadingMonths: {}, records: [], requests: [], audits: [], summary: []
+        },
         supplies: {
           loaded: false,
           loadingPromise: null,
@@ -20850,6 +20930,25 @@
     var deskGlobalNoticeAuthorEl = document.getElementById("deskGlobalNoticeAuthor");
     var deskGlobalUserNameEl = document.getElementById("deskGlobalUserName");
     var deskLogoutBtnEl = document.getElementById("deskLogoutBtn");
+    var teacherModuleTabEl = document.getElementById("teacherModuleTab");
+    var deskAttendanceTodayTitleEl = document.getElementById("deskAttendanceTodayTitle");
+    var deskAttendanceTodayMetaEl = document.getElementById("deskAttendanceTodayMeta");
+    var deskClockInBtnEl = document.getElementById("deskClockInBtn");
+    var deskClockOutBtnEl = document.getElementById("deskClockOutBtn");
+    var openDeskAttendanceCorrectionBtnEl = document.getElementById("openDeskAttendanceCorrectionBtn");
+    var deskAttendanceCorrectionModalEl = document.getElementById("deskAttendanceCorrectionModal");
+    var deskAttendanceCorrectionFormEl = document.getElementById("deskAttendanceCorrectionForm");
+    var closeDeskAttendanceCorrectionBtnEl = document.getElementById("closeDeskAttendanceCorrectionBtn");
+    var cancelDeskAttendanceCorrectionBtnEl = document.getElementById("cancelDeskAttendanceCorrectionBtn");
+    var deskAttendanceCorrectionDateEl = document.getElementById("deskAttendanceCorrectionDate");
+    var deskAttendanceCorrectionClockInEl = document.getElementById("deskAttendanceCorrectionClockIn");
+    var deskAttendanceCorrectionClockOutEl = document.getElementById("deskAttendanceCorrectionClockOut");
+    var deskAttendanceCorrectionReasonEl = document.getElementById("deskAttendanceCorrectionReason");
+    var deskAttendanceCorrectionStatusEl = document.getElementById("deskAttendanceCorrectionStatus");
+    var deskAttendanceAdminSummaryEl = document.getElementById("deskAttendanceAdminSummary");
+    var deskAttendanceSummaryBodyEl = document.getElementById("deskAttendanceSummaryBody");
+    var deskAttendanceRequestBodyEl = document.getElementById("deskAttendanceRequestBody");
+    var deskAttendanceAuditBodyEl = document.getElementById("deskAttendanceAuditBody");
     var passwordChangeModalEl = document.getElementById("passwordChangeModal");
     var closePasswordChangeBtnEl = document.getElementById("closePasswordChangeBtn");
     var cancelPasswordChangeBtnEl = document.getElementById("cancelPasswordChangeBtn");
@@ -27218,6 +27317,7 @@
 
     function renderDeskMonthlySchedule_() {
       if (shouldDeferPortalDataLoad_()) return;
+      applyDeskIdentityUi_();
       ensureDeskSelectedDate_();
       syncDeskMonthControl_();
       renderDeskCalendarWeekdays_();
@@ -27234,6 +27334,10 @@
       renderDeskSelectedDatePanel_(visibleMonthItems);
       renderDeskInsights_(visibleMonthItems);
       renderDeskAnalytics_(visibleMonthItems);
+      if (state.desk.view === "attendance" && isDeskAdminAccount_()) {
+        ensureDeskAttendanceMonthLoaded_(state.desk.currentMonth);
+        renderDeskAttendanceAdmin_();
+      }
       renderDeskFixedSchedule_();
       renderDeskEditorState_(visibleMonthItems);
       renderDeskTodayWorkers_();
@@ -27682,7 +27786,7 @@
                     '<span class="desk-shift-meta">' + getDeskRoleBadgeHtml_(item) + '</span>' +
                     (item.note ? '<span class="desk-shift-note">' + escapeHtml(item.note) + '</span>' : '') +
                   '</button>';
-                }).join("") : '<div class="desk-day-empty-state"><i data-lucide="calendar-plus"></i><strong>+ 이 날짜에</strong><span>일정 추가</span><small>지난주 같은<br>요일 복사</small></div>') +
+                }).join("") : '<div class="desk-day-empty-state"><i data-lucide="calendar-plus"></i><strong>등록 일정 없음</strong><span>' + (canManageDeskSchedule_() ? '일정 추가' : '조회 전용') + '</span></div>') +
                 (unavailableItems.length ? (
                   '<button type="button" class="desk-shift-chip collapsed tone-unavailable" data-desk-toggle-unavailable="' + escapeHtml(cell.date) + '">' +
                     '<span class="desk-shift-name">근무 불가 ' + unavailableItems.length + '명 ' + (showUnavailable ? '접기' : '보기') + '</span>' +
@@ -27698,9 +27802,9 @@
                 ) : '') +
                 '<div class="desk-day-actions">' +
                   renderDeskDayVersionButton_(cell.date) +
-                  '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
+                  (canManageDeskSchedule_() ? '<button type="button" class="desk-day-empty-slot" data-desk-copy-hide="true" data-desk-add-date="' + escapeHtml(cell.date) + '"><i data-lucide="calendar-plus"></i><span>+ 이 날짜에 일정 추가</span></button>' +
                   '<button type="button" class="desk-day-copy-btn" data-desk-copy-hide="true" data-desk-copy-prev-week="' + escapeHtml(cell.date) + '"><i data-lucide="copy"></i><span>지난주 같은 요일 복사</span></button>' +
-                  (dayItems.length ? '<button type="button" class="desk-day-delete-btn" data-desk-copy-hide="true" data-desk-delete-date="' + escapeHtml(cell.date) + '"><i data-lucide="trash-2"></i><span>이 날짜 근무자 모두 삭제</span></button>' : '') +
+                  (dayItems.length ? '<button type="button" class="desk-day-delete-btn" data-desk-copy-hide="true" data-desk-delete-date="' + escapeHtml(cell.date) + '"><i data-lucide="trash-2"></i><span>이 날짜 근무자 모두 삭제</span></button>' : '') : '') +
                 '</div>' +
               '</div>' +
             '</article>');
@@ -27939,9 +28043,10 @@
 
     function renderDeskDayManageTable_(dayItems) {
       if (!dayItems.length) return '<div class="desk-empty desk-selected-empty" data-desk-copy-hide="true"><i data-lucide="calendar-plus"></i><strong>선택 날짜 일정이 없습니다.</strong><span>근무 일정 추가 버튼으로 바로 등록할 수 있습니다.</span></div>';
+      var editable = canManageDeskSchedule_();
       return '<div class="desk-day-manage-table" data-desk-copy-hide="true"><div class="desk-day-shift-table-wrap"><table class="desk-day-shift-table">' +
         '<thead><tr>' +
-          '<th>근무자</th><th>근무 역할</th><th>근무 시간</th><th>근무시간</th><th>주요 업무 / 메모</th><th>관리</th>' +
+          '<th>근무자</th><th>근무 역할</th><th>근무 시간</th><th>근무시간</th><th>주요 업무 / 메모</th>' + (editable ? '<th>관리</th>' : '') +
         '</tr></thead><tbody>' + dayItems.map(function(item) {
         var tone = getDeskShiftTone_(item);
         return '<tr class="tone-' + tone + '">' +
@@ -27950,11 +28055,11 @@
           '<td><strong>' + escapeHtml(formatDeskShiftTime_(item)) + '</strong></td>' +
           '<td>' + renderDeskDurationBadge_(item) + '</td>' +
           '<td class="desk-day-shift-memo">' + escapeHtml(item.note || getDeskToneLabel_(tone) || "메모 없음") + '</td>' +
-          '<td><div class="desk-table-actions">' +
+          (editable ? '<td><div class="desk-table-actions">' +
             '<button type="button" class="desk-icon-btn" title="이 일정 편집" data-desk-copy-hide="true" data-desk-edit-shift="' + escapeHtml(item.id) + '"><i data-lucide="edit-2"></i></button>' +
             '<button type="button" class="desk-icon-btn" title="다음 날짜 복사" data-desk-copy-hide="true" data-desk-copy-next-shift="' + escapeHtml(item.id) + '"><i data-lucide="copy"></i></button>' +
             '<button type="button" class="desk-icon-btn danger" title="일정 삭제" data-desk-copy-hide="true" data-desk-delete-shift="' + escapeHtml(item.id) + '" data-desk-delete-month="' + escapeHtml(String(item.date || "").slice(0, 7)) + '"><i data-lucide="trash-2"></i></button>' +
-          '</div></td>' +
+          '</div></td>' : '') +
         '</tr>';
       }).join("") + '</tbody></table></div></div>';
     }
@@ -29669,6 +29774,7 @@
     }
 
     function saveDeskShiftFromForm_() {
+      if (!requireDeskScheduleWrite_()) return;
       var date = String(deskShiftDateEl && deskShiftDateEl.value || "").trim();
       var worker = String(deskShiftWorkerEl && deskShiftWorkerEl.value || "").trim();
       var role = String(deskShiftRoleEl && deskShiftRoleEl.value || "").trim();
@@ -29725,6 +29831,7 @@
     }
 
     function deleteDeskShift_() {
+      if (!requireDeskScheduleWrite_()) return;
       if (!state.desk.selectedShiftId) return;
       deleteDeskShiftById_(state.desk.selectedShiftId, state.desk.currentMonth, function() {
         state.desk.selectedShiftId = "";
@@ -29734,6 +29841,7 @@
     }
 
     function deleteDeskShiftById_(deleteId, monthKey, done) {
+      if (!requireDeskScheduleWrite_()) return;
       if (!deleteId || !monthKey) return;
       setLoading(true, "근무 일정을 서버에서 삭제하는 중입니다...");
       deleteDeskScheduleEntryRemote_(monthKey, deleteId).then(function(res) {
@@ -29753,6 +29861,7 @@
     }
 
     function openDeskShiftModal_(shiftId, dateKey) {
+      if (!requireDeskScheduleWrite_()) return;
       if (!deskShiftModalEl) return;
       var item = shiftId
         ? state.desk.scheduleItems.find(function(row) { return row.id === shiftId; }) || null
@@ -29816,6 +29925,7 @@
     }
 
     function saveDeskShiftFromModal_() {
+      if (!requireDeskScheduleWrite_()) return;
       var date = String(deskShiftModalDateEl && deskShiftModalDateEl.value || "").trim();
       var worker = String(deskShiftModalWorkerEl && deskShiftModalWorkerEl.value || "").trim();
       var role = String(deskShiftModalRoleEl && deskShiftModalRoleEl.value || "").trim();
@@ -29873,6 +29983,7 @@
     }
 
     function deleteDeskShiftFromModal_() {
+      if (!requireDeskScheduleWrite_()) return;
       var deleteId = String(deskShiftModalIdEl && deskShiftModalIdEl.value || "").trim();
       var monthKey = String(deskShiftModalDateEl && deskShiftModalDateEl.value || "").slice(0, 7);
       if (!deleteId || !monthKey) return;
@@ -29998,6 +30109,24 @@
       return String(state.cloudIdentity && state.cloudIdentity.role || "").toUpperCase() === "STAFF";
     }
 
+    function hasDeskPermission_(key) {
+      return isDeskAdminAccount_() || !!(state.cloudIdentity && state.cloudIdentity.permissions && state.cloudIdentity.permissions[key] === true);
+    }
+
+    function canManageDeskSchedule_() {
+      return hasDeskPermission_("canManageSchedules");
+    }
+
+    function canManageTeacherPayroll_() {
+      return hasDeskPermission_("canManagePayroll");
+    }
+
+    function requireDeskScheduleWrite_() {
+      if (canManageDeskSchedule_()) return true;
+      showClientMessage("근무표 수정 권한이 없습니다.");
+      return false;
+    }
+
     function getDeskIdentityName_() {
       return canonicalizeDeskWorkerName_(state.cloudIdentity && state.cloudIdentity.name || "");
     }
@@ -30051,10 +30180,11 @@
     }
 
     function getDeskGlobalNoticeItems_() {
-      var todayKey = getDeskSeoulDateKey_();
-      return getDeskDailyJournalTasks_(todayKey)
+      var seen = {};
+      return (state.desk.daily.tasks || []).concat(state.desk.daily.carryoverTasks || [])
         .filter(isDeskSharedTask_)
         .filter(function(item) { return !item.hiddenFromWorkerBand && !item.deleted && !item.completed; })
+        .filter(function(item) { if (!item.id || seen[item.id]) return false; seen[item.id] = true; return true; })
         .sort(compareDeskSharedTask_)
         .map(function(item) {
           return {
@@ -30069,7 +30199,7 @@
       if (!deskGlobalNoticeCopyEl || !deskGlobalNoticeAuthorEl) return;
       var item = deskGlobalNoticeItems_[deskGlobalNoticeIndex_] || null;
       var applyCopy = function() {
-        deskGlobalNoticeCopyEl.textContent = item ? item.text : "오늘 등록된 공동 업무가 없습니다.";
+        deskGlobalNoticeCopyEl.textContent = item ? item.text : "등록된 공동 업무가 없습니다.";
         deskGlobalNoticeAuthorEl.textContent = item ? ("기록 " + item.author) : "";
         deskGlobalNoticeCopyEl.classList.remove("is-changing");
       };
@@ -30121,6 +30251,13 @@
       }
       if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = state.firebaseUser ? "flex" : "none";
       if (openSettingsBtnEl) openSettingsBtnEl.style.display = isDeskAdminAccount_() ? "flex" : "none";
+      if (teacherModuleTabEl) teacherModuleTabEl.style.display = canManageTeacherPayroll_() ? "" : "none";
+      document.querySelectorAll('[data-attendance-admin-only="true"]').forEach(function(el) { el.classList.toggle("hidden", !isDeskAdminAccount_()); });
+      document.querySelectorAll('[data-desk-view="editor"], [data-desk-view="fixedSchedule"]').forEach(function(el) { el.classList.toggle("hidden", !canManageDeskSchedule_()); });
+      [deskCopyPrevDayBtnEl, deskCopyPrevWeekBtnEl, deskApplyFixedScheduleQuickBtnEl, deskNewShiftBtnEl, deskApplyFixedScheduleBtnEl].forEach(function(el) { if (el) el.style.display = canManageDeskSchedule_() ? "" : "none"; });
+      if (!canManageTeacherPayroll_() && state.activeModule === "teacher") state.activeModule = "expense";
+      if (!canManageDeskSchedule_() && (state.desk.view === "editor" || state.desk.view === "fixedSchedule")) state.desk.view = "calendar";
+      if (!isDeskAdminAccount_() && state.desk.view === "attendance") state.desk.view = "calendar";
     }
 
     function openAccountSettings_() {
@@ -31298,6 +31435,7 @@
     }
 
     function deleteDeskDateSchedule_(dateKey) {
+      if (!requireDeskScheduleWrite_()) return;
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey) return;
       var monthKey = safeDateKey.slice(0, 7);
@@ -31337,6 +31475,7 @@
     }
 
     function deleteDeskWeekSchedule_(weekKey) {
+      if (!requireDeskScheduleWrite_()) return;
       var safeWeekKey = String(weekKey || "").trim();
       var weekMatch = safeWeekKey.match(/^(\d{4}-\d{2})_week_(\d+)$/);
       if (!weekMatch) return;
@@ -31384,6 +31523,7 @@
     }
 
     function copyDeskPreviousDaySchedule_(targetDateKey) {
+      if (!requireDeskScheduleWrite_()) return;
       var safeTargetDateKey = String(targetDateKey || "").trim();
       if (!safeTargetDateKey) return;
       copyDeskDateSchedule_(
@@ -31396,6 +31536,7 @@
     }
 
     function copyDeskPreviousWeekSchedule_(targetDateKey) {
+      if (!requireDeskScheduleWrite_()) return;
       var safeTargetDateKey = String(targetDateKey || "").trim();
       if (!safeTargetDateKey) return;
       copyDeskDateSchedule_(
@@ -31408,6 +31549,7 @@
     }
 
     function copyDeskShiftToNextDate_(shiftId) {
+      if (!requireDeskScheduleWrite_()) return;
       var sourceItem = state.desk.scheduleItems.find(function(item) {
         return item.id === shiftId;
       });
@@ -31479,6 +31621,8 @@
       ensureDeskMemoTemplatesLoaded_();
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       state.desk.daily.dateKey = dateKey;
+      ensureDeskAttendanceMonthLoaded_(dateKey.slice(0, 7));
+      renderDeskAttendanceToday_();
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
       ensureDeskDailyScheduleMonthLoaded_(dateKey);
       if (state.desk.daily.loadErrors[dateKey]) {
@@ -31519,6 +31663,128 @@
       renderDeskDailyPendingList_(visibleTasks);
       renderDeskDailyReportPanel_(visibleTasks, memos, workers);
       renderDeskLiveFeed_();
+    }
+
+    function ensureDeskAttendanceMonthLoaded_(monthKey, force) {
+      var key = String(monthKey || "").trim();
+      if (!key || shouldDeferPortalDataLoad_()) return Promise.resolve();
+      if (!force && state.desk.attendance.loadedMonths[key]) return Promise.resolve();
+      if (state.desk.attendance.loadingMonths[key]) return state.desk.attendance.loadingMonths[key];
+      var request = runServer("getDeskAttendanceMonthData", { monthKey: key }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message || "근태 현황을 불러오지 못했습니다.");
+        state.desk.attendance.records = (res.records || []).slice();
+        state.desk.attendance.requests = (res.requests || []).slice();
+        state.desk.attendance.audits = (res.audits || []).slice();
+        state.desk.attendance.summary = (res.summary || []).slice();
+        state.desk.attendance.loadedMonths[key] = true;
+        renderDeskAttendanceToday_();
+        if (state.desk.view === "attendance") renderDeskAttendanceAdmin_();
+      }).catch(function(err) {
+        if (deskAttendanceTodayMetaEl) deskAttendanceTodayMetaEl.textContent = err && err.message ? err.message : "근태 서버 연결 오류";
+      }).finally(function() { delete state.desk.attendance.loadingMonths[key]; });
+      state.desk.attendance.loadingMonths[key] = request;
+      return request;
+    }
+
+    function formatDeskAttendanceTime_(value) {
+      if (!value) return "미기록";
+      var date = new Date(value);
+      if (isNaN(date.getTime())) return String(value);
+      return new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
+    }
+
+    function getDeskOwnAttendanceRecord_(dateKey) {
+      var uid = String(state.cloudIdentity && state.cloudIdentity.uid || "");
+      return (state.desk.attendance.records || []).find(function(item) { return item.uid === uid && item.dateKey === dateKey; }) || null;
+    }
+
+    function renderDeskAttendanceToday_() {
+      if (!deskAttendanceTodayTitleEl) return;
+      var day = state.desk.daily.dateKey || getDeskSeoulDateKey_();
+      var record = getDeskOwnAttendanceRecord_(day);
+      var pending = (state.desk.attendance.requests || []).find(function(item) { return item.dateKey === day && item.status === "PENDING"; });
+      deskAttendanceTodayTitleEl.textContent = record ? ("출근 " + formatDeskAttendanceTime_(record.clockIn) + " · 퇴근 " + formatDeskAttendanceTime_(record.clockOut)) : "아직 출퇴근 기록이 없습니다.";
+      deskAttendanceTodayMetaEl.textContent = pending ? "정정 요청 검토 중 · " + pending.reason : (record && record.corrected ? "관리자 승인 정정 기록" : "로그인 계정 기준으로 서울 시간에 기록됩니다.");
+      var isToday = day === getDeskSeoulDateKey_();
+      if (deskClockInBtnEl) deskClockInBtnEl.disabled = !isToday || !!(record && record.clockIn);
+      if (deskClockOutBtnEl) deskClockOutBtnEl.disabled = !isToday || !record || !record.clockIn || !!record.clockOut;
+    }
+
+    function saveDeskAttendancePunch_(type) {
+      var day = state.desk.daily.dateKey || getDeskSeoulDateKey_();
+      var button = type === "clockIn" ? deskClockInBtnEl : deskClockOutBtnEl;
+      if (button) button.disabled = true;
+      runServer("saveDeskAttendancePunch", { dateKey: day, type: type }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message || "출퇴근 기록에 실패했습니다.");
+        delete state.desk.attendance.loadedMonths[day.slice(0, 7)];
+        showClientMessage(type === "clockIn" ? "출근 시간을 기록했습니다." : "퇴근 시간을 기록했습니다.");
+        return ensureDeskAttendanceMonthLoaded_(day.slice(0, 7), true);
+      }).catch(function(err) { showClientMessage(err && err.message ? err.message : "출퇴근 기록 오류"); }).finally(renderDeskAttendanceToday_);
+    }
+
+    function openDeskAttendanceCorrection_() {
+      var day = state.desk.daily.dateKey || getDeskSeoulDateKey_();
+      var record = getDeskOwnAttendanceRecord_(day);
+      if (deskAttendanceCorrectionDateEl) deskAttendanceCorrectionDateEl.value = day;
+      if (deskAttendanceCorrectionClockInEl) deskAttendanceCorrectionClockInEl.value = record && record.clockIn ? formatDeskAttendanceTime_(record.clockIn) : "";
+      if (deskAttendanceCorrectionClockOutEl) deskAttendanceCorrectionClockOutEl.value = record && record.clockOut ? formatDeskAttendanceTime_(record.clockOut) : "";
+      if (deskAttendanceCorrectionReasonEl) deskAttendanceCorrectionReasonEl.value = "";
+      if (deskAttendanceCorrectionStatusEl) deskAttendanceCorrectionStatusEl.textContent = "";
+      if (deskAttendanceCorrectionModalEl) deskAttendanceCorrectionModalEl.style.display = "flex";
+    }
+
+    function closeDeskAttendanceCorrection_() {
+      if (deskAttendanceCorrectionModalEl) deskAttendanceCorrectionModalEl.style.display = "none";
+    }
+
+    function submitDeskAttendanceCorrection_() {
+      var payload = {
+        dateKey: deskAttendanceCorrectionDateEl && deskAttendanceCorrectionDateEl.value,
+        requestedClockIn: deskAttendanceCorrectionClockInEl && deskAttendanceCorrectionClockInEl.value,
+        requestedClockOut: deskAttendanceCorrectionClockOutEl && deskAttendanceCorrectionClockOutEl.value,
+        reason: deskAttendanceCorrectionReasonEl && deskAttendanceCorrectionReasonEl.value
+      };
+      if (deskAttendanceCorrectionStatusEl) deskAttendanceCorrectionStatusEl.textContent = "요청을 저장하는 중입니다.";
+      runServer("saveDeskAttendanceCorrectionRequest", payload).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message || "정정 요청을 저장하지 못했습니다.");
+        closeDeskAttendanceCorrection_();
+        delete state.desk.attendance.loadedMonths[payload.dateKey.slice(0, 7)];
+        showClientMessage("출퇴근 정정 요청을 접수했습니다.");
+        return ensureDeskAttendanceMonthLoaded_(payload.dateKey.slice(0, 7), true);
+      }).catch(function(err) { if (deskAttendanceCorrectionStatusEl) deskAttendanceCorrectionStatusEl.textContent = err && err.message ? err.message : "정정 요청 오류"; });
+    }
+
+    function renderDeskAttendanceAdmin_() {
+      if (!isDeskAdminAccount_() || !deskAttendanceAdminSummaryEl) return;
+      var summary = state.desk.attendance.summary || [];
+      var records = state.desk.attendance.records || [];
+      var requests = state.desk.attendance.requests || [];
+      var pendingCount = requests.filter(function(item) { return item.status === "PENDING"; }).length;
+      var lateCount = summary.reduce(function(total, item) { return total + Number(item.lateDays || 0); }, 0);
+      var correctedCount = summary.reduce(function(total, item) { return total + Number(item.correctedDays || 0); }, 0);
+      deskAttendanceAdminSummaryEl.innerHTML = [
+        ["근태 기록", records.length + "건"], ["정정 대기", pendingCount + "건"], ["지각", lateCount + "건"], ["승인 정정", correctedCount + "건"]
+      ].map(function(item) { return '<article><span>' + item[0] + '</span><strong>' + item[1] + '</strong></article>'; }).join("");
+      if (deskAttendanceSummaryBodyEl) deskAttendanceSummaryBodyEl.innerHTML = summary.length ? summary.map(function(item) {
+        return '<tr><td><strong>' + escapeHtml(item.name || "-") + '</strong></td><td>' + item.days + '일</td><td>' + item.completedDays + '일</td><td>' + item.lateDays + '회</td><td>' + item.earlyLeaveDays + '회</td><td>' + item.correctedDays + '회</td><td>' + formatDeskHours_(Number(item.workedMinutes || 0) / 60) + '</td></tr>';
+      }).join("") : '<tr><td colspan="7">이 달의 출퇴근 기록이 없습니다.</td></tr>';
+      if (deskAttendanceRequestBodyEl) deskAttendanceRequestBodyEl.innerHTML = requests.length ? requests.map(function(item) {
+        var statusLabel = item.status === "APPROVED" ? "승인" : item.status === "REJECTED" ? "반려" : "검토 대기";
+        var controls = item.status === "PENDING" ? '<div class="desk-attendance-decision"><button class="desk-attendance-btn primary" type="button" data-attendance-decision="APPROVED" data-request-id="' + escapeHtml(item.id) + '">승인</button><button class="desk-attendance-btn" type="button" data-attendance-decision="REJECTED" data-request-id="' + escapeHtml(item.id) + '">반려</button></div>' : escapeHtml(item.decidedByName || "처리 완료");
+        return '<tr><td>' + escapeHtml(item.dateKey) + '</td><td><strong>' + escapeHtml(item.name) + '</strong></td><td>' + escapeHtml(item.requestedClockIn || "-") + ' → ' + escapeHtml(item.requestedClockOut || "-") + '</td><td>' + escapeHtml(item.reason) + '</td><td><span class="desk-attendance-state ' + item.status.toLowerCase() + '">' + statusLabel + '</span></td><td>' + controls + '</td></tr>';
+      }).join("") : '<tr><td colspan="6">접수된 정정 요청이 없습니다.</td></tr>';
+      if (deskAttendanceAuditBodyEl) deskAttendanceAuditBodyEl.innerHTML = (state.desk.attendance.audits || []).slice(0, 30).map(function(item) {
+        return '<tr><td>' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</td><td>' + escapeHtml(item.name || "-") + '</td><td>' + escapeHtml(item.action || "-") + '</td><td>' + escapeHtml(item.actorName || "-") + '</td><td>' + escapeHtml(item.reason || "-") + '</td></tr>';
+      }).join("") || '<tr><td colspan="5">근태 변경 이력이 없습니다.</td></tr>';
+    }
+
+    function decideDeskAttendanceCorrection_(requestId, decision) {
+      runServer("saveDeskAttendanceCorrectionDecision", { monthKey: state.desk.currentMonth, requestId: requestId, decision: decision }).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message || "정정 요청을 처리하지 못했습니다.");
+        delete state.desk.attendance.loadedMonths[state.desk.currentMonth];
+        showClientMessage(decision === "APPROVED" ? "정정 요청을 승인했습니다." : "정정 요청을 반려했습니다.");
+        return ensureDeskAttendanceMonthLoaded_(state.desk.currentMonth, true);
+      }).catch(function(err) { showClientMessage(err && err.message ? err.message : "정정 처리 오류"); });
     }
 
     function ensureDeskDailyScheduleMonthLoaded_(dateKey) {
@@ -31635,7 +31901,7 @@
       });
       Array.prototype.push.apply(nextMemos, mergeDeskDailyPendingMemosIntoList_(dateKey, filterDeskDailyDeletedMemos_((memos || []).map(normalizeDeskDailyMemo_), dateKey)));
       state.desk.daily.memos = nextMemos.sort(compareDeskDailyMemo_);
-      if (dateKey === getDeskSeoulDateKey_()) refreshDeskGlobalNotice_();
+      refreshDeskGlobalNotice_();
     }
 
     function mergeDeskDailyCarryoverTasks_(dateKey, currentTasks, workers) {
@@ -31698,6 +31964,7 @@
       state.desk.daily.carryoverTasks = (items || []).sort(compareDeskDailyTask_);
       state.desk.daily.carryoverDateKey = safeDateKey;
       state.desk.daily.carryoverWorkerKey = workerKey;
+      refreshDeskGlobalNotice_();
       if (state.desk.activeTab === "dailyJournal" && state.desk.daily.dateKey === safeDateKey) {
         renderDeskDailyJournal_();
       }
@@ -34948,6 +35215,10 @@
           var nextModule = btn.dataset.module || "tuition";
           if (nextModule === state.activeModule) return;
           if (nextModule === "teacher") {
+            if (!canManageTeacherPayroll_()) {
+              showClientMessage("강사 시수 정산 권한이 없습니다.");
+              return;
+            }
             requestPrivilegedAccess_("강사 시수 정산", function() {
               state.activeModule = "teacher";
               renderModuleLayout();
@@ -34967,6 +35238,19 @@
           state.desk.activeTab = nextTab;
           renderDeskLayout_();
         });
+      });
+
+      if (deskClockInBtnEl) deskClockInBtnEl.addEventListener("click", function() { saveDeskAttendancePunch_("clockIn"); });
+      if (deskClockOutBtnEl) deskClockOutBtnEl.addEventListener("click", function() { saveDeskAttendancePunch_("clockOut"); });
+      if (openDeskAttendanceCorrectionBtnEl) openDeskAttendanceCorrectionBtnEl.addEventListener("click", openDeskAttendanceCorrection_);
+      if (closeDeskAttendanceCorrectionBtnEl) closeDeskAttendanceCorrectionBtnEl.addEventListener("click", closeDeskAttendanceCorrection_);
+      if (cancelDeskAttendanceCorrectionBtnEl) cancelDeskAttendanceCorrectionBtnEl.addEventListener("click", closeDeskAttendanceCorrection_);
+      if (deskAttendanceCorrectionFormEl) deskAttendanceCorrectionFormEl.addEventListener("submit", function(event) { event.preventDefault(); submitDeskAttendanceCorrection_(); });
+      if (deskAttendanceCorrectionModalEl) deskAttendanceCorrectionModalEl.addEventListener("click", function(event) { if (event.target === deskAttendanceCorrectionModalEl) closeDeskAttendanceCorrection_(); });
+      if (deskAttendanceRequestBodyEl) deskAttendanceRequestBodyEl.addEventListener("click", function(event) {
+        var button = event.target.closest("[data-attendance-decision]");
+        if (!button) return;
+        decideDeskAttendanceCorrection_(button.getAttribute("data-request-id"), button.getAttribute("data-attendance-decision"));
       });
 
       if (deskResponseSituationInputEl) {
@@ -35783,9 +36067,11 @@
       Array.prototype.forEach.call(deskViewTabEls, function(btn) {
         btn.addEventListener("click", function() {
           var nextView = btn.getAttribute("data-desk-view") || "calendar";
+          if ((nextView === "editor" || nextView === "fixedSchedule") && !requireDeskScheduleWrite_()) return;
+          if (nextView === "attendance" && !isDeskAdminAccount_()) return;
           if (nextView === state.desk.view) return;
           state.desk.view = nextView;
-          renderDeskViewState_();
+          renderDeskMonthlySchedule_();
         });
       });
 

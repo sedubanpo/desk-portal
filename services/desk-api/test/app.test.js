@@ -183,6 +183,32 @@ test('desk route authenticates, dispatches reads, and carries write idempotency 
   assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'saveDeskSupplyPurchaseState', key: 'write-1' });
 });
 
+test('schedule writes require admin or explicit schedule permission', async () => {
+  const handler = async () => ({ success: true });
+  const denied = testApp({
+    loadAccount: async () => ({ account: { role: 'STAFF', status: 'ACTIVE', name: '조회 계정' }, access: { apps: { deskPortal: true }, permissions: {} } }),
+    deskHandlers: { saveDeskScheduleEntry: handler }
+  });
+  const deniedResponse = await request(denied).post('/v1/desk/saveDeskScheduleEntry')
+    .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'schedule-denied')
+    .send({ payload: {} }).expect(403);
+  assert.equal(deniedResponse.body.error.code, 'schedule_access_required');
+
+  const allowed = testApp({ deskHandlers: { saveDeskScheduleEntry: handler } });
+  const allowedResponse = await request(allowed).post('/v1/desk/saveDeskScheduleEntry')
+    .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'schedule-allowed')
+    .send({ payload: {} }).expect(200);
+  assert.equal(allowedResponse.body.success, true);
+});
+
+test('only administrators can decide attendance correction requests', async () => {
+  const staff = testApp({ deskHandlers: { saveDeskAttendanceCorrectionDecision: async () => ({ success: true }) } });
+  const response = await request(staff).post('/v1/desk/saveDeskAttendanceCorrectionDecision')
+    .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'attendance-decision')
+    .send({ payload: {} }).expect(403);
+  assert.equal(response.body.error.code, 'attendance_admin_required');
+});
+
 test('unmigrated maintenance methods are rejected before dispatch', async () => {
   const response = await request(testApp())
     .post('/v1/desk/backfillTuitionMonthSnapshots')
