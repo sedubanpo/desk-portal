@@ -13,6 +13,7 @@ import {
   recruitingApplicant,
   RETIRED_WORKERS,
   scheduleEntry,
+  SUPPLY_BRANCHES,
   suppliesData,
   supplyAsset,
   supplyConsumable,
@@ -291,15 +292,18 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async adjustDeskSupplyConsumable(payload = {}) {
       const id = String(payload.id || '').trim();
+      const branch = String(payload.branch || '').trim();
       const delta = Number(payload.delta || 0);
       if (!id) return failure('품목 ID가 없습니다.');
+      if (!SUPPLY_BRANCHES.includes(branch)) return failure('조정할 관 정보가 올바르지 않습니다.');
       if (!delta) return failure('조정 수량이 없습니다.');
       let missing = false;
       const stored = await store.transaction(PATHS.supplies, current => {
         const data = suppliesData(current);
         const target = data.consumables.find(item => item.id === id);
-        if (!target) { missing = true; return; }
-        target.qty = Math.max(0, Math.min(target.maxQty, Number(target.qty || 0) + delta));
+        const stock = target?.branchStocks?.[branch];
+        if (!target || !stock) { missing = true; return; }
+        stock.qty = Math.max(0, Math.min(stock.maxQty, Number(stock.qty || 0) + delta));
         data.purchaseSelections = supplySelections(data.purchaseSelections, data.consumables);
         return data;
       });
@@ -318,7 +322,12 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     async deleteDeskSupplyConsumable(payload = {}) {
       const id = String(payload.id || '').trim();
       if (!id) return failure('삭제할 품목 ID가 없습니다.');
-      const stored = await mutateSupplies(store, data => { data.consumables = data.consumables.filter(item => item.id !== id); delete data.purchaseSelections[id]; });
+      const stored = await mutateSupplies(store, data => {
+        data.consumables = data.consumables.filter(item => item.id !== id);
+        Object.keys(data.purchaseSelections || {}).forEach(key => {
+          if (key === id || key.startsWith(`${id}:`)) delete data.purchaseSelections[key];
+        });
+      });
       return { success: true, data: stored, id };
     },
 

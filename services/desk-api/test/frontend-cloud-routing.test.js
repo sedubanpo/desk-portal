@@ -74,12 +74,17 @@ test('production frontend has no Apps Script or direct RTDB transport fallback',
   assert.doesNotMatch(source, /verifyDeskLegacyPassword_/);
 });
 
-test('supply management keeps every academy branch visible without inventory rows', async () => {
+test('supply management uses one linked inventory row with independent branch stock controls', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
-  assert.match(source, /var branches = \["전체", "본관", "2관", "3관"\]/);
-  assert.match(source, /var seen = \{ "전체": true, "본관": true, "2관": true, "3관": true \}/);
-  assert.match(source, /\(state\.desk\.supplies\.consumables \|\| \[\]\)\.forEach/);
+  assert.match(source, /class="desk-supply-table desk-supply-matrix-table"/);
+  assert.match(source, /<th scope="col">본관<\/th>[\s\S]*?<th scope="col">2관<\/th>[\s\S]*?<th scope="col">3관<\/th>/);
+  assert.match(source, /data-desk-consumable-stock="본관"/);
+  assert.match(source, /data-desk-consumable-stock="2관"/);
+  assert.match(source, /data-desk-consumable-stock="3관"/);
+  assert.match(source, /function renderDeskSupplyBranchStockCell_/);
+  assert.match(source, /data-desk-supply-branch=/);
+  assert.match(source, /branchStocks/);
 });
 
 test('unfinished assignments remain visible when the assignee is not scheduled today', async () => {

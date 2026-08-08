@@ -140,13 +140,33 @@ export function isSharedTask(task) {
   return String(task?.category || '').trim().startsWith('__shared__::') || workerKey(task?.worker) === workerKey('공동업무');
 }
 
+export const SUPPLY_BRANCHES = ['본관', '2관', '3관'];
+
 const DEFAULT_CONSUMABLES = [
-  { id: 'wet_tissue', itemName: '물티슈', productName: '데스크용 물티슈 100매', branch: '본관', qty: 6, maxQty: 10, safetyQty: 4, unit: '개', tags: ['#청소', '#데스크'] },
-  { id: 'box_tissue', itemName: '곽티슈', productName: '클리넥스 200매', branch: '본관', qty: 12, maxQty: 20, safetyQty: 8, unit: '개', tags: ['#상담', '#데스크'] },
-  { id: 'paper_cup', itemName: '종이컵', productName: '테이크아웃컵 1줄', branch: '2관', qty: 5, maxQty: 8, safetyQty: 3, unit: '줄', tags: ['#탕비', '#공용'] },
-  { id: 'trash_bag', itemName: '쓰레기봉투', productName: '20L 검정봉투', branch: '3관', qty: 3, maxQty: 6, safetyQty: 2, unit: '묶음', tags: ['#청소', '#분리수거'] },
-  { id: 'sanitizer', itemName: '손소독제', productName: '대용량 리필 500ml', branch: '본관', qty: 2, maxQty: 5, safetyQty: 2, unit: '병', tags: ['#위생', '#데스크'] },
-  { id: 'marker', itemName: '보드마카', productName: '화이트보드 마카 세트', branch: '2관', qty: 4, maxQty: 8, safetyQty: 3, unit: '세트', tags: ['#강의실', '#교구'] }
+  {
+    id: 'wet_tissue', itemName: '물티슈', productName: '데스크용 물티슈 100매', unit: '개', tags: ['#청소', '#데스크'],
+    branchStocks: { '본관': { qty: 6, maxQty: 10, safetyQty: 4 }, '2관': { qty: 4, maxQty: 10, safetyQty: 4 }, '3관': { qty: 3, maxQty: 10, safetyQty: 4 } }
+  },
+  {
+    id: 'box_tissue', itemName: '곽티슈', productName: '클리넥스 200매', unit: '개', tags: ['#상담', '#데스크'],
+    branchStocks: { '본관': { qty: 12, maxQty: 20, safetyQty: 8 }, '2관': { qty: 8, maxQty: 20, safetyQty: 8 }, '3관': { qty: 6, maxQty: 20, safetyQty: 8 } }
+  },
+  {
+    id: 'paper_cup', itemName: '종이컵', productName: '테이크아웃컵 1줄', unit: '줄', tags: ['#탕비', '#공용'],
+    branchStocks: { '본관': { qty: 7, maxQty: 8, safetyQty: 3 }, '2관': { qty: 5, maxQty: 8, safetyQty: 3 }, '3관': { qty: 4, maxQty: 8, safetyQty: 3 } }
+  },
+  {
+    id: 'trash_bag', itemName: '쓰레기봉투', productName: '20L 검정봉투', unit: '묶음', tags: ['#청소', '#분리수거'],
+    branchStocks: { '본관': { qty: 4, maxQty: 6, safetyQty: 2 }, '2관': { qty: 3, maxQty: 6, safetyQty: 2 }, '3관': { qty: 3, maxQty: 6, safetyQty: 2 } }
+  },
+  {
+    id: 'sanitizer', itemName: '손소독제', productName: '대용량 리필 500ml', unit: '병', tags: ['#위생', '#데스크'],
+    branchStocks: { '본관': { qty: 2, maxQty: 5, safetyQty: 2 }, '2관': { qty: 3, maxQty: 5, safetyQty: 2 }, '3관': { qty: 1, maxQty: 5, safetyQty: 2 } }
+  },
+  {
+    id: 'marker', itemName: '보드마카', productName: '화이트보드 마카 세트', unit: '세트', tags: ['#강의실', '#교구'],
+    branchStocks: { '본관': { qty: 5, maxQty: 8, safetyQty: 3 }, '2관': { qty: 4, maxQty: 8, safetyQty: 3 }, '3관': { qty: 2, maxQty: 8, safetyQty: 3 } }
+  }
 ];
 const DEFAULT_ASSETS = [
   { id: 'asset_desktop_1', type: '데스크탑', branch: '본관', productName: 'DELL OptiPlex 데스크 PC', location: '반포관 데스크', manager: '데스크 공용', status: '정상', note: '학생 등록 및 결제 업무용' },
@@ -154,18 +174,37 @@ const DEFAULT_ASSETS = [
   { id: 'asset_printer_1', type: '프린터', branch: '3관', productName: 'HP LaserJet Pro', location: '데스크 뒤편', manager: '데스크 공용', status: '점검 필요', note: '토너 잔량 확인 필요' }
 ];
 
-export function supplyConsumable(item = {}, fallbackId = '') {
-  const maxQty = Math.max(1, Number(item.maxQty || 1));
+export function supplyStock(item = {}, fallback = {}) {
+  const source = item && typeof item === 'object' ? item : {};
+  const base = fallback && typeof fallback === 'object' ? fallback : {};
+  const fallbackMax = Math.max(1, supplyNumber(base.maxQty, 1));
+  const maxQty = Math.max(1, supplyNumber(source.maxQty, fallbackMax));
   return {
-    id: String(item.id || fallbackId || `desk_supply_${newId().slice(0, 8)}`).trim(),
-    itemName: String(item.itemName || '품목명').trim(),
-    productName: String(item.productName || '제품명 미입력').trim(),
-    branch: String(item.branch || '본관').trim() || '본관',
-    qty: Math.max(0, Math.min(maxQty, Number(item.qty || 0))),
+    qty: clampNumber(supplyNumber(source.qty, supplyNumber(base.qty, 0)), 0, maxQty),
     maxQty,
-    safetyQty: Math.max(0, Math.min(maxQty, Number(item.safetyQty || 0))),
-    unit: String(item.unit || '개').trim(),
-    tags: normalizeSupplyTags(item.tags)
+    safetyQty: clampNumber(supplyNumber(source.safetyQty, supplyNumber(base.safetyQty, 0)), 0, maxQty)
+  };
+}
+
+export function supplyConsumable(item = {}, fallbackId = '') {
+  const source = item && typeof item === 'object' ? item : {};
+  const branchStocks = source.branchStocks && typeof source.branchStocks === 'object'
+    ? source.branchStocks
+    : (source.stocks && typeof source.stocks === 'object' ? source.stocks : {});
+  const sourceBranch = normalizeSupplyBranch(source.branch);
+  const firstStock = Object.values(branchStocks).find(stock => stock && typeof stock === 'object') || source;
+  const templateStock = supplyStock(firstStock);
+  const missingStock = { qty: 0, maxQty: templateStock.maxQty, safetyQty: templateStock.safetyQty };
+  return {
+    id: String(source.id || fallbackId || `desk_supply_${newId().slice(0, 8)}`).trim(),
+    itemName: String(source.itemName || '품목명').trim(),
+    productName: String(source.productName || '제품명 미입력').trim(),
+    unit: String(source.unit || '개').trim(),
+    tags: normalizeSupplyTags(source.tags),
+    branchStocks: Object.fromEntries(SUPPLY_BRANCHES.map(branch => {
+      const explicitStock = branchStocks[branch] || (!Object.keys(branchStocks).length && branch === sourceBranch ? source : missingStock);
+      return [branch, supplyStock(explicitStock, missingStock)];
+    }))
   };
 }
 
@@ -191,12 +230,13 @@ export function suppliesData(stored) {
   const data = stored && typeof stored === 'object' ? stored : {};
   const consumablesSource = Array.isArray(data.consumables) && data.consumables.length ? data.consumables : DEFAULT_CONSUMABLES;
   const assetsSource = Array.isArray(data.assets) && data.assets.length ? data.assets : DEFAULT_ASSETS;
-  const consumables = consumablesSource.map((item, index) => supplyConsumable(item, item?.id || `desk_supply_${index}`));
+  const consumables = normalizeSupplyConsumables(consumablesSource);
+  const purchaseSelections = migrateSupplySelectionSource(data.purchaseSelections, consumablesSource, consumables);
   const assets = assetsSource.map((item, index) => supplyAsset(item, item?.id || `desk_asset_${index}`));
   return {
     consumables,
     assets,
-    purchaseSelections: supplySelections(data.purchaseSelections, consumables),
+    purchaseSelections: supplySelections(purchaseSelections, consumables),
     purchaseCustomRequests: Array.isArray(data.purchaseCustomRequests) ? structuredClone(data.purchaseCustomRequests) : [],
     purchaseRequestTarget: String(data.purchaseRequestTarget || '대표님').trim() || '대표님',
     purchaseRequestNote: String(data.purchaseRequestNote || '').trim()
@@ -205,14 +245,123 @@ export function suppliesData(stored) {
 
 export function supplySelections(input, consumables) {
   const source = input && typeof input === 'object' ? input : {};
-  return Object.fromEntries(consumables.map(item => {
-    const current = source[item.id] && typeof source[item.id] === 'object' ? source[item.id] : {};
-    const recommended = Math.max(1, Number(item.maxQty || 1) - Number(item.qty || 0));
-    return [item.id, {
-      selected: typeof current.selected === 'boolean' ? current.selected : Number(item.qty || 0) <= Number(item.safetyQty || 0),
-      requestQty: Math.max(1, Number(current.requestQty || recommended))
+  return Object.fromEntries(consumables.flatMap(item => SUPPLY_BRANCHES.map(branch => {
+    const stock = supplyStock(item?.branchStocks?.[branch]);
+    const key = supplyStockKey(item.id, branch);
+    const current = source[key] && typeof source[key] === 'object'
+      ? source[key]
+      : (source[item.id] && typeof source[item.id] === 'object' ? source[item.id] : {});
+    const recommended = Math.max(1, stock.maxQty - stock.qty);
+    return [key, {
+      selected: typeof current.selected === 'boolean' ? current.selected : stock.qty <= stock.safetyQty,
+      requestQty: Math.max(1, supplyNumber(current.requestQty, recommended))
     }];
-  }));
+  })));
+}
+
+export function supplyStockKey(id, branch) {
+  return `${String(id || '').trim()}:${normalizeSupplyBranch(branch)}`;
+}
+
+function migrateSupplySelectionSource(input, rawConsumables, consumables) {
+  const source = input && typeof input === 'object' ? input : {};
+  const migrated = { ...source };
+  const canonicalIds = new Map(consumables.map(item => [supplyConsumableIdentity(item), item.id]));
+  (rawConsumables || []).forEach((rawItem, index) => {
+    const raw = rawItem && typeof rawItem === 'object' ? rawItem : {};
+    const rawStocks = raw.branchStocks && typeof raw.branchStocks === 'object'
+      ? raw.branchStocks
+      : (raw.stocks && typeof raw.stocks === 'object' ? raw.stocks : null);
+    if (rawStocks && Object.keys(rawStocks).length) return;
+
+    const legacyId = String(raw.id || `desk_supply_${index}`).trim();
+    const legacySelection = source[legacyId];
+    if (!legacyId || !legacySelection || typeof legacySelection !== 'object') return;
+
+    const normalized = supplyConsumable(raw, legacyId);
+    const canonicalId = canonicalIds.get(supplyConsumableIdentity(normalized));
+    const branchKey = supplyStockKey(canonicalId, normalizeSupplyBranch(raw.branch));
+    if (canonicalId && !migrated[branchKey]) migrated[branchKey] = legacySelection;
+    if (canonicalId) delete migrated[legacyId];
+  });
+  return migrated;
+}
+
+function normalizeSupplyConsumables(items) {
+  const groups = new Map();
+  (items || []).forEach((rawItem, index) => {
+    const item = supplyConsumable(rawItem, rawItem?.id || `desk_supply_${index}`);
+    const key = supplyConsumableIdentity(item);
+    const explicitStocks = sourceSupplyStocks(rawItem);
+    const group = groups.get(key) || {
+      id: item.id,
+      itemName: item.itemName,
+      productName: item.productName,
+      unit: item.unit,
+      tags: [],
+      branchStocks: {}
+    };
+    group.tags = normalizeSupplyTags([...group.tags, ...item.tags]);
+    SUPPLY_BRANCHES.forEach(branch => {
+      if (!explicitStocks[branch]) return;
+      group.branchStocks[branch] = group.branchStocks[branch]
+        ? mergeSupplyStocks(group.branchStocks[branch], explicitStocks[branch])
+        : explicitStocks[branch];
+    });
+    groups.set(key, group);
+  });
+  return [...groups.values()].map((item, index) => {
+    const template = Object.values(item.branchStocks)[0] || supplyStock();
+    const branchStocks = Object.fromEntries(SUPPLY_BRANCHES.map(branch => [
+      branch,
+      item.branchStocks[branch] || { qty: 0, maxQty: template.maxQty, safetyQty: template.safetyQty }
+    ]));
+    return supplyConsumable({ ...item, branchStocks }, item.id || `desk_supply_${index}`);
+  });
+}
+
+function sourceSupplyStocks(item) {
+  const source = item && typeof item === 'object' ? item : {};
+  const branchStocks = source.branchStocks && typeof source.branchStocks === 'object'
+    ? source.branchStocks
+    : (source.stocks && typeof source.stocks === 'object' ? source.stocks : null);
+  if (branchStocks) {
+    return Object.fromEntries(SUPPLY_BRANCHES
+      .filter(branch => branchStocks[branch] && typeof branchStocks[branch] === 'object')
+      .map(branch => [branch, supplyStock(branchStocks[branch])]));
+  }
+  return { [normalizeSupplyBranch(source.branch)]: supplyStock(source) };
+}
+
+function mergeSupplyStocks(left, right) {
+  const a = supplyStock(left);
+  const b = supplyStock(right);
+  const maxQty = Math.max(a.maxQty, b.maxQty);
+  return supplyStock({
+    qty: Math.max(a.qty, b.qty),
+    maxQty,
+    safetyQty: Math.max(a.safetyQty, b.safetyQty)
+  });
+}
+
+function supplyConsumableIdentity(item) {
+  return [item.itemName, item.productName, item.unit]
+    .map(value => String(value || '').replace(/\s+/g, '').toLocaleLowerCase('ko'))
+    .join('\u0001');
+}
+
+function normalizeSupplyBranch(value) {
+  const branch = String(value || '').trim();
+  return SUPPLY_BRANCHES.includes(branch) ? branch : SUPPLY_BRANCHES[0];
+}
+
+function supplyNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 export function recruitingApplicant(item = {}, fallbackId = '', now = new Date().toISOString()) {

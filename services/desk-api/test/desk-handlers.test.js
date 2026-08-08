@@ -138,27 +138,67 @@ test('task ledger includes completed and soft-deleted assignment history', async
   assert.equal(store.dump().desk_portal.daily_pending_tasks?.pending, undefined);
 });
 
-test('supply quantity adjustment uses a transaction and clamps to stock bounds', async () => {
-  const store = memoryStore({ desk_portal: { supplies: { consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', qty: 1, maxQty: 3, safetyQty: 1, unit: '권' }], assets: [] } } });
+test('legacy branch inventory becomes one shared item with preserved branch quantities and selections', async () => {
+  const store = memoryStore({ desk_portal: { supplies: {
+    consumables: [
+      { id: 'paper-main', itemName: '종이', productName: 'A4', branch: '본관', qty: 1, maxQty: 3, safetyQty: 1, unit: '권' },
+      { id: 'paper-annex', itemName: '종이', productName: 'A4', branch: '2관', qty: 2, maxQty: 3, safetyQty: 1, unit: '권' }
+    ],
+    purchaseSelections: {
+      'paper-main': { selected: false, requestQty: 1 },
+      'paper-annex': { selected: true, requestQty: 2 }
+    },
+    assets: []
+  } } });
+  const result = await createDeskHandlers({ store }).getDeskSuppliesData();
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.consumables.length, 1);
+  const paper = result.data.consumables[0];
+  assert.equal(paper.id, 'paper-main');
+  assert.equal(paper.branchStocks['본관'].qty, 1);
+  assert.equal(paper.branchStocks['2관'].qty, 2);
+  assert.equal(paper.branchStocks['3관'].qty, 0);
+  assert.deepEqual(result.data.purchaseSelections['paper-main:본관'], { selected: false, requestQty: 1 });
+  assert.deepEqual(result.data.purchaseSelections['paper-main:2관'], { selected: true, requestQty: 2 });
+});
+
+test('supply quantity adjustment uses a transaction and changes only the selected branch', async () => {
+  const store = memoryStore({ desk_portal: { supplies: { consumables: [{
+    id: 'paper', itemName: '종이', productName: 'A4', unit: '권',
+    branchStocks: {
+      '본관': { qty: 1, maxQty: 3, safetyQty: 1 },
+      '2관': { qty: 1, maxQty: 3, safetyQty: 1 },
+      '3관': { qty: 0, maxQty: 3, safetyQty: 1 }
+    }
+  }], assets: [] } } });
   let transactions = 0;
   const original = store.transaction;
   store.transaction = async (...args) => { transactions += 1; return original(...args); };
   const handlers = createDeskHandlers({ store });
-  const result = await handlers.adjustDeskSupplyConsumable({ id: 'paper', delta: 9 });
+  const result = await handlers.adjustDeskSupplyConsumable({ id: 'paper', branch: '2관', delta: 9 });
   assert.equal(result.success, true);
-  assert.equal(result.data.consumables[0].qty, 3);
+  assert.equal(result.data.consumables[0].branchStocks['본관'].qty, 1);
+  assert.equal(result.data.consumables[0].branchStocks['2관'].qty, 3);
+  assert.equal(result.data.consumables[0].branchStocks['3관'].qty, 0);
   assert.equal(transactions, 1);
 });
 
 test('full supply snapshot preserves custom purchase requests', async () => {
   const store = memoryStore();
   const result = await createDeskHandlers({ store }).saveDeskSuppliesSnapshot({ data: {
-    consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', branch: '2관', qty: 1, maxQty: 3, safetyQty: 1, unit: '권', tags: ['문구', '#복사용지'] }],
+    consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', unit: '권', tags: ['문구', '#복사용지'], branchStocks: {
+      '본관': { qty: 2, maxQty: 3, safetyQty: 1 },
+      '2관': { qty: 1, maxQty: 3, safetyQty: 1 },
+      '3관': { qty: 0, maxQty: 3, safetyQty: 1 }
+    } }],
     assets: [{ id: 'tablet', type: '태블릿', productName: 'iPad', branch: '3관' }],
     purchaseCustomRequests: [{ id: 'custom-1', itemName: '테스트 요청', requestQty: 2 }]
   } });
   assert.equal(result.success, true);
-  assert.equal(result.data.consumables[0].branch, '2관');
+  assert.equal(result.data.consumables[0].branchStocks['본관'].qty, 2);
+  assert.equal(result.data.consumables[0].branchStocks['2관'].qty, 1);
+  assert.equal(result.data.consumables[0].branchStocks['3관'].qty, 0);
   assert.deepEqual(result.data.consumables[0].tags, ['#문구', '#복사용지']);
   assert.equal(result.data.assets[0].branch, '3관');
   assert.deepEqual(result.data.purchaseCustomRequests, [{ id: 'custom-1', itemName: '테스트 요청', requestQty: 2 }]);
