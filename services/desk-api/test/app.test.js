@@ -18,7 +18,7 @@ function testApp(overrides = {}) {
       token
     }),
     loadAccount: async () => ({
-      account: { role: 'STAFF', status: 'ACTIVE', name: '테스트 근무자' },
+      account: { role: 'STAFF', status: 'ACTIVE', name: '테스트 근무자', loginId: '01012345678', staffPosition: '대리' },
       access: {
         apps: { deskPortal: true, sLms: true },
         permissions: { canManageSchedules: true, canManageAccounts: false }
@@ -72,9 +72,11 @@ test('me returns the normalized staff identity', async () => {
   assert.deepEqual(response.body.user, {
     uid: 'staff-1',
     email: 'staff@example.com',
+    loginId: '01012345678',
     name: '테스트 근무자',
     role: 'STAFF',
     status: 'ACTIVE',
+    staffPosition: '대리',
     apps: { deskPortal: true, sLms: true },
     permissions: { canManageSchedules: true, canManageAccounts: false }
   });

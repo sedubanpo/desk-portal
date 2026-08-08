@@ -12076,16 +12076,30 @@
       border-radius: 8px 8px 0 0;
       box-shadow: 0 -1px 0 rgba(255,255,255,0.9) inset, 0 10px 18px rgba(2, 24, 18, 0.12);
     }
-    .desk-global-tools { margin-left: auto; min-height: 52px; display: flex; align-items: center; gap: 12px; color: #d9eee4; font-size: 12px; font-weight: 800; }
-    .desk-global-search { width: 260px; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(226,232,240,0.28); border-radius: 8px; background: rgba(255,255,255,0.04); color: #cfe9df; }
-    .desk-global-search svg,
+    .desk-global-tools { margin-left: auto; min-width: 0; min-height: 52px; display: flex; align-items: center; gap: 10px; color: #d9eee4; font-size: 12px; font-weight: 800; }
+    .desk-global-notice { width: clamp(280px, 28vw, 520px); height: 32px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid rgba(167,243,208,0.26); border-radius: 6px; background: rgba(255,255,255,0.055); color: #effcf6; overflow: hidden; }
+    .desk-global-notice svg,
     .desk-global-tool svg,
     .desk-global-user svg { width: 14px; height: 14px; flex: 0 0 auto; }
-    .desk-global-search input { width: 100%; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; min-width: 0; }
-    .desk-global-search input::placeholder { color: rgba(226,232,240,0.72); }
+    .desk-global-notice-copy { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: opacity 180ms ease-out, transform 180ms ease-out; }
+    .desk-global-notice-copy.is-changing { opacity: 0; transform: translateY(4px); }
+    .desk-global-notice-author { color: #a7f3d0; font-size: 11px; white-space: nowrap; }
     .desk-global-tool,
     .desk-global-user { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: #e7f7ef; }
+    button.desk-global-tool { height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; cursor: pointer; }
+    button.desk-global-tool:hover { border-color: rgba(226,232,240,0.28); background: rgba(255,255,255,0.07); }
+    button.desk-global-tool:focus-visible { outline: 2px solid #a7f3d0; outline-offset: 2px; }
     .desk-global-clock { white-space: nowrap; color: rgba(236,253,245,0.9); }
+    .account-settings-summary { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px; border: 1px solid #d8e4de; border-radius: 8px; background: #f7faf8; }
+    .account-settings-avatar { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: #0d684d; color: #fff; font-size: 18px; font-weight: 900; }
+    .account-settings-summary strong { display: block; color: #17352d; font-size: 16px; }
+    .account-settings-summary span { display: block; margin-top: 4px; color: #607082; font-size: 12px; }
+    .account-settings-action { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 2px 2px; }
+    .account-settings-action-copy strong { display: block; color: #17352d; font-size: 13px; }
+    .account-settings-action-copy span { display: block; margin-top: 3px; color: #607082; font-size: 12px; }
+    @media (prefers-reduced-motion: reduce) {
+      .desk-global-notice-copy { transition: none; }
+    }
     .desk-shell { gap: 0; }
     .desk-subtabs { width: fit-content; gap: 6px; padding: 0; margin: 0 0 6px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
     .desk-subtab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #d3e0da; background: #fff; color: #43576a; padding: 10px 18px; font-size: 13px; }
@@ -17346,14 +17360,14 @@
         <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
         <button class="module-tab" type="button" data-module="teacher">강사 시수 정산</button>
         <div class="desk-global-tools" aria-label="데스크 포털 상태 도구">
-          <label class="desk-global-search">
-            <i data-lucide="search" aria-hidden="true"></i>
-            <input type="search" placeholder="학생명, 학교, 태그 검색">
-          </label>
-          <span class="desk-global-clock">2026년 04월 28일 (화) · 01:22:33</span>
-          <span class="desk-global-tool"><i data-lucide="refresh-cw" aria-hidden="true"></i>동기화</span>
-          <span class="desk-global-tool"><i data-lucide="settings" aria-hidden="true"></i>설정</span>
-          <span class="desk-global-user"><i data-lucide="user" aria-hidden="true"></i>예스영어학원 관리자</span>
+          <div class="desk-global-notice" id="deskGlobalNotice" aria-label="오늘 공동 업무 공지" aria-live="polite">
+            <i data-lucide="megaphone" aria-hidden="true"></i>
+            <span class="desk-global-notice-copy" id="deskGlobalNoticeCopy">오늘 공동 업무를 확인하는 중입니다.</span>
+            <span class="desk-global-notice-author" id="deskGlobalNoticeAuthor"></span>
+          </div>
+          <time class="desk-global-clock" id="deskGlobalClock"></time>
+          <button class="desk-global-tool" id="openAccountSettingsBtn" type="button"><i data-lucide="settings" aria-hidden="true"></i>설정</button>
+          <span class="desk-global-user" id="deskGlobalUser"><i data-lucide="user" aria-hidden="true"></i><span id="deskGlobalUserName">로그인 확인 중</span></span>
         </div>
       </section>
 
@@ -19933,6 +19947,23 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="accountSettingsModal">
+    <div class="modal-box" style="max-width:500px;">
+      <div class="modal-head">
+        <div><h3 class="modal-title">내 계정 설정</h3><div class="modal-sub">현재 로그인 정보와 보안 설정을 관리합니다.</div></div>
+        <button class="modal-action ghost" id="closeAccountSettingsBtn" type="button">닫기</button>
+      </div>
+      <div class="account-settings-summary">
+        <div class="account-settings-avatar" id="accountSettingsAvatar">-</div>
+        <div><strong id="accountSettingsName">계정 확인 중</strong><span id="accountSettingsMeta">로그인 정보를 불러오고 있습니다.</span></div>
+      </div>
+      <div class="account-settings-action">
+        <div class="account-settings-action-copy"><strong>비밀번호</strong><span>현재 비밀번호를 확인한 뒤 새 비밀번호로 변경합니다.</span></div>
+        <button class="modal-action primary" id="accountSettingsPasswordBtn" type="button"><i data-lucide="key-round" aria-hidden="true"></i>비밀번호 변경</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-box">
       <div class="modal-head">
@@ -20799,6 +20830,17 @@
     var payrollAnalysisYearSelectEl = document.getElementById("payrollAnalysisYearSelect");
     var openSettingsBtnEl = document.getElementById("openSettingsBtn");
     var openPasswordChangeBtnEl = document.getElementById("openPasswordChangeBtn");
+    var openAccountSettingsBtnEl = document.getElementById("openAccountSettingsBtn");
+    var accountSettingsModalEl = document.getElementById("accountSettingsModal");
+    var closeAccountSettingsBtnEl = document.getElementById("closeAccountSettingsBtn");
+    var accountSettingsPasswordBtnEl = document.getElementById("accountSettingsPasswordBtn");
+    var accountSettingsAvatarEl = document.getElementById("accountSettingsAvatar");
+    var accountSettingsNameEl = document.getElementById("accountSettingsName");
+    var accountSettingsMetaEl = document.getElementById("accountSettingsMeta");
+    var deskGlobalClockEl = document.getElementById("deskGlobalClock");
+    var deskGlobalNoticeCopyEl = document.getElementById("deskGlobalNoticeCopy");
+    var deskGlobalNoticeAuthorEl = document.getElementById("deskGlobalNoticeAuthor");
+    var deskGlobalUserNameEl = document.getElementById("deskGlobalUserName");
     var passwordChangeModalEl = document.getElementById("passwordChangeModal");
     var closePasswordChangeBtnEl = document.getElementById("closePasswordChangeBtn");
     var cancelPasswordChangeBtnEl = document.getElementById("cancelPasswordChangeBtn");
@@ -29934,6 +29976,157 @@
       return left === right;
     }
 
+    var deskHeaderClockTimer_ = 0;
+    var deskGlobalNoticeTimer_ = 0;
+    var deskGlobalNoticeIndex_ = 0;
+    var deskGlobalNoticeItems_ = [];
+
+    function isDeskAdminAccount_() {
+      return String(state.cloudIdentity && state.cloudIdentity.role || "").toUpperCase() === "ADMIN";
+    }
+
+    function isDeskStaffAccount_() {
+      return String(state.cloudIdentity && state.cloudIdentity.role || "").toUpperCase() === "STAFF";
+    }
+
+    function getDeskIdentityName_() {
+      return canonicalizeDeskWorkerName_(state.cloudIdentity && state.cloudIdentity.name || "");
+    }
+
+    function scopeDeskWorkersForIdentity_(workers) {
+      if (!isDeskStaffAccount_()) return (workers || []).slice();
+      var ownName = getDeskIdentityName_();
+      if (!ownName) return [];
+      var matched = (workers || []).find(function(name) { return isSameDeskWorkerName_(name, ownName); });
+      return [matched || ownName];
+    }
+
+    function isDeskTaskVisibleToCurrentAccount_(item) {
+      if (!isDeskStaffAccount_()) return true;
+      var ownName = getDeskIdentityName_();
+      return isDeskSharedTask_(item) || isSameDeskWorkerName_(item && item.worker, ownName) || isDeskTaskTargetedToWorker_(item, ownName);
+    }
+
+    function formatDeskSeoulClock_(date) {
+      var parts = new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(date || new Date()).reduce(function(result, part) {
+        result[part.type] = part.value;
+        return result;
+      }, {});
+      return parts.year + "년 " + parts.month + "월 " + parts.day + "일 (" + parts.weekday + ") · " + parts.hour + ":" + parts.minute + ":" + parts.second;
+    }
+
+    function getDeskSeoulDateKey_() {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+    }
+
+    function updateDeskGlobalClock_() {
+      if (!deskGlobalClockEl) return;
+      var now = new Date();
+      deskGlobalClockEl.textContent = formatDeskSeoulClock_(now);
+      deskGlobalClockEl.dateTime = now.toISOString();
+    }
+
+    function getDeskGlobalNoticeItems_() {
+      var todayKey = getDeskSeoulDateKey_();
+      return getDeskDailyJournalTasks_(todayKey)
+        .filter(isDeskSharedTask_)
+        .filter(function(item) { return !item.hiddenFromWorkerBand && !item.deleted && !item.completed; })
+        .sort(compareDeskSharedTask_)
+        .map(function(item) {
+          return {
+            id: item.id,
+            text: item.title || item.note || "공동 업무",
+            author: item.createdByName || item.updatedByName || "기록자 미상"
+          };
+        });
+    }
+
+    function paintDeskGlobalNotice_(animate) {
+      if (!deskGlobalNoticeCopyEl || !deskGlobalNoticeAuthorEl) return;
+      var item = deskGlobalNoticeItems_[deskGlobalNoticeIndex_] || null;
+      var applyCopy = function() {
+        deskGlobalNoticeCopyEl.textContent = item ? item.text : "오늘 등록된 공동 업무가 없습니다.";
+        deskGlobalNoticeAuthorEl.textContent = item ? ("기록 " + item.author) : "";
+        deskGlobalNoticeCopyEl.classList.remove("is-changing");
+      };
+      if (animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        deskGlobalNoticeCopyEl.classList.add("is-changing");
+        setTimeout(applyCopy, 180);
+      } else {
+        applyCopy();
+      }
+    }
+
+    function refreshDeskGlobalNotice_() {
+      var nextItems = getDeskGlobalNoticeItems_();
+      var currentId = deskGlobalNoticeItems_[deskGlobalNoticeIndex_] && deskGlobalNoticeItems_[deskGlobalNoticeIndex_].id;
+      deskGlobalNoticeItems_ = nextItems;
+      var preservedIndex = nextItems.findIndex(function(item) { return item.id === currentId; });
+      deskGlobalNoticeIndex_ = preservedIndex >= 0 ? preservedIndex : 0;
+      paintDeskGlobalNotice_(false);
+    }
+
+    function startDeskHeaderRuntime_() {
+      updateDeskGlobalClock_();
+      refreshDeskGlobalNotice_();
+      var todayKey = getDeskSeoulDateKey_();
+      if (!state.desk.daily.loadedDates[todayKey]) {
+        ensureDeskDailyJournalLoaded_(todayKey).then(refreshDeskGlobalNotice_);
+      }
+      if (!deskHeaderClockTimer_) deskHeaderClockTimer_ = window.setInterval(updateDeskGlobalClock_, 1000);
+      if (!deskGlobalNoticeTimer_) {
+        deskGlobalNoticeTimer_ = window.setInterval(function() {
+          if (deskGlobalNoticeItems_.length < 2) return;
+          deskGlobalNoticeIndex_ = (deskGlobalNoticeIndex_ + 1) % deskGlobalNoticeItems_.length;
+          paintDeskGlobalNotice_(true);
+        }, 6000);
+      }
+    }
+
+    function applyDeskIdentityUi_() {
+      var identity = state.cloudIdentity || {};
+      var name = String(identity.name || "").trim() || "로그인 확인 중";
+      var position = String(identity.staffPosition || "").trim();
+      var roleLabel = isDeskAdminAccount_() ? "관리자" : "실무자";
+      if (deskGlobalUserNameEl) deskGlobalUserNameEl.textContent = position ? (name + " · " + position) : name;
+      if (accountSettingsAvatarEl) accountSettingsAvatarEl.textContent = name === "로그인 확인 중" ? "-" : name.slice(0, 1);
+      if (accountSettingsNameEl) accountSettingsNameEl.textContent = name;
+      if (accountSettingsMetaEl) {
+        var loginId = String(identity.loginId || identity.email || "로그인 ID 없음").trim();
+        accountSettingsMetaEl.textContent = loginId + " · " + roleLabel + (position ? " · " + position : "");
+      }
+      if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = state.firebaseUser ? "flex" : "none";
+      if (openSettingsBtnEl) openSettingsBtnEl.style.display = isDeskAdminAccount_() ? "flex" : "none";
+    }
+
+    function openAccountSettings_() {
+      if (!state.firebaseUser || !state.cloudIdentity) {
+        showClientMessage("근무자 계정으로 다시 로그인해 주세요.");
+        return;
+      }
+      applyDeskIdentityUi_();
+      accountSettingsModalEl.style.display = "flex";
+    }
+
+    function closeAccountSettings_() {
+      accountSettingsModalEl.style.display = "none";
+    }
+
     function compareDeskDailyTask_(a, b) {
       if (isDeskSharedTask_(a) !== isDeskSharedTask_(b)) return isDeskSharedTask_(a) ? -1 : 1;
       if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
@@ -31270,9 +31463,13 @@
       }
       var tasks = getDeskDailyJournalTasks_(dateKey);
       var memos = getDeskDailyJournalMemos_(dateKey);
-      var workers = collectDeskDailyWorkers_(dateKey);
+      var workers = scopeDeskWorkersForIdentity_(collectDeskDailyWorkers_(dateKey));
       ensureDeskDailyCarryoverTasksLoaded_(dateKey, workers);
-      var visibleTasks = mergeDeskDailyCarryoverTasks_(dateKey, tasks, workers);
+      var visibleTasks = mergeDeskDailyCarryoverTasks_(dateKey, tasks, workers).filter(isDeskTaskVisibleToCurrentAccount_);
+      if (isDeskStaffAccount_()) {
+        var ownName = getDeskIdentityName_();
+        memos = memos.filter(function(item) { return isSameDeskWorkerName_(item.worker, ownName); });
+      }
       ensureDeskDailyWorkerSelection_(workers);
       ensureDeskDailyReportWorkerSelection_(workers);
       renderDeskDailyJournalSummary_(visibleTasks, memos, workers);
@@ -31377,6 +31574,7 @@
       });
       Array.prototype.push.apply(nextMemos, mergeDeskDailyPendingMemosIntoList_(dateKey, filterDeskDailyDeletedMemos_((memos || []).map(normalizeDeskDailyMemo_), dateKey)));
       state.desk.daily.memos = nextMemos.sort(compareDeskDailyMemo_);
+      if (dateKey === getDeskSeoulDateKey_()) refreshDeskGlobalNotice_();
     }
 
     function mergeDeskDailyCarryoverTasks_(dateKey, currentTasks, workers) {
@@ -32041,6 +32239,10 @@
     }
 
     function ensureDeskDailyWorkerSelection_(workers) {
+      if (isDeskStaffAccount_()) {
+        state.desk.daily.selectedWorker = getDeskIdentityName_();
+        return;
+      }
       var options = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       var selected = state.desk.daily.selectedWorker;
       if (!selected) {
@@ -32158,7 +32360,7 @@
     }
 
     function getDeskLiveFeedDateKey_() {
-      var todayKey = getDeskDateKey_(new Date());
+      var todayKey = getDeskSeoulDateKey_();
       if (state.desk.daily.liveFeedDateKey !== todayKey) {
         state.desk.daily.liveFeedDateKey = todayKey;
         state.desk.daily.liveFeedPage = 1;
@@ -32229,7 +32431,14 @@
           });
         });
       });
-      var combined = memoItems.concat(taskItems).sort(function(a, b) {
+      var combined = memoItems.concat(taskItems);
+      if (isDeskStaffAccount_()) {
+        var ownName = getDeskIdentityName_();
+        combined = combined.filter(function(item) {
+          return isSameDeskWorkerName_(item.worker, ownName) || isSameDeskWorkerName_(item.worker, DESK_SHARED_WORKER_NAME);
+        });
+      }
+      combined = combined.sort(function(a, b) {
         var aDate = String((a.displayStamp || a.stamp || "")).slice(0, 10);
         var bDate = String((b.displayStamp || b.stamp || "")).slice(0, 10);
         if (aDate !== bDate) return bDate.localeCompare(aDate);
@@ -32561,7 +32770,7 @@
       var pending = tasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); });
       var sharedCount = tasks.filter(isDeskSharedTask_).length;
       var carryoverLoading = isDeskDailyCarryoverLoading_(dateKey) && state.desk.daily.carryoverDateKey !== dateKey;
-      var tabs = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
+      var tabs = isDeskStaffAccount_() ? scopeDeskWorkersForIdentity_(workers) : ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
       deskJournalWorkerTabsEl.innerHTML = tabs.map(function(name) {
         var label = name === DESK_ROUTINE_TAB_KEY ? "업무 관리자" : name;
         var style = getDeskWorkerTabStyle_(name);
@@ -35935,7 +36144,8 @@
         deskJournalWorkerTabsEl.addEventListener("click", function(event) {
           var btn = event.target.closest("[data-desk-journal-worker]");
           if (!btn) return;
-          state.desk.daily.selectedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
+          var requestedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
+          state.desk.daily.selectedWorker = isDeskStaffAccount_() ? getDeskIdentityName_() : requestedWorker;
           if (state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.editorMode = "shared";
           }
@@ -36701,6 +36911,15 @@
       }
 
       openPasswordChangeBtnEl.addEventListener("click", openPasswordChange_);
+      openAccountSettingsBtnEl.addEventListener("click", openAccountSettings_);
+      closeAccountSettingsBtnEl.addEventListener("click", closeAccountSettings_);
+      accountSettingsPasswordBtnEl.addEventListener("click", function() {
+        closeAccountSettings_();
+        openPasswordChange_();
+      });
+      accountSettingsModalEl.addEventListener("click", function(event) {
+        if (event.target === accountSettingsModalEl) closeAccountSettings_();
+      });
       closePasswordChangeBtnEl.addEventListener("click", closePasswordChange_);
       cancelPasswordChangeBtnEl.addEventListener("click", closePasswordChange_);
       submitPasswordChangeBtnEl.addEventListener("click", submitPasswordChange_);
@@ -40370,7 +40589,8 @@
     function enterDeskPortal_(accessKey) {
       state.portalAccessKey = accessKey || state.portalAccessKey || "";
       entryGateEl.style.display = "none";
-      if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = state.firebaseUser ? "flex" : "none";
+      applyDeskIdentityUi_();
+      startDeskHeaderRuntime_();
       renderModuleLayout();
     }
 
@@ -40415,6 +40635,7 @@
               state.cloudIdentity = null;
               state.cloudApiReady = false;
               if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = "none";
+              applyDeskIdentityUi_();
               return;
             }
             if (state.cloudApiReady) return;
@@ -40470,6 +40691,11 @@
           state.firebaseUser = user;
           state.cloudIdentity = body && body.user ? body.user : null;
           state.cloudApiReady = true;
+          if (isDeskStaffAccount_()) {
+            state.desk.daily.selectedWorker = getDeskIdentityName_();
+            state.desk.daily.reportWorker = getDeskIdentityName_();
+          }
+          applyDeskIdentityUi_();
           return body;
         });
       });

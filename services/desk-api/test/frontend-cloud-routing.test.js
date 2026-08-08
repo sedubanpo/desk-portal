@@ -192,6 +192,24 @@ test('monthly schedule exposes dated version history and account attribution per
   assert.match(source, /이 버전의 근무표/);
 });
 
+test('staff identity drives the personal journal, account settings, Seoul clock, and shared-work notice', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /id="deskGlobalNotice"/);
+  assert.match(source, /id="deskGlobalClock"/);
+  assert.match(source, /timeZone: "Asia\/Seoul"/);
+  assert.match(source, /id="openAccountSettingsBtn"/);
+  assert.match(source, /id="accountSettingsModal"/);
+  assert.match(source, /accountSettingsPasswordBtnEl\.addEventListener/);
+  assert.match(source, /isDeskStaffAccount_\(\) \? scopeDeskWorkersForIdentity_\(workers\)/);
+  assert.match(source, /state\.desk\.daily\.selectedWorker = getDeskIdentityName_\(\)/);
+  assert.match(source, /mergeDeskDailyCarryoverTasks_[\s\S]*?filter\(isDeskTaskVisibleToCurrentAccount_\)/);
+  assert.match(source, /memos = memos\.filter\(function\(item\) \{ return isSameDeskWorkerName_\(item\.worker, ownName\); \}\)/);
+  assert.match(source, /item\.createdByName \|\| item\.updatedByName \|\| "기록자 미상"/);
+  assert.doesNotMatch(source, /<span class="desk-global-tool"><i data-lucide="refresh-cw"[^>]*><\/i>동기화<\/span>/);
+  assert.doesNotMatch(source, /class="desk-global-search"/);
+});
+
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 

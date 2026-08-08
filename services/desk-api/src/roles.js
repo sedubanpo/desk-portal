@@ -33,9 +33,11 @@ export function publicIdentity(decodedToken, account, access) {
   return {
     uid: decodedToken.uid,
     email: decodedToken.email || account.email || '',
+    loginId: account.loginId || '',
     name: account.name || decodedToken.name || '',
     role,
     status: account.status,
+    staffPosition: account.staffPosition || '',
     apps: publicBooleanMap(access?.apps),
     permissions: publicBooleanMap(access?.permissions)
   };
