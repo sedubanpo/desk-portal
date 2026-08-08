@@ -345,7 +345,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       if (!requestId) return failure('저장 요청 식별자가 없습니다. 다시 시도해 주세요.');
       if (!amount) return failure('금액이 0원일 수 없습니다.');
       if (!text(payload.paidAt)) return failure('납부일을 입력해 주세요.');
-      if (!text(payload.paymentType)) return failure('결재구분을 입력해 주세요.');
+      if (!text(payload.paymentType)) return failure('결제구분을 입력해 주세요.');
       const date = nowDate();
       const record = payment({
         ...payload,
@@ -423,7 +423,7 @@ async function buildMonthSummary(store, payload) {
   }));
   const allPayments = mergePayments(snapshot.allPayments || recent?.payments || []);
   const payments = mergePayments(snapshot.payments || monthPayments?.payments || []).filter(row => !keyword || row.studentName.toLowerCase().replace(/\s+/g, '').includes(keyword));
-  const stats = summaryStats(rows, payments);
+  const stats = summaryStats(rows.filter(row => !row.hiddenFromTuition), payments);
   const cache = { source: 'firestore-snapshot', documentId: snapshotId(month), computedAt: text(snapshot.snapshot?.computedAt) };
   return {
     ...structuredClone(snapshot),
@@ -467,6 +467,11 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
       ...current,
       guideAmount,
       unpaidStatus: status,
+      hiddenFromTuition: incrementContact
+        ? Boolean(current.hiddenFromTuition)
+        : (Object.prototype.hasOwnProperty.call(payload, 'hiddenFromTuition')
+            ? Boolean(payload.hiddenFromTuition)
+            : Boolean(current.hiddenFromTuition)),
       lastContactAt: incrementContact ? timestamp : current.lastContactAt,
       lastContactMemo: incrementContact ? text(payload.memo, 1200) : current.lastContactMemo,
       contactChannel: incrementContact ? contactChannel(payload.contactChannel) : current.contactChannel,
@@ -492,7 +497,8 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
     } else {
       writes[keys.statusHistory] = {
         monthName: month, studentName: student, previousStatus: current.unpaidStatus,
-        nextStatus: status, guideAmount, contactCount: next.contactCount, changedAt: timestamp,
+        nextStatus: status, previousHiddenFromTuition: Boolean(current.hiddenFromTuition),
+        nextHiddenFromTuition: Boolean(next.hiddenFromTuition), guideAmount, contactCount: next.contactCount, changedAt: timestamp,
         requestId, actorUid: text(identity.uid), actorName: text(identity.name), source: 'desk_portal'
       };
     }
@@ -503,7 +509,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
       deletes: [keys.guideReport, keys.studentReport],
       result: incrementContact
         ? { success: true, contactAt: timestamp, contactCount: next.contactCount, sheetMirrorWarning: '', snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장만 갱신되었습니다.' }
-        : { success: true, status, sheetMirrorWarning: '', snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장만 갱신되었습니다.' }
+        : { success: true, status, hiddenFromTuition: Boolean(next.hiddenFromTuition), sheetMirrorWarning: '', snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장만 갱신되었습니다.' }
     };
   });
 }
@@ -690,6 +696,7 @@ function changeSnapshotPayment(source, row, action, month, date) {
     copy.latestPaidAt = text(latest.paidAt);
     copy.latestBusiness = text(latest.business);
     copy.latestMethod = text(latest.paymentType);
+    copy.latestCardCompany = text(latest.cardCompany);
     copy.latestApprovalNo = text(latest.approvalNo);
     copy.latestInputAt = text(latest.inputAt);
     copy.outstandingAmount = Math.max(0, Math.round(number(copy.guideAmount) - Math.max(0, number(copy.collectedAmount))));
@@ -712,6 +719,7 @@ function updateSnapshotFollowup(source, student, next, timestamp) {
     lastContactMemo: next.lastContactMemo,
     contactChannel: next.contactChannel,
     contactCount: next.contactCount,
+    hiddenFromTuition: Boolean(next.hiddenFromTuition),
     lastUpdatedAt: timestamp,
     outstandingAmount: Math.max(0, next.guideAmount - Math.max(0, number(row.collectedAmount)))
   } : row);
@@ -732,7 +740,7 @@ function updateSnapshotAmount(source, student, guideAmount, collectedAmount, sta
 }
 
 function refreshSnapshot(snapshot, month, date) {
-  const stats = summaryStats(snapshot.rows || [], snapshot.payments || []);
+  const stats = summaryStats((snapshot.rows || []).filter(row => !row.hiddenFromTuition), snapshot.payments || []);
   snapshot.kpi = stats.kpi;
   snapshot.chart = stats.chart;
   const today = formatDateKey(date);

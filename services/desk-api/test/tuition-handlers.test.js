@@ -228,7 +228,7 @@ test('payment append updates the ledger, indexes, and snapshot in one transactio
   const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T03:30:00.000Z') });
   const payload = {
     monthName: seed.month, studentName: '김재희', dueDate: '26-07-01', amount: -50000,
-    paidAt: '7/15', business: '반포', paymentType: '현대카드', approvalNo: '5678',
+    paidAt: '7/15', business: '반포', paymentType: '결제링크', cardCompany: '현대카드', approvalNo: '5678',
     clientRequestId: 'append-1'
   };
   const first = await handlers.appendTuitionPaymentEntry(payload, { uid: 'staff-1', name: '관리자' });
@@ -239,9 +239,12 @@ test('payment append updates the ledger, indexes, and snapshot in one transactio
   const dump = store.dump();
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 150000);
   assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].payments.length, 2);
+  assert.equal(dump['tuitionMonthSnapshots/tm_26-07s'].rows[0].latestCardCompany, '현대카드');
   assert.equal(dump['tuitionPaymentReadIndexes/payment_month_26-07s'].payments.length, 2);
   assert.equal(dump['tuitionPaymentReadIndexes/daily_2026_07_15'].payments.length, 1);
   assert.ok(dump['tuitionPayments/tp_append-1']);
+  assert.equal(dump['tuitionPayments/tp_append-1'].paymentType, '결제링크');
+  assert.equal(dump['tuitionPayments/tp_append-1'].cardCompany, '현대카드');
 });
 
 test('first payment for a master-only student materializes a snapshot row', async () => {
@@ -310,6 +313,27 @@ test('first status save for a master-only student materializes a snapshot row', 
   const row = store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows.find(item => item.studentName === '신유진');
   assert.equal(row.guideAmount, 0);
   assert.equal(row.unpaidStatus, '안내완료');
+});
+
+test('tuition detail visibility persists in the monthly snapshot and excludes hidden students from KPIs', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T05:20:00.000Z') });
+  const saved = await handlers.saveTuitionStatusOnly({
+    monthName: seed.month,
+    studentName: '김재희',
+    guideAmount: 100000,
+    unpaidStatus: '납부완료',
+    hiddenFromTuition: true,
+    clientRequestId: 'hide-student-1'
+  }, { uid: 'staff-1', name: '관리자' });
+  assert.equal(saved.success, true);
+  assert.equal(saved.hiddenFromTuition, true);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].hiddenFromTuition, true);
+
+  const summary = await handlers.getTuitionMonthSummary({ monthName: seed.month });
+  assert.equal(summary.rows[0].hiddenFromTuition, true);
+  assert.equal(summary.kpi.totalStudents, 0);
 });
 
 test('amount adjustment records only the collected delta and keeps snapshot totals consistent', async () => {

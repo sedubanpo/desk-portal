@@ -63,6 +63,7 @@ export function followup(source = {}) {
     lastContactMemo: text(source.lastContactMemo, 1200),
     contactChannel: contactChannel(source.contactChannel),
     contactCount: Math.max(0, Math.trunc(number(source.contactCount))),
+    hiddenFromTuition: Boolean(source.hiddenFromTuition),
     lastUpdatedAt: text(source.lastUpdatedAt)
   };
 }
@@ -75,10 +76,11 @@ export function payment(source = {}) {
   const paidAt = text(source.paidAt);
   const business = text(source.business);
   const paymentType = text(source.paymentType);
+  const cardCompany = text(source.cardCompany, 60);
   const approvalNo = text(source.approvalNo);
   const inputAt = text(source.inputAt);
   const issueMemo = text(source.issueMemo || source.memo, 1200);
-  if (!amount && !paidAt && !business && !paymentType && !approvalNo && !inputAt && !issueMemo) return null;
+  if (!amount && !paidAt && !business && !paymentType && !cardCompany && !approvalNo && !inputAt && !issueMemo) return null;
   const dueDate = text(source.dueDate);
   const originMonth = monthName(source.originMonth || source.sourceMonth);
   const sourceMonth = monthName(source.sourceMonth || originMonth || monthFromDueDate(dueDate));
@@ -95,6 +97,7 @@ export function payment(source = {}) {
     paidAt,
     business,
     paymentType,
+    cardCompany,
     approvalNo,
     inputAt,
     issueMemo,

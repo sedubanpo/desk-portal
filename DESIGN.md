@@ -54,6 +54,8 @@ Base unit is 4px.
 - Previous payment method: the student identity line may show one 24px icon action beside the name. It uses `--ds-bg-subtle`, `--ds-muted`, and a tooltip; it is informational and does not use a pill silhouette.
 - Contact timestamps: table timestamps use `M/D(요일) HH:mm`, tabular numerals, and local Korean time. Empty values remain `-`.
 - Tuition table density: the last-contact column stays at 136px, editable amount columns preserve a one-line numeric value, and body copy uses the dense 800-950 weight range for consistent scanning.
+- Tuition row visibility: each student identity line may expose one 28px `eye-off` action for reversible monthly hiding. The table header owns the compact hidden-count toggle; revealed hidden rows use the existing subtle surface and remain restorable without changing payment history.
+- Tuition payment metadata: the payment form keeps card company as a short optional text field beside approval metadata. Daily briefing treats `결제링크` as its own route while preserving card company as supporting record detail.
 - Tuition message settings: template management uses a single modal working surface with an unframed list and editor. Student names are injected as a fixed prefix and are not stored inside the editable template body.
 - Payment deletion: recent-payment rows use a compact trash icon with a tooltip. Deletion opens a focused confirmation modal that shows the selected payment facts, requires a reason, and uses the semantic danger color only for the irreversible command.
 - Segmented controls: same height across items, active state uses green fill or green underline, inactive state remains white.

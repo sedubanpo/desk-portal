@@ -192,6 +192,8 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
 
   assert.match(source, /id="tuitionPaymentPaidAt" class="modal-input" type="date"/);
   assert.match(source, /tuitionPaymentPaidAtEl\.value = getTodayDateKey_\(\)/);
+  assert.match(source, /id="tuitionPaymentCardCompany"/);
+  assert.match(source, /cardCompany: tuitionPaymentCardCompanyEl\.value/);
   ['결제링크', '현장카드', '계좌이체', '현금', '서울페이', '기타'].forEach(method => {
     assert.match(source, new RegExp(`data-tuition-choice="${method}"`));
   });
@@ -232,6 +234,11 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /state\.tuition\.briefingPayments/);
   assert.match(source, /state\.tuition\.briefingRows/);
   assert.match(source, /state\.tuition\.briefingMonths/);
+  assert.match(source, />일일 수납 브리핑<\/button>/);
+  assert.match(source, /var routeOrder = \["결제링크", "계좌", "서울페이", "현장결제", "현금", "카드", "기타"\]/);
+  assert.match(source, /data-toggle-tuition-hidden=/);
+  assert.match(source, /hiddenFromTuition: Boolean\(hidden\)/);
+  assert.match(source, /id="tuitionHiddenStudentsBtn"/);
   assert.match(source, /usesBriefingBundle \? state\.tuition\.briefingPayments/);
   assert.match(source, /포함 월 ·/);
   assert.match(source, /createTuitionMonth: true/);
