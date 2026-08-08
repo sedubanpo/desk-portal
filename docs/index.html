@@ -319,6 +319,27 @@
       box-shadow: 0 12px 20px rgba(2, 30, 22, 0.35);
     }
 
+    .password-change-grid {
+      display: grid;
+      gap: 12px;
+      padding: 18px 0 4px;
+    }
+
+    .password-change-grid .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #355267;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .password-change-status {
+      min-height: 20px;
+      color: #b42318;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
     .sidebar-gear {
       width: 32px;
       height: 32px;
@@ -17312,6 +17333,10 @@
         <span class="sidebar-gear">⚙</span>
         <span>설정 센터</span>
       </button>
+      <button class="sidebar-action" id="openPasswordChangeBtn" type="button" style="display:none;">
+        <span class="sidebar-gear"><i data-lucide="key-round" aria-hidden="true"></i></span>
+        <span>내 비밀번호 변경</span>
+      </button>
     </aside>
 
     <main class="main" id="mainShell">
@@ -19891,6 +19916,23 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="passwordChangeModal">
+    <div class="modal-box" style="max-width:460px;">
+      <div class="modal-head">
+        <div><h3 class="modal-title">내 비밀번호 변경</h3><div class="modal-sub">현재 비밀번호 확인 후 새 비밀번호를 적용합니다.</div></div>
+        <button class="modal-action ghost" id="closePasswordChangeBtn" type="button">닫기</button>
+      </div>
+      <div class="password-change-grid">
+        <div class="field"><label for="currentDeskPasswordInput">현재 비밀번호</label><input class="modal-input" id="currentDeskPasswordInput" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="newDeskPasswordInput">새 비밀번호</label><input class="modal-input" id="newDeskPasswordInput" type="password" minlength="8" autocomplete="new-password"></div>
+        <div class="field"><label for="confirmDeskPasswordInput">새 비밀번호 확인</label><input class="modal-input" id="confirmDeskPasswordInput" type="password" minlength="8" autocomplete="new-password"></div>
+        <div class="message">8자 이상으로 설정하세요. 변경 후 다음 로그인부터 새 비밀번호를 사용합니다.</div>
+        <div class="password-change-status" id="passwordChangeStatus" aria-live="polite"></div>
+      </div>
+      <div class="modal-foot"><span></span><div style="display:flex;gap:8px;"><button class="modal-action ghost" id="cancelPasswordChangeBtn" type="button">취소</button><button class="modal-action primary" id="submitPasswordChangeBtn" type="button">비밀번호 변경</button></div></div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-box">
       <div class="modal-head">
@@ -20756,6 +20798,15 @@
     var payrollAnalysisRefreshBtnEl = document.getElementById("payrollAnalysisRefreshBtn");
     var payrollAnalysisYearSelectEl = document.getElementById("payrollAnalysisYearSelect");
     var openSettingsBtnEl = document.getElementById("openSettingsBtn");
+    var openPasswordChangeBtnEl = document.getElementById("openPasswordChangeBtn");
+    var passwordChangeModalEl = document.getElementById("passwordChangeModal");
+    var closePasswordChangeBtnEl = document.getElementById("closePasswordChangeBtn");
+    var cancelPasswordChangeBtnEl = document.getElementById("cancelPasswordChangeBtn");
+    var submitPasswordChangeBtnEl = document.getElementById("submitPasswordChangeBtn");
+    var currentDeskPasswordInputEl = document.getElementById("currentDeskPasswordInput");
+    var newDeskPasswordInputEl = document.getElementById("newDeskPasswordInput");
+    var confirmDeskPasswordInputEl = document.getElementById("confirmDeskPasswordInput");
+    var passwordChangeStatusEl = document.getElementById("passwordChangeStatus");
     var closeSettingsBtnEl = document.getElementById("closeSettingsBtn");
     var closeSettingsBtn2El = document.getElementById("closeSettingsBtn2");
     var saveSettingsBtnEl = document.getElementById("saveSettingsBtn");
@@ -36649,6 +36700,17 @@
         });
       }
 
+      openPasswordChangeBtnEl.addEventListener("click", openPasswordChange_);
+      closePasswordChangeBtnEl.addEventListener("click", closePasswordChange_);
+      cancelPasswordChangeBtnEl.addEventListener("click", closePasswordChange_);
+      submitPasswordChangeBtnEl.addEventListener("click", submitPasswordChange_);
+      confirmDeskPasswordInputEl.addEventListener("keydown", function(event) {
+        if (event.key === "Enter") submitPasswordChange_();
+      });
+      passwordChangeModalEl.addEventListener("click", function(event) {
+        if (event.target === passwordChangeModalEl) closePasswordChange_();
+      });
+
       openSettingsBtnEl.addEventListener("click", function() {
         requestPrivilegedAccess_("설정 센터", function() {
           renderSettingsModal();
@@ -40308,6 +40370,7 @@
     function enterDeskPortal_(accessKey) {
       state.portalAccessKey = accessKey || state.portalAccessKey || "";
       entryGateEl.style.display = "none";
+      if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = state.firebaseUser ? "flex" : "none";
       renderModuleLayout();
     }
 
@@ -40351,6 +40414,7 @@
               state.firebaseUser = null;
               state.cloudIdentity = null;
               state.cloudApiReady = false;
+              if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = "none";
               return;
             }
             if (state.cloudApiReady) return;
@@ -40430,6 +40494,79 @@
           return verifyDeskCloudUser_(credential.user);
         });
       });
+    }
+
+    function resetPasswordChangeForm_() {
+      currentDeskPasswordInputEl.value = "";
+      newDeskPasswordInputEl.value = "";
+      confirmDeskPasswordInputEl.value = "";
+      passwordChangeStatusEl.textContent = "";
+      submitPasswordChangeBtnEl.disabled = false;
+      submitPasswordChangeBtnEl.textContent = "비밀번호 변경";
+    }
+
+    function openPasswordChange_() {
+      if (!state.firebaseUser || !state.firebaseAuth) {
+        showClientMessage("Firebase 근무자 계정으로 다시 로그인해 주세요.");
+        return;
+      }
+      resetPasswordChangeForm_();
+      passwordChangeModalEl.style.display = "flex";
+      setTimeout(function() { currentDeskPasswordInputEl.focus(); }, 20);
+    }
+
+    function closePasswordChange_() {
+      passwordChangeModalEl.style.display = "none";
+      resetPasswordChangeForm_();
+    }
+
+    function submitPasswordChange_() {
+      var user = state.firebaseUser;
+      var currentPassword = String(currentDeskPasswordInputEl.value || "");
+      var newPassword = String(newDeskPasswordInputEl.value || "");
+      var confirmation = String(confirmDeskPasswordInputEl.value || "");
+      if (!user || !user.email) {
+        passwordChangeStatusEl.textContent = "로그인 계정을 확인할 수 없습니다.";
+        return;
+      }
+      if (!currentPassword) {
+        passwordChangeStatusEl.textContent = "현재 비밀번호를 입력해 주세요.";
+        currentDeskPasswordInputEl.focus();
+        return;
+      }
+      if (newPassword.length < 8) {
+        passwordChangeStatusEl.textContent = "새 비밀번호는 8자 이상이어야 합니다.";
+        newDeskPasswordInputEl.focus();
+        return;
+      }
+      if (newPassword !== confirmation) {
+        passwordChangeStatusEl.textContent = "새 비밀번호가 서로 일치하지 않습니다.";
+        confirmDeskPasswordInputEl.focus();
+        return;
+      }
+      if (newPassword === currentPassword) {
+        passwordChangeStatusEl.textContent = "현재 비밀번호와 다른 비밀번호를 입력해 주세요.";
+        newDeskPasswordInputEl.focus();
+        return;
+      }
+      submitPasswordChangeBtnEl.disabled = true;
+      submitPasswordChangeBtnEl.textContent = "변경 중...";
+      passwordChangeStatusEl.textContent = "";
+      var credential = window.firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+      user.reauthenticateWithCredential(credential)
+        .then(function() { return user.updatePassword(newPassword); })
+        .then(function() {
+          closePasswordChange_();
+          showClientMessage("비밀번호를 변경했습니다. 다음 로그인부터 새 비밀번호를 사용하세요.");
+        })
+        .catch(function(err) {
+          var code = String(err && err.code || "");
+          passwordChangeStatusEl.textContent = code.indexOf("wrong-password") >= 0 || code.indexOf("invalid-credential") >= 0
+            ? "현재 비밀번호가 올바르지 않습니다."
+            : (err && err.message ? err.message : "비밀번호를 변경하지 못했습니다.");
+          submitPasswordChangeBtnEl.disabled = false;
+          submitPasswordChangeBtnEl.textContent = "비밀번호 변경";
+        });
     }
 
     function verifyEntryPassword() {
