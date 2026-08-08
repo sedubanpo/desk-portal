@@ -163,7 +163,7 @@ test('legacy branch inventory becomes one shared item with preserved branch quan
   assert.deepEqual(result.data.purchaseSelections['paper-main:2관'], { selected: true, requestQty: 2 });
 });
 
-test('supply quantity adjustment uses a transaction and changes only the selected branch', async () => {
+test('supply quantity adjustment uses a transaction and records the selected branch change', async () => {
   const store = memoryStore({ desk_portal: { supplies: { consumables: [{
     id: 'paper', itemName: '종이', productName: 'A4', unit: '권',
     branchStocks: {
@@ -175,13 +175,54 @@ test('supply quantity adjustment uses a transaction and changes only the selecte
   let transactions = 0;
   const original = store.transaction;
   store.transaction = async (...args) => { transactions += 1; return original(...args); };
-  const handlers = createDeskHandlers({ store });
-  const result = await handlers.adjustDeskSupplyConsumable({ id: 'paper', branch: '2관', delta: 9 });
+  const handlers = createDeskHandlers({ store, now: () => '2026-08-08T07:25:00.000Z' });
+  const result = await handlers.adjustDeskSupplyConsumable(
+    { id: 'paper', branch: '2관', delta: 9 },
+    { uid: 'desk-1', name: '안종성' }
+  );
   assert.equal(result.success, true);
   assert.equal(result.data.consumables[0].branchStocks['본관'].qty, 1);
   assert.equal(result.data.consumables[0].branchStocks['2관'].qty, 3);
   assert.equal(result.data.consumables[0].branchStocks['3관'].qty, 0);
+  assert.deepEqual(result.data.consumables[0].changeHistory[0], {
+    id: result.data.consumables[0].changeHistory[0].id,
+    itemName: '종이',
+    branch: '2관',
+    delta: 2,
+    direction: 'increase',
+    beforeQty: 1,
+    afterQty: 3,
+    changedAt: '2026-08-08T07:25:00.000Z',
+    changedBy: '안종성',
+    changedByUid: 'desk-1'
+  });
   assert.equal(transactions, 1);
+});
+
+test('supply normalization preserves favorites and caps recent change history', async () => {
+  const history = Array.from({ length: 55 }, (_, index) => ({
+    id: `change-${index}`,
+    itemName: '종이',
+    branch: '본관',
+    delta: index % 2 ? -1 : 1,
+    changedAt: `2026-08-${String((index % 9) + 1).padStart(2, '0')}T0${index % 9}:00:00.000Z`,
+    changedBy: '관리자'
+  }));
+  const store = memoryStore({ desk_portal: { supplies: { consumables: [{
+    id: 'paper', itemName: '종이', productName: 'A4', favorite: true, changeHistory: history,
+    branchStocks: { '본관': { qty: 1, maxQty: 3, safetyQty: 1 } }
+  }], assets: [] } } });
+  const handlers = createDeskHandlers({ store });
+  const result = await handlers.getDeskSuppliesData();
+  assert.equal(result.data.consumables[0].favorite, true);
+  assert.equal(result.data.consumables[0].changeHistory.length, 50);
+  assert.ok(result.data.consumables[0].changeHistory[0].changedAt >= result.data.consumables[0].changeHistory[1].changedAt);
+  const saved = await handlers.saveDeskSupplyConsumable({ item: {
+    id: 'paper', itemName: '종이', productName: 'A4 80g',
+    branchStocks: { '본관': { qty: 1, maxQty: 3, safetyQty: 1 } }
+  } });
+  assert.equal(saved.data.consumables[0].favorite, true);
+  assert.equal(saved.data.consumables[0].changeHistory.length, 50);
 });
 
 test('full supply snapshot preserves custom purchase requests', async () => {

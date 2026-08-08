@@ -74,16 +74,26 @@ test('production frontend has no Apps Script or direct RTDB transport fallback',
   assert.doesNotMatch(source, /verifyDeskLegacyPassword_/);
 });
 
-test('supply management uses one linked inventory row with independent branch stock controls', async () => {
+test('supply management presents a branch-coded inventory database with favorites and change history', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /class="desk-supply-table desk-supply-matrix-table"/);
-  assert.match(source, /<th scope="col">본관<\/th>[\s\S]*?<th scope="col">2관<\/th>[\s\S]*?<th scope="col">3관<\/th>/);
+  assert.match(source, /class="desk-supply-branch-head main" scope="col">본관<\/th>[\s\S]*?class="desk-supply-branch-head annex2" scope="col">2관<\/th>[\s\S]*?class="desk-supply-branch-head annex3" scope="col">3관<\/th>/);
+  assert.match(source, /--supply-main-bg:[\s\S]*--supply-annex2-bg:[\s\S]*--supply-annex3-bg:/);
   assert.match(source, /data-desk-consumable-stock="본관"/);
   assert.match(source, /data-desk-consumable-stock="2관"/);
   assert.match(source, /data-desk-consumable-stock="3관"/);
   assert.match(source, /function renderDeskSupplyBranchStockCell_/);
   assert.match(source, /data-desk-supply-branch=/);
+  assert.match(source, /data-desk-supply-favorite=/);
+  assert.match(source, /if \(!!left\.favorite !== !!right\.favorite\) return left\.favorite \? -1 : 1;/);
+  assert.match(source, /data-desk-supply-history=/);
+  assert.match(source, /function renderDeskSupplyHistoryRow_/);
+  assert.match(source, /물품명<\/th><th>관<\/th><th>증감<\/th><th>변경 후<\/th><th>날짜와 시간<\/th><th>변경자/);
+  assert.match(source, /getDeskSupplyStatusIcon_/);
+  assert.match(source, /package-x/);
+  assert.match(source, /triangle-alert/);
+  assert.match(source, /circle-check/);
   assert.match(source, /branchStocks/);
 });
 

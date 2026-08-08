@@ -201,11 +201,34 @@ export function supplyConsumable(item = {}, fallbackId = '') {
     productName: String(source.productName || '제품명 미입력').trim(),
     unit: String(source.unit || '개').trim(),
     tags: normalizeSupplyTags(source.tags),
+    favorite: source.favorite === true,
+    changeHistory: normalizeSupplyChangeHistory(source.changeHistory),
     branchStocks: Object.fromEntries(SUPPLY_BRANCHES.map(branch => {
       const explicitStock = branchStocks[branch] || (!Object.keys(branchStocks).length && branch === sourceBranch ? source : missingStock);
       return [branch, supplyStock(explicitStock, missingStock)];
     }))
   };
+}
+
+function normalizeSupplyChangeHistory(value) {
+  return (Array.isArray(value) ? value : []).map((entry, index) => {
+    const source = entry && typeof entry === 'object' ? entry : {};
+    const delta = Number(source.delta || 0);
+    const beforeQty = Math.max(0, Number(source.beforeQty || 0));
+    const afterQty = Math.max(0, Number(source.afterQty ?? source.quantity ?? beforeQty + delta));
+    return {
+      id: String(source.id || `supply_change_${index}`).trim(),
+      itemName: String(source.itemName || '').trim(),
+      branch: normalizeSupplyBranch(source.branch),
+      delta,
+      direction: delta < 0 ? 'decrease' : 'increase',
+      beforeQty,
+      afterQty,
+      changedAt: String(source.changedAt || '').trim(),
+      changedBy: String(source.changedBy || '계정 정보 없음').trim(),
+      changedByUid: String(source.changedByUid || '').trim()
+    };
+  }).filter(entry => entry.delta && entry.changedAt).sort((a, b) => b.changedAt.localeCompare(a.changedAt)).slice(0, 50);
 }
 
 export function supplyAsset(item = {}, fallbackId = '') {
@@ -299,9 +322,13 @@ function normalizeSupplyConsumables(items) {
       productName: item.productName,
       unit: item.unit,
       tags: [],
+      favorite: false,
+      changeHistory: [],
       branchStocks: {}
     };
     group.tags = normalizeSupplyTags([...group.tags, ...item.tags]);
+    group.favorite = group.favorite || item.favorite;
+    group.changeHistory = normalizeSupplyChangeHistory([...group.changeHistory, ...item.changeHistory]);
     SUPPLY_BRANCHES.forEach(branch => {
       if (!explicitStocks[branch]) return;
       group.branchStocks[branch] = group.branchStocks[branch]

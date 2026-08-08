@@ -290,7 +290,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, data: suppliesData(stored), seeded };
     },
 
-    async adjustDeskSupplyConsumable(payload = {}) {
+    async adjustDeskSupplyConsumable(payload = {}, identity = {}) {
       const id = String(payload.id || '').trim();
       const branch = String(payload.branch || '').trim();
       const delta = Number(payload.delta || 0);
@@ -303,7 +303,24 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         const target = data.consumables.find(item => item.id === id);
         const stock = target?.branchStocks?.[branch];
         if (!target || !stock) { missing = true; return; }
-        stock.qty = Math.max(0, Math.min(stock.maxQty, Number(stock.qty || 0) + delta));
+        const beforeQty = Number(stock.qty || 0);
+        const afterQty = Math.max(0, Math.min(stock.maxQty, beforeQty + delta));
+        const appliedDelta = afterQty - beforeQty;
+        stock.qty = afterQty;
+        if (appliedDelta) {
+          target.changeHistory = [{
+            id: `supply_change_${newId().slice(0, 12)}`,
+            itemName: target.itemName,
+            branch,
+            delta: appliedDelta,
+            direction: appliedDelta < 0 ? 'decrease' : 'increase',
+            beforeQty,
+            afterQty,
+            changedAt: now(),
+            changedBy: String(identity.name || identity.email || '계정 정보 없음').trim(),
+            changedByUid: String(identity.uid || '').trim()
+          }, ...(target.changeHistory || [])].slice(0, 50);
+        }
         data.purchaseSelections = supplySelections(data.purchaseSelections, data.consumables);
         return data;
       });
@@ -312,10 +329,20 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     },
 
     async saveDeskSupplyConsumable(payload = {}) {
-      const item = supplyConsumable(payload.item, payload.item?.id);
+      let item = supplyConsumable(payload.item, payload.item?.id);
       if (!item.itemName) return failure('품목명을 입력해 주세요.');
       if (!item.productName) return failure('제품명을 입력해 주세요.');
-      const stored = await mutateSupplies(store, data => { data.consumables = [item, ...data.consumables.filter(existing => existing.id !== item.id)]; });
+      const stored = await mutateSupplies(store, data => {
+        const existing = data.consumables.find(entry => entry.id === item.id);
+        if (existing) {
+          item = supplyConsumable({
+            ...item,
+            favorite: typeof payload.item?.favorite === 'boolean' ? item.favorite : existing.favorite,
+            changeHistory: Array.isArray(payload.item?.changeHistory) ? item.changeHistory : existing.changeHistory
+          }, item.id);
+        }
+        data.consumables = [item, ...data.consumables.filter(existingItem => existingItem.id !== item.id)];
+      });
       return { success: true, data: stored, item };
     },
 
