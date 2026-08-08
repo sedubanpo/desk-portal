@@ -79,12 +79,18 @@ test('supply management presents a branch-coded inventory database with favorite
 
   assert.match(source, /class="desk-supply-table desk-supply-matrix-table"/);
   assert.match(source, /class="desk-supply-branch-head branch-main" scope="col">본관<\/th>[\s\S]*?class="desk-supply-branch-head branch-annex2" scope="col">2관<\/th>[\s\S]*?class="desk-supply-branch-head branch-annex3" scope="col">3관<\/th>/);
+  assert.doesNotMatch(source, /desk-supply-branch-register/);
+  assert.doesNotMatch(source, /<th scope="col">전체 상태<\/th>/);
   assert.doesNotMatch(source, /desk-supply-branch-(?:register-item|head|cell) main/);
   assert.match(source, /--supply-main-bg:[\s\S]*--supply-annex2-bg:[\s\S]*--supply-annex3-bg:/);
   assert.match(source, /data-desk-consumable-stock="본관"/);
   assert.match(source, /data-desk-consumable-stock="2관"/);
   assert.match(source, /data-desk-consumable-stock="3관"/);
   assert.match(source, /function renderDeskSupplyBranchStockCell_/);
+  assert.match(source, /class="desk-supply-item-status"/);
+  assert.match(source, /class="desk-supply-stock-gauge/);
+  assert.match(source, /role="progressbar"/);
+  assert.match(source, /placeholder="예: A4, 종이컵, 프린터 토너"/);
   assert.match(source, /data-desk-supply-branch=/);
   assert.match(source, /data-desk-supply-favorite=/);
   assert.match(source, /if \(!!left\.favorite !== !!right\.favorite\) return left\.favorite \? -1 : 1;/);
