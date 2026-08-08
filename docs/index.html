@@ -1293,20 +1293,20 @@
       font-weight: 800;
     }
     .desk-supply-branch-register-item + .desk-supply-branch-register-item { border-left: 1px solid #d8e4de; }
-    .desk-supply-branch-register-item.main { --branch-bg: var(--supply-main-bg); --branch-line: var(--supply-main-line); }
-    .desk-supply-branch-register-item.annex2 { --branch-bg: var(--supply-annex2-bg); --branch-line: var(--supply-annex2-line); }
-    .desk-supply-branch-register-item.annex3 { --branch-bg: var(--supply-annex3-bg); --branch-line: var(--supply-annex3-line); }
+    .desk-supply-branch-register-item.branch-main { --branch-bg: var(--supply-main-bg); --branch-line: var(--supply-main-line); }
+    .desk-supply-branch-register-item.branch-annex2 { --branch-bg: var(--supply-annex2-bg); --branch-line: var(--supply-annex2-line); }
+    .desk-supply-branch-register-item.branch-annex3 { --branch-bg: var(--supply-annex3-bg); --branch-line: var(--supply-annex3-line); }
     .desk-supply-branch-register-item span:last-child { color: #62727d; font-size: 11px; }
     .desk-supply-table-wrap { border-radius: 0; }
     .desk-supply-matrix-table { min-width: 1220px; }
     .desk-supply-matrix-table th { border-bottom: 1px solid #b9c9c1; }
     .desk-supply-matrix-table .desk-supply-branch-head { border-top: 3px solid var(--branch-line); }
-    .desk-supply-matrix-table .desk-supply-branch-head.main,
-    .desk-supply-matrix-table .desk-supply-branch-cell.main { --branch-bg: var(--supply-main-bg); --branch-line: var(--supply-main-line); }
-    .desk-supply-matrix-table .desk-supply-branch-head.annex2,
-    .desk-supply-matrix-table .desk-supply-branch-cell.annex2 { --branch-bg: var(--supply-annex2-bg); --branch-line: var(--supply-annex2-line); }
-    .desk-supply-matrix-table .desk-supply-branch-head.annex3,
-    .desk-supply-matrix-table .desk-supply-branch-cell.annex3 { --branch-bg: var(--supply-annex3-bg); --branch-line: var(--supply-annex3-line); }
+    .desk-supply-matrix-table .desk-supply-branch-head.branch-main,
+    .desk-supply-matrix-table .desk-supply-branch-cell.branch-main { --branch-bg: var(--supply-main-bg); --branch-line: var(--supply-main-line); }
+    .desk-supply-matrix-table .desk-supply-branch-head.branch-annex2,
+    .desk-supply-matrix-table .desk-supply-branch-cell.branch-annex2 { --branch-bg: var(--supply-annex2-bg); --branch-line: var(--supply-annex2-line); }
+    .desk-supply-matrix-table .desk-supply-branch-head.branch-annex3,
+    .desk-supply-matrix-table .desk-supply-branch-cell.branch-annex3 { --branch-bg: var(--supply-annex3-bg); --branch-line: var(--supply-annex3-line); }
     .desk-supply-matrix-table .desk-supply-branch-head,
     .desk-supply-matrix-table .desk-supply-branch-cell { background: var(--branch-bg); }
     .desk-supply-matrix-table tbody tr:hover td:not(.desk-supply-branch-cell) { background: #f7faf8; }
@@ -18225,18 +18225,18 @@
                       <button class="desk-supply-favorite-filter" id="deskSupplyFavoriteFilter" type="button" aria-pressed="false"><i data-lucide="star" aria-hidden="true"></i><span>즐겨찾기만</span></button>
                     </div>
                     <div class="desk-supply-branch-register" aria-label="관별 재고 구분">
-                      <div class="desk-supply-branch-register-item main"><span>본관 · MAIN</span><span id="deskSupplyMainStatus">점검 0곳</span></div>
-                      <div class="desk-supply-branch-register-item annex2"><span>2관 · ANNEX 2</span><span id="deskSupplyAnnex2Status">점검 0곳</span></div>
-                      <div class="desk-supply-branch-register-item annex3"><span>3관 · ANNEX 3</span><span id="deskSupplyAnnex3Status">점검 0곳</span></div>
+                      <div class="desk-supply-branch-register-item branch-main"><span>본관 · MAIN</span><span id="deskSupplyMainStatus">점검 0곳</span></div>
+                      <div class="desk-supply-branch-register-item branch-annex2"><span>2관 · ANNEX 2</span><span id="deskSupplyAnnex2Status">점검 0곳</span></div>
+                      <div class="desk-supply-branch-register-item branch-annex3"><span>3관 · ANNEX 3</span><span id="deskSupplyAnnex3Status">점검 0곳</span></div>
                     </div>
                     <div class="desk-supply-table-wrap" role="region" aria-label="관별 소모품 재고 현황" tabindex="0">
                       <table class="desk-supply-table desk-supply-matrix-table">
                         <thead>
                           <tr>
                             <th scope="col">품목 / 규격</th>
-                            <th class="desk-supply-branch-head main" scope="col">본관</th>
-                            <th class="desk-supply-branch-head annex2" scope="col">2관</th>
-                            <th class="desk-supply-branch-head annex3" scope="col">3관</th>
+                            <th class="desk-supply-branch-head branch-main" scope="col">본관</th>
+                            <th class="desk-supply-branch-head branch-annex2" scope="col">2관</th>
+                            <th class="desk-supply-branch-head branch-annex3" scope="col">3관</th>
                             <th scope="col">전체 상태</th>
                             <th scope="col">관리</th>
                           </tr>
@@ -23193,7 +23193,7 @@
     }
 
     function getDeskSupplyBranchClass_(branch) {
-      return branch === "2관" ? "annex2" : branch === "3관" ? "annex3" : "main";
+      return branch === "2관" ? "branch-annex2" : branch === "3관" ? "branch-annex3" : "branch-main";
     }
 
     function formatDeskSupplyHistoryTime_(value) {

@@ -78,7 +78,8 @@ test('supply management presents a branch-coded inventory database with favorite
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /class="desk-supply-table desk-supply-matrix-table"/);
-  assert.match(source, /class="desk-supply-branch-head main" scope="col">본관<\/th>[\s\S]*?class="desk-supply-branch-head annex2" scope="col">2관<\/th>[\s\S]*?class="desk-supply-branch-head annex3" scope="col">3관<\/th>/);
+  assert.match(source, /class="desk-supply-branch-head branch-main" scope="col">본관<\/th>[\s\S]*?class="desk-supply-branch-head branch-annex2" scope="col">2관<\/th>[\s\S]*?class="desk-supply-branch-head branch-annex3" scope="col">3관<\/th>/);
+  assert.doesNotMatch(source, /desk-supply-branch-(?:register-item|head|cell) main/);
   assert.match(source, /--supply-main-bg:[\s\S]*--supply-annex2-bg:[\s\S]*--supply-annex3-bg:/);
   assert.match(source, /data-desk-consumable-stock="본관"/);
   assert.match(source, /data-desk-consumable-stock="2관"/);
