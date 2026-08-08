@@ -199,6 +199,8 @@ test('staff identity drives the personal journal, account settings, Seoul clock,
   assert.match(source, /id="deskGlobalClock"/);
   assert.match(source, /timeZone: "Asia\/Seoul"/);
   assert.match(source, /id="openAccountSettingsBtn"/);
+  assert.match(source, /id="deskLogoutBtn"/);
+  assert.match(source, /deskLogoutBtnEl\.addEventListener\("click", logoutDeskPortal_\)/);
   assert.match(source, /id="accountSettingsModal"/);
   assert.match(source, /accountSettingsPasswordBtnEl\.addEventListener/);
   assert.match(source, /isDeskStaffAccount_\(\) \? scopeDeskWorkersForIdentity_\(workers\)/);
@@ -206,6 +208,10 @@ test('staff identity drives the personal journal, account settings, Seoul clock,
   assert.match(source, /mergeDeskDailyCarryoverTasks_[\s\S]*?filter\(isDeskTaskVisibleToCurrentAccount_\)/);
   assert.match(source, /memos = memos\.filter\(function\(item\) \{ return isSameDeskWorkerName_\(item\.worker, ownName\); \}\)/);
   assert.match(source, /item\.createdByName \|\| item\.updatedByName \|\| "기록자 미상"/);
+  assert.match(source, /var combined = memoItems\.concat\(taskItems\);\s*combined = combined\.sort/);
+  assert.match(source, /var failedDateKeys = loadDateKeys\.filter/);
+  assert.match(source, /hasLiveFeedError \? "연결 오류"/);
+  assert.match(source, /deskGlobalUserNameEl\.title = displayName/);
   assert.doesNotMatch(source, /<span class="desk-global-tool"><i data-lucide="refresh-cw"[^>]*><\/i>동기화<\/span>/);
   assert.doesNotMatch(source, /class="desk-global-search"/);
 });

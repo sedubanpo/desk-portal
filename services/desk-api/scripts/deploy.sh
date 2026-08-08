@@ -166,7 +166,7 @@ gcloud run deploy "${SERVICE}" \
   --execution-environment gen2 \
   --cpu 1 \
   --memory 512Mi \
-  --concurrency 40 \
+  --concurrency 8 \
   --min-instances 0 \
   --max-instances 10 \
   --timeout 30s \

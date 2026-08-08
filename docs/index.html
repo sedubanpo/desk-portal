@@ -12076,8 +12076,8 @@
       border-radius: 8px 8px 0 0;
       box-shadow: 0 -1px 0 rgba(255,255,255,0.9) inset, 0 10px 18px rgba(2, 24, 18, 0.12);
     }
-    .desk-global-tools { margin-left: auto; min-width: 0; min-height: 52px; display: flex; align-items: center; gap: 10px; color: #d9eee4; font-size: 12px; font-weight: 800; }
-    .desk-global-notice { width: clamp(280px, 28vw, 520px); height: 32px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid rgba(167,243,208,0.26); border-radius: 6px; background: rgba(255,255,255,0.055); color: #effcf6; overflow: hidden; }
+    .desk-global-tools { margin-left: auto; min-width: 0; min-height: 52px; flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; gap: 8px; color: #d9eee4; font-size: 12px; font-weight: 800; overflow: hidden; }
+    .desk-global-notice { width: auto; min-width: 160px; max-width: 520px; height: 32px; flex: 1 1 360px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid rgba(167,243,208,0.26); border-radius: 6px; background: rgba(255,255,255,0.055); color: #effcf6; overflow: hidden; }
     .desk-global-notice svg,
     .desk-global-tool svg,
     .desk-global-user svg { width: 14px; height: 14px; flex: 0 0 auto; }
@@ -12085,11 +12085,17 @@
     .desk-global-notice-copy.is-changing { opacity: 0; transform: translateY(4px); }
     .desk-global-notice-author { color: #a7f3d0; font-size: 11px; white-space: nowrap; }
     .desk-global-tool,
-    .desk-global-user { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; color: #e7f7ef; }
+    .desk-global-user { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; white-space: nowrap; color: #e7f7ef; }
+    .desk-global-user { max-width: 190px; min-width: 72px; }
+    .desk-global-user span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     button.desk-global-tool { height: 30px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; cursor: pointer; }
     button.desk-global-tool:hover { border-color: rgba(226,232,240,0.28); background: rgba(255,255,255,0.07); }
     button.desk-global-tool:focus-visible { outline: 2px solid #a7f3d0; outline-offset: 2px; }
     .desk-global-clock { white-space: nowrap; color: rgba(236,253,245,0.9); }
+    @media (max-width: 1540px) {
+      .desk-global-notice-author { display: none; }
+      .desk-global-clock { font-size: 11px; }
+    }
     .account-settings-summary { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px; border: 1px solid #d8e4de; border-radius: 8px; background: #f7faf8; }
     .account-settings-avatar { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: #0d684d; color: #fff; font-size: 18px; font-weight: 900; }
     .account-settings-summary strong { display: block; color: #17352d; font-size: 16px; }
@@ -17368,6 +17374,7 @@
           <time class="desk-global-clock" id="deskGlobalClock"></time>
           <button class="desk-global-tool" id="openAccountSettingsBtn" type="button"><i data-lucide="settings" aria-hidden="true"></i>설정</button>
           <span class="desk-global-user" id="deskGlobalUser"><i data-lucide="user" aria-hidden="true"></i><span id="deskGlobalUserName">로그인 확인 중</span></span>
+          <button class="desk-global-tool" id="deskLogoutBtn" type="button"><i data-lucide="log-out" aria-hidden="true"></i>로그아웃</button>
         </div>
       </section>
 
@@ -20681,6 +20688,7 @@
           carryoverRequestId: 0,
           loadedDates: {},
           loadingDates: {},
+          loadErrors: {},
           realtimeEnabled: true,
           realtimeSources: {},
           realtimeSnapshots: {},
@@ -20841,6 +20849,7 @@
     var deskGlobalNoticeCopyEl = document.getElementById("deskGlobalNoticeCopy");
     var deskGlobalNoticeAuthorEl = document.getElementById("deskGlobalNoticeAuthor");
     var deskGlobalUserNameEl = document.getElementById("deskGlobalUserName");
+    var deskLogoutBtnEl = document.getElementById("deskLogoutBtn");
     var passwordChangeModalEl = document.getElementById("passwordChangeModal");
     var closePasswordChangeBtnEl = document.getElementById("closePasswordChangeBtn");
     var cancelPasswordChangeBtnEl = document.getElementById("cancelPasswordChangeBtn");
@@ -30084,10 +30093,6 @@
     function startDeskHeaderRuntime_() {
       updateDeskGlobalClock_();
       refreshDeskGlobalNotice_();
-      var todayKey = getDeskSeoulDateKey_();
-      if (!state.desk.daily.loadedDates[todayKey]) {
-        ensureDeskDailyJournalLoaded_(todayKey).then(refreshDeskGlobalNotice_);
-      }
       if (!deskHeaderClockTimer_) deskHeaderClockTimer_ = window.setInterval(updateDeskGlobalClock_, 1000);
       if (!deskGlobalNoticeTimer_) {
         deskGlobalNoticeTimer_ = window.setInterval(function() {
@@ -30103,7 +30108,11 @@
       var name = String(identity.name || "").trim() || "로그인 확인 중";
       var position = String(identity.staffPosition || "").trim();
       var roleLabel = isDeskAdminAccount_() ? "관리자" : "실무자";
-      if (deskGlobalUserNameEl) deskGlobalUserNameEl.textContent = position ? (name + " · " + position) : name;
+      if (deskGlobalUserNameEl) {
+        var displayName = position ? (name + " · " + position) : name;
+        deskGlobalUserNameEl.textContent = displayName;
+        deskGlobalUserNameEl.title = displayName;
+      }
       if (accountSettingsAvatarEl) accountSettingsAvatarEl.textContent = name === "로그인 확인 중" ? "-" : name.slice(0, 1);
       if (accountSettingsNameEl) accountSettingsNameEl.textContent = name;
       if (accountSettingsMetaEl) {
@@ -30125,6 +30134,29 @@
 
     function closeAccountSettings_() {
       accountSettingsModalEl.style.display = "none";
+    }
+
+    function logoutDeskPortal_() {
+      if (!state.firebaseAuth) return;
+      if (deskLogoutBtnEl) deskLogoutBtnEl.disabled = true;
+      closeAccountSettings_();
+      state.portalAccessKey = "";
+      state.desk.daily.tasks = [];
+      state.desk.daily.memos = [];
+      state.desk.daily.loadedDates = {};
+      state.desk.daily.loadingDates = {};
+      state.desk.daily.loadErrors = {};
+      Object.keys(state.desk.daily.realtimeSources || {}).forEach(function(key) {
+        var source = state.desk.daily.realtimeSources[key];
+        try { source.close(); } catch (err) {}
+      });
+      state.desk.daily.realtimeSources = {};
+      state.firebaseAuth.signOut().catch(function(err) {
+        showClientMessage(err && err.message ? err.message : "로그아웃하지 못했습니다.");
+      }).finally(function() {
+        if (deskLogoutBtnEl) deskLogoutBtnEl.disabled = false;
+        showEntryGate();
+      });
     }
 
     function compareDeskDailyTask_(a, b) {
@@ -31449,6 +31481,11 @@
       state.desk.daily.dateKey = dateKey;
       if (deskJournalDateInputEl) deskJournalDateInputEl.value = dateKey;
       ensureDeskDailyScheduleMonthLoaded_(dateKey);
+      if (state.desk.daily.loadErrors[dateKey]) {
+        renderDeskDailyJournalErrorState_(state.desk.daily.loadErrors[dateKey]);
+        renderDeskLiveFeed_();
+        return;
+      }
       if (!state.desk.daily.loadedDates[dateKey]) {
         renderDeskDailyJournalLoadingState_();
         renderDeskLiveFeed_();
@@ -31511,10 +31548,30 @@
       if (deskJournalReportPreviewEl) deskJournalReportPreviewEl.innerHTML = '<div class="desk-empty">근무자 보고 화면을 준비하는 중입니다.</div>';
     }
 
+    function renderDeskDailyJournalErrorState_(message) {
+      var detail = escapeHtml(String(message || "서버 연결을 확인하지 못했습니다."));
+      if (deskJournalWorkerTabsEl) deskJournalWorkerTabsEl.innerHTML = '<div class="desk-empty" style="width:100%;">업무일지를 불러오지 못했습니다. 위의 새로고침 버튼으로 다시 시도해 주세요.</div>';
+      if (deskJournalSharedSummaryCountEl) deskJournalSharedSummaryCountEl.textContent = "연결 오류";
+      if (deskJournalSharedSummaryListEl) deskJournalSharedSummaryListEl.innerHTML = '<div class="desk-shared-summary-empty">공동 업무를 불러오지 못했습니다. 새로고침 후 다시 확인해 주세요.</div>';
+      if (deskJournalTaskBoardEl) deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">업무 배정 목록을 불러오지 못했습니다.<br><span class="desk-muted">' + detail + '</span></div>';
+      if (deskJournalManagerBoardEl) deskJournalManagerBoardEl.innerHTML = '';
+      if (deskJournalMemoListEl) deskJournalMemoListEl.innerHTML = '<div class="desk-empty">입력 기록을 불러오지 못했습니다.</div>';
+      if (deskJournalMemoMetaEl) deskJournalMemoMetaEl.textContent = "연결 오류";
+      if (deskJournalTaskSummaryEl) deskJournalTaskSummaryEl.textContent = "오류";
+      if (deskJournalMemoSummaryEl) deskJournalMemoSummaryEl.textContent = "오류";
+      if (deskJournalPendingSummaryEl) deskJournalPendingSummaryEl.textContent = "오류";
+      if (deskJournalWorkerSummaryEl) deskJournalWorkerSummaryEl.textContent = "오류";
+      if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = "오류";
+      if (deskJournalMemoPaginationEl) deskJournalMemoPaginationEl.innerHTML = "";
+      if (deskJournalPendingListEl) deskJournalPendingListEl.innerHTML = '<div class="desk-empty">미해결 업무를 불러오지 못했습니다.</div>';
+      if (deskJournalReportPreviewEl) deskJournalReportPreviewEl.innerHTML = '<div class="desk-empty">보고 화면을 준비하지 못했습니다.</div>';
+    }
+
     function ensureDeskDailyJournalLoaded_(dateKey, force) {
       var key = String(dateKey || "").trim();
       if (!key) return Promise.resolve();
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
+      if (!force && state.desk.daily.loadErrors[key]) return Promise.resolve();
       if (!force && state.desk.daily.loadedDates[key]) {
         startDeskDailyJournalRealtime_(key);
         return Promise.resolve();
@@ -31526,6 +31583,7 @@
           mergeDeskDailyPendingMemosForDate_(key);
           refreshDeskDailyJournalSnapshotForDate_(key);
           state.desk.daily.loadedDates[key] = true;
+          delete state.desk.daily.loadErrors[key];
           deskDailyJournalLastSuccessfulPollAt_ = Date.now();
           flushDeskDailyPendingMemoWrites_();
           startDeskDailyJournalRealtime_(key);
@@ -31548,12 +31606,15 @@
       request = request
         .catch(function(err) {
           var message = err && err.message ? err.message : String(err);
+          state.desk.daily.loadErrors[key] = message;
           setDeskDailySyncStatus_("error");
           console.warn("desk daily journal load error", message);
           if (state.desk.activeTab === "dailyJournal") {
             if (deskJournalTaskBoardEl) deskJournalTaskBoardEl.innerHTML = '<div class="desk-empty">일일 업무일지 데이터를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</div>';
             if (deskJournalMemoListEl) deskJournalMemoListEl.innerHTML = '<div class="desk-empty">근무 이슈 데이터를 불러오지 못했습니다.</div>';
           }
+          if (state.desk.daily.dateKey === key) renderDeskDailyJournal_();
+          else renderDeskLiveFeed_();
         })
         .finally(function() {
           delete state.desk.daily.loadingDates[key];
@@ -32432,12 +32493,6 @@
         });
       });
       var combined = memoItems.concat(taskItems);
-      if (isDeskStaffAccount_()) {
-        var ownName = getDeskIdentityName_();
-        combined = combined.filter(function(item) {
-          return isSameDeskWorkerName_(item.worker, ownName) || isSameDeskWorkerName_(item.worker, DESK_SHARED_WORKER_NAME);
-        });
-      }
       combined = combined.sort(function(a, b) {
         var aDate = String((a.displayStamp || a.stamp || "")).slice(0, 10);
         var bDate = String((b.displayStamp || b.stamp || "")).slice(0, 10);
@@ -32658,6 +32713,8 @@
       state.desk.daily.taskLedgerError = "";
       delete state.desk.daily.loadingDates[dateKey];
       delete state.desk.daily.loadingDates[DESK_ROUTINE_TEMPLATE_KEY];
+      delete state.desk.daily.loadErrors[dateKey];
+      delete state.desk.daily.loadErrors[DESK_ROUTINE_TEMPLATE_KEY];
       renderDeskDailyJournal_();
       return Promise.all([
         ensureDeskDailyJournalLoaded_(dateKey, true),
@@ -32690,8 +32747,11 @@
       var loadedDateKeys = loadDateKeys.filter(function(dateKey) {
         return !!state.desk.daily.loadedDates[dateKey];
       });
+      var failedDateKeys = loadDateKeys.filter(function(dateKey) {
+        return dateKey && !!state.desk.daily.loadErrors[dateKey];
+      });
       var missingDateKeys = loadDateKeys.filter(function(dateKey) {
-        return dateKey && !state.desk.daily.loadedDates[dateKey];
+        return dateKey && !state.desk.daily.loadedDates[dateKey] && !state.desk.daily.loadErrors[dateKey];
       });
       if (missingDateKeys.length && !shouldDeferPortalDataLoad_()) {
         missingDateKeys.forEach(function(dateKey) {
@@ -32699,14 +32759,15 @@
         });
         ensureDeskDailyJournalLoaded_(DESK_ROUTINE_TEMPLATE_KEY);
       }
-      var isLiveFeedLoading = !loadedDateKeys.length && missingDateKeys.length;
+      var isLiveFeedLoading = !loadedDateKeys.length && !!missingDateKeys.length;
+      var hasLiveFeedError = !loadedDateKeys.length && !!failedDateKeys.length && !isLiveFeedLoading;
       var items = loadedDateKeys.length ? collectDeskLiveFeedItems_(loadedDateKeys) : [];
       var pageSize = state.desk.daily.liveFeedPageSize || 10;
       var totalPages = Math.max(1, Math.ceil(items.length / pageSize));
       state.desk.daily.liveFeedPage = Math.min(Math.max(state.desk.daily.liveFeedPage || 1, 1), totalPages);
       var startIndex = (state.desk.daily.liveFeedPage - 1) * pageSize;
       var pageItems = items.slice(startIndex, startIndex + pageSize);
-      if (deskLiveFeedCountEl) deskLiveFeedCountEl.textContent = isLiveFeedLoading ? "확인 중" : (items.length + "건");
+      if (deskLiveFeedCountEl) deskLiveFeedCountEl.textContent = isLiveFeedLoading ? "확인 중" : (hasLiveFeedError ? "연결 오류" : (items.length + "건"));
       if (deskLiveFeedPageEl) deskLiveFeedPageEl.textContent = state.desk.daily.liveFeedPage + " / " + totalPages;
       if (deskLiveFeedPrevBtnEl) deskLiveFeedPrevBtnEl.disabled = state.desk.daily.liveFeedPage <= 1;
       if (deskLiveFeedNextBtnEl) deskLiveFeedNextBtnEl.disabled = state.desk.daily.liveFeedPage >= totalPages;
@@ -32717,6 +32778,10 @@
       if (!deskLiveFeedBodyEl) return;
       if (isLiveFeedLoading) {
         deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">업무일지 데이터를 불러오는 중입니다.</div>';
+        return;
+      }
+      if (hasLiveFeedError) {
+        deskLiveFeedBodyEl.innerHTML = '<div class="desk-live-feed-empty">실시간 현황을 불러오지 못했습니다.<br>일일 업무일지의 새로고침 버튼으로 다시 시도해 주세요.</div>';
         return;
       }
       if (!pageItems.length) {
@@ -36912,6 +36977,7 @@
 
       openPasswordChangeBtnEl.addEventListener("click", openPasswordChange_);
       openAccountSettingsBtnEl.addEventListener("click", openAccountSettings_);
+      deskLogoutBtnEl.addEventListener("click", logoutDeskPortal_);
       closeAccountSettingsBtnEl.addEventListener("click", closeAccountSettings_);
       accountSettingsPasswordBtnEl.addEventListener("click", function() {
         closeAccountSettings_();
