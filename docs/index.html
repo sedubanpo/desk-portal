@@ -16965,6 +16965,8 @@
       background: transparent;
     }
     .desk-daily-journal-mode .desk-shared-summary-count {
+      grid-column: 2;
+      grid-row: 1;
       min-width: 44px;
       height: 28px;
       font-variant-numeric: tabular-nums;
@@ -17367,6 +17369,7 @@
     }
     .desk-shared-summary-columns {
       grid-column: 1 / -1;
+      grid-row: 2;
       display: grid;
       grid-template-columns: minmax(300px, 1fr) 150px 108px 128px;
       padding: 8px 14px;
@@ -17378,6 +17381,7 @@
     }
     .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-list {
       grid-column: 1 / -1;
+      grid-row: 3;
       display: block;
       max-height: 308px;
       overflow-y: auto;
@@ -17454,7 +17458,7 @@
 
     .desk-purchase-grid { grid-template-columns: minmax(560px, 1.16fr) minmax(360px, 0.84fr); gap: 12px; align-items: start; }
     .desk-purchase-composer { position: sticky; top: 84px; }
-    .desk-purchase-list { gap: 0; border: 1px solid var(--ds-border); border-radius: 8px; overflow: hidden; }
+    .desk-purchase-list { gap: 0; max-height: 620px; border: 1px solid var(--ds-border); border-radius: 8px; overflow-y: auto; }
     .desk-purchase-item { grid-template-columns: 40px 30px minmax(0, 1fr) auto; gap: 8px; min-height: 64px; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--ds-border-soft); border-radius: 0; background: #fff; }
     .desk-purchase-item:last-child { border-bottom: 0; }
     .desk-purchase-item.low { border-color: var(--ds-border-soft); background: #fff; }
