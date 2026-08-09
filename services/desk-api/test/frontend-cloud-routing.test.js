@@ -108,6 +108,8 @@ test('shared staff icons are cached by Korean name and reused across desk surfac
   const source = await readFile(frontendPath, 'utf8');
 
   assert.match(source, /collection\("sharedIconAssets"\)\.get\(\)/);
+  assert.match(source, /getDeskStaffDirectory: true/);
+  assert.match(source, /runServer\("getDeskStaffDirectory", \{\}\)/);
   assert.match(source, /function normalizeDeskStaffIconAsset_/);
   assert.match(source, /function indexDeskStaffIcons_/);
   assert.match(source, /function normalizeDeskStaffIconName_/);
@@ -116,6 +118,9 @@ test('shared staff icons are cached by Korean name and reused across desk surfac
   assert.match(source, /function renderDeskStaffIdentityHtml_/);
   assert.match(source, /onerror="this\.remove\(\)"/);
   assert.match(source, /loading="lazy" decoding="async"/);
+  assert.match(source, /byLookupKey\["staff-position:" \+ staffPosition\]/);
+  assert.match(source, /if \(userIcon\) byName\[nameKey\] = userIcon;/);
+  assert.match(source, /else if \(!byName\[nameKey\] && positionIcon\) byName\[nameKey\] = positionIcon;/);
   assert.match(source, /renderDeskStaffAvatarHtml_\(item\.worker, "worker-initial"\)/);
   assert.match(source, /renderDeskStaffAvatarHtml_\(item\.worker, "desk-live-feed-avatar"\)/);
   assert.match(source, /renderDeskStaffIdentityHtml_\(entry\.changedBy \|\| "계정 정보 없음"\)/);

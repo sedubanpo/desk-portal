@@ -43,6 +43,7 @@ export const DESK_READ_METHODS = new Set([
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
   'getDeskDailyJournalTaskLedger',
+  'getDeskStaffDirectory',
   'getDeskSuppliesData',
   'getDeskRecruitingApplicantsData',
   'getDeskPortalConfig'
@@ -66,10 +67,20 @@ export const DESK_ATTENDANCE_ADMIN_METHODS = new Set(['saveDeskAttendanceCorrect
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
 
-export function createDeskHandlers({ store, now = () => new Date().toISOString() }) {
+export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [] }) {
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
+    async getDeskStaffDirectory() {
+      const staff = (await loadStaffDirectory()).map(item => ({
+        uid: String(item?.uid || '').trim(),
+        name: String(item?.name || '').trim(),
+        staffPosition: String(item?.staffPosition || '').trim()
+      })).filter(item => item.name && item.staffPosition)
+        .sort((left, right) => left.name.localeCompare(right.name, 'ko'));
+      return { success: true, staff };
+    },
+
     async getDeskScheduleMonthData(payload = {}) {
       const key = monthKey(payload.monthKey);
       if (!key) return failure('monthKey가 올바르지 않습니다.');
@@ -850,7 +861,7 @@ function errorPrefix(name) {
   const labels = {
     getDeskScheduleMonthData: '근무표 조회 오류', getDeskScheduleDayHistory: '근무표 버전 이력 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
     getDeskAttendanceMonthData: '근태 현황 조회 오류', saveDeskAttendancePunch: '출퇴근 기록 오류', saveDeskAttendanceCorrectionRequest: '출퇴근 정정 요청 오류', saveDeskAttendanceCorrectionDecision: '출퇴근 정정 처리 오류',
-    getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
+    getDeskStaffDirectory: '실무자 아이콘 연결 정보 조회 오류', getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
     getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'
   };

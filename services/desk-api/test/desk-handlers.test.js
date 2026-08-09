@@ -25,6 +25,27 @@ function memoryStore(seed = {}) {
   };
 }
 
+test('staff icon directory exposes only the name and position linkage', async () => {
+  const handlers = createDeskHandlers({
+    store: memoryStore(),
+    loadStaffDirectory: async () => [
+      { uid: 'staff-2', name: '안종성', staffPosition: '대리', loginId: '01086262428', phone: '01086262428' },
+      { uid: 'staff-1', name: '김유민', staffPosition: '주임', email: 'staff@example.com' },
+      { uid: 'missing-position', name: '직급없음', staffPosition: '' }
+    ]
+  });
+
+  const result = await handlers.getDeskStaffDirectory();
+
+  assert.deepEqual(result, {
+    success: true,
+    staff: [
+      { uid: 'staff-1', name: '김유민', staffPosition: '주임' },
+      { uid: 'staff-2', name: '안종성', staffPosition: '대리' }
+    ]
+  });
+});
+
 test('schedule read preserves legacy shape and filters retired workers without mutating data', async () => {
   const store = memoryStore({ desk_portal: { monthly_schedule: { '2026-07': { entries: {
     current: { id: 'current', date: '2026-07-15', worker: '안종성', start: '14:00', end: '22:30' },

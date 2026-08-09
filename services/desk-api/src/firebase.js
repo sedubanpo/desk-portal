@@ -42,13 +42,35 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       };
     },
     deskHandlers: {
-      ...createDeskHandlers({ store: createDeskStore(legacyDatabase) }),
+      ...createDeskHandlers({
+        store: createDeskStore(legacyDatabase),
+        loadStaffDirectory: () => loadStaffDirectory(firestore)
+      }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),
       ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace })
     },
     runIdempotent: createIdempotencyExecutor(firestore)
   };
+}
+
+async function loadStaffDirectory(firestore) {
+  const [usersSnapshot, profilesSnapshot] = await Promise.all([
+    firestore.collection('users').get(),
+    firestore.collection('userProfiles').get()
+  ]);
+  const profiles = new Map(profilesSnapshot.docs.map(doc => [doc.id, doc.data() || {}]));
+  return usersSnapshot.docs.map(doc => {
+    const user = doc.data() || {};
+    const profile = profiles.get(doc.id) || {};
+    return {
+      uid: doc.id,
+      role: String(user.role || '').toUpperCase(),
+      status: String(user.status || 'ACTIVE').toUpperCase(),
+      name: user.name || profile.displayName || '',
+      staffPosition: user.staffPosition || profile.staffPosition || ''
+    };
+  }).filter(item => item.role === 'STAFF' && !['DISABLED', 'INACTIVE', 'STOPPED', 'SUSPENDED'].includes(item.status));
 }
 
 function legacyFirebaseApp(databaseURL) {

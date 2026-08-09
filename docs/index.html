@@ -20473,7 +20473,7 @@
       getDeskScheduleMonthData: true, getDeskScheduleDayHistory: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskAttendanceMonthData: true, saveDeskAttendancePunch: true, saveDeskAttendanceCorrectionRequest: true, saveDeskAttendanceCorrectionDecision: true,
       getDeskCalendarEvents: true,
-      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
+      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, getDeskStaffDirectory: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskPortalConfig: true, saveDeskPortalConfig: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
@@ -20716,7 +20716,8 @@
           loaded: false,
           loadingPromise: null,
           byName: {},
-          byLookupKey: {}
+          byLookupKey: {},
+          staffByName: {}
         },
         recruiting: {
           loaded: false,
@@ -30340,6 +30341,7 @@
       state.desk.staffIcons.loadingPromise = null;
       state.desk.staffIcons.byName = {};
       state.desk.staffIcons.byLookupKey = {};
+      state.desk.staffIcons.staffByName = {};
       Object.keys(state.desk.daily.realtimeSources || {}).forEach(function(key) {
         var source = state.desk.daily.realtimeSources[key];
         try { source.close(); } catch (err) {}
@@ -31358,7 +31360,7 @@
       };
     }
 
-    function indexDeskStaffIcons_(assets) {
+    function indexDeskStaffIcons_(assets, staffDirectory) {
       var byName = {};
       var byLookupKey = {};
       (assets || []).forEach(function(asset) {
@@ -31369,13 +31371,29 @@
           if (key && !byName[key]) byName[key] = asset;
         });
       });
+      var staffByName = {};
+      (staffDirectory || []).forEach(function(person) {
+        var name = canonicalizeDeskWorkerName_(person && person.name);
+        var nameKey = normalizeDeskStaffIconName_(name);
+        if (!nameKey) return;
+        var uid = String(person && person.uid || "").trim();
+        var staffPosition = String(person && person.staffPosition || "").trim();
+        var userIcon = uid ? byLookupKey["user:" + uid] : null;
+        var positionIcon = staffPosition ? byLookupKey["staff-position:" + staffPosition] : null;
+        staffByName[nameKey] = { uid: uid, name: name, staffPosition: staffPosition };
+        if (userIcon) byName[nameKey] = userIcon;
+        else if (!byName[nameKey] && positionIcon) byName[nameKey] = positionIcon;
+      });
       var ownName = getDeskIdentityName_();
       var ownUid = String(state.cloudIdentity && state.cloudIdentity.uid || "").trim();
-      if (ownName && ownUid && byLookupKey["user:" + ownUid]) {
-        byName[normalizeDeskStaffIconName_(ownName)] = byLookupKey["user:" + ownUid];
+      var ownPosition = String(state.cloudIdentity && state.cloudIdentity.staffPosition || "").trim();
+      if (ownName) {
+        var ownKey = normalizeDeskStaffIconName_(ownName);
+        byName[ownKey] = (ownUid && byLookupKey["user:" + ownUid]) || byName[ownKey] || (ownPosition && byLookupKey["staff-position:" + ownPosition]) || null;
       }
       state.desk.staffIcons.byName = byName;
       state.desk.staffIcons.byLookupKey = byLookupKey;
+      state.desk.staffIcons.staffByName = staffByName;
       state.desk.staffIcons.loaded = true;
       return byName;
     }
@@ -31385,13 +31403,22 @@
       if (!state.firebaseFirestore || !state.firebaseUser) return Promise.resolve({});
       if (cache.loaded && !force) return Promise.resolve(cache.byName || {});
       if (cache.loadingPromise && !force) return cache.loadingPromise;
-      cache.loadingPromise = state.firebaseFirestore.collection("sharedIconAssets").get().then(function(snapshot) {
-        return indexDeskStaffIcons_(snapshot.docs.map(normalizeDeskStaffIconAsset_));
+      cache.loadingPromise = Promise.all([
+        state.firebaseFirestore.collection("sharedIconAssets").get(),
+        runServer("getDeskStaffDirectory", {}).catch(function(err) {
+          console.warn("staff icon directory unavailable", err && err.message ? err.message : err);
+          return { success: false, staff: [] };
+        })
+      ]).then(function(results) {
+        var snapshot = results[0];
+        var directory = results[1];
+        return indexDeskStaffIcons_(snapshot.docs.map(normalizeDeskStaffIconAsset_), directory && directory.success ? directory.staff : []);
       }).catch(function(err) {
         console.warn("shared staff icons unavailable", err && err.message ? err.message : err);
         cache.loaded = true;
         cache.byName = {};
         cache.byLookupKey = {};
+        cache.staffByName = {};
         return {};
       }).finally(function() {
         cache.loadingPromise = null;
