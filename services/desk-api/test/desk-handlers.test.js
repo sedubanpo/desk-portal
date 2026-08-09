@@ -272,6 +272,23 @@ test('supply quantity adjustment uses a transaction and records the selected bra
   assert.equal(transactions, 1);
 });
 
+test('supply quantity adjustment resolves a normalized item when the client has a legacy id', async () => {
+  const store = memoryStore({ desk_portal: { supplies: { consumables: [{
+    id: 'canonical-paper', itemName: '복사용지', productName: 'A4 80g', unit: '박스',
+    branchStocks: {
+      '본관': { qty: 2, maxQty: 5, safetyQty: 1 },
+      '2관': { qty: 0, maxQty: 5, safetyQty: 1 },
+      '3관': { qty: 0, maxQty: 5, safetyQty: 1 }
+    }
+  }], assets: [] } } });
+  const handlers = createDeskHandlers({ store, now: () => '2026-08-10T01:00:00.000Z' });
+  const result = await handlers.adjustDeskSupplyConsumable({
+    id: 'legacy-paper-2f', itemName: '복사용지', productName: 'A4 80g', unit: '박스', branch: '2관', delta: 1
+  }, { uid: 'desk-1', name: '안종성' });
+  assert.equal(result.success, true);
+  assert.equal(result.data.consumables[0].branchStocks['2관'].qty, 1);
+});
+
 test('supply normalization preserves favorites and caps recent change history', async () => {
   const history = Array.from({ length: 55 }, (_, index) => ({
     id: `change-${index}`,

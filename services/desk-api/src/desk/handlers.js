@@ -431,6 +431,9 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async adjustDeskSupplyConsumable(payload = {}, identity = {}) {
       const id = String(payload.id || '').trim();
+      const itemName = String(payload.itemName || '').trim();
+      const productName = String(payload.productName || '').trim();
+      const unit = String(payload.unit || '').trim();
       const branch = String(payload.branch || '').trim();
       const delta = Number(payload.delta || 0);
       if (!id) return failure('품목 ID가 없습니다.');
@@ -439,7 +442,10 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       let missing = false;
       const stored = await store.transaction(PATHS.supplies, current => {
         const data = suppliesData(current);
-        const target = data.consumables.find(item => item.id === id);
+        const target = data.consumables.find(item => item.id === id) || data.consumables.find(item => (
+          itemName && productName && unit &&
+          item.itemName === itemName && item.productName === productName && item.unit === unit
+        ));
         const stock = target?.branchStocks?.[branch];
         if (!target || !stock) { missing = true; return; }
         const beforeQty = Number(stock.qty || 0);

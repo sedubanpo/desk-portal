@@ -17311,6 +17311,191 @@
         transition-duration: 0ms;
       }
     }
+    /* Daily notices, asset ledger, and purchase workspace */
+    .desk-journal-shared-strip {
+      border: 1px solid var(--ds-border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 0;
+      box-shadow: none;
+      overflow: hidden;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip {
+      min-height: 0;
+      padding: 0;
+      border-color: var(--ds-border);
+      background: #fff;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0;
+      margin: 0;
+    }
+    .desk-shared-summary-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 13px 16px;
+      background: #f7fbf8;
+      border-bottom: 1px solid var(--ds-border);
+    }
+    .desk-shared-summary-heading p {
+      margin: 0;
+      color: var(--ds-muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-title {
+      color: var(--ds-primary-strong);
+      font-size: 14px;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-title svg { width: 17px; height: 17px; }
+    .desk-daily-journal-mode .desk-shared-summary-count {
+      align-self: stretch;
+      min-width: 68px;
+      height: auto;
+      padding: 0 16px;
+      border: 0;
+      border-bottom: 1px solid var(--ds-border);
+      border-left: 1px solid var(--ds-border);
+      border-radius: 0;
+      background: #f7fbf8;
+      color: var(--ds-primary);
+      font-size: 12px;
+    }
+    .desk-shared-summary-columns {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 150px 108px 128px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--ds-border-soft);
+      background: #fbfdfc;
+      color: var(--ds-muted);
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-list {
+      grid-column: 1 / -1;
+      display: block;
+      max-height: 308px;
+      overflow-y: auto;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item,
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item[open] {
+      min-width: 0;
+      min-height: 0;
+      border: 0;
+      border-bottom: 1px solid var(--ds-border-soft);
+      border-radius: 0;
+      background: #fff;
+    }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item:last-child { border-bottom: 0; }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-item[open] { background: #fafffc; }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-trigger {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 150px 108px 128px;
+      gap: 0;
+      min-height: 58px;
+      padding: 0 14px;
+    }
+    .desk-shared-summary-task { display: flex; align-items: center; gap: 9px; min-width: 0; padding-right: 14px; }
+    .desk-shared-summary-task > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+    .desk-shared-summary-task strong { overflow: hidden; color: var(--ds-fg); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-shared-summary-task small { overflow: hidden; margin-top: 2px; color: var(--ds-muted); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-shared-summary-owner,
+    .desk-shared-summary-progress,
+    .desk-shared-summary-updated { display: flex; align-items: center; border-left: 1px solid var(--ds-border-soft); padding-left: 12px; }
+    .desk-shared-summary-progress { flex-direction: column; align-items: flex-start; justify-content: center; }
+    .desk-shared-summary-progress strong { color: var(--ds-primary); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .desk-shared-summary-progress span,
+    .desk-shared-summary-updated span { color: var(--ds-muted); font-size: 10px; font-weight: 800; }
+    .desk-shared-summary-updated { justify-content: space-between; gap: 8px; }
+    .desk-shared-summary-updated svg { width: 15px; height: 15px; color: var(--ds-muted); transition: transform 160ms ease; }
+    .desk-shared-summary-item[open] .desk-shared-summary-updated svg { transform: rotate(180deg); }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-detail { padding: 12px 16px; border-top: 1px solid var(--ds-border-soft); background: #f7fbf8; }
+    .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-empty { padding: 20px 16px; color: var(--ds-muted); line-height: 1.5; white-space: normal; }
+
+    .desk-asset-workspace { display: grid; grid-template-columns: minmax(300px, 0.38fr) minmax(620px, 1fr); gap: 12px; align-items: start; }
+    .desk-operational-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .desk-operational-heading h3 { margin: 0; color: var(--ds-fg); font-size: 16px; }
+    .desk-operational-heading p { margin: 4px 0 0; color: var(--ds-muted); font-size: 11px; line-height: 1.5; }
+    .desk-operational-heading > svg { width: 20px; height: 20px; color: var(--ds-primary); }
+    .desk-asset-register .desk-asset-form.compact { grid-template-columns: 1fr; gap: 9px; }
+    .desk-asset-register .desk-asset-form .field.full { grid-column: 1; }
+    .desk-asset-register .desk-form-actions-row { justify-content: stretch; }
+    .desk-asset-register .desk-form-actions-row .desk-primary-btn { flex: 1; }
+    .desk-asset-toolbar,
+    .desk-purchase-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 132px 140px; gap: 8px; margin-bottom: 10px; }
+    .desk-purchase-toolbar { grid-template-columns: minmax(220px, 1fr) 132px; }
+    .desk-ledger-search { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 11px; border: 1px solid #c9d8d0; border-radius: 8px; background: #fff; }
+    .desk-ledger-search:focus-within { border-color: var(--ds-primary); box-shadow: 0 0 0 3px var(--ds-ring); }
+    .desk-ledger-search svg { width: 16px; color: var(--ds-muted); }
+    .desk-ledger-search input { width: 100%; border: 0; outline: 0; color: var(--ds-fg); font: inherit; font-size: 12px; }
+    .desk-ledger-count { color: var(--ds-primary); font-size: 12px; font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .desk-asset-table { min-width: 820px; }
+    .desk-asset-table th,
+    .desk-asset-table td { padding: 9px 10px; vertical-align: middle; }
+    .desk-asset-identity { display: flex; align-items: center; gap: 9px; min-width: 220px; }
+    .desk-asset-category-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 7px; background: #edf7f2; color: var(--ds-primary); }
+    .desk-asset-category-icon svg { width: 17px; height: 17px; }
+    .desk-asset-identity > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+    .desk-asset-identity strong { color: var(--ds-fg); font-size: 12px; }
+    .desk-asset-identity small { max-width: 260px; overflow: hidden; margin-top: 2px; color: var(--ds-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-asset-status { display: inline-flex; align-items: center; gap: 5px; color: var(--ds-primary); font-size: 11px; font-weight: 900; white-space: nowrap; }
+    .desk-asset-status.low { color: #b45309; }
+    .desk-asset-status.out { color: var(--ds-danger); }
+    .desk-asset-status svg { width: 14px; height: 14px; }
+    .desk-ledger-empty { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 28px; color: var(--ds-muted); }
+    .desk-ledger-empty svg { width: 24px; }
+    .desk-ledger-empty strong { color: var(--ds-fg-soft); }
+    .desk-ledger-empty span { font-size: 11px; }
+
+    .desk-purchase-grid { grid-template-columns: minmax(560px, 1.16fr) minmax(360px, 0.84fr); gap: 12px; align-items: start; }
+    .desk-purchase-composer { position: sticky; top: 84px; }
+    .desk-purchase-list { gap: 0; border: 1px solid var(--ds-border); border-radius: 8px; overflow: hidden; }
+    .desk-purchase-item { grid-template-columns: 40px 30px minmax(0, 1fr) auto; gap: 8px; min-height: 64px; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--ds-border-soft); border-radius: 0; background: #fff; }
+    .desk-purchase-item:last-child { border-bottom: 0; }
+    .desk-purchase-item.low { border-color: var(--ds-border-soft); background: #fff; }
+    .desk-purchase-item.selected { background: #f2faf6; box-shadow: inset 3px 0 0 var(--ds-primary); }
+    .desk-purchase-item input[type="checkbox"] { width: 18px; height: 18px; justify-self: center; }
+    .desk-purchase-state-icon { display: inline-flex; align-items: center; justify-content: center; color: #b45309; }
+    .desk-purchase-state-icon svg { width: 17px; height: 17px; }
+    .desk-purchase-item-title { gap: 1px; }
+    .desk-purchase-item-title strong { color: var(--ds-fg); font-size: 13px; }
+    .desk-purchase-item-title span { overflow: hidden; color: var(--ds-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .desk-purchase-item-title small { color: var(--ds-muted); font-size: 10px; font-weight: 750; }
+    .desk-purchase-item-title small b { color: var(--ds-fg-soft); }
+    .desk-purchase-item-qty { gap: 5px; white-space: nowrap; }
+    .desk-purchase-item-qty input { width: 62px; border-radius: 7px; padding: 7px 8px; font-variant-numeric: tabular-nums; }
+    .desk-purchase-message { min-height: 360px; border-radius: 8px; background: #f8faf9; font-size: 11px; line-height: 1.65; }
+    .desk-purchase-custom-list { display: grid; gap: 0; margin-top: 12px; border: 1px solid var(--ds-border); border-radius: 8px; overflow: hidden; }
+    .desk-purchase-custom-item { padding: 12px; border: 0; border-bottom: 1px solid var(--ds-border-soft); border-radius: 0; }
+    .desk-purchase-custom-item:last-child { border-bottom: 0; }
+
+    @media (max-width: 1120px) {
+      .desk-asset-workspace,
+      .desk-purchase-grid { grid-template-columns: 1fr; }
+      .desk-asset-register .desk-asset-form.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .desk-asset-register .desk-asset-form .field.full { grid-column: 1 / -1; }
+      .desk-purchase-composer { position: static; }
+    }
+    @media (max-width: 760px) {
+      .desk-shared-summary-columns { display: none; }
+      .desk-daily-journal-mode .desk-journal-shared-strip .desk-shared-summary-trigger { grid-template-columns: minmax(0, 1fr) 84px; padding: 10px 12px; }
+      .desk-shared-summary-owner { border-left: 0; padding-left: 0; }
+      .desk-shared-summary-progress,
+      .desk-shared-summary-updated { display: none; }
+      .desk-shared-summary-heading { display: block; }
+      .desk-shared-summary-heading p { margin-top: 3px; }
+      .desk-asset-register .desk-asset-form.compact,
+      .desk-asset-toolbar,
+      .desk-purchase-toolbar { grid-template-columns: 1fr; }
+      .desk-purchase-item { grid-template-columns: 36px 26px minmax(0, 1fr); }
+      .desk-purchase-item-qty { grid-column: 3; justify-content: flex-start; }
+    }
+
     .desk-attendance-strip { display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:12px; align-items:center; padding:10px 12px; border:1px solid #c9ddd4; background:#f4faf7; }
     .desk-attendance-status { display:flex; align-items:center; gap:10px; min-width:0; }
     .desk-attendance-status i { width:18px; color:#0c6b4d; }
@@ -18446,10 +18631,9 @@
               </section>
 
               <section class="desk-supply-panel hidden" data-desk-supplies-panel="assets">
-                <div class="desk-supply-stack compact">
-                  <article class="desk-supply-card">
-                    <h3>공용 물품 등록</h3>
-                    <p>데스크탑, 태블릿, 프린터 같은 공용 장비를 등록하고 위치와 상태를 함께 남길 수 있습니다.</p>
+                <div class="desk-asset-workspace">
+                  <article class="desk-supply-card desk-asset-register">
+                    <div class="desk-operational-heading"><div><h3>공용 물품 등록</h3><p>장비의 위치, 담당자, 운영 상태를 한 번에 기록합니다.</p></div><i data-lucide="package-plus" aria-hidden="true"></i></div>
                     <form class="desk-asset-form compact" id="deskAssetForm">
                       <div class="field">
                         <label for="deskAssetType">물품 분류</label>
@@ -18473,7 +18657,7 @@
                       </div>
                       <div class="field">
                         <label for="deskAssetManager">담당 / 사용 주체</label>
-                        <input id="deskAssetManager" class="desk-inline-input" type="text" placeholder="예: 데스크 공용">
+                        <input id="deskAssetManager" class="desk-inline-input" type="text" list="deskJournalWorkerNameList" placeholder="이름 또는 데스크 공용">
                       </div>
                       <div class="field">
                         <label for="deskAssetStatus">상태</label>
@@ -18494,21 +18678,19 @@
                       </div>
                     </form>
                   </article>
-                  <article class="desk-supply-card">
-                    <h3>물품 현황</h3>
-                    <div class="desk-supply-filter-row single">
-                      <div class="field full">
-                        <label for="deskAssetSearch">물품 검색</label>
-                        <input id="deskAssetSearch" class="desk-inline-input" type="search" placeholder="분류, 제품명, 위치, 담당, 상태 검색">
-                      </div>
+                  <article class="desk-supply-card desk-asset-ledger">
+                    <div class="desk-operational-heading"><div><h3>공용 물품 대장</h3><p>분류와 담당자별로 장비 상태를 빠르게 점검합니다.</p></div><span class="desk-ledger-count" id="deskAssetLedgerCount">0개</span></div>
+                    <div class="desk-asset-toolbar">
+                      <label class="desk-ledger-search"><i data-lucide="search"></i><input id="deskAssetSearch" type="search" placeholder="제품명, 위치, 담당자 검색" aria-label="공용 물품 검색"></label>
+                      <select id="deskAssetBranchFilter" class="desk-inline-select" aria-label="공용 물품 관 필터"><option value="전체">전체 관</option><option value="본관">본관</option><option value="2관">2관</option><option value="3관">3관</option></select>
+                      <select id="deskAssetStatusFilter" class="desk-inline-select" aria-label="공용 물품 상태 필터"><option value="전체">전체 상태</option><option value="정상">정상</option><option value="점검 필요">점검 필요</option><option value="교체 검토">교체 검토</option><option value="대여중">대여중</option></select>
                     </div>
                     <div class="desk-supply-table-wrap">
                       <table class="desk-supply-table desk-asset-table">
                         <thead>
                           <tr>
-                            <th>분류</th>
+                            <th>분류 / 제품</th>
                             <th>관</th>
-                            <th>제품명</th>
                             <th>위치</th>
                             <th>담당</th>
                             <th>상태</th>
@@ -18527,8 +18709,8 @@
                 <div class="desk-purchase-grid">
                   <div class="desk-supply-stack compact">
                     <article class="desk-supply-card">
-                      <h3>기존 물품 요청</h3>
-                      <p>[소모품 현황] 기준 보충이 필요한 품목을 우선 표시합니다. 필요한 항목만 선택해 요청 문안에 넣을 수 있습니다.</p>
+                      <div class="desk-operational-heading"><div><h3>구매 후보</h3><p>안전 재고 이하 품목을 우선 검토하고 요청 수량을 확정합니다.</p></div><span class="desk-ledger-count" id="deskPurchaseSelectedCount">0개 선택</span></div>
+                      <div class="desk-purchase-toolbar"><label class="desk-ledger-search"><i data-lucide="search"></i><input id="deskPurchaseSearch" type="search" placeholder="품목명, 제품명 검색" aria-label="구매 후보 검색"></label><select id="deskPurchaseBranchFilter" class="desk-inline-select" aria-label="구매 후보 관 필터"><option value="전체">전체 관</option><option value="본관">본관</option><option value="2관">2관</option><option value="3관">3관</option></select></div>
                       <div class="desk-purchase-list" id="deskPurchaseItemList"></div>
                     </article>
                     <article class="desk-supply-card">
@@ -18575,8 +18757,8 @@
                       <div class="desk-purchase-custom-list" id="deskPurchaseCustomList"></div>
                     </article>
                   </div>
-                  <article class="desk-supply-card">
-                    <h3>구매 요청 문안</h3>
+                  <article class="desk-supply-card desk-purchase-composer">
+                    <div class="desk-operational-heading"><div><h3>구매 요청 문안</h3><p>선택한 품목과 신규 요청을 전달용 문안으로 정리합니다.</p></div><i data-lucide="clipboard-copy" aria-hidden="true"></i></div>
                     <div class="field">
                       <label for="deskPurchaseTarget">요청 대상</label>
                       <input id="deskPurchaseTarget" class="desk-inline-input" type="text" value="대표님" placeholder="예: 대표님">
@@ -19293,41 +19475,18 @@
               </div>
             </section>
             <div class="desk-journal-shell">
-              <section class="desk-journal-statusbar">
-                <div class="desk-journal-status-cards">
-                  <article class="desk-journal-status-card">
-                    <span class="desk-status-icon"><i data-lucide="clipboard-list"></i></span>
-                    <span class="desk-status-copy"><span>오늘 기록 수</span><strong id="deskJournalMemoSummary">0건</strong></span>
-                  </article>
-                  <article class="desk-journal-status-card danger">
-                    <span class="desk-status-icon"><i data-lucide="clock-3"></i></span>
-                    <span class="desk-status-copy"><span>미해결 업무 수</span><strong id="deskJournalPendingSummary">0건</strong></span>
-                  </article>
-                  <article class="desk-journal-status-card purple">
-                    <span class="desk-status-icon"><i data-lucide="users-round"></i></span>
-                    <span class="desk-status-copy"><span>보고 준비 근무자 수</span><strong id="deskJournalWorkerSummary">0명</strong></span>
-                  </article>
-                  <section class="desk-daily-sync-status desk-journal-sync-card" id="deskDailySyncStatus" aria-live="polite">
-                    <span class="desk-daily-sync-ring" aria-hidden="true"></span>
-                    <span class="desk-daily-sync-copy">
-                      <span class="desk-daily-sync-label" id="deskDailySyncLabel">동기화 확인 중</span>
-                      <span class="desk-daily-sync-sub" id="deskDailySyncSub">Firebase 연결 상태를 점검하고 있습니다.</span>
-                    </span>
-                  </section>
-                  <button class="desk-pending-flush-btn" id="deskDailyFlushPendingBtn" type="button" title="브라우저에 남은 업무 기록을 서버에 다시 저장">
-                    <i data-lucide="upload-cloud"></i>
-                    <span>대기 저장</span>
-                    <strong id="deskDailyPendingWriteCount">0</strong>
-                  </button>
-                  <button class="desk-ghost-btn" id="deskJournalReloadBtn" type="button"><i data-lucide="refresh-cw"></i>새로고침</button>
-                </div>
+              <section class="desk-journal-statusbar hidden" aria-hidden="true">
                 <span class="hidden" id="deskJournalTaskSummary">0건</span>
                 <span class="hidden" id="deskJournalCompletionSummary">0%</span>
               </section>
 
-              <section class="desk-journal-shared-strip">
+              <section class="desk-journal-shared-strip" aria-labelledby="deskSharedNoticeTitle">
                 <div class="desk-shared-summary-head">
-                  <div class="desk-shared-summary-title"><i data-lucide="megaphone"></i><span>공동 업무</span></div>
+                  <div class="desk-shared-summary-heading">
+                    <div class="desk-shared-summary-title" id="deskSharedNoticeTitle"><i data-lucide="megaphone"></i><span>공동 업무 공지</span></div>
+                    <p>모든 근무자가 함께 확인하고 이어서 처리할 업무입니다.</p>
+                  </div>
+                  <div class="desk-shared-summary-columns" aria-hidden="true"><span>업무 / 내용</span><span>기록자</span><span>확인 현황</span><span>최근 수정</span></div>
                   <div class="desk-shared-summary-list" id="deskJournalSharedSummaryList">
                     <div class="desk-shared-summary-empty">등록된 공동 업무가 없습니다.</div>
                   </div>
@@ -21733,6 +21892,10 @@
       state.desk.supplies.searchText = "";
       state.desk.supplies.tagSearch = "";
       state.desk.supplies.assetSearchText = "";
+      state.desk.supplies.assetBranchFilter = "전체";
+      state.desk.supplies.assetStatusFilter = "전체";
+      state.desk.supplies.purchaseSearchText = "";
+      state.desk.supplies.purchaseBranchFilter = "전체";
       state.desk.supplies.consumables = getDefaultDeskConsumables_().map(normalizeDeskConsumable_);
       state.desk.supplies.assets = getDefaultDeskAssets_().map(normalizeDeskAsset_);
       state.desk.supplies.purchaseSelections = {};
@@ -23482,7 +23645,7 @@
       setDeskSuppliesSyncStatus_("pending");
       renderDeskSupplyInventory_();
       var request = canUseDeskCloudApi_("adjustDeskSupplyConsumable")
-        ? runServer("adjustDeskSupplyConsumable", { id: id, branch: safeBranch, delta: appliedDelta }).then(function(res) {
+        ? runServer("adjustDeskSupplyConsumable", { id: id, itemName: target.itemName, productName: target.productName, unit: target.unit, branch: safeBranch, delta: appliedDelta }).then(function(res) {
             if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품 수량을 저장하지 못했습니다.");
             applyDeskSuppliesData_(res.data || {});
           })
@@ -23605,25 +23768,49 @@
       var items = state.desk.supplies.assets || [];
       var keyword = normalizeDeskSearchValue_(state.desk.supplies.assetSearchText);
       var visibleItems = items.filter(function(item) {
+        if (state.desk.supplies.assetBranchFilter !== "전체" && item.branch !== state.desk.supplies.assetBranchFilter) return false;
+        if (state.desk.supplies.assetStatusFilter !== "전체" && item.status !== state.desk.supplies.assetStatusFilter) return false;
         if (!keyword) return true;
         var haystack = normalizeDeskSearchValue_([item.type, item.branch, item.productName, item.location, item.manager, item.status, item.note].join(" "));
         return haystack.indexOf(keyword) !== -1;
       });
+      var countEl = document.getElementById("deskAssetLedgerCount");
+      if (countEl) countEl.textContent = visibleItems.length + "개";
       deskAssetTableBodyEl.innerHTML = visibleItems.length ? visibleItems.map(function(item) {
         return '<tr>' +
-          '<td>' + escapeHtml(item.type) + '</td>' +
+          '<td><div class="desk-asset-identity"><span class="desk-asset-category-icon"><i data-lucide="' + getDeskAssetTypeIcon_(item.type) + '"></i></span><span><strong>' + escapeHtml(item.type) + '</strong><small>' + escapeHtml(item.productName) + '</small></span></div></td>' +
           '<td>' + escapeHtml(item.branch || "본관") + '</td>' +
-          '<td>' + escapeHtml(item.productName) + '</td>' +
           '<td>' + escapeHtml(item.location) + '</td>' +
-          '<td>' + escapeHtml(item.manager) + '</td>' +
-          '<td><span class="desk-supply-status ' + getDeskAssetStatusClass_(item.status) + '">' + escapeHtml(item.status) + '</span></td>' +
+          '<td>' + renderDeskStaffIdentityHtml_(item.manager) + '</td>' +
+          '<td><span class="desk-asset-status ' + getDeskAssetStatusClass_(item.status) + '"><i data-lucide="' + getDeskAssetStatusIcon_(item.status) + '"></i>' + escapeHtml(item.status) + '</span></td>' +
           '<td>' + escapeHtml(item.note || "-") + '</td>' +
           '<td><div class="desk-supply-actions">' +
-            '<button class="desk-ghost-btn" type="button" data-desk-asset-edit="' + escapeHtml(item.id) + '">수정</button>' +
-            '<button class="desk-ghost-btn" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '">삭제</button>' +
+            '<button class="desk-supply-mini-btn" type="button" data-desk-asset-edit="' + escapeHtml(item.id) + '" title="물품 수정" aria-label="' + escapeHtml(item.productName + ' 수정') + '"><i data-lucide="pencil"></i></button>' +
+            '<button class="desk-supply-mini-btn delete" type="button" data-desk-asset-delete="' + escapeHtml(item.id) + '" title="물품 삭제" aria-label="' + escapeHtml(item.productName + ' 삭제') + '"><i data-lucide="trash-2"></i></button>' +
           '</div></td>' +
         '</tr>';
-      }).join("") : '<tr><td colspan="8">검색 조건에 맞는 공용 물품이 없습니다.</td></tr>';
+      }).join("") : '<tr><td colspan="7"><div class="desk-ledger-empty"><i data-lucide="package-search"></i><strong>조건에 맞는 물품이 없습니다.</strong><span>검색어나 필터를 바꿔 다시 확인해 주세요.</span></div></td></tr>';
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function getDeskAssetTypeIcon_(type) {
+      var value = normalizeDeskSearchValue_(type);
+      if (/프린터|복합기/.test(value)) return "printer";
+      if (/태블릿|아이패드/.test(value)) return "tablet";
+      if (/노트북/.test(value)) return "laptop";
+      if (/데스크탑|미니pc|컴퓨터|pc/.test(value)) return "monitor";
+      if (/ssd|하드|저장/.test(value)) return "hard-drive";
+      if (/공유기|네트워크|와이파이/.test(value)) return "router";
+      if (/제습기|에어컨|가전/.test(value)) return "fan";
+      if (/책상|의자|가구/.test(value)) return "armchair";
+      return "package";
+    }
+
+    function getDeskAssetStatusIcon_(status) {
+      if (status === "점검 필요") return "triangle-alert";
+      if (status === "교체 검토") return "refresh-cw";
+      if (status === "대여중") return "arrow-up-right";
+      return "circle-check";
     }
 
     function getDeskAssetStatusClass_(status) {
@@ -23748,14 +23935,20 @@
       if (deskPurchaseRequestNoteEl) deskPurchaseRequestNoteEl.value = state.desk.supplies.purchaseRequestNote || "";
       if (deskPurchaseItemListEl) {
         var purchaseItems = getDeskPurchaseCandidateItems_();
+        var selectedCount = purchaseItems.filter(function(entry) {
+          return !!(state.desk.supplies.purchaseSelections[entry.id] || {}).selected;
+        }).length;
+        var selectedCountEl = document.getElementById("deskPurchaseSelectedCount");
+        if (selectedCountEl) selectedCountEl.textContent = selectedCount + "개 선택";
         deskPurchaseItemListEl.innerHTML = purchaseItems.length ? purchaseItems.map(function(entry) {
           var item = entry.item;
           var stock = entry.stock;
           var selection = state.desk.supplies.purchaseSelections[entry.id] || { selected: false, requestQty: Math.max(1, stock.maxQty - stock.qty) };
-          return '<label class="desk-purchase-item ' + (stock.qty <= stock.safetyQty ? 'low' : '') + '">' +
+          return '<label class="desk-purchase-item ' + (stock.qty <= stock.safetyQty ? 'low' : '') + (selection.selected ? ' selected' : '') + '">' +
             '<input type="checkbox" data-desk-purchase-select="' + escapeHtml(entry.id) + '"' + (selection.selected ? ' checked' : '') + '>' +
-            '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName + " · " + entry.branch) + '</strong><span>' + escapeHtml(item.productName) + ' · 현재 ' + stock.qty + item.unit + ' / 안전 ' + stock.safetyQty + item.unit + '</span><div class="desk-tag-chip-row">' + renderDeskTagChips_(item.tags) + '</div></div>' +
-            '<div class="desk-purchase-item-qty">요청 수량 <input type="number" min="1" step="1" data-desk-purchase-qty="' + escapeHtml(entry.id) + '" value="' + Number(selection.requestQty || 1) + '"></div>' +
+            '<span class="desk-purchase-state-icon"><i data-lucide="' + getDeskSupplyStatusIcon_(getDeskSupplyStatus_(stock).key) + '"></i></span>' +
+            '<div class="desk-purchase-item-title"><strong>' + escapeHtml(item.itemName) + '</strong><span>' + escapeHtml(item.productName) + '</span><small>' + escapeHtml(entry.branch) + ' · 현재 <b>' + stock.qty + escapeHtml(item.unit) + '</b> · 안전 ' + stock.safetyQty + escapeHtml(item.unit) + '</small></div>' +
+            '<div class="desk-purchase-item-qty"><span>요청</span><input type="number" min="1" step="1" data-desk-purchase-qty="' + escapeHtml(entry.id) + '" value="' + Number(selection.requestQty || 1) + '"><span>' + escapeHtml(item.unit) + '</span></div>' +
           '</label>';
         }).join("") : '<div class="desk-notice">구매 요청 후보가 없습니다. 신규 물품 요청을 이용해 주세요.</div>';
       }
@@ -23776,6 +23969,7 @@
         }).join("") : '<div class="desk-notice">아직 등록된 신규 구매 요청 물품이 없습니다.</div>';
       }
       refreshDeskPurchaseMessage_();
+      if (window.lucide) window.lucide.createIcons();
     }
 
     function getDeskPurchaseCandidateItems_() {
@@ -23789,6 +23983,12 @@
         if (shortageA !== shortageB) return shortageB - shortageA;
         if ((a.stock.qty <= a.stock.safetyQty) !== (b.stock.qty <= b.stock.safetyQty)) return a.stock.qty <= a.stock.safetyQty ? -1 : 1;
         return String(a.item.itemName || "").localeCompare(String(b.item.itemName || ""), "ko");
+      });
+      var purchaseKeyword = normalizeDeskSearchValue_(state.desk.supplies.purchaseSearchText);
+      items = items.filter(function(entry) {
+        if (state.desk.supplies.purchaseBranchFilter !== "전체" && entry.branch !== state.desk.supplies.purchaseBranchFilter) return false;
+        if (!purchaseKeyword) return true;
+        return normalizeDeskSearchValue_([entry.item.itemName, entry.item.productName, entry.branch].join(" ")).indexOf(purchaseKeyword) !== -1;
       });
       var visible = [];
       items.forEach(function(item) {
@@ -23844,7 +24044,7 @@
       ensureDeskSupplySelections_();
       var current = state.desk.supplies.purchaseSelections[id] || { selected: false, requestQty: 1 };
       state.desk.supplies.purchaseSelections[id] = Object.assign({}, current, patch);
-      refreshDeskPurchaseMessage_();
+      renderDeskPurchaseRequest_();
       scheduleDeskSuppliesPurchaseSave_();
     }
 
@@ -32829,14 +33029,13 @@
         var meta = getDeskTaskMeta_(item);
         var ackWorkers = getDeskSharedAckWorkers_(item);
         var isOpen = String(state.desk.daily.openSharedTaskId || "") === String(item.id || "");
+        var creator = item.createdByName || item.updatedByName || "기록자 미상";
         return '<details class="desk-shared-summary-item" data-desk-shared-id="' + escapeHtml(item.id) + '"' + (isOpen ? ' open' : '') + '>' +
           '<summary class="desk-shared-summary-trigger" data-desk-shared-summary-id="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml((isOpen ? "공동 업무 접기: " : "공동 업무 펼치기: ") + (item.title || "-")) + '">' +
-            '<div class="desk-shared-summary-title">' + escapeHtml(item.title || "-") + '</div>' +
-            '<div class="desk-shared-summary-meta">' +
-              '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
-              '<span>확인 ' + escapeHtml(String(ackWorkers.length)) + '/' + escapeHtml(String(ackCandidates.length)) + '</span>' +
-              '<span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span>' +
-            '</div>' +
+            '<div class="desk-shared-summary-task"><span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span><span><strong>' + escapeHtml(item.title || "-") + '</strong><small>' + escapeHtml(item.note || "상세 내용 없음") + '</small></span></div>' +
+            '<div class="desk-shared-summary-owner">' + renderDeskStaffIdentityHtml_(creator) + '</div>' +
+            '<div class="desk-shared-summary-progress"><strong>' + escapeHtml(String(ackWorkers.length)) + '/' + escapeHtml(String(ackCandidates.length)) + '</strong><span>근무자 확인</span></div>' +
+            '<div class="desk-shared-summary-updated"><span>' + escapeHtml(formatDeskJournalDateTime_(item.updatedAt || item.createdAt)) + '</span><i data-lucide="chevron-down"></i></div>' +
           '</summary>' +
           '<div class="desk-shared-summary-detail">' +
             (item.note ? '<div class="desk-shared-summary-item-note">' + escapeHtml(item.note) + '</div>' : '<div class="desk-shared-summary-item-note muted">상세 내용이 없습니다.</div>') +
@@ -35829,6 +36028,17 @@
         });
       }
 
+      var deskAssetBranchFilterEl = document.getElementById("deskAssetBranchFilter");
+      if (deskAssetBranchFilterEl) deskAssetBranchFilterEl.addEventListener("change", function() {
+        state.desk.supplies.assetBranchFilter = deskAssetBranchFilterEl.value || "전체";
+        renderDeskAssets_();
+      });
+      var deskAssetStatusFilterEl = document.getElementById("deskAssetStatusFilter");
+      if (deskAssetStatusFilterEl) deskAssetStatusFilterEl.addEventListener("change", function() {
+        state.desk.supplies.assetStatusFilter = deskAssetStatusFilterEl.value || "전체";
+        renderDeskAssets_();
+      });
+
       if (deskAssetTableBodyEl) {
         deskAssetTableBodyEl.addEventListener("click", function(event) {
           var editBtn = event.target.closest("[data-desk-asset-edit]");
@@ -35859,6 +36069,17 @@
           });
         });
       }
+
+      var deskPurchaseSearchEl = document.getElementById("deskPurchaseSearch");
+      if (deskPurchaseSearchEl) deskPurchaseSearchEl.addEventListener("input", function() {
+        state.desk.supplies.purchaseSearchText = String(deskPurchaseSearchEl.value || "");
+        renderDeskPurchaseRequest_();
+      });
+      var deskPurchaseBranchFilterEl = document.getElementById("deskPurchaseBranchFilter");
+      if (deskPurchaseBranchFilterEl) deskPurchaseBranchFilterEl.addEventListener("change", function() {
+        state.desk.supplies.purchaseBranchFilter = deskPurchaseBranchFilterEl.value || "전체";
+        renderDeskPurchaseRequest_();
+      });
 
       if (deskPurchaseTargetEl) {
         deskPurchaseTargetEl.addEventListener("input", function() {
@@ -43848,7 +44069,8 @@
     function showClientMessage(message) {
       setLoading(false);
       document.getElementById("updatedAt").textContent = "오류";
-      alert("[급여 포털] " + message);
+      var portalLabel = state && state.activeModule === "expense" && state.desk && state.desk.activeTab === "supplies" ? "물품 관리" : "데스크 포털";
+      alert("[" + portalLabel + "] " + message);
     }
 
     function updateTimestamp() {
