@@ -104,6 +104,26 @@ test('supply management presents a branch-coded inventory database with favorite
   assert.match(source, /branchStocks/);
 });
 
+test('shared staff icons are cached by Korean name and reused across desk surfaces', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+
+  assert.match(source, /collection\("sharedIconAssets"\)\.get\(\)/);
+  assert.match(source, /function normalizeDeskStaffIconAsset_/);
+  assert.match(source, /function indexDeskStaffIcons_/);
+  assert.match(source, /function normalizeDeskStaffIconName_/);
+  assert.match(source, /replace\(\/\\s\*\\\(\[\^\)\]\*\\\)\\s\*\$\/, ""\)/);
+  assert.match(source, /function renderDeskStaffAvatarHtml_/);
+  assert.match(source, /function renderDeskStaffIdentityHtml_/);
+  assert.match(source, /onerror="this\.remove\(\)"/);
+  assert.match(source, /loading="lazy" decoding="async"/);
+  assert.match(source, /renderDeskStaffAvatarHtml_\(item\.worker, "worker-initial"\)/);
+  assert.match(source, /renderDeskStaffAvatarHtml_\(item\.worker, "desk-live-feed-avatar"\)/);
+  assert.match(source, /renderDeskStaffIdentityHtml_\(entry\.changedBy \|\| "계정 정보 없음"\)/);
+  assert.match(source, /renderDeskStaffIdentityHtml_\(item\.name \|\| "-"\)/);
+  assert.match(source, /loadDeskSharedStaffIcons_\(true\)\.then\(renderDeskSupplies_\)/);
+  assert.match(source, /loadDeskSharedStaffIcons_\(true\)\.then\(renderDeskDailyJournal_\)/);
+});
+
 test('unfinished assignments remain visible when the assignee is not scheduled today', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
