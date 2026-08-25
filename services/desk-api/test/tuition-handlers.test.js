@@ -283,6 +283,76 @@ test('payment delete writes an audit record and removes the payment everywhere a
   assert.equal(dump['tuitionPaymentDeletions/tdel_delete-1'].reason, '중복 입력');
 });
 
+test('payment update replaces one ledger entry and recalculates every payment index and snapshot', async () => {
+  const seed = tuitionSeed();
+  seed.documents['tuitionMonthlyReadIndexes/report_monthly_sales_Z2xvYmFs'] = { success: true };
+  seed.documents['tuitionMonthlyReadIndexes/report_guide_dashboard_Z2xvYmFs'] = { success: true };
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:30:00.000Z') });
+  const payload = {
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: {
+      ...seed.payment,
+      amount: -80000,
+      paidAt: '7/15',
+      paymentType: '서울페이',
+      approvalNo: 'corrected-1'
+    },
+    reason: '승인 금액 오입력 정정',
+    clientRequestId: 'update-1'
+  };
+
+  const first = await handlers.updateTuitionPaymentEntry(payload, { uid: 'staff-1', name: '관리자' });
+  const second = await handlers.updateTuitionPaymentEntry(payload, { uid: 'staff-1', name: '관리자' });
+  assert.equal(first.success, true, JSON.stringify(first));
+  assert.equal(second.duplicate, true);
+
+  const dump = store.dump();
+  const snapshot = dump['tuitionMonthSnapshots/tm_26-07s'];
+  assert.equal(snapshot.rows[0].collectedAmount, 80000);
+  assert.equal(snapshot.rows[0].outstandingAmount, 20000);
+  assert.equal(snapshot.rows[0].paymentCount, 1);
+  assert.equal(snapshot.rows[0].unpaidStatus, '일부완료');
+  assert.equal(snapshot.payments.length, 1);
+  assert.equal(snapshot.payments[0].amount, -80000);
+  assert.equal(snapshot.payments[0].paymentType, '서울페이');
+  assert.equal(dump['tuitionPaymentReadIndexes/recent'].payments[0].amount, -80000);
+  assert.equal(dump['tuitionPaymentReadIndexes/payment_month_26-07s'].payments[0].amount, -80000);
+  assert.equal(dump['tuitionPaymentReadIndexes/daily_2026_07_14'], undefined);
+  assert.equal(dump['tuitionPaymentReadIndexes/daily_2026_07_15'].payments[0].approvalNo, 'corrected-1');
+  assert.equal(dump['tuitionPaymentChanges/tupd_update-1'].reason, '승인 금액 오입력 정정');
+  assert.equal(dump['tuitionPaymentChanges/tupd_update-1'].previousPayment.amount, -100000);
+  assert.equal(dump['tuitionMonthlyReadIndexes/report_monthly_sales_Z2xvYmFs'], undefined);
+  assert.equal(dump['tuitionMonthlyReadIndexes/report_guide_dashboard_Z2xvYmFs'], undefined);
+});
+
+test('payment update rejects a stale editor after another correction is committed', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:40:00.000Z') });
+  const first = await handlers.updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -80000 },
+    reason: '첫 번째 정정',
+    clientRequestId: 'update-current'
+  }, { uid: 'staff-1', name: '관리자' });
+  const stale = await handlers.updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -70000 },
+    reason: '오래 열린 화면의 정정',
+    clientRequestId: 'update-stale'
+  }, { uid: 'staff-2', name: '다른 관리자' });
+
+  assert.equal(first.success, true);
+  assert.equal(stale.success, false);
+  assert.match(stale.message, /변경되었습니다/);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 80000);
+  assert.equal(store.dump()['tuitionPaymentChanges/tupd_update-stale'], undefined);
+});
+
 test('followup retries do not increment contact count twice', async () => {
   const seed = tuitionSeed();
   const store = memoryStore(seed.documents);

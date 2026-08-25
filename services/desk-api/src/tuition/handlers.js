@@ -35,6 +35,7 @@ const COLLECTIONS = Object.freeze({
   contactLogs: 'tuitionContactLogs',
   payments: 'tuitionPayments',
   deletions: 'tuitionPaymentDeletions',
+  paymentChanges: 'tuitionPaymentChanges',
   monthIndex: 'tuitionMonthIndex',
   statusChanges: 'tuitionStatusChanges',
   guideChanges: 'tuitionGuideAmountChanges',
@@ -58,7 +59,7 @@ export const TUITION_READ_METHODS = new Set([
 export const TUITION_WRITE_METHODS = new Set([
   'createTuitionMonth',
   'saveTuitionStatusOnly', 'saveTuitionFollowup', 'saveTuitionStudentMemo',
-  'saveTuitionAmountAdjustment', 'appendTuitionPaymentEntry', 'deleteTuitionPaymentEntry'
+  'saveTuitionAmountAdjustment', 'appendTuitionPaymentEntry', 'updateTuitionPaymentEntry', 'deleteTuitionPaymentEntry'
 ]);
 
 export const TUITION_METHODS = new Set([...TUITION_READ_METHODS, ...TUITION_WRITE_METHODS]);
@@ -375,6 +376,24 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       return mutatePayment({ store, action: 'delete', month: requestedMonth, record: requested, requestId, reason, identity, nowIso, nowDate });
     },
 
+    async updateTuitionPaymentEntry(payload = {}, identity = {}) {
+      const month = monthName(payload.monthName);
+      const requested = payment(payload.payment);
+      const changes = payment({ ...(requested || {}), ...(payload.updatedPayment || {}) });
+      const requestId = requiredRequestId(payload);
+      const reason = text(payload.reason, 300);
+      if (!month) return failure('월 정보가 없습니다.');
+      if (!requested) return failure('수정할 수납 내역을 찾을 수 없습니다.');
+      if (!changes) return failure('수정할 수납 정보를 확인해 주세요.');
+      if (studentName(changes.studentName) !== studentName(requested.studentName)) return failure('수납 학생은 변경할 수 없습니다.');
+      if (!requestId) return failure('수정 요청 식별자가 없습니다. 다시 시도해 주세요.');
+      if (!reason) return failure('수정 사유를 입력해 주세요.');
+      if (!Math.round(number(changes.amount))) return failure('금액이 0원일 수 없습니다.');
+      if (!text(changes.paidAt)) return failure('납부일을 입력해 주세요.');
+      if (!text(changes.paymentType)) return failure('결제구분을 입력해 주세요.');
+      return updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate });
+    },
+
     async saveTuitionAmountAdjustment(payload = {}, identity = {}) {
       return adjustAmounts({ store, payload, identity, nowDate, nowIso, timeZone });
     }
@@ -574,6 +593,105 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
   });
 }
 
+async function updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate }) {
+  const oldPaymentKey = key(COLLECTIONS.payments, paymentId(requested));
+  const stableRequestId = requested.requestId || `edit_${requestId}`;
+  const next = payment({
+    ...requested,
+    ...changes,
+    studentName: requested.studentName,
+    originMonth: requested.originMonth || month,
+    sourceMonth: requested.sourceMonth || month,
+    sourceDueMonth: requested.sourceDueMonth || month,
+    requestId: stableRequestId,
+    createdAt: requested.createdAt,
+    updatedAt: nowIso(),
+    source: requested.source || 'desk_portal'
+  });
+  const newPaymentKey = key(COLLECTIONS.payments, paymentId(next));
+  const oldDailyId = dailyPaymentIndexId(paidDateKey(requested));
+  const newDailyId = dailyPaymentIndexId(paidDateKey(next));
+  const keys = {
+    oldPayment: oldPaymentKey,
+    newPayment: newPaymentKey,
+    audit: key(COLLECTIONS.paymentChanges, `tupd_${requestId}`),
+    recent: key(COLLECTIONS.paymentIndexes, 'recent'),
+    monthPayments: key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month)),
+    oldDaily: oldDailyId ? key(COLLECTIONS.paymentIndexes, oldDailyId) : '',
+    newDaily: newDailyId ? key(COLLECTIONS.paymentIndexes, newDailyId) : '',
+    snapshot: key(COLLECTIONS.snapshots, snapshotId(month)),
+    monthIndex: key(COLLECTIONS.monthIndex, monthIndexId(month)),
+    monthlyReport: reportKey('monthly_sales', 'global'),
+    guideReport: reportKey('guide_dashboard', 'global'),
+    studentReport: reportKey('student_history', requested.studentName)
+  };
+  return store.transaction(Object.values(keys), documents => {
+    if (documents[keys.audit]?.success) {
+      return { result: { success: true, duplicate: true, payment: documents[keys.audit].updatedPayment } };
+    }
+    const requestedKey = paymentKey(requested);
+    const indexed = mergePayments(
+      documents[keys.monthPayments]?.payments || [],
+      documents[keys.recent]?.payments || [],
+      documents[keys.snapshot]?.payments || []
+    ).find(row => paymentKey(row) === requestedKey);
+    const stored = payment(documents[keys.oldPayment]) || indexed;
+    if (!stored) return { result: failure('이미 삭제되었거나 수정할 수납 내역을 찾을 수 없습니다. 새로고침 후 확인해 주세요.') };
+    if (paymentKey(stored) !== requestedKey || paymentMutationFingerprint(stored) !== paymentMutationFingerprint(requested)) {
+      return { result: failure('선택한 수납 내역이 변경되었습니다. 새로고침 후 다시 선택해 주세요.') };
+    }
+
+    const timestamp = nowIso();
+    const updated = payment({
+      ...stored,
+      ...next,
+      studentName: stored.studentName,
+      requestId: stored.requestId || stableRequestId,
+      createdAt: stored.createdAt || timestamp,
+      updatedAt: timestamp,
+      source: stored.source || 'desk_portal'
+    });
+    const writes = {
+      [keys.newPayment]: updated,
+      [keys.monthIndex]: monthIndexDocument(month, timestamp, 'tuition_payment_update'),
+      [keys.audit]: {
+        success: true, requestId, monthName: month, reason, changedAt: timestamp,
+        previousPayment: stored, updatedPayment: updated, source: 'desk_portal',
+        actorUid: text(identity.uid), actorName: text(identity.name)
+      }
+    };
+    const deletes = [keys.monthlyReport, keys.guideReport, keys.studentReport];
+    if (keys.oldPayment !== keys.newPayment) deletes.push(keys.oldPayment);
+
+    writes[keys.recent] = replacePaymentIndex(documents[keys.recent], stored, updated, 'payments', RECENT_LIMIT, timestamp, { seeded: documents[keys.recent]?.seeded === true });
+    writes[keys.monthPayments] = replacePaymentIndex(documents[keys.monthPayments], stored, updated, 'payments', MONTH_LIMIT, timestamp, { monthName: month, seeded: documents[keys.monthPayments]?.seeded === true });
+
+    if (keys.oldDaily && keys.oldDaily === keys.newDaily) {
+      writes[keys.oldDaily] = replacePaymentIndex(documents[keys.oldDaily], stored, updated, 'payments', DAILY_LIMIT, timestamp, { dateKey: paidDateKey(updated) });
+    } else {
+      if (keys.oldDaily) {
+        const oldDaily = changePaymentIndex(documents[keys.oldDaily], stored, 'delete', 'payments', DAILY_LIMIT, timestamp, { dateKey: paidDateKey(stored) });
+        if (oldDaily) writes[keys.oldDaily] = oldDaily; else deletes.push(keys.oldDaily);
+      }
+      if (keys.newDaily) writes[keys.newDaily] = changePaymentIndex(documents[keys.newDaily], updated, 'append', 'payments', DAILY_LIMIT, timestamp, { dateKey: paidDateKey(updated) });
+    }
+
+    const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
+    if (snapshot) writes[keys.snapshot] = snapshot;
+    const sheetMirrorWarning = stored.source && !/^desk_portal(?:_adjustment)?$/.test(stored.source)
+      ? 'Firebase 수납 원장만 수정했습니다. 원본 시트에서 가져온 건은 원본 시트도 별도로 확인해 주세요.' : '';
+    return {
+      writes,
+      deletes: [...new Set(deletes.filter(Boolean))],
+      result: {
+        success: true, payment: updated, previousPayment: stored, indexWarning: '',
+        snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장과 인덱스만 갱신되었습니다.',
+        sheetMirrorWarning
+      }
+    };
+  });
+}
+
 async function adjustAmounts({ store, payload, identity, nowDate, nowIso, timeZone }) {
   const month = monthName(payload.monthName);
   const student = studentName(payload.studentName);
@@ -754,6 +872,31 @@ function changePaymentIndex(source, row, action, field, limit, timestamp, extras
   const rows = action === 'append' ? mergePayments(row, current) : current.map(payment).filter(item => item && paymentKey(item) !== paymentKey(row)).sort(comparePaymentsDesc);
   if (!rows.length && action === 'delete') return null;
   return { ...extras, [field]: rows.slice(0, limit), updatedAt: timestamp, source: 'desk_portal' };
+}
+
+function replacePaymentIndex(source, previous, updated, field, limit, timestamp, extras = {}) {
+  const withoutPrevious = changePaymentIndex(source, previous, 'delete', field, limit, timestamp, extras) || { ...extras, [field]: [] };
+  return changePaymentIndex(withoutPrevious, updated, 'append', field, limit, timestamp, extras);
+}
+
+function replaceSnapshotPayment(source, previous, updated, month, date) {
+  if (!source?.success || !Array.isArray(source.rows)) return null;
+  const exists = [...(source.payments || []), ...(source.allPayments || [])]
+    .some(row => paymentKey(row) === paymentKey(previous));
+  if (!exists) return null;
+  const removed = changeSnapshotPayment(source, previous, 'delete', month, date);
+  return removed ? changeSnapshotPayment(removed, updated, 'append', month, date) : null;
+}
+
+function paymentMutationFingerprint(row) {
+  const normalized = payment(row) || {};
+  return JSON.stringify([
+    normalized.studentName, normalized.dueDate, normalized.amount, normalized.paidAt,
+    normalized.business, normalized.paymentType, normalized.cardCompany,
+    normalized.approvalNo, normalized.inputAt, normalized.issueMemo,
+    normalized.originMonth, normalized.sourceMonth, normalized.sourceDueMonth,
+    normalized.requestId, normalized.entryKind, normalized.countsAsPayment
+  ]);
 }
 
 function updateFollowupIndex(source, row, timestamp) {
@@ -997,7 +1140,7 @@ function errorLabel(name) {
     getTuitionGuideDashboard: '안내 대시보드 조회 오류', getTuitionMonthlySalesOverview: '월별 매출 집계 오류',
     saveTuitionStatusOnly: '상태 저장 오류', saveTuitionFollowup: '연락기록 저장 오류',
     saveTuitionStudentMemo: '수강료 메모 저장 오류', saveTuitionAmountAdjustment: '금액 수정 오류',
-    appendTuitionPaymentEntry: '수납 입력 오류', deleteTuitionPaymentEntry: '수납 삭제 오류'
+    appendTuitionPaymentEntry: '수납 입력 오류', updateTuitionPaymentEntry: '수납 수정 오류', deleteTuitionPaymentEntry: '수납 삭제 오류'
   };
   return labels[name] || '수강료 API 오류';
 }

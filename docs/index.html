@@ -8644,10 +8644,15 @@
     .tuition-payment-amount.positive {
       color: #2563eb;
     }
-    .tuition-payment-action-cell { width: 44px; text-align: center; }
-    .tuition-payment-delete-btn { width: 30px; height: 30px; display: inline-grid; place-items: center; border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg); color: var(--ds-muted); cursor: pointer; transition: color 140ms ease, border-color 140ms ease, background 140ms ease, transform 140ms ease; }
+    .tuition-payment-action-cell { width: 76px; text-align: center; }
+    .tuition-payment-actions { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .tuition-payment-edit-btn, .tuition-payment-delete-btn { width: 30px; height: 30px; display: inline-grid; place-items: center; border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg); color: var(--ds-muted); cursor: pointer; transition: color 140ms ease, border-color 140ms ease, background 140ms ease, transform 140ms ease; }
+    .tuition-payment-edit-btn:hover, .tuition-payment-edit-btn:focus-visible { color: var(--ds-primary); border-color: var(--ds-primary); background: var(--ds-bg-subtle); transform: translateY(-1px); }
     .tuition-payment-delete-btn:hover, .tuition-payment-delete-btn:focus-visible { color: var(--ds-danger); border-color: var(--ds-danger); background: var(--ds-bg-warm); transform: translateY(-1px); }
-    .tuition-payment-delete-btn i { width: 15px; height: 15px; }
+    .tuition-payment-edit-btn i, .tuition-payment-delete-btn i { width: 15px; height: 15px; }
+    .tuition-payment-edit-reason { grid-column: 1 / -1; }
+    .tuition-payment-edit-note { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: var(--ds-space-2); padding: var(--ds-space-3); border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg-subtle); color: var(--ds-fg-soft); font-size: 12px; font-weight: 800; line-height: 1.5; }
+    .tuition-payment-edit-note i { flex: 0 0 auto; width: 17px; height: 17px; color: var(--ds-primary); }
     .tuition-payment-delete-modal { display: grid; gap: var(--ds-space-4); }
     .tuition-payment-delete-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-2); }
     .tuition-payment-delete-summary > div { display: grid; gap: var(--ds-space-1); padding: var(--ds-space-3); border: 1px solid var(--ds-border); border-radius: var(--ds-control-radius); background: var(--ds-bg-subtle); }
@@ -20590,7 +20595,7 @@
     <div class="modal-box" style="max-width:680px;">
       <div class="modal-head">
         <div>
-          <h3 class="modal-title" style="font-size:20px;">수강료 납부 입력</h3>
+          <h3 class="modal-title" id="tuitionPaymentModalTitle" style="font-size:20px;">수강료 납부 입력</h3>
           <div class="modal-sub" id="tuitionPaymentTarget">-</div>
         </div>
         <button class="modal-action ghost" id="closeTuitionPaymentBtn" type="button">닫기</button>
@@ -20641,6 +20646,11 @@
           <label for="tuitionPaymentIssueMemo">이슈 메모</label>
           <input id="tuitionPaymentIssueMemo" class="modal-input" type="text" placeholder="예: 승인 지연 / 부분 환불 / 카드 재결제">
         </div>
+        <div class="field tuition-payment-edit-reason" id="tuitionPaymentEditReasonField" hidden>
+          <label for="tuitionPaymentEditReason">수정 사유</label>
+          <input id="tuitionPaymentEditReason" class="modal-input" type="text" maxlength="300" placeholder="예: 서울페이 승인 금액 오입력">
+        </div>
+        <div class="tuition-payment-edit-note" id="tuitionPaymentEditNote" hidden><i data-lucide="shield-check" aria-hidden="true"></i><span>선택한 수납 1건만 교체하며, 수정 전 값과 사유는 정정 이력에 남습니다.</span></div>
       </div>
       <div class="modal-foot">
         <div></div>
@@ -20719,7 +20729,7 @@
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true,
-      createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
+      createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
@@ -21124,6 +21134,7 @@
         chart: null,
         contactTarget: null,
         paymentTarget: null,
+        paymentEditTarget: null,
         amountAdjustTarget: null,
         paymentDeleteTarget: null,
         calendarMonth: "",
@@ -21736,6 +21747,10 @@
     var deleteTuitionTemplateBtnEl = document.getElementById("deleteTuitionTemplateBtn");
     var saveTuitionTemplateBtnEl = document.getElementById("saveTuitionTemplateBtn");
     var tuitionPaymentTargetEl = document.getElementById("tuitionPaymentTarget");
+    var tuitionPaymentModalTitleEl = document.getElementById("tuitionPaymentModalTitle");
+    var tuitionPaymentEditReasonFieldEl = document.getElementById("tuitionPaymentEditReasonField");
+    var tuitionPaymentEditReasonEl = document.getElementById("tuitionPaymentEditReason");
+    var tuitionPaymentEditNoteEl = document.getElementById("tuitionPaymentEditNote");
     var tuitionPaymentDeleteTargetEl = document.getElementById("tuitionPaymentDeleteTarget");
     var tuitionPaymentDeleteSummaryEl = document.getElementById("tuitionPaymentDeleteSummary");
     var tuitionPaymentDeleteReasonEl = document.getElementById("tuitionPaymentDeleteReason");
@@ -37837,7 +37852,7 @@
         tuitionContactModalEl.style.display = "none";
       });
       closeTuitionPaymentBtnEl.addEventListener("click", function() {
-        tuitionPaymentModalEl.style.display = "none";
+        closeTuitionPaymentModal_();
       });
       closeTuitionPaymentDeleteBtnEl.addEventListener("click", closeTuitionPaymentDeleteModal_);
       saveTuitionContactBtnEl.addEventListener("click", saveTuitionContactRecord);
@@ -37896,7 +37911,7 @@
         if (event.target === tuitionContactModalEl) tuitionContactModalEl.style.display = "none";
       });
       tuitionPaymentModalEl.addEventListener("click", function(event) {
-        if (event.target === tuitionPaymentModalEl) tuitionPaymentModalEl.style.display = "none";
+        if (event.target === tuitionPaymentModalEl) closeTuitionPaymentModal_();
       });
       tuitionPaymentDeleteModalEl.addEventListener("click", function(event) {
         if (event.target === tuitionPaymentDeleteModalEl) closeTuitionPaymentDeleteModal_();
@@ -39275,9 +39290,17 @@
           '<td class="memo-col">' + (hasIssue
             ? '<span class="tuition-issue-tooltip" tabindex="0"><span class="tuition-issue-chip has">이슈있음</span><span class="tuition-issue-tooltip-text" role="tooltip">' + escapeHtml(issueMemo) + '</span></span>'
             : '<span class="tuition-issue-chip" title="이슈 없음">이슈없음</span>') + '</td>' +
-          '<td class="tuition-payment-action-cell"><button type="button" class="tuition-payment-delete-btn" data-delete-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 삭제" title="수납 내역 삭제"><i data-lucide="trash-2" aria-hidden="true"></i></button></td>' +
+          '<td class="tuition-payment-action-cell"><div class="tuition-payment-actions">' +
+            '<button type="button" class="tuition-payment-edit-btn" data-edit-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 수정" title="수납 내역 수정"><i data-lucide="pencil" aria-hidden="true"></i></button>' +
+            '<button type="button" class="tuition-payment-delete-btn" data-delete-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 삭제" title="수납 내역 삭제"><i data-lucide="trash-2" aria-hidden="true"></i></button>' +
+          '</div></td>' +
         '</tr>';
       }).join("");
+      Array.prototype.forEach.call(tuitionPaymentBodyEl.querySelectorAll("[data-edit-payment-key]"), function(btn) {
+        btn.addEventListener("click", function() {
+          openTuitionPaymentEditModal_(btn.getAttribute("data-edit-payment-key") || "");
+        });
+      });
       Array.prototype.forEach.call(tuitionPaymentBodyEl.querySelectorAll("[data-delete-payment-key]"), function(btn) {
         btn.addEventListener("click", function() {
           openTuitionPaymentDeleteModal_(btn.getAttribute("data-delete-payment-key") || "");
@@ -41071,14 +41094,14 @@
 
     function runServerWriteWithRetry_(fnName, payload, options) {
       var requestPayload = Object.assign({}, payload || {});
-      if (/^(createTuitionMonth|saveTuitionFollowup|saveTuitionStatusOnly|appendTuitionPaymentEntry|deleteTuitionPaymentEntry|saveTuitionStudentMemo|saveTuitionAmountAdjustment)$/.test(fnName) && !requestPayload.clientRequestId) {
+      if (/^(createTuitionMonth|saveTuitionFollowup|saveTuitionStatusOnly|appendTuitionPaymentEntry|updateTuitionPaymentEntry|deleteTuitionPaymentEntry|saveTuitionStudentMemo|saveTuitionAmountAdjustment)$/.test(fnName) && !requestPayload.clientRequestId) {
         requestPayload.clientRequestId = buildClientRequestId_(fnName);
       }
       return withRetry_(function() {
         return runServer(fnName, requestPayload).then(function(res) {
           if (!res || res.success === false) {
             var err = new Error(res && res.message ? res.message : "저장 실패");
-            if (res && res.message && /월 정보|학생명|금액이 0원|납부일|결제구분|결재구분|삭제할 수납|삭제 사유|삭제 요청|이미 삭제|선택한 수납/.test(res.message)) err.nonRetryable = true;
+            if (res && res.message && /월 정보|학생명|금액이 0원|납부일|결제구분|결재구분|수정할 수납|수납 학생|수정 사유|수정 요청|삭제할 수납|삭제 사유|삭제 요청|이미 삭제|선택한 수납/.test(res.message)) err.nonRetryable = true;
             throw err;
           }
           return res;
@@ -41276,6 +41299,12 @@
     function openTuitionPaymentModal(studentName, overrideTarget) {
       var row = overrideTarget || findTuitionRowByStudent(studentName);
       state.tuition.paymentTarget = row || null;
+      state.tuition.paymentEditTarget = null;
+      tuitionPaymentModalTitleEl.textContent = "수강료 납부 입력";
+      saveTuitionPaymentBtnEl.textContent = "수납 내역 저장";
+      tuitionPaymentEditReasonFieldEl.hidden = true;
+      tuitionPaymentEditNoteEl.hidden = true;
+      tuitionPaymentEditReasonEl.value = "";
       tuitionPaymentTargetEl.textContent = formatTuitionMonthLabel_(state.tuition.selectedMonth) + " / " + formatStudentName(studentName);
       var monthText = String(state.tuition.selectedMonth || "").replace(/s$/i, "");
       tuitionPaymentDueDateEl.value = monthText + "-01";
@@ -41289,6 +41318,13 @@
       tuitionPaymentModalEl.style.display = "flex";
       var paymentBox = tuitionPaymentModalEl.querySelector(".modal-box");
       if (paymentBox) paymentBox.scrollTop = 0;
+    }
+
+    function closeTuitionPaymentModal_() {
+      if (state.tuition.savingPayment) return;
+      tuitionPaymentModalEl.style.display = "none";
+      state.tuition.paymentTarget = null;
+      state.tuition.paymentEditTarget = null;
     }
 
     function findTuitionRowByStudent(studentName) {
@@ -41319,9 +41355,52 @@
 
     function findTuitionPaymentByClientKey_(paymentKey) {
       var key = String(paymentKey || "");
-      return (state.tuition.allPayments || []).find(function(row) {
+      return (state.tuition.monthPayments || []).concat(state.tuition.allPayments || []).find(function(row) {
         return getTuitionPaymentClientMergeKey_(row) === key;
       }) || null;
+    }
+
+    function tuitionPaymentDateInputValue_(payment) {
+      var raw = String(payment && payment.paidAt || "").trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      var match = raw.match(/^(\d{1,2})[\/.\-](\d{1,2})/);
+      var sourceMonth = String(payment && (payment.sourceDueMonth || payment.sourceMonth || payment.originMonth) || state.tuition.selectedMonth || "");
+      var yearMatch = sourceMonth.match(/^(\d{2,4})-/);
+      if (!match || !yearMatch) return "";
+      var year = yearMatch[1].length === 2 ? "20" + yearMatch[1] : yearMatch[1];
+      return year + "-" + String(Number(match[1])).padStart(2, "0") + "-" + String(Number(match[2])).padStart(2, "0");
+    }
+
+    function openTuitionPaymentEditModal_(paymentKey) {
+      var target = findTuitionPaymentByClientKey_(paymentKey);
+      if (!target) {
+        alert("수납 내역이 갱신되었습니다. 새로고침 후 다시 선택해 주세요.");
+        return;
+      }
+      state.tuition.paymentEditTarget = target;
+      state.tuition.paymentTarget = findTuitionRowByStudent(target.studentName) || { studentName: target.studentName };
+      tuitionPaymentModalTitleEl.textContent = "수납 내역 수정";
+      tuitionPaymentTargetEl.textContent = (target.sourceDueMonth || target.sourceMonth || state.tuition.selectedMonth) + " / " + formatStudentName(target.studentName);
+      tuitionPaymentDueDateEl.value = target.dueDate || "";
+      tuitionPaymentAmountEl.value = formatSignedAmountInput(String(toNumber(target.amount, 0)));
+      tuitionPaymentPaidAtEl.value = tuitionPaymentDateInputValue_(target);
+      tuitionPaymentBusinessEl.value = target.business || "반포";
+      selectTuitionChoice_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl, target.paymentType || "");
+      tuitionPaymentApprovalNoEl.value = target.approvalNo || "";
+      tuitionPaymentCardCompanyEl.value = target.cardCompany || "";
+      tuitionPaymentIssueMemoEl.value = target.issueMemo || "";
+      tuitionPaymentEditReasonEl.value = "";
+      tuitionPaymentEditReasonFieldEl.hidden = false;
+      tuitionPaymentEditNoteEl.hidden = false;
+      saveTuitionPaymentBtnEl.textContent = "수정 저장";
+      tuitionPaymentModalEl.style.display = "flex";
+      var paymentBox = tuitionPaymentModalEl.querySelector(".modal-box");
+      if (paymentBox) paymentBox.scrollTop = 0;
+      refreshLucideIcons_();
+      setTimeout(function() {
+        tuitionPaymentAmountEl.focus();
+        tuitionPaymentAmountEl.select();
+      }, 20);
     }
 
     function openTuitionPaymentDeleteModal_(paymentKey) {
@@ -41512,6 +41591,8 @@
 
     function saveTuitionPaymentEntry() {
       var target = state.tuition.paymentTarget;
+      var editTarget = state.tuition.paymentEditTarget;
+      var isEdit = Boolean(editTarget);
       if (!target || state.tuition.savingPayment) return;
       var targetName = formatStudentName(target.studentName);
       if (!targetName) return;
@@ -41526,9 +41607,15 @@
         if (firstPaymentChoice) firstPaymentChoice.focus();
         return;
       }
+      var editReason = String(tuitionPaymentEditReasonEl.value || "").trim();
+      if (isEdit && !editReason) {
+        alert("수정 사유를 입력해 주세요.");
+        tuitionPaymentEditReasonEl.focus();
+        return;
+      }
       state.tuition.savingPayment = true;
       saveTuitionPaymentBtnEl.disabled = true;
-      setLoading(true, "수납 내역을 저장하는 중입니다...");
+      setLoading(true, isEdit ? "수납 내역을 수정하는 중입니다..." : "수납 내역을 저장하는 중입니다...");
       var done = false;
       function cleanup() {
         if (done) return;
@@ -41537,8 +41624,7 @@
         saveTuitionPaymentBtnEl.disabled = false;
         setLoading(false);
       }
-      runServerWriteWithRetry_("appendTuitionPaymentEntry", {
-        monthName: state.tuition.selectedMonth,
+      var updatedPayment = {
         studentName: targetName,
         dueDate: tuitionPaymentDueDateEl.value,
         itemName: "납부금액",
@@ -41549,20 +41635,38 @@
         cardCompany: tuitionPaymentCardCompanyEl.value,
         approvalNo: tuitionPaymentApprovalNoEl.value,
         issueMemo: tuitionPaymentIssueMemoEl.value || ""
-      }, {
+      };
+      var methodName = isEdit ? "updateTuitionPaymentEntry" : "appendTuitionPaymentEntry";
+      var requestPayload = isEdit ? {
+        monthName: state.tuition.selectedMonth,
+        payment: serializeTuitionPaymentForDelete_(editTarget),
+        updatedPayment: updatedPayment,
+        reason: editReason
+      } : Object.assign({
+        monthName: state.tuition.selectedMonth,
+        studentName: targetName
+      }, updatedPayment);
+      runServerWriteWithRetry_(methodName, requestPayload, {
         onRetry: function() {
-          setLoading(true, "수납 내역 저장을 재시도하는 중입니다...");
+          setLoading(true, isEdit ? "수납 수정 저장을 재시도하는 중입니다..." : "수납 내역 저장을 재시도하는 중입니다...");
         }
       })
 	        .then(function(res) {
 	          cleanup();
 	          tuitionPaymentModalEl.style.display = "none";
+              state.tuition.paymentTarget = null;
+              state.tuition.paymentEditTarget = null;
 	          state.tuition.lastWriteWarning = [
 	            res && res.sheetMirrorWarning ? ("시트 미러링 확인 필요: " + res.sheetMirrorWarning) : "",
 	            res && res.indexWarning ? ("읽기 인덱스 확인 필요: " + res.indexWarning) : "",
 	            res && res.snapshotWarning ? res.snapshotWarning : ""
 	          ].filter(Boolean).join(" · ");
-	          if (res && res.payment) {
+	          if (isEdit) {
+	            state.tuition.monthlySales = null;
+	            state.tuition.guideDashboard = null;
+	            state.tuition.studentHistoryCache = {};
+	            return refreshTuitionSummary(true);
+	          } else if (res && res.payment) {
 	            upsertTuitionPaymentLocal_(res.payment);
 	          } else {
 	            refreshTuitionSummary(false);
@@ -41571,7 +41675,7 @@
 	        })
         .catch(function(err) {
           cleanup();
-          alert("수납 입력 오류: " + (err.message || String(err)));
+          alert((isEdit ? "수납 수정 오류: " : "수납 입력 오류: ") + (err.message || String(err)));
         });
     }
 
