@@ -327,7 +327,7 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /createTuitionMonth: true/);
   assert.match(source, /function formatTuitionMonthLabel_/);
   assert.match(source, /return year \+ "-" \+ parseInt\(match\[2\], 10\) \+ "월"/);
-  assert.match(source, /cdn\.sheetjs\.com\/xlsx-0\.20\.3\/package\/dist\/xlsx\.full\.min\.js/);
+  assert.match(source, /cdn\.jsdelivr\.net\/npm\/xlsx@0\.18\.5\/dist\/xlsx\.full\.min\.js/);
   assert.match(source, /id="tuitionExportBtn"/);
   assert.match(source, /state\.tuition\.monthPayments = \(data\.payments \|\| \[\]\)\.slice\(\)/);
   assert.match(source, /function exportTuitionMonthWorkbook_\(\)/);

@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <style>
     :root {
@@ -38450,6 +38450,7 @@
           Author: "S-LMS 데스크 포털",
           CreatedDate: exportedAt
         };
+        workbook.Workbook = { CalcPr: { fullCalcOnLoad: true, forceFullCalc: true } };
         var summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
         var studentSheet = XLSX.utils.aoa_to_sheet(studentData);
         var transactionSheet = XLSX.utils.aoa_to_sheet(transactionData);
