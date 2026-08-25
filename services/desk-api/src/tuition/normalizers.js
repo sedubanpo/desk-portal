@@ -109,6 +109,7 @@ export function payment(source = {}) {
     countsAsPayment: !isAdjustment,
     adjustmentForRequestId: clientRequestId(source.adjustmentForRequestId),
     adjustmentForPaymentKey: text(source.adjustmentForPaymentKey, 500),
+    originalPaymentKey: text(source.originalPaymentKey, 500),
     revision: clientRequestId(source.revision),
     createdAt: text(source.createdAt),
     updatedAt: text(source.updatedAt),
@@ -169,11 +170,11 @@ export function paymentId(row) {
 export function paymentKey(row) {
   const normalized = payment(row);
   if (!normalized) return '';
-  return normalized.requestId ? `request:${normalized.requestId}` : [
+  return normalized.originalPaymentKey || (normalized.requestId ? `request:${normalized.requestId}` : [
     normalized.sourceDueMonth, normalized.dueDate, normalized.studentName, normalized.amount,
     normalized.paidAt, normalized.paymentType, normalized.approvalNo, normalized.inputAt,
     normalized.rowNumber
-  ].join('|');
+  ].join('|'));
 }
 
 export function comparePaymentsDesc(a, b) {

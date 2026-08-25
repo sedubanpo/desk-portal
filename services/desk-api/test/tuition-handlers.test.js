@@ -108,6 +108,41 @@ test('month summary prefers corrected recent payments over stale cross-month sna
   assert.equal(result.todayPayments[0].amount, -80000);
 });
 
+test('legacy payment correction keeps one stable identity across month summaries', async () => {
+  const seed = tuitionSeed();
+  const legacy = { ...seed.payment };
+  delete legacy.requestId;
+  delete seed.documents[`tuitionPayments/${paymentId(seed.payment)}`];
+  seed.documents[`tuitionPayments/${paymentId(legacy)}`] = legacy;
+  seed.documents['tuitionPaymentReadIndexes/recent'].payments = [legacy];
+  seed.documents['tuitionPaymentReadIndexes/payment_month_26-07s'].payments = [legacy];
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments = [legacy];
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].allPayments = [legacy];
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].todayPayments = [legacy];
+  seed.documents['tuitionMonthIndex/tmi_26-08s'] = { monthName: '26-08s' };
+  seed.documents['tuitionMonthSnapshots/tm_26-08s'] = {
+    success: true, selectedMonth: '26-08s', rows: [], payments: [],
+    allPayments: [legacy], todayPayments: [legacy]
+  };
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:30:00.000Z') });
+
+  const corrected = await handlers.updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: legacy,
+    updatedPayment: { ...legacy, amount: -80000 },
+    reason: '레거시 수납 금액 정정',
+    clientRequestId: 'legacy-correction'
+  }, { uid: 'staff-1', name: '관리자' });
+  const august = await handlers.getTuitionMonthSummary({ monthName: '26-08s' });
+
+  assert.equal(corrected.success, true, JSON.stringify(corrected));
+  assert.equal(august.allPayments.length, 1);
+  assert.equal(august.allPayments[0].amount, -80000);
+  assert.equal(august.todayPayments.length, 1);
+  assert.equal(august.todayPayments[0].amount, -80000);
+});
+
 test('month summary exposes the latest two generated months for briefing', async () => {
   const seed = tuitionSeed();
   const augustPayment = {

@@ -601,6 +601,7 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
 async function updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate }) {
   const oldPaymentKey = key(COLLECTIONS.payments, paymentId(requested));
   const stableRequestId = requested.requestId || `edit_${requestId}`;
+  const originalPaymentKey = requested.originalPaymentKey || paymentKey(requested);
   const next = payment({
     ...requested,
     ...changes,
@@ -609,6 +610,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
     sourceMonth: requested.sourceMonth || month,
     sourceDueMonth: requested.sourceDueMonth || month,
     requestId: stableRequestId,
+    originalPaymentKey,
     createdAt: requested.createdAt,
     updatedAt: nowIso(),
     source: requested.source || 'desk_portal'
@@ -652,6 +654,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       ...next,
       studentName: stored.studentName,
       requestId: stored.requestId || stableRequestId,
+      originalPaymentKey: stored.originalPaymentKey || originalPaymentKey,
       revision: requestId,
       createdAt: stored.createdAt || timestamp,
       updatedAt: timestamp,
@@ -902,7 +905,7 @@ function paymentMutationFingerprint(row) {
     normalized.business, normalized.paymentType, normalized.cardCompany,
     normalized.approvalNo, normalized.inputAt, normalized.issueMemo,
     normalized.originMonth, normalized.sourceMonth, normalized.sourceDueMonth,
-    normalized.requestId, normalized.entryKind, normalized.countsAsPayment, normalized.revision,
+    normalized.requestId, normalized.originalPaymentKey, normalized.entryKind, normalized.countsAsPayment, normalized.revision,
     normalized.updatedAt
   ]);
 }
