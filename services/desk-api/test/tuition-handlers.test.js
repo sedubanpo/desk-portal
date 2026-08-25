@@ -84,6 +84,28 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 
+test('month summary prefers corrected recent payments over stale cross-month snapshot entries', async () => {
+  const seed = tuitionSeed();
+  const corrected = { ...seed.payment, amount: -80000, revision: 'correction-1', updatedAt: '2026-07-15T04:30:00.000Z' };
+  seed.documents['tuitionMonthIndex/tmi_26-08s'] = { monthName: '26-08s' };
+  seed.documents[`tuitionMonthSnapshots/${snapshotId('26-08s')}`] = {
+    success: true,
+    selectedMonth: '26-08s',
+    rows: [],
+    payments: [],
+    allPayments: [seed.payment],
+    todayPayments: []
+  };
+  seed.documents['tuitionPaymentReadIndexes/recent'] = { payments: [corrected], seeded: true };
+
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) })
+    .getTuitionMonthSummary({ monthName: '26-08s' });
+
+  assert.equal(result.success, true);
+  assert.equal(result.allPayments.find(row => row.requestId === seed.payment.requestId)?.amount, -80000);
+  assert.equal(result.allPayments.find(row => row.requestId === seed.payment.requestId)?.revision, 'correction-1');
+});
+
 test('month summary exposes the latest two generated months for briefing', async () => {
   const seed = tuitionSeed();
   const augustPayment = {
@@ -395,6 +417,25 @@ test('payment update aborts without writes when the monthly snapshot cannot be u
   assert.equal(store.dump()[`tuitionPayments/${paymentId(seed.payment)}`].amount, -100000);
   assert.equal(store.dump()['tuitionPaymentReadIndexes/payment_month_26-07s'].payments[0].amount, -100000);
   assert.equal(store.dump()['tuitionPaymentChanges/tupd_update-without-snapshot'], undefined);
+});
+
+test('payment update aborts when the target is missing from the source month payment list', async () => {
+  const seed = tuitionSeed();
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments = [];
+  const store = memoryStore(seed.documents);
+  const result = await createTuitionHandlers({ store }).updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -80000 },
+    reason: '부분 스냅샷 검증',
+    clientRequestId: 'update-partial-snapshot'
+  }, { uid: 'staff-1', name: '관리자' });
+
+  assert.equal(result.success, false);
+  assert.match(result.message, /수정을 중단/);
+  assert.equal(store.dump()[`tuitionPayments/${paymentId(seed.payment)}`].amount, -100000);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 100000);
+  assert.equal(store.dump()['tuitionPaymentChanges/tupd_update-partial-snapshot'], undefined);
 });
 
 test('followup retries do not increment contact count twice', async () => {

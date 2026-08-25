@@ -442,8 +442,8 @@ async function buildMonthSummary(store, payload) {
     previousPaymentMethod: previousMethods[studentName(row.studentName)] || '',
     tuitionMemoWarning: warnings[studentName(row.studentName)] || memoWarning([])
   }));
-  const allPayments = mergePayments(snapshot.allPayments || recent?.payments || []);
-  const payments = mergePayments(snapshot.payments || monthPayments?.payments || []).filter(row => !keyword || row.studentName.toLowerCase().replace(/\s+/g, '').includes(keyword));
+  const allPayments = mergePayments(snapshot.allPayments || [], recent?.payments || []);
+  const payments = mergePayments(snapshot.payments || [], monthPayments?.payments || []).filter(row => !keyword || row.studentName.toLowerCase().replace(/\s+/g, '').includes(keyword));
   const stats = summaryStats(rows.filter(row => !row.hiddenFromTuition), payments);
   const cache = { source: 'firestore-snapshot', documentId: snapshotId(month), computedAt: text(snapshot.snapshot?.computedAt) };
   return {
@@ -885,9 +885,9 @@ function replacePaymentIndex(source, previous, updated, field, limit, timestamp,
 
 function replaceSnapshotPayment(source, previous, updated, month, date) {
   if (!source?.success || !Array.isArray(source.rows)) return null;
-  const exists = [...(source.payments || []), ...(source.allPayments || [])]
-    .some(row => paymentKey(row) === paymentKey(previous));
-  if (!exists) return null;
+  const existsInMonth = (source.payments || []).some(row => paymentKey(row) === paymentKey(previous));
+  const hasStudentRow = source.rows.some(row => studentName(row.studentName) === previous.studentName);
+  if (!existsInMonth || !hasStudentRow) return null;
   const removed = changeSnapshotPayment(source, previous, 'delete', month, date);
   return removed ? changeSnapshotPayment(removed, updated, 'append', month, date) : null;
 }
