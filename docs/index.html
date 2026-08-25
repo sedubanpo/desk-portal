@@ -41101,7 +41101,7 @@
         return runServer(fnName, requestPayload).then(function(res) {
           if (!res || res.success === false) {
             var err = new Error(res && res.message ? res.message : "저장 실패");
-            if (res && res.message && /월 정보|학생명|금액이 0원|납부일|결제구분|결재구분|수정할 수납|수납 학생|수정 사유|수정 요청|삭제할 수납|삭제 사유|삭제 요청|이미 삭제|선택한 수납/.test(res.message)) err.nonRetryable = true;
+            if (res && res.message && /월 정보|원본 월|월별 요약|학생명|금액이 0원|납부일|결제구분|결재구분|수정할 수납|수납 학생|수정 사유|수정 요청|삭제할 수납|삭제 사유|삭제 요청|이미 삭제|선택한 수납/.test(res.message)) err.nonRetryable = true;
             throw err;
           }
           return res;
@@ -41384,7 +41384,7 @@
       tuitionPaymentDueDateEl.value = target.dueDate || "";
       tuitionPaymentAmountEl.value = formatSignedAmountInput(String(toNumber(target.amount, 0)));
       tuitionPaymentPaidAtEl.value = tuitionPaymentDateInputValue_(target);
-      tuitionPaymentBusinessEl.value = target.business || "반포";
+      tuitionPaymentBusinessEl.value = target.business || "";
       selectTuitionChoice_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl, target.paymentType || "");
       tuitionPaymentApprovalNoEl.value = target.approvalNo || "";
       tuitionPaymentCardCompanyEl.value = target.cardCompany || "";
@@ -41447,6 +41447,9 @@
         sourceMonth: row.sourceMonth || "",
         sourceDueMonth: row.sourceDueMonth || "",
         requestId: row.requestId || row.clientRequestId || "",
+        revision: row.revision || "",
+        createdAt: row.createdAt || "",
+        updatedAt: row.updatedAt || "",
         source: row.source || ""
       };
     }
@@ -41627,10 +41630,10 @@
       var updatedPayment = {
         studentName: targetName,
         dueDate: tuitionPaymentDueDateEl.value,
-        itemName: "납부금액",
+        itemName: isEdit && editTarget.itemName ? editTarget.itemName : "납부금액",
         amount: toNumber(tuitionPaymentAmountEl.value, 0),
         paidAt: tuitionPaymentPaidAtEl.value,
-        business: tuitionPaymentBusinessEl.value,
+        business: tuitionPaymentBusinessEl.value || (isEdit && editTarget.business) || "",
         paymentType: tuitionPaymentTypeEl.value,
         cardCompany: tuitionPaymentCardCompanyEl.value,
         approvalNo: tuitionPaymentApprovalNoEl.value,
@@ -41638,7 +41641,7 @@
       };
       var methodName = isEdit ? "updateTuitionPaymentEntry" : "appendTuitionPaymentEntry";
       var requestPayload = isEdit ? {
-        monthName: state.tuition.selectedMonth,
+        monthName: editTarget.sourceDueMonth || editTarget.sourceMonth || editTarget.originMonth || state.tuition.selectedMonth,
         payment: serializeTuitionPaymentForDelete_(editTarget),
         updatedPayment: updatedPayment,
         reason: editReason

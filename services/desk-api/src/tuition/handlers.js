@@ -385,6 +385,8 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       if (!month) return failure('월 정보가 없습니다.');
       if (!requested) return failure('수정할 수납 내역을 찾을 수 없습니다.');
       if (!changes) return failure('수정할 수납 정보를 확인해 주세요.');
+      const sourceMonth = monthName(requested.sourceDueMonth || requested.sourceMonth || requested.originMonth);
+      if (sourceMonth && sourceMonth !== month) return failure('선택한 수납의 원본 월과 수정 월이 다릅니다. 새로고침 후 다시 선택해 주세요.');
       if (studentName(changes.studentName) !== studentName(requested.studentName)) return failure('수납 학생은 변경할 수 없습니다.');
       if (!requestId) return failure('수정 요청 식별자가 없습니다. 다시 시도해 주세요.');
       if (!reason) return failure('수정 사유를 입력해 주세요.');
@@ -647,10 +649,13 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       ...next,
       studentName: stored.studentName,
       requestId: stored.requestId || stableRequestId,
+      revision: requestId,
       createdAt: stored.createdAt || timestamp,
       updatedAt: timestamp,
       source: stored.source || 'desk_portal'
     });
+    const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
+    if (!snapshot) return { result: failure('월별 요약을 갱신할 수 없어 수정을 중단했습니다. 새로고침 후 다시 시도해 주세요.') };
     const writes = {
       [keys.newPayment]: updated,
       [keys.monthIndex]: monthIndexDocument(month, timestamp, 'tuition_payment_update'),
@@ -658,7 +663,8 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
         success: true, requestId, monthName: month, reason, changedAt: timestamp,
         previousPayment: stored, updatedPayment: updated, source: 'desk_portal',
         actorUid: text(identity.uid), actorName: text(identity.name)
-      }
+      },
+      [keys.snapshot]: snapshot
     };
     const deletes = [keys.monthlyReport, keys.guideReport, keys.studentReport];
     if (keys.oldPayment !== keys.newPayment) deletes.push(keys.oldPayment);
@@ -676,8 +682,6 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       if (keys.newDaily) writes[keys.newDaily] = changePaymentIndex(documents[keys.newDaily], updated, 'append', 'payments', DAILY_LIMIT, timestamp, { dateKey: paidDateKey(updated) });
     }
 
-    const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
-    if (snapshot) writes[keys.snapshot] = snapshot;
     const sheetMirrorWarning = stored.source && !/^desk_portal(?:_adjustment)?$/.test(stored.source)
       ? 'Firebase 수납 원장만 수정했습니다. 원본 시트에서 가져온 건은 원본 시트도 별도로 확인해 주세요.' : '';
     return {
@@ -685,7 +689,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       deletes: [...new Set(deletes.filter(Boolean))],
       result: {
         success: true, payment: updated, previousPayment: stored, indexWarning: '',
-        snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장과 인덱스만 갱신되었습니다.',
+        snapshotWarning: '',
         sheetMirrorWarning
       }
     };
@@ -895,7 +899,8 @@ function paymentMutationFingerprint(row) {
     normalized.business, normalized.paymentType, normalized.cardCompany,
     normalized.approvalNo, normalized.inputAt, normalized.issueMemo,
     normalized.originMonth, normalized.sourceMonth, normalized.sourceDueMonth,
-    normalized.requestId, normalized.entryKind, normalized.countsAsPayment
+    normalized.requestId, normalized.entryKind, normalized.countsAsPayment, normalized.revision,
+    normalized.updatedAt
   ]);
 }
 

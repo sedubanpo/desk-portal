@@ -282,6 +282,8 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /function openTuitionPaymentEditModal_\(paymentKey\)/);
   assert.match(source, /updateTuitionPaymentEntry: true/);
   assert.match(source, /var methodName = isEdit \? "updateTuitionPaymentEntry" : "appendTuitionPaymentEntry"/);
+  assert.match(source, /monthName: editTarget\.sourceDueMonth \|\| editTarget\.sourceMonth \|\| editTarget\.originMonth \|\| state\.tuition\.selectedMonth/);
+  assert.match(source, /revision: row\.revision \|\| ""/);
   assert.match(source, /state\.tuition\.monthlySales = null;[\s\S]*?state\.tuition\.guideDashboard = null;[\s\S]*?refreshTuitionSummary\(true\)/);
   ['결제링크', '현장카드', '계좌이체', '현금', '서울페이', '기타'].forEach(method => {
     assert.match(source, new RegExp(`data-tuition-choice="${method}"`));

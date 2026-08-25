@@ -109,6 +109,7 @@ export function payment(source = {}) {
     countsAsPayment: !isAdjustment,
     adjustmentForRequestId: clientRequestId(source.adjustmentForRequestId),
     adjustmentForPaymentKey: text(source.adjustmentForPaymentKey, 500),
+    revision: clientRequestId(source.revision),
     createdAt: text(source.createdAt),
     updatedAt: text(source.updatedAt),
     source: text(source.source)
