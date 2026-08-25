@@ -444,6 +444,8 @@ async function buildMonthSummary(store, payload) {
   }));
   const allPayments = mergePayments(snapshot.allPayments || [], recent?.payments || []);
   const payments = mergePayments(snapshot.payments || [], monthPayments?.payments || []).filter(row => !keyword || row.studentName.toLowerCase().replace(/\s+/g, '').includes(keyword));
+  const todayPaymentKeys = new Set((snapshot.todayPayments || []).map(paymentKey));
+  const todayPayments = allPayments.filter(row => todayPaymentKeys.has(paymentKey(row)));
   const stats = summaryStats(rows.filter(row => !row.hiddenFromTuition), payments);
   const cache = { source: 'firestore-snapshot', documentId: snapshotId(month), computedAt: text(snapshot.snapshot?.computedAt) };
   return {
@@ -456,6 +458,7 @@ async function buildMonthSummary(store, payload) {
     chart: stats.chart,
     allPayments,
     payments,
+    todayPayments,
     monthAvailability: monthContext.monthAvailability,
     briefingMonths: monthContext.briefingMonths,
     briefingRows: monthContext.briefingRows,

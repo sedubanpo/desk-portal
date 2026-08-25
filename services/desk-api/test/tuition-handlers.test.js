@@ -94,7 +94,7 @@ test('month summary prefers corrected recent payments over stale cross-month sna
     rows: [],
     payments: [],
     allPayments: [seed.payment],
-    todayPayments: []
+    todayPayments: [seed.payment]
   };
   seed.documents['tuitionPaymentReadIndexes/recent'] = { payments: [corrected], seeded: true };
 
@@ -104,6 +104,8 @@ test('month summary prefers corrected recent payments over stale cross-month sna
   assert.equal(result.success, true);
   assert.equal(result.allPayments.find(row => row.requestId === seed.payment.requestId)?.amount, -80000);
   assert.equal(result.allPayments.find(row => row.requestId === seed.payment.requestId)?.revision, 'correction-1');
+  assert.equal(result.todayPayments.length, 1);
+  assert.equal(result.todayPayments[0].amount, -80000);
 });
 
 test('month summary exposes the latest two generated months for briefing', async () => {
