@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <style>
     :root {
@@ -8295,6 +8296,56 @@
     .tuition-topbar > .refresh-btn {
       grid-column: 3;
     }
+    .tuition-topbar-actions {
+      grid-column: 3;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+    .tuition-export-btn {
+      min-height: 46px;
+      border: 1px solid #0d684d;
+      border-radius: 8px;
+      background: #0d684d;
+      color: #fff;
+      padding: 0 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+    }
+    .tuition-export-btn:hover:not(:disabled) {
+      border-color: #064e3b;
+      background: #064e3b;
+    }
+    .tuition-export-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .tuition-export-btn:focus-visible {
+      outline: 3px solid var(--ds-ring);
+      outline-offset: 2px;
+    }
+    .tuition-export-btn:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+    .tuition-export-btn svg {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+    }
+    .tuition-topbar-actions .refresh-btn {
+      width: auto;
+      min-width: 0;
+    }
     @media (max-width: 920px) {
       .tuition-month-browser-head {
         grid-template-columns: minmax(76px, 1fr) auto 42px;
@@ -8322,6 +8373,20 @@
       }
       .tuition-month-grid {
         grid-template-columns: repeat(4, minmax(52px, 1fr));
+      }
+      .tuition-topbar-actions {
+        width: 100%;
+      }
+      .tuition-export-btn {
+        flex: 1 1 auto;
+      }
+      .tuition-topbar-actions .refresh-btn {
+        width: 46px;
+        height: 46px;
+        padding: 0;
+      }
+      .tuition-topbar-actions .refresh-btn span {
+        display: none;
       }
     }
     .tuition-cards {
@@ -15845,7 +15910,10 @@
         grid-column: 1 / -1;
       }
 	      .tuition-topbar .refresh-btn {
-	        width: 100%;
+	        width: auto;
+	      }
+	      .tuition-topbar-actions {
+	        grid-column: 2;
 	      }
 	      .tuition-ops-status {
 	        align-items: flex-start;
@@ -15978,6 +16046,13 @@
       .tuition-layout .tuition-panel-soft:last-child {
         grid-template-columns: 1fr;
         grid-column: auto;
+      }
+      .tuition-topbar-actions {
+        grid-column: auto;
+        justify-content: stretch;
+      }
+      .tuition-topbar-actions > button {
+        flex: 1 1 0;
       }
       .tuition-cards,
       .tuition-action-frame {
@@ -17936,7 +18011,10 @@
                 <option value="납부예정">납부예정</option>
               </select>
             </div>
-	            <button class="refresh-btn" id="tuitionRefreshBtn" type="button"><i data-lucide="database"></i> 수강료 데이터 새로고침</button>
+	            <div class="tuition-topbar-actions">
+                <button class="tuition-export-btn" id="tuitionExportBtn" type="button" title="선택한 월의 수납 원장과 학생별 대조표를 엑셀로 내려받기"><i data-lucide="file-spreadsheet" aria-hidden="true"></i><span>월별 수납 엑셀</span></button>
+                <button class="refresh-btn" id="tuitionRefreshBtn" type="button" title="수강료 데이터 새로고침" aria-label="수강료 데이터 새로고침"><i data-lucide="database" aria-hidden="true"></i><span>수강료 데이터 새로고침</span></button>
+              </div>
 	          </section>
 	          <section class="tuition-ops-status" id="tuitionOpsStatus" aria-live="polite">
 	            <div class="tuition-ops-status-main">
@@ -21013,6 +21091,7 @@
         keyword: "",
         allRows: [],
         allPayments: [],
+        monthPayments: [],
         briefingMonths: [],
         briefingRows: [],
         briefingPayments: [],
@@ -21606,6 +21685,7 @@
 	    var tuitionKeywordInputEl = document.getElementById("tuitionKeywordInput");
 	    var tuitionKeywordClearBtnEl = document.getElementById("tuitionKeywordClearBtn");
 	    var tuitionRefreshBtnEl = document.getElementById("tuitionRefreshBtn");
+	    var tuitionExportBtnEl = document.getElementById("tuitionExportBtn");
 	    var tuitionOpsStatusEl = document.getElementById("tuitionOpsStatus");
 	    var tuitionOpsStatusTextEl = document.getElementById("tuitionOpsStatusText");
 	    var tuitionOpsStatusListEl = document.getElementById("tuitionOpsStatusList");
@@ -37710,6 +37790,7 @@
       tuitionRefreshBtnEl.addEventListener("click", function() {
         refreshTuitionSummary(true);
       });
+      tuitionExportBtnEl.addEventListener("click", exportTuitionMonthWorkbook_);
       tuitionMonthCreateBtnEl.addEventListener("click", createNextTuitionMonth_);
       tuitionYearPrevBtnEl.addEventListener("click", function() {
         state.tuition.monthViewYear = getTuitionMonthViewYear_() - 1;
@@ -38217,6 +38298,189 @@
       });
     }
 
+    function setTuitionWorkbookNumberFormat_(sheet, columns, startRow, endRow) {
+      columns.forEach(function(column) {
+        for (var row = startRow; row <= endRow; row += 1) {
+          var cell = sheet[XLSX.utils.encode_cell({ c: column, r: row })];
+          if (cell) cell.z = '#,##0;[Red]-#,##0';
+        }
+      });
+    }
+
+    function exportTuitionMonthWorkbook_() {
+      if (typeof XLSX === "undefined") {
+        alert("엑셀 생성 도구를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.");
+        return;
+      }
+      var monthName = String(state.tuition.selectedMonth || "").trim();
+      var allRows = (state.tuition.allRows || []).slice();
+      var payments = (state.tuition.monthPayments || []).slice();
+      if (!monthName || (!allRows.length && !payments.length)) {
+        alert("선택한 월에 내보낼 수강료 데이터가 없습니다.");
+        return;
+      }
+
+      var labelEl = tuitionExportBtnEl.querySelector("span");
+      tuitionExportBtnEl.disabled = true;
+      if (labelEl) labelEl.textContent = "엑셀 생성 중";
+
+      try {
+        var exportedAt = new Date();
+        var activeRows = allRows.filter(function(row) { return !row.hiddenFromTuition; });
+        var rowByStudent = {};
+        allRows.forEach(function(row) {
+          var student = formatStudentName(row.studentName);
+          if (student && !rowByStudent[student]) rowByStudent[student] = row;
+        });
+
+        var paymentTotalsByStudent = {};
+        var paymentMethodTotals = {};
+        var ledgerReceived = 0;
+        var ledgerRefunded = 0;
+        var transactionRows = payments.slice().sort(compareTuitionPaymentRowsDesc_).map(function(payment, index) {
+          var amount = toNumber(payment.amount, 0);
+          var received = amount < 0 ? Math.abs(amount) : 0;
+          var refunded = amount > 0 ? amount : 0;
+          var net = received - refunded;
+          var student = formatStudentName(payment.studentName);
+          var studentRow = rowByStudent[student] || {};
+          var method = String(payment.paymentType || "기타").trim() || "기타";
+          if (payment.cardCompany) method += " / " + String(payment.cardCompany).trim();
+          ledgerReceived += received;
+          ledgerRefunded += refunded;
+          if (!paymentTotalsByStudent[student]) paymentTotalsByStudent[student] = { received: 0, refunded: 0, net: 0 };
+          paymentTotalsByStudent[student].received += received;
+          paymentTotalsByStudent[student].refunded += refunded;
+          paymentTotalsByStudent[student].net += net;
+          paymentMethodTotals[method] = toNumber(paymentMethodTotals[method], 0) + net;
+          return [
+            index + 1,
+            payment.paidAt || "",
+            student,
+            studentRow.school || "",
+            studentRow.grade || "",
+            payment.business || "",
+            payment.paymentType || "",
+            payment.cardCompany || "",
+            payment.approvalNo || "",
+            isTuitionAdjustmentPayment_(payment) ? "수납 정정" : "수납/환불",
+            payment.sourceDueMonth || payment.sourceMonth || monthName,
+            amount,
+            received,
+            refunded,
+            net,
+            payment.itemName || "납부금액",
+            payment.issueMemo || "",
+            payment.inputAt || "",
+            payment.createdAt || payment.updatedAt || "",
+            payment.requestId || ""
+          ];
+        });
+
+        var portalExpected = activeRows.reduce(function(sum, row) { return sum + Math.max(0, toNumber(row.guideAmount, 0)); }, 0);
+        var portalCollected = activeRows.reduce(function(sum, row) { return sum + Math.max(0, toNumber(row.collectedAmount, 0)); }, 0);
+        var portalOutstanding = activeRows.reduce(function(sum, row) { return sum + Math.max(0, toNumber(row.outstandingAmount, 0)); }, 0);
+        var ledgerNet = ledgerReceived - ledgerRefunded;
+        var internalDifference = portalCollected - ledgerNet;
+
+        var summaryData = [
+          [formatTuitionMonthLabel_(monthName) + " 수납 대조", ""],
+          ["내보낸 시각", exportedAt.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false })],
+          ["기준", "선택 월 전체 · 화면 필터 미적용"],
+          ["재원생 수", activeRows.length],
+          ["거래 기록 수", payments.length],
+          ["안내금액 합계", portalExpected],
+          ["화면 순수 수납액", portalCollected],
+          ["거래 원장 수납액", ledgerReceived],
+          ["거래 원장 환불액", ledgerRefunded],
+          ["거래 원장 순액", ledgerNet],
+          ["내부 차이 (화면-원장)", internalDifference],
+          ["미납 합계", portalOutstanding],
+          [],
+          ["결제수단", "원장 순액"]
+        ];
+        Object.keys(paymentMethodTotals).sort(function(a, b) { return a.localeCompare(b, "ko"); }).forEach(function(method) {
+          summaryData.push([method, paymentMethodTotals[method]]);
+        });
+        summaryData.push([]);
+        summaryData.push(["검토 방법", "학생별 대조 시트의 '엑세스 수업료(입력)' 열에 금액을 붙여넣으면 차액이 자동 계산됩니다."]);
+        summaryData.push(["금액 부호", "거래 원장의 음수 원본은 수납, 양수 원본은 환불로 분리했습니다."]);
+
+        var studentHeader = ["번호", "이름", "학교", "학년", "상태", "안내금액", "화면 순수 수납액", "원장 수납액", "원장 환불액", "원장 순액", "내부 차이", "엑세스 수업료(입력)", "엑세스-포털 차액", "미납액", "이전 수납방법", "최근 연락일", "연락방법", "연락메모", "검토", "숨김"];
+        var studentData = [studentHeader];
+        allRows.slice().sort(function(a, b) {
+          return formatStudentName(a.studentName).localeCompare(formatStudentName(b.studentName), "ko");
+        }).forEach(function(row, index) {
+          var student = formatStudentName(row.studentName);
+          var totals = paymentTotalsByStudent[student] || { received: 0, refunded: 0, net: 0 };
+          var excelRow = index + 2;
+          studentData.push([
+            index + 1,
+            student,
+            row.school || "",
+            row.grade || "",
+            row.unpaidStatus || "",
+            Math.max(0, toNumber(row.guideAmount, 0)),
+            Math.max(0, toNumber(row.collectedAmount, 0)),
+            totals.received,
+            totals.refunded,
+            totals.net,
+            { f: "G" + excelRow + "-J" + excelRow },
+            "",
+            { f: 'IF(L' + excelRow + '="","",L' + excelRow + '-G' + excelRow + ')' },
+            Math.max(0, toNumber(row.outstandingAmount, 0)),
+            row.previousPaymentMethod || "",
+            row.lastContactAt || "",
+            row.contactChannel || "",
+            row.lastContactMemo || "",
+            { f: 'IF(K' + excelRow + '=0,"내부 일치","내부 확인 필요")' },
+            row.hiddenFromTuition ? "숨김" : ""
+          ]);
+        });
+        var totalRow = studentData.length + 1;
+        studentData.push(["", "합계", "", "", "", { f: "SUM(F2:F" + (totalRow - 1) + ")" }, { f: "SUM(G2:G" + (totalRow - 1) + ")" }, { f: "SUM(H2:H" + (totalRow - 1) + ")" }, { f: "SUM(I2:I" + (totalRow - 1) + ")" }, { f: "SUM(J2:J" + (totalRow - 1) + ")" }, { f: "SUM(K2:K" + (totalRow - 1) + ")" }, { f: "SUM(L2:L" + (totalRow - 1) + ")" }, { f: "SUM(M2:M" + (totalRow - 1) + ")" }, { f: "SUM(N2:N" + (totalRow - 1) + ")" }]);
+
+        var transactionHeader = ["번호", "수납일", "이름", "학교", "학년", "관", "수납 방법", "카드사/은행", "승인번호", "기록 유형", "귀속 월", "원본 부호 금액", "수납액", "환불액", "순액", "항목", "이슈/메모", "입력 시각", "저장 시각", "요청 ID"];
+        var transactionData = [transactionHeader].concat(transactionRows);
+
+        var workbook = XLSX.utils.book_new();
+        workbook.Props = {
+          Title: formatTuitionMonthLabel_(monthName) + " 수납 대조",
+          Subject: "수강료 순수 수납액과 거래 원장 대조",
+          Author: "S-LMS 데스크 포털",
+          CreatedDate: exportedAt
+        };
+        var summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+        var studentSheet = XLSX.utils.aoa_to_sheet(studentData);
+        var transactionSheet = XLSX.utils.aoa_to_sheet(transactionData);
+        summarySheet["!cols"] = [{ wch: 28 }, { wch: 84 }];
+        studentSheet["!cols"] = [6, 14, 18, 9, 12, 15, 18, 15, 15, 15, 15, 20, 19, 15, 18, 22, 12, 36, 18, 9].map(function(width) { return { wch: width }; });
+        transactionSheet["!cols"] = [6, 13, 14, 18, 9, 12, 16, 16, 16, 13, 12, 17, 15, 15, 15, 15, 38, 22, 22, 28].map(function(width) { return { wch: width }; });
+        studentSheet["!autofilter"] = { ref: "A1:T" + Math.max(1, studentData.length - 1) };
+        transactionSheet["!autofilter"] = { ref: "A1:T" + Math.max(1, transactionData.length) };
+        setTuitionWorkbookNumberFormat_(summarySheet, [1], 3, summaryData.length - 1);
+        setTuitionWorkbookNumberFormat_(studentSheet, [5, 6, 7, 8, 9, 10, 11, 12, 13], 1, studentData.length - 1);
+        setTuitionWorkbookNumberFormat_(transactionSheet, [11, 12, 13, 14], 1, transactionData.length - 1);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, "월 요약");
+        XLSX.utils.book_append_sheet(workbook, studentSheet, "학생별 대조");
+        XLSX.utils.book_append_sheet(workbook, transactionSheet, "거래 원장");
+
+        var parsedMonth = parseTuitionMonthYear_(monthName);
+        var fileMonth = parsedMonth.year + "-" + pad2(parsedMonth.month);
+        var timeKey = exportedAt.getFullYear() + pad2(exportedAt.getMonth() + 1) + pad2(exportedAt.getDate()) + "_" + pad2(exportedAt.getHours()) + pad2(exportedAt.getMinutes());
+        XLSX.writeFile(workbook, "수강료_수납대조_" + fileMonth + "_" + timeKey + ".xlsx", { compression: true });
+        if (labelEl) labelEl.textContent = "다운로드 완료";
+        window.setTimeout(function() {
+          if (labelEl) labelEl.textContent = "월별 수납 엑셀";
+        }, 1200);
+      } catch (error) {
+        if (labelEl) labelEl.textContent = "월별 수납 엑셀";
+        alert("엑셀 생성 오류: " + (error && error.message ? error.message : String(error)));
+      } finally {
+        tuitionExportBtnEl.disabled = false;
+      }
+    }
+
 	    function renderTuitionSummary(data) {
 	      state.tuition.pendingSummary = !!(data && data.pendingSummary);
 	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
@@ -38225,8 +38489,9 @@
       state.tuition.briefingMonths = (data.briefingMonths || []).slice();
       state.tuition.briefingRows = (data.briefingRows || []).slice();
       state.tuition.briefingPayments = (data.briefingPayments || []).slice();
-	      state.tuition.allRows = (data.rows || []).slice();
+      state.tuition.allRows = (data.rows || []).slice();
       state.tuition.allPayments = (data.allPayments || data.payments || []).slice();
+      state.tuition.monthPayments = (data.payments || []).slice();
       state.tuition.inactiveStudents = (data.inactiveStudents || []).slice();
       state.tuition.inactiveSearchKey = "";
       state.tuition.inactiveSearchLoading = false;

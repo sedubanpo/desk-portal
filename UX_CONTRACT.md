@@ -2,7 +2,7 @@
 
 ## Scope
 
-This contract covers the daily shared-work notice ledger, the shared asset ledger, purchase-request composition, and consumable quantity adjustment.
+This contract covers the daily shared-work notice ledger, the shared asset ledger, purchase-request composition, consumable quantity adjustment, and monthly tuition reconciliation export.
 
 ## Users And Jobs
 
@@ -10,6 +10,7 @@ This contract covers the daily shared-work notice ledger, the shared asset ledge
 - Asset operators need to find equipment by category, branch, status, location, or responsible staff member and update it in place.
 - Purchase operators need to select low-stock items, set request quantities, add new items, and produce a readable request message.
 - All authorized desk accounts need consumable increment and decrement controls to update the intended item even when legacy inventory rows have been normalized.
+- Tuition operators need a complete monthly workbook that can explain differences between the portal collection total, the transaction ledger, and an Access tuition amount.
 
 ## Invariants
 
@@ -19,6 +20,7 @@ This contract covers the daily shared-work notice ledger, the shared asset ledge
 - Purchase selection and quantities remain persisted through the existing supply snapshot.
 - Quantity adjustment resolves an exact item ID first. Identity fallback requires an exact match of item name, product name, and unit; it must not guess from partial text.
 - Errors on the supply surface identify themselves as `물품 관리`, never as another portal.
+- Tuition export always uses the selected month's unfiltered students and payment records. It must preserve numeric amounts and show the portal-versus-ledger difference before an operator enters any Access amount.
 
 ## States
 
@@ -36,6 +38,7 @@ This contract covers the daily shared-work notice ledger, the shared asset ledge
 | Purchase candidates and request composer form one workflow | `docs/index.html` | Signed-in purchase-tab interaction and screenshot |
 | Legacy ID adjustment reaches the canonical inventory item | `services/desk-api/src/desk/handlers.js` | `desk-handlers.test.js` regression test |
 | Supply errors use the correct portal label | `docs/index.html` | Source assertion and browser error-path inspection |
+| Monthly tuition exports include summary, student reconciliation, and transaction sheets | `docs/index.html` | Source assertions and signed-in download QA |
 
 ## Risks
 

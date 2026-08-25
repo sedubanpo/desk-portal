@@ -327,4 +327,19 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /createTuitionMonth: true/);
   assert.match(source, /function formatTuitionMonthLabel_/);
   assert.match(source, /return year \+ "-" \+ parseInt\(match\[2\], 10\) \+ "월"/);
+  assert.match(source, /cdn\.sheetjs\.com\/xlsx-0\.20\.3\/package\/dist\/xlsx\.full\.min\.js/);
+  assert.match(source, /id="tuitionExportBtn"/);
+  assert.match(source, /state\.tuition\.monthPayments = \(data\.payments \|\| \[\]\)\.slice\(\)/);
+  assert.match(source, /function exportTuitionMonthWorkbook_\(\)/);
+  assert.match(source, /var allRows = \(state\.tuition\.allRows \|\| \[\]\)\.slice\(\)/);
+  assert.match(source, /var payments = \(state\.tuition\.monthPayments \|\| \[\]\)\.slice\(\)/);
+  ["월 요약", "학생별 대조", "거래 원장"].forEach(sheetName => {
+    assert.match(source, new RegExp(`book_append_sheet\\(workbook, [^,]+, "${sheetName}"\\)`));
+  });
+  ["이름", "학교", "학년", "화면 순수 수납액", "수납 방법", "엑세스 수업료(입력)", "엑세스-포털 차액"].forEach(header => {
+    assert.match(source, new RegExp(header.replace(/[()]/g, '\\$&')));
+  });
+  assert.match(source, /"내부 차이 \(화면-원장\)"/);
+  assert.match(source, /amount < 0 \? Math\.abs\(amount\) : 0/);
+  assert.match(source, /amount > 0 \? amount : 0/);
 });
