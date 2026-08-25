@@ -38473,7 +38473,7 @@
         if (labelEl) labelEl.textContent = "다운로드 완료";
         window.setTimeout(function() {
           if (labelEl) labelEl.textContent = "월별 수납 엑셀";
-        }, 1200);
+        }, 3600);
       } catch (error) {
         if (labelEl) labelEl.textContent = "월별 수납 엑셀";
         alert("엑셀 생성 오류: " + (error && error.message ? error.message : String(error)));
