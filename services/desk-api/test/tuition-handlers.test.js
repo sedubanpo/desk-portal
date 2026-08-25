@@ -5,6 +5,10 @@ import { followupId, paymentId, snapshotId, studentMemoId } from '../src/tuition
 
 function clone(value) { return value == null ? value : structuredClone(value); }
 
+function nestedValue(source, path) {
+  return String(path || '').split('.').reduce((value, part) => value && value[part], source);
+}
+
 function memoryStore(seed = {}) {
   const documents = new Map(Object.entries(seed).map(([key, value]) => [key, clone(value)]));
   let transactions = 0;
@@ -16,8 +20,9 @@ function memoryStore(seed = {}) {
     get: async key => clone(documents.get(key) || null),
     list: async (collection, limit = 1000) => listDocuments(collection).slice(0, limit),
     listWhere: async (collection, field, operator, value, limit = 1000) => listDocuments(collection).filter(document => {
-      if (operator === '==') return document[field] === value;
-      if (operator === 'in') return Array.isArray(value) && value.includes(document[field]);
+      const documentValue = nestedValue(document, field);
+      if (operator === '==') return documentValue === value;
+      if (operator === 'in') return Array.isArray(value) && value.includes(documentValue);
       throw new Error(`unsupported memoryStore operator: ${operator}`);
     }).slice(0, limit),
     transaction: async (keys, mutate) => {
@@ -384,6 +389,141 @@ test('payment update replaces one ledger entry and recalculates every payment in
   assert.equal(dump['tuitionPaymentChanges/tupd_update-1'].previousPayment.amount, -100000);
   assert.equal(dump['tuitionMonthlyReadIndexes/report_monthly_sales_Z2xvYmFs'], undefined);
   assert.equal(dump['tuitionMonthlyReadIndexes/report_guide_dashboard_Z2xvYmFs'], undefined);
+});
+
+test('payment update ignores harmless canonical timestamp drift from the monthly snapshot', async () => {
+  const seed = tuitionSeed();
+  const canonicalKey = `tuitionPayments/${paymentId(seed.payment)}`;
+  seed.documents[canonicalKey] = {
+    ...seed.payment,
+    createdAt: '2026-07-14T03:00:00.000Z',
+    updatedAt: '2026-07-14T03:00:00.055Z'
+  };
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments[0] = {
+    ...seed.payment,
+    createdAt: '2026-07-14T03:00:00.000Z',
+    updatedAt: '2026-07-14T03:00:00.000Z'
+  };
+  const requested = seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments[0];
+  const store = memoryStore(seed.documents);
+  const result = await createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:30:00.000Z') })
+    .updateTuitionPaymentEntry({
+      monthName: seed.month,
+      payment: requested,
+      updatedPayment: { ...requested, amount: -80000 },
+      reason: '승인 금액 정정',
+      clientRequestId: 'timestamp-drift-update'
+    }, { uid: 'staff-1', name: '관리자' });
+
+  assert.equal(result.success, true, JSON.stringify(result));
+  assert.equal(result.payment.amount, -80000);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 80000);
+});
+
+test('payment update rejects semantic drift even when the legacy payment has no revision', async () => {
+  const seed = tuitionSeed();
+  const canonicalKey = `tuitionPayments/${paymentId(seed.payment)}`;
+  seed.documents[canonicalKey] = {
+    ...seed.payment,
+    entryKind: 'adjustment',
+    countsAsPayment: false,
+    source: 'desk_portal_adjustment'
+  };
+  const store = memoryStore(seed.documents);
+  const result = await createTuitionHandlers({ store })
+    .updateTuitionPaymentEntry({
+      monthName: seed.month,
+      payment: seed.payment,
+      updatedPayment: { ...seed.payment, amount: -80000 },
+      reason: '오래 열린 화면의 정정',
+      clientRequestId: 'semantic-drift-update'
+    }, { uid: 'staff-1', name: '관리자' });
+
+  assert.equal(result.success, false);
+  assert.match(result.message, /변경되었습니다/);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].paymentCount, 1);
+});
+
+test('payment delete rejects a stale row after a concurrent correction', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:30:00.000Z') });
+  const corrected = await handlers.updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -80000, paidAt: '7/15' },
+    reason: '결제 금액 정정',
+    clientRequestId: 'delete-race-update'
+  }, { uid: 'staff-1', name: '관리자' });
+  const deleted = await handlers.deleteTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    reason: '오래 열린 화면에서 삭제',
+    clientRequestId: 'stale-delete'
+  }, { uid: 'staff-2', name: '다른 관리자' });
+  const dump = store.dump();
+
+  assert.equal(corrected.success, true, JSON.stringify(corrected));
+  assert.equal(deleted.success, false);
+  assert.match(deleted.message, /변경되었습니다/);
+  assert.equal(dump[`tuitionPayments/${paymentId(corrected.payment)}`].amount, -80000);
+  assert.equal(dump['tuitionPaymentReadIndexes/daily_2026_07_15'].payments.length, 1);
+});
+
+test('payment history includes the original input and timestamped correction details', async () => {
+  const seed = tuitionSeed();
+  seed.documents[`tuitionPayments/${paymentId(seed.payment)}`] = {
+    ...seed.payment,
+    createdAt: '2026-07-14T03:00:00.000Z',
+    updatedAt: '2026-07-14T03:00:00.000Z'
+  };
+  const store = memoryStore(seed.documents);
+  const handlers = createTuitionHandlers({ store, now: () => new Date('2026-07-15T04:30:00.000Z') });
+  const corrected = await handlers.updateTuitionPaymentEntry({
+    monthName: seed.month,
+    payment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -80000, paymentType: '서울페이' },
+    reason: '결제 금액과 수단 정정',
+    clientRequestId: 'history-update-1'
+  }, { uid: 'staff-1', name: '관리자' });
+  const history = await handlers.getTuitionPaymentHistory({ payment: corrected.payment });
+
+  assert.equal(corrected.success, true, JSON.stringify(corrected));
+  assert.equal(history.success, true, JSON.stringify(history));
+  assert.deepEqual(history.events.map(event => event.action), ['updated', 'created']);
+  assert.equal(history.events[0].changedAt, '2026-07-15T04:30:00.000Z');
+  assert.equal(history.events[0].actorName, '관리자');
+  assert.equal(history.events[0].reason, '결제 금액과 수단 정정');
+  assert.equal(history.events[0].previousPayment.amount, -100000);
+  assert.equal(history.events[0].payment.amount, -80000);
+  assert.equal(history.events[1].changedAt, '2026-07-14T03:00:00.000Z');
+  assert.equal(history.events[1].actorName, '기존 기록');
+  assert.equal(history.historyComplete, true);
+});
+
+test('payment history finds the matching legacy audit beyond the first 500 global documents', async () => {
+  const seed = tuitionSeed();
+  for (let index = 0; index < 501; index += 1) {
+    seed.documents[`tuitionPaymentChanges/a-${String(index).padStart(3, '0')}`] = {
+      requestId: `other-${index}`,
+      previousPayment: { ...seed.payment, requestId: `other-${index}`, studentName: `다른학생${index}` },
+      updatedPayment: { ...seed.payment, requestId: `other-${index}`, studentName: `다른학생${index}` }
+    };
+  }
+  seed.documents['tuitionPaymentChanges/z-target'] = {
+    requestId: 'legacy-target-update',
+    changedAt: '2026-07-15T04:30:00.000Z',
+    reason: '기존 수정 기록',
+    actorName: '관리자',
+    previousPayment: seed.payment,
+    updatedPayment: { ...seed.payment, amount: -80000 }
+  };
+  const store = memoryStore(seed.documents);
+  const history = await createTuitionHandlers({ store }).getTuitionPaymentHistory({ payment: seed.payment });
+
+  assert.equal(history.success, true, JSON.stringify(history));
+  assert.deepEqual(history.events.map(event => event.action), ['updated', 'created']);
+  assert.equal(history.events[0].payment.amount, -80000);
 });
 
 test('payment update rejects a stale editor even after an A to B to A correction cycle', async () => {

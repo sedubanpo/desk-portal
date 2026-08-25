@@ -36,6 +36,7 @@ const COLLECTIONS = Object.freeze({
   payments: 'tuitionPayments',
   deletions: 'tuitionPaymentDeletions',
   paymentChanges: 'tuitionPaymentChanges',
+  paymentHistory: 'tuitionPaymentHistory',
   monthIndex: 'tuitionMonthIndex',
   statusChanges: 'tuitionStatusChanges',
   guideChanges: 'tuitionGuideAmountChanges',
@@ -53,7 +54,7 @@ const DAILY_LIMIT = 500;
 export const TUITION_READ_METHODS = new Set([
   'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
   'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
-  'getTuitionInactiveStudentCandidates'
+  'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory'
 ]);
 
 export const TUITION_WRITE_METHODS = new Set([
@@ -86,6 +87,73 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const selectedMonth = monthName(payload.monthName) || months[0];
       if (!selectedMonth) return failure('Firestore 수강료 월 인덱스가 비어 있습니다. 수강료 Firebase 마이그레이션을 먼저 실행해 주세요.');
       return buildMonthSummary(store, { ...payload, monthName: selectedMonth, months: months.length ? months : [selectedMonth] });
+    },
+
+    async getTuitionPaymentHistory(payload = {}) {
+      const requested = payment(payload.payment);
+      if (!requested) return failure('조회할 수납 내역을 찾을 수 없습니다.');
+      const paymentIdentity = paymentHistoryIdentity(requested);
+      const stableRequestId = requested.requestId;
+      const [historyDocuments, changeDocuments, deletionDocuments, currentDocument] = await Promise.all([
+        store.listWhere(COLLECTIONS.paymentHistory, 'paymentIdentity', '==', paymentIdentity, 5000),
+        stableRequestId ? store.listWhere(COLLECTIONS.paymentChanges, 'updatedPayment.requestId', '==', stableRequestId, 5000) : [],
+        stableRequestId ? store.listWhere(COLLECTIONS.deletions, 'deletedPayment.requestId', '==', stableRequestId, 5000) : [],
+        store.get(key(COLLECTIONS.payments, paymentId(requested)))
+      ]);
+      const events = new Map();
+      historyDocuments.forEach(document => {
+        const event = normalizePaymentHistoryEvent(document);
+        if (event) events.set(paymentHistoryEventDedupeKey(event), event);
+      });
+      changeDocuments.forEach(document => {
+        const before = payment(document.previousPayment);
+        const after = payment(document.updatedPayment);
+        if (paymentHistoryIdentity(before || after) !== paymentIdentity) return;
+        const event = normalizePaymentHistoryEvent({
+          ...document,
+          eventId: `updated_${text(document.requestId || document.id)}`,
+          action: 'updated',
+          paymentIdentity,
+          payment: after,
+          previousPayment: before
+        });
+        if (event) events.set(paymentHistoryEventDedupeKey(event), event);
+      });
+      deletionDocuments.forEach(document => {
+        const deleted = payment(document.deletedPayment);
+        if (paymentHistoryIdentity(deleted) !== paymentIdentity) return;
+        const event = normalizePaymentHistoryEvent({
+          ...document,
+          eventId: `deleted_${text(document.requestId || document.id)}`,
+          action: 'deleted',
+          changedAt: document.deletedAt,
+          paymentIdentity,
+          payment: deleted
+        });
+        if (event) events.set(paymentHistoryEventDedupeKey(event), event);
+      });
+      if (![...events.values()].some(event => event.action === 'created')) {
+        const earliestChange = [...events.values()].filter(event => event.previousPayment)
+          .sort((left, right) => text(left.changedAt).localeCompare(text(right.changedAt)))[0];
+        const initialPayment = earliestChange?.previousPayment || payment(currentDocument) || requested;
+        const createdEvent = normalizePaymentHistoryEvent({
+          eventId: `created_${paymentIdentity}`,
+          action: 'created',
+          paymentIdentity,
+          changedAt: initialPayment.createdAt || initialPayment.updatedAt,
+          reason: '최초 수납 입력',
+          actorName: '기존 기록',
+          payment: initialPayment
+        });
+        if (createdEvent) events.set(paymentHistoryEventDedupeKey(createdEvent), createdEvent);
+      }
+      return {
+        success: true,
+        paymentIdentity,
+        historyComplete: Boolean(stableRequestId) && historyDocuments.length < 5000 && changeDocuments.length < 5000 && deletionDocuments.length < 5000,
+        payment: payment(currentDocument) || requested,
+        events: [...events.values()].sort((left, right) => text(right.changedAt).localeCompare(text(left.changedAt)))
+      };
     },
 
     async createTuitionMonth(payload = {}, identity = {}) {
@@ -543,10 +611,13 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
   const targetId = paymentId(normalized);
   const targetKey = key(COLLECTIONS.payments, targetId);
   const auditKey = key(COLLECTIONS.deletions, `tdel_${requestId}`);
+  const historyKey = key(COLLECTIONS.paymentHistory, `tph_${action}_${requestId}`);
+  const historyIdentity = paymentHistoryIdentity(normalized);
   const dailyId = dailyPaymentIndexId(paidDateKey(normalized));
   const keys = {
     payment: targetKey,
     audit: auditKey,
+    history: historyKey,
     recent: key(COLLECTIONS.paymentIndexes, 'recent'),
     monthPayments: key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month)),
     dailyPayments: dailyId ? key(COLLECTIONS.paymentIndexes, dailyId) : '',
@@ -564,12 +635,31 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
     }
     const stored = action === 'delete' ? payment(documents[keys.payment]) : normalized;
     if (action === 'delete' && !stored) return { result: failure('이미 삭제되었거나 수납 내역을 찾을 수 없습니다. 새로고침 후 확인해 주세요.') };
-    if (action === 'delete' && paymentKey(stored) !== paymentKey(normalized)) return { result: failure('선택한 수납 내역이 변경되었습니다. 새로고침 후 다시 선택해 주세요.') };
+    if (action === 'delete') {
+      const revisionConflict = text(stored.revision) !== text(normalized.revision) && Boolean(stored.revision || normalized.revision);
+      if (paymentKey(stored) !== paymentKey(normalized) || revisionConflict || paymentMutationFingerprint(stored) !== paymentMutationFingerprint(normalized)) {
+        return { result: failure('선택한 수납 내역이 변경되었습니다. 새로고침 후 다시 선택해 주세요.') };
+      }
+    }
     const timestamp = nowIso();
     const writes = { [keys.monthIndex]: monthIndexDocument(month, timestamp, action === 'append' ? 'tuition_payment_write' : 'tuition_payment_delete') };
     const deletes = [keys.monthlyReport, keys.studentReport];
     if (action === 'append') writes[keys.payment] = { ...stored, createdAt: stored.createdAt || timestamp, updatedAt: timestamp, source: stored.source || 'desk_portal' };
     else deletes.push(keys.payment);
+    writes[keys.history] = {
+      success: true,
+      eventId: `tph_${action}_${requestId}`,
+      requestId,
+      paymentIdentity: historyIdentity,
+      action: action === 'append' ? 'created' : 'deleted',
+      changedAt: timestamp,
+      reason: action === 'append' ? '수납 입력' : reason,
+      previousPayment: action === 'delete' ? stored : null,
+      payment: stored,
+      actorUid: text(identity.uid),
+      actorName: text(identity.name),
+      source: 'desk_portal'
+    };
     const recent = changePaymentIndex(documents[keys.recent], stored, action, 'payments', RECENT_LIMIT, timestamp, { seeded: documents[keys.recent]?.seeded === true });
     const monthly = changePaymentIndex(documents[keys.monthPayments], stored, action, 'payments', MONTH_LIMIT, timestamp, { monthName: month, seeded: documents[keys.monthPayments]?.seeded === true });
     if (recent) writes[keys.recent] = recent; else deletes.push(keys.recent);
@@ -622,6 +712,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
     oldPayment: oldPaymentKey,
     newPayment: newPaymentKey,
     audit: key(COLLECTIONS.paymentChanges, `tupd_${requestId}`),
+    history: key(COLLECTIONS.paymentHistory, `tph_update_${requestId}`),
     recent: key(COLLECTIONS.paymentIndexes, 'recent'),
     monthPayments: key(COLLECTIONS.paymentIndexes, monthPaymentIndexId(month)),
     oldDaily: oldDailyId ? key(COLLECTIONS.paymentIndexes, oldDailyId) : '',
@@ -644,7 +735,8 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
     ).find(row => paymentKey(row) === requestedKey);
     const stored = payment(documents[keys.oldPayment]) || indexed;
     if (!stored) return { result: failure('이미 삭제되었거나 수정할 수납 내역을 찾을 수 없습니다. 새로고침 후 확인해 주세요.') };
-    if (paymentKey(stored) !== requestedKey || paymentMutationFingerprint(stored) !== paymentMutationFingerprint(requested)) {
+    const revisionConflict = text(stored.revision) !== text(requested.revision) && Boolean(stored.revision || requested.revision);
+    if (paymentKey(stored) !== requestedKey || revisionConflict || paymentMutationFingerprint(stored) !== paymentMutationFingerprint(requested)) {
       return { result: failure('선택한 수납 내역이 변경되었습니다. 새로고침 후 다시 선택해 주세요.') };
     }
 
@@ -669,6 +761,20 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
         success: true, requestId, monthName: month, reason, changedAt: timestamp,
         previousPayment: stored, updatedPayment: updated, source: 'desk_portal',
         actorUid: text(identity.uid), actorName: text(identity.name)
+      },
+      [keys.history]: {
+        success: true,
+        eventId: `tph_update_${requestId}`,
+        requestId,
+        paymentIdentity: paymentHistoryIdentity(updated),
+        action: 'updated',
+        changedAt: timestamp,
+        reason,
+        previousPayment: stored,
+        payment: updated,
+        actorUid: text(identity.uid),
+        actorName: text(identity.name),
+        source: 'desk_portal'
       },
       [keys.snapshot]: snapshot
     };
@@ -901,13 +1007,43 @@ function replaceSnapshotPayment(source, previous, updated, month, date) {
 function paymentMutationFingerprint(row) {
   const normalized = payment(row) || {};
   return JSON.stringify([
-    normalized.studentName, normalized.dueDate, normalized.amount, normalized.paidAt,
-    normalized.business, normalized.paymentType, normalized.cardCompany,
-    normalized.approvalNo, normalized.inputAt, normalized.issueMemo,
+    normalized.rowNumber, normalized.dueDate, normalized.studentName, normalized.itemName,
+    normalized.amount, normalized.paidAt, normalized.business, normalized.paymentType,
+    normalized.cardCompany, normalized.approvalNo, normalized.inputAt, normalized.issueMemo,
     normalized.originMonth, normalized.sourceMonth, normalized.sourceDueMonth,
-    normalized.requestId, normalized.originalPaymentKey, normalized.entryKind, normalized.countsAsPayment, normalized.revision,
-    normalized.updatedAt
+    normalized.requestId, normalized.entryKind, normalized.countsAsPayment,
+    normalized.adjustmentForRequestId, normalized.adjustmentForPaymentKey,
+    normalized.originalPaymentKey, normalized.source
   ]);
+}
+
+function paymentHistoryIdentity(row) {
+  const normalized = payment(row);
+  return normalized ? normalized.originalPaymentKey || paymentKey(normalized) : '';
+}
+
+function normalizePaymentHistoryEvent(source = {}) {
+  const current = payment(source.payment || source.updatedPayment || source.deletedPayment);
+  const previous = payment(source.previousPayment);
+  const action = ['created', 'updated', 'deleted'].includes(text(source.action)) ? text(source.action) : '';
+  const eventId = text(source.eventId || source.id || source.requestId);
+  if (!action || !eventId || !(current || previous)) return null;
+  return {
+    eventId,
+    requestId: text(source.requestId),
+    paymentIdentity: text(source.paymentIdentity) || paymentHistoryIdentity(current || previous),
+    action,
+    changedAt: text(source.changedAt || source.deletedAt || current?.createdAt || current?.updatedAt),
+    reason: text(source.reason, 300),
+    actorUid: text(source.actorUid),
+    actorName: text(source.actorName) || '기존 기록',
+    previousPayment: previous,
+    payment: current || previous
+  };
+}
+
+function paymentHistoryEventDedupeKey(event) {
+  return `${event.action}:${event.requestId || event.eventId}`;
 }
 
 function updateFollowupIndex(source, row, timestamp) {
@@ -1151,7 +1287,8 @@ function errorLabel(name) {
     getTuitionGuideDashboard: '안내 대시보드 조회 오류', getTuitionMonthlySalesOverview: '월별 매출 집계 오류',
     saveTuitionStatusOnly: '상태 저장 오류', saveTuitionFollowup: '연락기록 저장 오류',
     saveTuitionStudentMemo: '수강료 메모 저장 오류', saveTuitionAmountAdjustment: '금액 수정 오류',
-    appendTuitionPaymentEntry: '수납 입력 오류', updateTuitionPaymentEntry: '수납 수정 오류', deleteTuitionPaymentEntry: '수납 삭제 오류'
+    appendTuitionPaymentEntry: '수납 입력 오류', updateTuitionPaymentEntry: '수납 수정 오류', deleteTuitionPaymentEntry: '수납 삭제 오류',
+    getTuitionPaymentHistory: '수납 변경 이력 조회 오류'
   };
   return labels[name] || '수강료 API 오류';
 }
