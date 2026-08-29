@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createTuitionHandlers } from '../src/tuition/handlers.js';
-import { followupId, paymentId, snapshotId, studentMemoId } from '../src/tuition/normalizers.js';
+import { followupId, paidDateKey, paymentId, snapshotId, studentMemoId } from '../src/tuition/normalizers.js';
 
 function clone(value) { return value == null ? value : structuredClone(value); }
 
@@ -76,6 +76,44 @@ function tuitionSeed() {
     }
   };
 }
+
+test('paid date parsing preserves full ISO dates before short month-day formats', () => {
+  assert.equal(paidDateKey({ sourceDueMonth: '26-08s', paidAt: '2026-08-28', studentName: '김재희', amount: -1 }), '2026-08-28');
+  assert.equal(paidDateKey({ sourceDueMonth: '26-08s', paidAt: '7/31', studentName: '김재희', amount: -1 }), '2026-07-31');
+});
+
+test('monthly sales overview exposes monthly growth, payer counts, and daily actual receipts', async () => {
+  const seed = tuitionSeed();
+  const second = {
+    ...seed.payment,
+    requestId: 'second-payment', studentName: '이서준', amount: -50000,
+    paidAt: '2026-07-15', inputAt: '7/15 12:00', approvalNo: '5678'
+  };
+  const august = {
+    ...seed.payment,
+    requestId: 'august-payment', amount: -180000,
+    paidAt: '2026-08-03', inputAt: '8/3 12:00', approvalNo: 'aug-1',
+    sourceDueMonth: '26-08s', sourceMonth: '26-08s', originMonth: '26-08s'
+  };
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments = [seed.payment, second];
+  seed.documents['tuitionMonthIndex/tmi_26-08s'] = { monthName: '26-08s' };
+  seed.documents['tuitionMonthSnapshots/tm_26-08s'] = { success: true, selectedMonth: '26-08s', rows: [], payments: [august], allPayments: [august] };
+
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) }).getTuitionMonthlySalesOverview();
+
+  assert.equal(result.success, true);
+  assert.deepEqual(result.labels, ['26-07', '26-08']);
+  assert.deepEqual(result.paidTotals, [150000, 180000]);
+  assert.deepEqual(result.monthlyStats.map(item => ({ payerCount: item.payerCount, paymentCount: item.paymentCount, changePercent: item.changePercent })), [
+    { payerCount: 2, paymentCount: 2, changePercent: null },
+    { payerCount: 1, paymentCount: 1, changePercent: 20 }
+  ]);
+  assert.deepEqual(result.dailyPaid, [
+    { dateKey: '2026-07-14', paidTotal: 100000, payerCount: 1, paymentCount: 1, studentNames: ['김재희'] },
+    { dateKey: '2026-07-15', paidTotal: 50000, payerCount: 1, paymentCount: 1, studentNames: ['이서준'] },
+    { dateKey: '2026-08-03', paidTotal: 180000, payerCount: 1, paymentCount: 1, studentNames: ['김재희'] }
+  ]);
+});
 
 test('month summary reads the snapshot and attaches student memo warnings', async () => {
   const seed = tuitionSeed();

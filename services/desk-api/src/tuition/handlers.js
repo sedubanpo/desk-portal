@@ -336,17 +336,28 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const dueMap = new Map();
       const paidMap = new Map();
       const students = new Map();
+      const daily = new Map();
+      const paymentCounts = new Map();
       rows.forEach(row => {
         const delta = -number(row.amount);
         if (!delta) return;
         const due = monthLabel(row.sourceDueMonth || row.sourceMonth || row.originMonth);
         const paid = paidMonthLabel(row);
+        const paidDate = paidDateKey(row);
         if (due) dueMap.set(due, (dueMap.get(due) || 0) + delta);
         if (paid) {
           paidMap.set(paid, (paidMap.get(paid) || 0) + delta);
+          paymentCounts.set(paid, (paymentCounts.get(paid) || 0) + 1);
           if (!students.has(paid)) students.set(paid, new Map());
           const bucket = students.get(paid);
           bucket.set(row.studentName, (bucket.get(row.studentName) || 0) + delta);
+        }
+        if (paidDate) {
+          if (!daily.has(paidDate)) daily.set(paidDate, { total: 0, paymentCount: 0, students: new Set() });
+          const day = daily.get(paidDate);
+          day.total += delta;
+          day.paymentCount += 1;
+          if (row.studentName) day.students.add(row.studentName);
         }
       });
       const labels = [...new Set([...dueMap.keys(), ...paidMap.keys()])].sort();
@@ -360,11 +371,34 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
           .map(([name, amount], index) => ({ rank: index + 1, studentName: name, amount: Math.round(amount) }));
         if (paidTop10ByMonth[label].length) defaultTopMonth = label;
       });
+      const paidTotals = labels.map(label => Math.round(paidMap.get(label) || 0));
+      const monthlyStats = labels.map((label, index) => {
+        const total = paidTotals[index];
+        const previous = index > 0 ? paidTotals[index - 1] : 0;
+        const payerCount = [...(students.get(label) || new Map()).entries()].filter(([, amount]) => amount > 0).length;
+        return {
+          monthName: label,
+          paidTotal: total,
+          payerCount,
+          paymentCount: paymentCounts.get(label) || 0,
+          averagePerPayer: payerCount ? Math.round(total / payerCount) : 0,
+          changePercent: index > 0 && previous > 0 ? Math.round(((total - previous) / previous) * 1000) / 10 : null
+        };
+      });
+      const dailyPaid = [...daily.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([dateKey, item]) => ({
+        dateKey,
+        paidTotal: Math.round(item.total),
+        payerCount: item.students.size,
+        paymentCount: item.paymentCount,
+        studentNames: [...item.students].sort((left, right) => left.localeCompare(right, 'ko'))
+      }));
       return {
         success: true,
         labels,
         dueTotals: labels.map(label => Math.round(dueMap.get(label) || 0)),
-        paidTotals: labels.map(label => Math.round(paidMap.get(label) || 0)),
+        paidTotals,
+        monthlyStats,
+        dailyPaid,
         paidTop10ByMonth,
         defaultTopMonth,
         reportIndex: reportSource(snapshots)

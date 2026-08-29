@@ -301,6 +301,12 @@ test('tuition settlement exposes compact editing, payment methods, contact chann
   assert.match(source, /monthName: editTarget\.sourceDueMonth \|\| editTarget\.sourceMonth \|\| editTarget\.originMonth \|\| state\.tuition\.selectedMonth/);
   assert.match(source, /revision: row\.revision \|\| ""/);
   assert.match(source, /state\.tuition\.monthlySales = null;[\s\S]*?state\.tuition\.guideDashboard = null;[\s\S]*?refreshTuitionSummary\(true\)/);
+  assert.match(source, /data-monthly-tab="period"/);
+  assert.match(source, /id="tuitionPeriodStart" type="date"/);
+  assert.match(source, /id="tuitionPeriodEnd" type="date"/);
+  assert.match(source, /id="tuitionMonthlyStatsBody"/);
+  assert.match(source, /function renderTuitionPeriodAnalysis_\(\)/);
+  assert.match(source, /function renderTuitionMonthlySummary_\(\)/);
   ['결제링크', '현장카드', '계좌이체', '현금', '서울페이', '기타'].forEach(method => {
     assert.match(source, new RegExp(`data-tuition-choice="${method}"`));
   });
