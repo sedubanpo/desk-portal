@@ -186,7 +186,7 @@ test('legacy payment correction keeps one stable identity across month summaries
   assert.equal(august.todayPayments[0].amount, -80000);
 });
 
-test('month summary exposes the latest two generated months for briefing', async () => {
+test('month summary exposes every generated month with data for cross-month briefing', async () => {
   const seed = tuitionSeed();
   const augustPayment = {
     dueDate: '26-08-01', studentName: '신유진', itemName: '납부금액', amount: -200000,
@@ -210,14 +210,36 @@ test('month summary exposes the latest two generated months for briefing', async
   seed.documents['tuitionPaymentReadIndexes/payment_month_26-08s'] = {
     monthName: '26-08s', payments: [augustPayment], seeded: true
   };
+  const septemberPayment = {
+    dueDate: '26-09-01', studentName: '김도현', itemName: '납부금액', amount: -1400000,
+    paidAt: '2026-08-28', business: '반포', paymentType: '결제링크', approvalNo: 'sep-1',
+    inputAt: '2026-08-28 16:25', originMonth: '26-09s', sourceMonth: '26-09s', sourceDueMonth: '26-09s',
+    requestId: 'september-payment', source: 'desk_portal'
+  };
+  seed.documents['tuitionMonthIndex/tmi_26-09s'] = { monthName: '26-09s' };
+  seed.documents[`tuitionMonthSnapshots/${snapshotId('26-09s')}`] = {
+    success: true,
+    selectedMonth: '26-09s',
+    rows: [{
+      studentName: '김도현', school: '서울고', grade: '2', guideAmount: 1400000,
+      collectedAmount: 1400000, outstandingAmount: 0, paymentCount: 1, unpaidStatus: '납부완료',
+      contactCount: 1, lastContactAt: '2026-08-28T07:25:00.000Z', lastContactMemo: '', lastUpdatedAt: ''
+    }],
+    payments: [septemberPayment], allPayments: [septemberPayment], todayPayments: [septemberPayment]
+  };
+  seed.documents['tuitionPaymentReadIndexes/payment_month_26-09s'] = {
+    monthName: '26-09s', payments: [septemberPayment], seeded: true
+  };
 
   const result = await createTuitionHandlers({ store: memoryStore(seed.documents) })
     .getTuitionMonthSummary({ monthName: '26-08s' });
 
   assert.equal(result.success, true);
-  assert.deepEqual(result.briefingMonths, ['26-08s', '26-07s']);
-  assert.deepEqual(result.briefingPayments.map(row => row.requestId).sort(), ['august-payment', 'existing-payment']);
-  assert.deepEqual(result.briefingRows.map(row => row.sourceMonth).sort(), ['26-07s', '26-08s']);
+  assert.deepEqual(result.briefingMonths, ['26-09s', '26-08s', '26-07s']);
+  assert.deepEqual(result.briefingPayments.map(row => row.requestId).sort(), ['august-payment', 'existing-payment', 'september-payment']);
+  assert.deepEqual(result.briefingRows.map(row => row.sourceMonth).sort(), ['26-07s', '26-08s', '26-09s']);
+  assert.equal(result.briefingPayments.find(row => row.requestId === 'september-payment')?.paidAt, '2026-08-28');
+  assert.equal(result.briefingPayments.find(row => row.requestId === 'september-payment')?.inputAt, '2026-08-28 16:25');
   assert.equal(result.monthAvailability.find(item => item.monthName === '26-08s')?.hasData, true);
   assert.equal(result.monthAvailability.find(item => item.monthName === '26-07s')?.hasData, true);
 });

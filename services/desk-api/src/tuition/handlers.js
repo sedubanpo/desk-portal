@@ -1136,7 +1136,7 @@ async function loadTuitionMonthContext(store, months) {
       payments
     };
   }));
-  const briefingRecords = records.slice(0, 2);
+  const briefingRecords = records.filter(record => record.hasData);
   return {
     monthAvailability: records.map(({ rows, payments, ...record }) => record),
     briefingMonths: briefingRecords.map(record => record.monthName),
