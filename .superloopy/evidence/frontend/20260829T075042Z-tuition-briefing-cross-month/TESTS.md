@@ -24,6 +24,15 @@
 - Regression fixture: the September charge paid and entered on `2026-08-28` remains present with both timestamps for frontend basis filtering.
 - `git diff --check`: passed.
 
+## Production Evidence
+
+- Cloud Run revision `desk-portal-api-00039-qlp` serves 100% of production traffic and passed its health check.
+- Authenticated Chrome, August settlement, briefing date `2026-08-28`.
+- Visible month scope: `26-9월 · 26-8월 · 26-7월 · 26-6월`.
+- Paid-date basis: 3 payments rendered for the selected date.
+- Input-date basis: 3 payments rendered for the selected date.
+- Both basis changes retained the cross-month scope and completed without a write action.
+
 ## Surface Evidence
 
 | target | owner | claims | scope reason |
