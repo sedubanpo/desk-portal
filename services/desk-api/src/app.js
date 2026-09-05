@@ -1,4 +1,5 @@
 import express from 'express';
+import { createHash } from 'node:crypto';
 import { createRequireStaff } from './auth.js';
 import { MIGRATION_STATE } from './contracts.js';
 import {
@@ -18,6 +19,19 @@ import {
   requestContext,
   securityHeaders
 } from './http.js';
+
+function requestFingerprint(payload) {
+  return createHash('sha256').update(JSON.stringify(canonicalJson(payload))).digest('hex');
+}
+
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonicalJson(value[key])]));
+}
+
+const SUPPORTED_METHODS = new Set([...DESK_METHODS, ...TUITION_METHODS, ...PAYROLL_METHODS]);
+const WRITE_METHODS = new Set([...DESK_WRITE_METHODS, ...TUITION_WRITE_METHODS, ...PAYROLL_WRITE_METHODS]);
 
 export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess }) {
   const app = express();
@@ -79,9 +93,7 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
 
   app.post('/v1/desk/:method', requireStaff, async (req, res, next) => {
     const method = String(req.params.method || '').trim();
-    const supportedMethods = new Set([...DESK_METHODS, ...TUITION_METHODS, ...PAYROLL_METHODS]);
-    const writeMethods = new Set([...DESK_WRITE_METHODS, ...TUITION_WRITE_METHODS, ...PAYROLL_WRITE_METHODS]);
-    if (!supportedMethods.has(method) || typeof deskHandlers[method] !== 'function') {
+    if (!SUPPORTED_METHODS.has(method) || typeof deskHandlers[method] !== 'function') {
       return next(new ApiError(404, 'desk_method_not_found', '아직 Cloud Run으로 이전되지 않은 데스크 기능입니다.'));
     }
     if (PAYROLL_METHODS.includes(method) && !hasPayrollPermission(req.identity)) {
@@ -96,10 +108,11 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     if (PAYROLL_METHODS.includes(method) && !payrollGate.verify(req.identity.uid, req.get('x-payroll-unlock-token'))) {
       return next(new ApiError(401, 'payroll_unlock_required', '강사 시수 정산 잠금을 다시 풀어 주세요.'));
     }
-    const execute = () => deskHandlers[method](req.body?.payload ?? req.body ?? {}, req.identity);
+    const payload = req.body?.payload ?? req.body ?? {};
+    const execute = () => deskHandlers[method](payload, req.identity);
     try {
-      const response = writeMethods.has(method)
-        ? await runIdempotent({ uid: req.identity.uid, method, key: req.get('x-idempotency-key') }, execute)
+      const response = WRITE_METHODS.has(method)
+        ? await runIdempotent({ uid: req.identity.uid, method, key: req.get('x-idempotency-key'), requestFingerprint: requestFingerprint(payload) }, execute)
         : await execute();
       return res.json(response);
     } catch (error) {

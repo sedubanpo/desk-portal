@@ -12,6 +12,7 @@ import {
   recruitingComment,
   recruitingApplicant,
   RETIRED_WORKERS,
+  rtdbKey,
   scheduleEntry,
   SUPPLY_BRANCHES,
   suppliesData,
@@ -20,6 +21,7 @@ import {
   supplySelections,
   workerKey
 } from './normalizers.js';
+import { ApiError } from '../http.js';
 
 const PATHS = Object.freeze({
   schedule: 'desk_portal/monthly_schedule',
@@ -123,9 +125,11 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     },
 
     async saveDeskAttendancePunch(payload = {}, identity = {}) {
-      const day = dateKey(payload.dateKey || seoulDateKey(now()));
+      const today = seoulDateKey(now());
+      const day = dateKey(payload.dateKey || today);
       const type = payload.type === 'clockOut' ? 'clockOut' : payload.type === 'clockIn' ? 'clockIn' : '';
       if (!day) return failure('근태 일자가 올바르지 않습니다.');
+      if (day !== today) return failure('출퇴근 기록은 오늘 날짜에만 입력할 수 있습니다. 정정이 필요하면 정정 요청을 등록해 주세요.');
       if (!type) return failure('출근 또는 퇴근 유형이 필요합니다.');
       const uid = String(identity.uid || '').trim();
       if (!uid) return failure('로그인 계정을 확인할 수 없습니다.');
@@ -182,7 +186,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async saveDeskAttendanceCorrectionDecision(payload = {}, identity = {}) {
       const key = monthKey(payload.monthKey || String(payload.dateKey || '').slice(0, 7));
-      const requestId = String(payload.requestId || '').trim();
+      const requestId = rtdbKey(payload.requestId);
       const decision = payload.decision === 'REJECTED' ? 'REJECTED' : payload.decision === 'APPROVED' ? 'APPROVED' : '';
       if (!key || !requestId || !decision) return failure('정정 요청과 처리 결과를 확인해 주세요.');
       const requestPath = `${PATHS.attendanceRequests}/${key}/${requestId}`;
@@ -225,6 +229,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     async saveDeskScheduleEntry(payload = {}, identity = {}) {
       const entry = scheduleEntry(payload.entry, payload.entry?.id);
       const key = monthKey(payload.monthKey || entry.date.slice(0, 7));
+      if (!rtdbKey(entry.id)) return failure('일정 ID가 올바르지 않습니다.');
       const invalid = validateSchedule(entry, key);
       if (invalid) return failure(invalid);
       const current = await scheduleEntriesMap(store, key);
@@ -241,7 +246,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async deleteDeskScheduleEntry(payload = {}, identity = {}) {
       const key = monthKey(payload.monthKey);
-      const id = String(payload.id || '').trim();
+      const id = rtdbKey(payload.id);
       if (!key) return failure('monthKey가 올바르지 않습니다.');
       if (!id) return failure('삭제할 일정 ID가 없습니다.');
       const current = await scheduleEntriesMap(store, key);
@@ -261,9 +266,13 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     async batchUpdateDeskScheduleEntries(payload = {}, identity = {}) {
       const key = monthKey(payload.monthKey);
       if (!key) return failure('monthKey가 올바르지 않습니다.');
-      const deleteIds = (Array.isArray(payload.deleteIds) ? payload.deleteIds : []).map(id => String(id || '').trim()).filter(Boolean);
+      const requestedDeleteIds = (Array.isArray(payload.deleteIds) ? payload.deleteIds : [])
+        .map(id => String(id || '').trim()).filter(Boolean);
+      const deleteIds = requestedDeleteIds.map(id => rtdbKey(id));
+      if (deleteIds.some(id => !id)) return failure('삭제할 일정 ID가 올바르지 않습니다.');
       const entries = (Array.isArray(payload.entries) ? payload.entries : []).map(item => scheduleEntry(item, item?.id)).filter(item => !RETIRED_WORKERS.has(item.worker));
       for (const entry of entries) {
+        if (!rtdbKey(entry.id)) return failure('일정 ID가 올바르지 않습니다.');
         const invalid = validateSchedule(entry, key);
         if (invalid) return failure(invalid);
       }
@@ -362,8 +371,11 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const key = dateKey(payload.dateKey || payload.task?.dateKey);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       const stamp = now();
-      const existing = payload.task?.id ? await store.get(`${PATHS.journal}/${key}/tasks/${payload.task.id}`) : null;
+      const requestedId = payload.task?.id ? rtdbKey(payload.task.id) : '';
+      if (payload.task?.id && !requestedId) return failure('업무 ID가 올바르지 않습니다.');
+      const existing = requestedId ? await store.get(`${PATHS.journal}/${key}/tasks/${requestedId}`) : null;
       const task = dailyTask({ ...(existing || {}), ...(payload.task || {}) }, payload.task?.id, key, stamp);
+      if (!rtdbKey(task.id)) return failure('업무 ID가 올바르지 않습니다.');
       if (!task.worker) return failure('업무 대상 근무자가 필요합니다.');
       if (!task.title) return failure('업무 제목을 입력해 주세요.');
       task.createdAt = String(existing?.createdAt || task.createdAt || stamp);
@@ -384,7 +396,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async deleteDeskDailyJournalTask(payload = {}, identity = {}) {
       const key = dateKey(payload.dateKey);
-      const id = String(payload.id || '').trim();
+      const id = rtdbKey(payload.id);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       if (!id) return failure('삭제할 업무 ID가 없습니다.');
       const existing = await store.get(`${PATHS.journal}/${key}/tasks/${id}`);
@@ -408,6 +420,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const key = dateKey(payload.dateKey || payload.memo?.dateKey);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       const memo = dailyMemo(payload.memo, payload.memo?.id, key, now());
+      if (!rtdbKey(memo.id)) return failure('기록 ID가 올바르지 않습니다.');
       if (!memo.worker) return failure('기록 근무자 이름이 필요합니다.');
       if (!memo.text) return failure('기록 내용을 입력해 주세요.');
       await store.set(`${PATHS.journal}/${key}/memos/${memo.id}`, memo);
@@ -416,7 +429,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
     async deleteDeskDailyJournalMemo(payload = {}) {
       const key = dateKey(payload.dateKey);
-      const id = String(payload.id || '').trim();
+      const id = rtdbKey(payload.id);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       if (!id) return failure('삭제할 기록 ID가 없습니다.');
       await store.remove(`${PATHS.journal}/${key}/memos/${id}`);
@@ -528,9 +541,25 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     },
 
     async saveDeskSuppliesSnapshot(payload = {}) {
-      const data = suppliesData(payload.data || payload);
-      await store.transaction(PATHS.supplies, () => data);
-      return { success: true, data };
+      if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data)) {
+        return failure('저장할 소모품 데이터가 없습니다. 새로고침 후 다시 시도해 주세요.');
+      }
+      if (!payload.expectedData || typeof payload.expectedData !== 'object' || Array.isArray(payload.expectedData)) {
+        throw supplySnapshotConflict('소모품 데이터가 최신 상태인지 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+      }
+      const expectedData = suppliesData(payload.expectedData);
+      const data = suppliesData(payload.data);
+      let conflict = false;
+      const stored = await store.transaction(PATHS.supplies, current => {
+        conflict = false;
+        if (canonicalJson(suppliesData(current)) !== canonicalJson(expectedData)) {
+          conflict = true;
+          return current;
+        }
+        return data;
+      });
+      if (conflict) throw supplySnapshotConflict('다른 사용자가 소모품 데이터를 변경했습니다. 새로고침 후 다시 시도해 주세요.');
+      return { success: true, data: suppliesData(stored) };
     },
 
     async getDeskRecruitingApplicantsData(payload = {}) {
@@ -550,8 +579,20 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const path = portalConfigPath(payload.scope, payload.key);
       if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
       if (typeof payload.value === 'undefined') return failure('저장할 포털 설정 값이 없습니다.');
-      await store.set(path, payload.value);
-      return { success: true, scope: payload.scope, key: payload.key, value: payload.value };
+      if (!Object.hasOwn(payload, 'expectedValue') || typeof payload.expectedValue === 'undefined') {
+        throw portalConfigConflict('포털 설정의 최신 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+      }
+      let conflict = false;
+      const value = await store.transaction(path, current => {
+        conflict = false;
+        if (canonicalJson(current ?? null) !== canonicalJson(payload.expectedValue)) {
+          conflict = true;
+          return current;
+        }
+        return payload.value;
+      });
+      if (conflict) throw portalConfigConflict('다른 사용자가 포털 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');
+      return { success: true, scope: payload.scope, key: payload.key, value };
     },
 
     async saveDeskRecruitingApplicant(payload = {}) {
@@ -603,7 +644,10 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
 
   return Object.fromEntries(Object.entries(handlers).map(([name, handler]) => [name, async (payload, identity) => {
     try { return await handler(payload, identity); }
-    catch (error) { return failure(`${errorPrefix(name)}: ${error.message}`); }
+    catch (error) {
+      if (error instanceof ApiError) throw error;
+      return failure(`${errorPrefix(name)}: ${error.message}`);
+    }
   }]));
 }
 
@@ -626,10 +670,22 @@ function portalConfigPath(scopeValue, keyValue) {
   return '';
 }
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (!value || typeof value !== 'object') return JSON.stringify(value);
+  return `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+}
+
+function supplySnapshotConflict(message) {
+  return new ApiError(409, 'supplies_snapshot_conflict', message);
+}
+
+function portalConfigConflict(message) {
+  return new ApiError(409, 'portal_config_conflict', message);
+}
+
 function recruitingStorageId(value) {
-  const id = String(value || '').trim();
-  if (!id || id.length > 300 || /[.#$\[\]\/\u0000-\u001f\u007f]/.test(id)) return '';
-  return id;
+  return rtdbKey(value);
 }
 
 async function mutateSupplies(store, mutation) {

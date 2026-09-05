@@ -357,7 +357,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
           const day = daily.get(paidDate);
           day.total += delta;
           day.paymentCount += 1;
-          if (row.studentName) day.students.add(row.studentName);
+          if (delta > 0 && row.studentName) day.students.add(row.studentName);
         }
       });
       const labels = [...new Set([...dueMap.keys(), ...paidMap.keys()])].sort();
@@ -473,6 +473,8 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const reason = text(payload.reason, 300);
       if (!requestedMonth) return failure('월 정보가 없습니다.');
       if (!requested) return failure('삭제할 수납 내역을 찾을 수 없습니다.');
+      const sourceMonth = monthName(requested.sourceDueMonth || requested.sourceMonth || requested.originMonth);
+      if (sourceMonth && sourceMonth !== requestedMonth) return failure('선택한 수납의 원본 월과 삭제 월이 다릅니다. 새로고침 후 다시 선택해 주세요.');
       if (!reason) return failure('삭제 사유를 입력해 주세요.');
       if (!requestId) return failure('삭제 요청 식별자가 없습니다. 다시 시도해 주세요.');
       return mutatePayment({ store, action: 'delete', month: requestedMonth, record: requested, requestId, reason, identity, nowIso, nowDate });

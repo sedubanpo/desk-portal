@@ -180,7 +180,10 @@ test('desk route authenticates, dispatches reads, and carries write idempotency 
     .set('authorization', 'Bearer valid-token').set('x-idempotency-key', 'write-1')
     .send({ payload: { purchaseRequestNote: 'test' } }).expect(200);
   assert.equal(write.body.payload.purchaseRequestNote, 'test');
-  assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'saveDeskSupplyPurchaseState', key: 'write-1' });
+  assert.deepEqual({ uid: contexts[0].uid, method: contexts[0].method, key: contexts[0].key }, {
+    uid: 'staff-1', method: 'saveDeskSupplyPurchaseState', key: 'write-1'
+  });
+  assert.match(contexts[0].requestFingerprint, /^[a-f0-9]{64}$/);
 });
 
 test('schedule writes require admin or explicit schedule permission', async () => {
@@ -290,5 +293,8 @@ test('tuition writes dispatch with staff identity and idempotency context', asyn
     .send({ payload: { clientRequestId: 'request-1', studentName: '김재희' } }).expect(200);
   assert.equal(response.body.success, true);
   assert.equal(identities[0].uid, 'staff-1');
-  assert.deepEqual(contexts[0], { uid: 'staff-1', method: 'appendTuitionPaymentEntry', key: 'append:request-1' });
+  assert.deepEqual({ uid: contexts[0].uid, method: contexts[0].method, key: contexts[0].key }, {
+    uid: 'staff-1', method: 'appendTuitionPaymentEntry', key: 'append:request-1'
+  });
+  assert.match(contexts[0].requestFingerprint, /^[a-f0-9]{64}$/);
 });

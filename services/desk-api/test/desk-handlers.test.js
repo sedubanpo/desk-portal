@@ -66,6 +66,32 @@ test('schedule validation rejects retired workers before any write', async () =>
   assert.deepEqual(store.dump(), {});
 });
 
+test('desk writes reject unsafe RTDB record IDs before constructing storage paths', async () => {
+  const store = memoryStore();
+  const handlers = createDeskHandlers({ store });
+
+  const schedule = await handlers.saveDeskScheduleEntry({
+    monthKey: '2026-07', entry: { id: '../other', date: '2026-07-15', worker: '안종성', start: '10:00', end: '18:00' }
+  });
+  const batch = await handlers.batchUpdateDeskScheduleEntries({ monthKey: '2026-07', deleteIds: ['safe-id', '../other'] });
+  const task = await handlers.saveDeskDailyJournalTask({
+    dateKey: '2026-07-15', task: { id: '../other', worker: '안종성', title: '경로 검사' }
+  });
+  const memo = await handlers.saveDeskDailyJournalMemo({
+    dateKey: '2026-07-15', memo: { id: '../other', worker: '안종성', text: '경로 검사' }
+  });
+  const request = await handlers.saveDeskAttendanceCorrectionDecision({
+    monthKey: '2026-07', requestId: '../other', decision: 'APPROVED'
+  });
+
+  assert.equal(schedule.success, false);
+  assert.equal(batch.success, false);
+  assert.equal(task.success, false);
+  assert.equal(memo.success, false);
+  assert.equal(request.success, false);
+  assert.deepEqual(store.dump(), {});
+});
+
 test('schedule writes retain dated versions with actor and exact day snapshots', async () => {
   const store = memoryStore({ desk_portal: { monthly_schedule: { '2026-08': { entries: {
     first: { id: 'first', date: '2026-08-01', worker: '안종성', role: '오후 데스크', start: '13:30', end: '21:00' }
@@ -164,6 +190,20 @@ test('staff attendance reads never expose another worker', async () => {
     { uid: 'staff-1', name: '안종성', role: 'STAFF' }
   );
   assert.deepEqual(result.records.map(item => item.uid), ['staff-1']);
+});
+
+test('self-punches cannot create past or future attendance records', async () => {
+  const store = memoryStore();
+  const handlers = createDeskHandlers({ store, now: () => '2026-08-08T01:00:00.000Z' });
+  const identity = { uid: 'staff-1', name: '안종성' };
+
+  const past = await handlers.saveDeskAttendancePunch({ dateKey: '2026-08-07', type: 'clockIn' }, identity);
+  const future = await handlers.saveDeskAttendancePunch({ dateKey: '2026-08-09', type: 'clockIn' }, identity);
+
+  assert.equal(past.success, false);
+  assert.equal(future.success, false);
+  assert.match(past.message, /정정 요청/);
+  assert.deepEqual(store.dump(), {});
 });
 
 test('journal task write updates the day record and pending index together', async () => {
@@ -317,7 +357,9 @@ test('supply normalization preserves favorites and caps recent change history', 
 
 test('full supply snapshot preserves custom purchase requests', async () => {
   const store = memoryStore();
-  const result = await createDeskHandlers({ store }).saveDeskSuppliesSnapshot({ data: {
+  const handlers = createDeskHandlers({ store });
+  const expectedData = (await handlers.getDeskSuppliesData()).data;
+  const result = await handlers.saveDeskSuppliesSnapshot({ expectedData, data: {
     consumables: [{ id: 'paper', itemName: '종이', productName: 'A4', unit: '권', tags: ['문구', '#복사용지'], branchStocks: {
       '본관': { qty: 2, maxQty: 3, safetyQty: 1 },
       '2관': { qty: 1, maxQty: 3, safetyQty: 1 },
@@ -333,6 +375,73 @@ test('full supply snapshot preserves custom purchase requests', async () => {
   assert.deepEqual(result.data.consumables[0].tags, ['#문구', '#복사용지']);
   assert.equal(result.data.assets[0].branch, '3관');
   assert.deepEqual(result.data.purchaseCustomRequests, [{ id: 'custom-1', itemName: '테스트 요청', requestQty: 2 }]);
+});
+
+test('full supply snapshot rejects a missing or stale baseline without replacing another write', async () => {
+  const store = memoryStore({ desk_portal: { supplies: { purchaseRequestNote: '기존 요청' } } });
+  const handlers = createDeskHandlers({ store });
+  const expectedData = (await handlers.getDeskSuppliesData()).data;
+  const missing = handlers.saveDeskSuppliesSnapshot({ data: { ...expectedData, purchaseRequestNote: '저장 시도' } });
+  await assert.rejects(missing, error => error.status === 409 && error.code === 'supplies_snapshot_conflict');
+  await handlers.saveDeskSupplyPurchaseState({ purchaseRequestNote: '다른 사용자의 변경' });
+  const stale = handlers.saveDeskSuppliesSnapshot({
+    expectedData,
+    data: { ...expectedData, purchaseRequestNote: '저장 시도' }
+  });
+
+  await assert.rejects(stale, error => error.status === 409 && error.code === 'supplies_snapshot_conflict');
+  assert.equal((await handlers.getDeskSuppliesData()).data.purchaseRequestNote, '다른 사용자의 변경');
+});
+
+test('full supply snapshot waits for the server baseline after a cached-null transaction callback', async () => {
+  let stored = { purchaseRequestNote: '서버 기준' };
+  const callbacks = [];
+  const store = {
+    get: async () => clone(stored),
+    transaction: async (_path, update) => {
+      callbacks.push(update(null));
+      const next = update(clone(stored));
+      callbacks.push(next);
+      if (typeof next !== 'undefined') stored = clone(next);
+      return clone(stored);
+    }
+  };
+  const handlers = createDeskHandlers({ store });
+  const expectedData = (await handlers.getDeskSuppliesData()).data;
+  const result = await handlers.saveDeskSuppliesSnapshot({
+    expectedData,
+    data: { ...expectedData, purchaseRequestNote: '저장 완료' }
+  });
+
+  assert.equal(callbacks[0], null);
+  assert.equal(result.success, true);
+  assert.equal(result.data.purchaseRequestNote, '저장 완료');
+  assert.equal(stored.purchaseRequestNote, '저장 완료');
+});
+
+test('full supply snapshot keeps the server value when its retried baseline is stale', async () => {
+  let stored = { purchaseRequestNote: '다른 사용자의 서버 변경' };
+  const callbacks = [];
+  const store = {
+    get: async () => ({ purchaseRequestNote: '이전 기준' }),
+    transaction: async (_path, update) => {
+      callbacks.push(update(null));
+      const next = update(clone(stored));
+      callbacks.push(next);
+      if (typeof next !== 'undefined') stored = clone(next);
+      return clone(stored);
+    }
+  };
+  const handlers = createDeskHandlers({ store });
+  const expectedData = (await handlers.getDeskSuppliesData()).data;
+
+  await assert.rejects(
+    handlers.saveDeskSuppliesSnapshot({ expectedData, data: { ...expectedData, purchaseRequestNote: '유실되면 안 되는 저장' } }),
+    error => error.status === 409 && error.code === 'supplies_snapshot_conflict'
+  );
+  assert.equal(callbacks[0], null);
+  assert.equal(callbacks[1].purchaseRequestNote, '다른 사용자의 서버 변경');
+  assert.equal(stored.purchaseRequestNote, '다른 사용자의 서버 변경');
 });
 
 test('recruiting month filter includes applicants by operational date fields', async () => {
@@ -405,11 +514,55 @@ test('recruiting comments reject empty, oversized, and missing applicant writes'
 test('portal config is proxied through an allowlisted server path', async () => {
   const store = memoryStore();
   const handlers = createDeskHandlers({ store });
-  const saved = await handlers.saveDeskPortalConfig({ scope: 'daily', key: 'memoTypes', value: [{ id: 'general', label: '일반' }] });
+  const saved = await handlers.saveDeskPortalConfig({
+    scope: 'daily', key: 'memoTypes', expectedValue: null, value: [{ id: 'general', label: '일반' }]
+  });
   assert.equal(saved.success, true);
   const loaded = await handlers.getDeskPortalConfig({ scope: 'daily', key: 'memoTypes' });
   assert.deepEqual(loaded.value, [{ id: 'general', label: '일반' }]);
-  const denied = await handlers.saveDeskPortalConfig({ scope: 'daily', key: '../private', value: 'blocked' });
+  const denied = await handlers.saveDeskPortalConfig({ scope: 'daily', key: '../private', expectedValue: null, value: 'blocked' });
   assert.equal(denied.success, false);
   assert.equal(store.dump().private, undefined);
+});
+
+test('portal config CAS rejects missing and stale baselines without replacing a newer value', async () => {
+  const store = memoryStore({ desk_portal: { daily_config: { memoTypes: [{ id: 'existing', label: '기존' }] } } });
+  const handlers = createDeskHandlers({ store });
+  const expectedValue = (await handlers.getDeskPortalConfig({ scope: 'daily', key: 'memoTypes' })).value;
+
+  await assert.rejects(
+    handlers.saveDeskPortalConfig({ scope: 'daily', key: 'memoTypes', value: [{ id: 'draft', label: '초안' }] }),
+    error => error.status === 409 && error.code === 'portal_config_conflict'
+  );
+  await store.set('desk_portal/daily_config/memoTypes', [{ id: 'other', label: '다른 사용자' }]);
+  await assert.rejects(
+    handlers.saveDeskPortalConfig({ scope: 'daily', key: 'memoTypes', expectedValue, value: [{ id: 'draft', label: '초안' }] }),
+    error => error.status === 409 && error.code === 'portal_config_conflict'
+  );
+  assert.deepEqual((await handlers.getDeskPortalConfig({ scope: 'daily', key: 'memoTypes' })).value, [{ id: 'other', label: '다른 사용자' }]);
+});
+
+test('portal config CAS retries a cached-null callback against the server baseline', async () => {
+  let stored = [{ id: 'existing', label: '서버 기준' }];
+  const callbacks = [];
+  const store = {
+    get: async () => clone(stored),
+    transaction: async (_path, update) => {
+      callbacks.push(update(null));
+      const next = update(clone(stored));
+      callbacks.push(next);
+      if (typeof next !== 'undefined') stored = clone(next);
+      return clone(stored);
+    }
+  };
+  const handlers = createDeskHandlers({ store });
+  const expectedValue = (await handlers.getDeskPortalConfig({ scope: 'daily', key: 'memoTypes' })).value;
+  const result = await handlers.saveDeskPortalConfig({
+    scope: 'daily', key: 'memoTypes', expectedValue, value: [{ id: 'saved', label: '저장 완료' }]
+  });
+
+  assert.equal(callbacks[0], null);
+  assert.equal(result.success, true);
+  assert.deepEqual(result.value, [{ id: 'saved', label: '저장 완료' }]);
+  assert.deepEqual(stored, [{ id: 'saved', label: '저장 완료' }]);
 });

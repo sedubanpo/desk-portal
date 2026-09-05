@@ -80,6 +80,7 @@ function tuitionSeed() {
 test('paid date parsing preserves full ISO dates before short month-day formats', () => {
   assert.equal(paidDateKey({ sourceDueMonth: '26-08s', paidAt: '2026-08-28', studentName: '김재희', amount: -1 }), '2026-08-28');
   assert.equal(paidDateKey({ sourceDueMonth: '26-08s', paidAt: '7/31', studentName: '김재희', amount: -1 }), '2026-07-31');
+  assert.equal(paidDateKey({ sourceDueMonth: '25-12s', paidAt: '1/1', inputAt: '2026-01-01 09:00', studentName: '김재희', amount: -1 }), '2026-01-01');
 });
 
 test('monthly sales overview exposes monthly growth, payer counts, and daily actual receipts', async () => {
@@ -112,6 +113,23 @@ test('monthly sales overview exposes monthly growth, payer counts, and daily act
     { dateKey: '2026-07-14', paidTotal: 100000, payerCount: 1, paymentCount: 1, studentNames: ['김재희'] },
     { dateKey: '2026-07-15', paidTotal: 50000, payerCount: 1, paymentCount: 1, studentNames: ['이서준'] },
     { dateKey: '2026-08-03', paidTotal: 180000, payerCount: 1, paymentCount: 1, studentNames: ['김재희'] }
+  ]);
+});
+
+test('monthly sales daily payer names exclude refund-only students', async () => {
+  const seed = tuitionSeed();
+  const refund = {
+    ...seed.payment,
+    requestId: 'refund-only', studentName: '환불학생', amount: 50000,
+    paidAt: '2026-07-15', inputAt: '2026-07-15 12:00', approvalNo: 'refund-1'
+  };
+  seed.documents['tuitionMonthSnapshots/tm_26-07s'].payments = [seed.payment, refund];
+
+  const result = await createTuitionHandlers({ store: memoryStore(seed.documents) }).getTuitionMonthlySalesOverview();
+
+  assert.deepEqual(result.dailyPaid, [
+    { dateKey: '2026-07-14', paidTotal: 100000, payerCount: 1, paymentCount: 1, studentNames: ['김재희'] },
+    { dateKey: '2026-07-15', paidTotal: -50000, payerCount: 0, paymentCount: 1, studentNames: [] }
   ]);
 });
 
@@ -635,6 +653,23 @@ test('payment update rejects a selected month that differs from the payment sour
   assert.match(result.message, /원본 월과 수정 월/);
   assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 100000);
   assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-08s'], undefined);
+});
+
+test('payment delete rejects a selected month that differs from the payment source month', async () => {
+  const seed = tuitionSeed();
+  const store = memoryStore(seed.documents);
+  const result = await createTuitionHandlers({ store }).deleteTuitionPaymentEntry({
+    monthName: '26-08s',
+    payment: seed.payment,
+    reason: '잘못된 월 요청',
+    clientRequestId: 'delete-wrong-month'
+  }, { uid: 'staff-1', name: '관리자' });
+
+  assert.equal(result.success, false);
+  assert.match(result.message, /원본 월과 삭제 월/);
+  assert.equal(store.dump()[`tuitionPayments/${paymentId(seed.payment)}`].amount, -100000);
+  assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 100000);
+  assert.equal(store.dump()['tuitionPaymentDeletions/tdel_delete-wrong-month'], undefined);
 });
 
 test('payment update aborts without writes when the monthly snapshot cannot be updated', async () => {

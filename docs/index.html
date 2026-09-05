@@ -22000,6 +22000,11 @@
       bindEntryGateEvents();
       showEntryGate();
       initializeDeskFirebaseAuth_();
+      window.addEventListener("beforeunload", function(event) {
+        if (!hasUnsavedDeskSupplies_()) return;
+        event.preventDefault();
+        event.returnValue = "";
+      });
       renderModuleLayout();
       deskTodayWorkerTimer_ = setInterval(function() {
         if (shouldDeferPortalDataLoad_()) return;
@@ -22505,14 +22510,43 @@
     function loadDeskPortalConfig_(scope, key) {
       return runServer("getDeskPortalConfig", { scope: scope, key: key }).then(function(res) {
         if (!res || res.success === false) throw new Error(res && res.message ? res.message : "포털 설정을 불러오지 못했습니다.");
-        return typeof res.value === "undefined" ? null : res.value;
+        var value = typeof res.value === "undefined" ? null : res.value;
+        state.desk.portalConfigSnapshots = state.desk.portalConfigSnapshots || {};
+        Object.keys(state.desk.portalConfigSnapshots).forEach(function(storedKey) {
+          var parts = JSON.parse(storedKey);
+          if (parts[0] === scope && String(parts[1]).indexOf(String(key) + "/") === 0) delete state.desk.portalConfigSnapshots[storedKey];
+        });
+        state.desk.portalConfigSnapshots[JSON.stringify([scope, key])] = JSON.parse(JSON.stringify(value));
+        return value;
       });
     }
 
     function saveDeskPortalConfig_(scope, key, value) {
-      return runServer("saveDeskPortalConfig", { scope: scope, key: key, value: value }).then(function(res) {
+      var snapshotKey = JSON.stringify([scope, key]);
+      var snapshots = state.desk.portalConfigSnapshots || {};
+      return Promise.resolve().then(function() {
+        var keyParts = String(key).split("/");
+        if (!Object.prototype.hasOwnProperty.call(snapshots, snapshotKey) && keyParts.length > 1) {
+          var parentKey = JSON.stringify([scope, keyParts[0]]);
+          if (Object.prototype.hasOwnProperty.call(snapshots, parentKey)) {
+            var expected = snapshots[parentKey];
+            keyParts.slice(1).forEach(function(part) {
+              expected = expected && Object.prototype.hasOwnProperty.call(expected, part) ? expected[part] : null;
+            });
+            snapshots[snapshotKey] = JSON.parse(JSON.stringify(expected == null ? null : expected));
+          }
+        }
+        if (!Object.prototype.hasOwnProperty.call(snapshots, snapshotKey)) {
+          throw new Error("설정의 최신 내용을 불러온 뒤 다시 저장해 주세요.");
+        }
+        return runServer("saveDeskPortalConfig", { scope: scope, key: key, value: value, expectedValue: snapshots[snapshotKey] });
+      }).then(function(res) {
         if (!res || res.success === false) throw new Error(res && res.message ? res.message : "포털 설정을 저장하지 못했습니다.");
+        snapshots[snapshotKey] = JSON.parse(JSON.stringify(res.value));
         return res.value;
+      }).catch(function(err) {
+        showClientMessage("설정 저장 결과를 확인해 주세요. " + (err.message || String(err)));
+        throw err;
       });
     }
 
@@ -23413,7 +23447,11 @@
       deskSupplyCopyStatusEl.style.color = isError ? "#b91c1c" : "#0d684d";
     }
 
-    function applyDeskSuppliesData_(data) {
+    function applyDeskSuppliesData_(data, fromServer) {
+      if (fromServer) {
+        state.desk.supplies.syncedSnapshot = JSON.parse(JSON.stringify(data || {}));
+        state.desk.supplies.unsavedChanges = false;
+      }
       var snapshot = normalizeDeskSuppliesSnapshot_(data);
       state.desk.supplies.realtimeSnapshot = cloneDeskSuppliesSnapshot_(snapshot);
       state.desk.supplies.consumables = snapshot.consumables;
@@ -23455,16 +23493,20 @@
 
     function persistDeskSuppliesRealtime_(showAlertOnFail) {
       var payload = buildDeskSuppliesPayload_();
+      var expectedData = state.desk.supplies.syncedSnapshot;
+      state.desk.supplies.unsavedChanges = true;
       setDeskSuppliesSyncStatus_("pending");
       if (state.activeModule === "expense" && state.desk.activeTab === "supplies") {
         renderDeskSupplies_();
       }
       var writeRequest = canUseDeskCloudApi_("saveDeskSuppliesSnapshot")
-        ? runServer("saveDeskSuppliesSnapshot", { data: payload })
+        ? runServer("saveDeskSuppliesSnapshot", { data: payload, expectedData: expectedData })
         : deskRealtimeFetchJson_("PUT", buildDeskSuppliesRealtimeUrl_("", false), payload);
       return writeRequest
         .then(function(res) {
           if (res && res.success === false) throw new Error(res.message || "소모품 저장에 실패했습니다.");
+          state.desk.supplies.syncedSnapshot = JSON.parse(JSON.stringify(res && res.data || payload));
+          state.desk.supplies.unsavedChanges = JSON.stringify(buildDeskSuppliesPayload_()) !== JSON.stringify(payload);
           markDeskSuppliesSynced_();
           setDeskSuppliesSyncStatus_("idle");
           state.desk.supplies.realtimeSnapshot = cloneDeskSuppliesSnapshot_(payload);
@@ -23499,7 +23541,7 @@
       if (canUseDeskCloudApi_("getDeskSuppliesData")) {
         state.desk.supplies.loadingPromise = runServer("getDeskSuppliesData", {}).then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
-          applyDeskSuppliesData_(res.data || {});
+          applyDeskSuppliesData_(res.data || {}, true);
           markDeskSuppliesSynced_();
           state.desk.supplies.loaded = true;
           renderDeskSupplies_();
@@ -23518,7 +23560,7 @@
               if (!res || !res.success) {
                 throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
               }
-              applyDeskSuppliesData_(res.data || {});
+              applyDeskSuppliesData_(res.data || {}, true);
               return persistDeskSuppliesRealtime_(false);
             });
           }
@@ -23540,7 +23582,7 @@
               if (!res || !res.success) {
                 throw new Error(res && res.message ? res.message : "소모품 데이터를 불러오지 못했습니다.");
               }
-              applyDeskSuppliesData_(res.data || {});
+              applyDeskSuppliesData_(res.data || {}, true);
               markDeskSuppliesSynced_();
               state.desk.supplies.loaded = true;
               state.desk.supplies.realtimeEnabled = false;
@@ -23853,7 +23895,7 @@
       var request = canUseDeskCloudApi_("adjustDeskSupplyConsumable")
         ? runServer("adjustDeskSupplyConsumable", { id: id, itemName: target.itemName, productName: target.productName, unit: target.unit, branch: safeBranch, delta: appliedDelta }).then(function(res) {
             if (!res || !res.success) throw new Error(res && res.message ? res.message : "소모품 수량을 저장하지 못했습니다.");
-            applyDeskSuppliesData_(res.data || {});
+            applyDeskSuppliesData_(res.data || {}, true);
           })
         : appendDeskSupplyLocalChange_(target, safeBranch, stock, nextQty, appliedDelta).then(function() {
             return syncDeskSuppliesAfterLocalChange_(false);
@@ -24255,6 +24297,7 @@
     }
 
     function scheduleDeskSuppliesPurchaseSave_() {
+      state.desk.supplies.unsavedChanges = true;
       if (state.desk.supplies.saveTimer) {
         clearTimeout(state.desk.supplies.saveTimer);
       }
@@ -24264,6 +24307,11 @@
           showClientMessage(err && err.message ? err.message : "구매 요청 상태를 저장하지 못했습니다.");
         });
       }, 300);
+    }
+
+    function hasUnsavedDeskSupplies_() {
+      var supplies = state.desk.supplies;
+      return !!(supplies.unsavedChanges || supplies.saveTimer || Object.keys(supplies.adjustingItems || {}).length);
     }
 
     function copyDeskPurchaseRequest_() {
@@ -38340,23 +38388,31 @@
 
     function refreshTuitionSummary(forceReload, options) {
       options = options || {};
+      var requestedMonth = state.tuition.selectedMonth;
+      var requestVersion = (state.tuition.summaryRequestVersion || 0) + 1;
+      state.tuition.summaryRequestVersion = requestVersion;
+      function isCurrentRequest() {
+        return state.tuition.summaryRequestVersion === requestVersion && state.tuition.selectedMonth === requestedMonth;
+      }
       if (forceReload) {
         state.tuition.loaded = false;
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
       }
 	      if (!options.silent) {
+	        state.tuition.summaryLoadingVisible = true;
 	        setLoading(true, "수강료 정산 데이터를 계산 중입니다...");
 	      }
 	      if (!options.silent) state.tuition.backgroundError = "";
 	      renderTuitionOpsStatus_();
-	      runServer("getTuitionMonthSummary", {
-        monthName: state.tuition.selectedMonth,
+	      return runServer("getTuitionMonthSummary", {
+        monthName: requestedMonth,
         statusFilter: "",
         keyword: "",
         forceRefresh: !!forceReload
       })
 	        .then(function(res) {
+	          if (!isCurrentRequest()) return;
 	          if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 조회 실패");
 	          state.tuition.loaded = true;
 	          state.tuition.backgroundError = "";
@@ -38366,6 +38422,7 @@
           renderTuitionSummary(res);
         })
 	        .catch(function(err) {
+	          if (!isCurrentRequest()) return;
 	          state.tuition.backgroundError = "수강료 백그라운드 조회 오류: " + (err.message || String(err));
 	          renderTuitionOpsStatus_();
 	          if (options.silent) {
@@ -38375,7 +38432,8 @@
           }
         })
         .finally(function() {
-          if (!options.silent) {
+          if (state.tuition.summaryLoadingVisible && state.tuition.summaryRequestVersion === requestVersion) {
+            state.tuition.summaryLoadingVisible = false;
             setLoading(false);
           }
         });
@@ -39504,20 +39562,24 @@
     }
 
     function closeTuitionUnpaidModal_() {
+      state.tuition.unpaidRequestVersion = (state.tuition.unpaidRequestVersion || 0) + 1;
       tuitionUnpaidModalEl.style.display = "none";
     }
 
     function loadAndRenderTuitionUnpaidMonth_(monthName) {
       var month = String(monthName || "").trim();
       if (!month) return;
+      var requestVersion = (state.tuition.unpaidRequestVersion || 0) + 1;
+      state.tuition.unpaidRequestVersion = requestVersion;
       tuitionUnpaidSummaryEl.textContent = formatTuitionMonthLabel_(month) + " · 계산 중...";
       tuitionUnpaidListEl.innerHTML = '<div class="tuition-cal-empty">미납 학생 데이터를 불러오는 중입니다...</div>';
-      runServer("getTuitionMonthSummary", {
+      return runServer("getTuitionMonthSummary", {
         monthName: month,
         statusFilter: "",
         keyword: ""
       })
         .then(function(res) {
+          if (state.tuition.unpaidRequestVersion !== requestVersion) return;
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "미납 데이터 조회 실패");
           var rows = Array.isArray(res.rows) ? res.rows : [];
           var unpaidRows = rows.filter(function(row) {
@@ -39544,6 +39606,7 @@
           renderTuitionUnpaidMonth_(month, payload);
         })
         .catch(function(err) {
+          if (state.tuition.unpaidRequestVersion !== requestVersion) return;
           tuitionUnpaidSummaryEl.textContent = "미납 조회 실패";
           tuitionUnpaidListEl.innerHTML = '<div class="tuition-cal-empty">' + escapeHtml(err.message || String(err)) + '</div>';
         });
@@ -39581,6 +39644,11 @@
     function openTuitionStudentHistoryModal_(studentName) {
       var targetName = formatStudentName(studentName);
       if (!targetName) return;
+      var requestVersion = (state.tuition.studentHistoryRequestVersion || 0) + 1;
+      state.tuition.studentHistoryRequestVersion = requestVersion;
+      function isCurrentHistoryRequest() {
+        return state.tuition.studentHistoryRequestVersion === requestVersion && state.tuition.studentHistoryTarget === targetName;
+      }
       state.tuition.studentHistoryTarget = targetName;
       state.tuition.studentHistoryActiveTab = "history";
       state.tuition.studentMemos = [];
@@ -39592,24 +39660,26 @@
       setTuitionStudentHistoryTab_("history");
       runServer("getTuitionStudentMonthlyHistory", { studentName: targetName })
         .then(function(res) {
+          if (!isCurrentHistoryRequest()) return;
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "학생 이력 조회 실패");
           renderTuitionStudentHistory_(targetName, res.rows || [], res.overview || {});
         })
         .catch(function(err) {
+          if (!isCurrentHistoryRequest()) return;
           tuitionStudentHistorySummaryEl.textContent = targetName + " · 조회 실패";
           tuitionStudentHistoryListEl.innerHTML = '<div class="tuition-cal-empty">' + escapeHtml(err.message || String(err)) + '</div>';
         });
       runServer("getTuitionStudentMemoNotes", { studentName: targetName })
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "수강료 메모 조회 실패");
-          if (state.tuition.studentHistoryTarget !== targetName) return;
+          if (!isCurrentHistoryRequest()) return;
           state.tuition.studentMemos = (res.memos || []).slice();
           state.tuition.studentMemoLoading = false;
           updateTuitionStudentMemoWarning_(targetName, res.warning || {});
           renderTuitionStudentMemoPanel_();
         })
         .catch(function(err) {
-          if (state.tuition.studentHistoryTarget !== targetName) return;
+          if (!isCurrentHistoryRequest()) return;
           state.tuition.studentMemoLoading = false;
           state.tuition.studentMemos = [];
           renderTuitionStudentMemoPanel_(err);
@@ -39617,6 +39687,7 @@
     }
 
     function closeTuitionStudentHistoryModal_() {
+      state.tuition.studentHistoryRequestVersion = (state.tuition.studentHistoryRequestVersion || 0) + 1;
       tuitionStudentHistoryModalEl.style.display = "none";
     }
 
@@ -41092,7 +41163,9 @@
         tuitionMonthlyStatsBodyEl.innerHTML = '<tr><td colspan="6">월별 수납 데이터가 없습니다.</td></tr>';
         return;
       }
-      var latest = stats[stats.length - 1];
+      var currentMonth = dateKeyFromDate_(new Date()).slice(2, 7) + "s";
+      var elapsed = stats.filter(function(item) { return item.monthName <= currentMonth; });
+      var latest = elapsed[elapsed.length - 1] || stats[0];
       var peak = stats.reduce(function(best, item) { return item.paidTotal > best.paidTotal ? item : best; }, stats[0]);
       var total = stats.reduce(function(sum, item) { return sum + toNumber(item.paidTotal, 0); }, 0);
       var change = latest.changePercent;
@@ -41113,9 +41186,7 @@
     }
 
     function initializeTuitionPeriod_() {
-      var rows = ((state.tuition.monthlySales || {}).dailyPaid || []).slice();
-      if (!rows.length) return;
-      if (!state.tuition.monthlyPeriodEnd) state.tuition.monthlyPeriodEnd = rows[rows.length - 1].dateKey;
+      if (!state.tuition.monthlyPeriodEnd) state.tuition.monthlyPeriodEnd = dateKeyFromDate_(new Date());
       if (!state.tuition.monthlyPeriodStart) {
         var end = new Date(state.tuition.monthlyPeriodEnd + "T00:00:00");
         end.setDate(end.getDate() - 29);
@@ -41126,9 +41197,7 @@
     }
 
     function setTuitionPeriodPreset_(preset) {
-      var rows = ((state.tuition.monthlySales || {}).dailyPaid || []).slice();
-      if (!rows.length) return;
-      var end = new Date(rows[rows.length - 1].dateKey + "T00:00:00");
+      var end = new Date();
       var start = new Date(end.getTime());
       if (preset === "month") start.setDate(1);
       else if (preset === "year") { start.setMonth(0); start.setDate(1); }
@@ -41144,6 +41213,11 @@
       var rows = ((state.tuition.monthlySales || {}).dailyPaid || []).slice();
       var startKey = state.tuition.monthlyPeriodStart;
       var endKey = state.tuition.monthlyPeriodEnd;
+      if (!startKey || !endKey || startKey > endKey) {
+        tuitionPeriodKpisEl.innerHTML = monthlyKpiHtml_("조회 기간 확인", "날짜 선택", "시작일과 종료일을 확인해 주세요.");
+        if (state.tuition.periodChart) { state.tuition.periodChart.destroy(); state.tuition.periodChart = null; }
+        return;
+      }
       var selected = rows.filter(function(item) { return item.dateKey >= startKey && item.dateKey <= endKey; });
       var start = new Date(startKey + "T00:00:00");
       var end = new Date(endKey + "T00:00:00");
@@ -41156,7 +41230,7 @@
       var total = selected.reduce(function(sum, item) { return sum + toNumber(item.paidTotal, 0); }, 0);
       var previousTotal = previous.reduce(function(sum, item) { return sum + toNumber(item.paidTotal, 0); }, 0);
       var paymentCount = selected.reduce(function(sum, item) { return sum + toNumber(item.paymentCount, 0); }, 0);
-      var periodStudents = {};
+      var periodStudents = Object.create(null);
       selected.forEach(function(item) { (item.studentNames || []).forEach(function(name) { if (name) periodStudents[name] = true; }); });
       var payerCount = Object.keys(periodStudents).length;
       var change = previousTotal > 0 ? Math.round(((total - previousTotal) / previousTotal) * 1000) / 10 : null;
@@ -42478,6 +42552,7 @@
           return res;
         })
         .catch(function(err) {
+          if (requestId !== state.requestSeq) return null;
           showClientMessage(err.message || String(err));
           return null;
         })
@@ -44684,23 +44759,32 @@
       return fnName + ":" + Date.now() + ":" + Math.random().toString(36).slice(2);
     }
 
-    function runDeskCloudApi_(fnName, payload) {
+    function runDeskCloudApi_(fnName, payload, signal) {
       if (!canUseDeskCloudApi_(fnName)) return Promise.reject(new Error("Cloud API 로그인이 필요합니다."));
       return state.firebaseUser.getIdToken().then(function(token) {
+        if (signal && signal.aborted) throw new Error("요청 시간이 초과되었습니다.");
         var headers = { Authorization: "Bearer " + token, "Content-Type": "application/json" };
         if (isPayrollCloudMethod_(fnName)) headers["x-payroll-unlock-token"] = state.payroll.unlockToken || "";
         if (isRunServerWriteApi_(fnName)) headers["x-idempotency-key"] = createDeskIdempotencyKey_(fnName, payload);
         return fetch(DESK_CLOUD_API_BASE + "/v1/desk/" + encodeURIComponent(fnName), {
           method: "POST",
           headers: headers,
+          signal: signal,
           body: JSON.stringify({ payload: typeof payload === "undefined" ? {} : payload })
         });
       }).then(function(response) {
-        return response.json().catch(function() { return {}; }).then(function(body) {
+        return response.json().catch(function() {
+          if (!response.ok) return {};
+          var error = new Error("서버 응답을 확인하지 못했습니다. 새로고침하여 반영 여부를 확인해 주세요.");
+          error.requestTransmitted = true;
+          error.nonRetryable = true;
+          throw error;
+        }).then(function(body) {
           if (!response.ok) {
             var error = new Error(body && body.error && body.error.message ? body.error.message : "Cloud API 호출에 실패했습니다.");
             error.requestTransmitted = true;
             error.status = response.status;
+            error.nonRetryable = response.status >= 400 && response.status < 500 && response.status !== 429;
             error.code = body && body.error ? body.error.code : "";
             if (error.code === "payroll_unlock_required") clearPayrollUnlock_();
             throw error;
@@ -44754,7 +44838,7 @@
       function runAttempt() {
         attemptNo += 1;
         return runServerAttempt_(fnName, payload, timeoutMs).catch(function(err) {
-          if (attemptNo >= attempts || isRunServerTimeoutError_(err)) throw err;
+          if (attemptNo >= attempts || isRunServerTimeoutError_(err) || err.nonRetryable || (err.status >= 400 && err.status < 500 && err.status !== 429)) throw err;
           return delay_(RUN_SERVER_READ_RETRY_BASE_DELAY_MS * attemptNo).then(runAttempt);
         });
       }
@@ -44776,7 +44860,22 @@
       if (!DESK_CLOUD_METHODS[String(fnName || "")]) {
         return Promise.reject(new Error("Cloud Run으로 이전되지 않은 기능입니다: " + String(fnName || "")));
       }
-      return runDeskCloudApi_(fnName, payload);
+      var controller = new AbortController();
+      var timer;
+      var timeout = new Promise(function(resolve, reject) {
+        timer = setTimeout(function() {
+          var error = new Error(isRunServerWriteApi_(fnName)
+            ? "저장 결과 확인 시간이 초과되었습니다. 새로고침하여 반영 여부를 확인해 주세요."
+            : "조회 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.");
+          error.nonRetryable = true;
+          error.requestTransmitted = true;
+          reject(error);
+          controller.abort();
+        }, timeoutMs);
+      });
+      return Promise.race([runDeskCloudApi_(fnName, payload, controller.signal), timeout]).finally(function() {
+        clearTimeout(timer);
+      });
     }
 
     function isRunServerWriteApi_(fnName) {

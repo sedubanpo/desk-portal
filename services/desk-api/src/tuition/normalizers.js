@@ -192,10 +192,11 @@ export function paidDateKey(row) {
   if (!normalized) return '';
   const base = parseMonth(normalized.sourceDueMonth || normalized.sourceMonth || normalized.originMonth);
   if (!base) return '';
-  const raw = normalized.paidAt || normalized.inputAt;
-  let match = text(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const paidAt = text(normalized.paidAt);
+  const inputAt = text(normalized.inputAt);
+  let match = paidAt.match(/^(\d{4})-(\d{2})-(\d{2})/) || inputAt.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) return `${match[1]}-${match[2]}-${match[3]}`;
-  match = text(raw).match(/^(\d{1,2})[\/.\-](\d{1,2})/);
+  match = (paidAt || inputAt).match(/^(\d{1,2})[\/.\-](\d{1,2})/);
   if (match) return `${base.year}-${String(Number(match[1])).padStart(2, '0')}-${String(Number(match[2])).padStart(2, '0')}`;
   return '';
 }

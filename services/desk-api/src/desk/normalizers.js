@@ -17,6 +17,11 @@ export function newId() {
   return randomUUID().replaceAll('-', '');
 }
 
+export function rtdbKey(value, maxLength = 300) {
+  const key = String(value || '').trim();
+  return key && key.length <= maxLength && !/[.#$\[\]\/\u0000-\u001f\u007f]/.test(key) ? key : '';
+}
+
 export function monthKey(value) {
   const text = String(value || '').trim();
   return /^\d{4}-\d{2}$/.test(text) ? text : '';

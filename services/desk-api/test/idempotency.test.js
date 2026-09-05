@@ -45,3 +45,37 @@ test('writes without an idempotency key fail before running work', async () => {
   );
   assert.equal(ran, false);
 });
+
+test('a completed key cannot replay a response for a different request fingerprint', async () => {
+  const firestore = fakeFirestore();
+  const execute = createIdempotencyExecutor(firestore, () => 1000);
+  const context = { uid: 'staff-1', method: 'saveDeskDailyJournalTask', key: 'task-save-1', requestFingerprint: 'first-body' };
+  await execute(context, async () => ({ success: true, id: 'task-1' }));
+
+  await assert.rejects(
+    execute({ ...context, requestFingerprint: 'different-body' }, async () => ({ success: true, id: 'task-2' })),
+    error => error.code === 'idempotency_key_reused' && error.status === 409
+  );
+});
+
+test('an expired attempt cannot overwrite a newer attempt result', async () => {
+  const firestore = fakeFirestore();
+  let timestamp = 1000;
+  const execute = createIdempotencyExecutor(firestore, () => timestamp);
+  let finishFirst;
+  const first = execute(
+    { uid: 'staff-1', method: 'saveDeskDailyJournalTask', key: 'task-save-1', requestFingerprint: 'body' },
+    () => new Promise(resolve => { finishFirst = resolve; })
+  );
+  await new Promise(resolve => setImmediate(resolve));
+
+  timestamp += 2 * 60 * 1000 + 1;
+  const second = await execute(
+    { uid: 'staff-1', method: 'saveDeskDailyJournalTask', key: 'task-save-1', requestFingerprint: 'body' },
+    async () => ({ success: true, id: 'newer-task' })
+  );
+  finishFirst({ success: true, id: 'older-task' });
+
+  assert.deepEqual(second, { success: true, id: 'newer-task' });
+  assert.deepEqual(await first, second);
+});
