@@ -722,3 +722,23 @@ test('tuition captions validate dates and include weekdays', async () => {
   assert.equal(format('2026-12-31'), '2026년 12월 31일 (목)');
   assert.equal(format('2026-02-29'), '날짜를 확인해 주세요.');
 });
+
+test('tuition status groups put unguided first and order dates within each group', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const compare = loadFunction(source, 'compareTuitionPreviousPayment_', {});
+  const group = loadFunction(source, 'groupTuitionRowsByStatus_', {compareTuitionPreviousPayment_:compare});
+  const rows = [
+    {studentName:'완료', unpaidStatus:'납부완료', previousPaymentDate:'2026-08-01'},
+    {studentName:'늦음', unpaidStatus:'안내이전', previousPaymentDate:'2026-08-20'},
+    {studentName:'기록없음', unpaidStatus:'안내이전'},
+    {studentName:'빠름', unpaidStatus:'안내이전', previousPaymentDate:'2026-08-03'},
+    {studentName:'안내함', unpaidStatus:'안내완료', previousPaymentDate:'2026-08-02'},
+  ];
+  const result = group(rows);
+  assert.equal(JSON.stringify(result.map(r=>r.__group ? `${r.status}:${r.count}` : r.studentName)), JSON.stringify(['안내이전:3','빠름','늦음','기록없음','안내완료:1','안내함','납부완료:1','완료']));
+  assert.equal(rows[0].studentName,'완료');
+  assert.equal(group([]).length,0);
+  const unknown = group([{studentName:'새상태',unpaidStatus:'새상태'}, {studentName:'기본'}]);
+  assert.equal(unknown[0].status,'안내이전');
+  assert.equal(unknown[2].status,'새상태');
+});

@@ -18255,7 +18255,7 @@
             <header class="table-head">
               <div>
                 <h2 class="table-title">수강료 정산 상세</h2>
-                <div class="desk-muted">전월 첫 납부일이 오래된 순입니다. 전월 납부 기록이 없으면 뒤에 표시됩니다. 안내·수납 금액을 눌러 수정할 수 있습니다.</div>
+                <div class="desk-muted">안내이전부터 상태별로 표시합니다. 각 그룹 안에서는 전월 첫 납부일이 오래된 순이며, 납부 기록이 없으면 뒤에 표시됩니다.</div>
               </div>
               <div class="meta-bar">
                 <button class="tuition-hidden-toggle-btn" id="tuitionHiddenStudentsBtn" type="button" title="숨긴 학생 표시" aria-pressed="false" hidden><i data-lucide="eye" aria-hidden="true"></i><span>숨김 0명</span></button>
@@ -39367,9 +39367,12 @@
         }
         return;
       }
-      var sortedRows = rows.slice().sort(compareTuitionPreviousPayment_);
+      var sortedRows = groupTuitionRowsByStatus_(rows);
 
       tuitionStudentBodyEl.innerHTML = sortedRows.map(function(row) {
+        if (row.__group) {
+          return '<tr class="tuition-group-row"><td colspan="9">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
+        }
         var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth, { currentRow: row });
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
@@ -41613,6 +41616,24 @@
       var contactBox = tuitionContactModalEl.querySelector(".modal-box");
       if (contactBox) contactBox.scrollTop = 0;
       refreshLucideIcons_();
+    }
+
+    function groupTuitionRowsByStatus_(rows) {
+      var order = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
+      var grouped = Object.create(null);
+      rows.forEach(function(row) {
+        var status = String(row.unpaidStatus || "안내이전");
+        if (!grouped[status]) grouped[status] = [];
+        grouped[status].push(row);
+      });
+      var result = [];
+      order.concat(Object.keys(grouped).filter(function(status) { return order.indexOf(status) === -1; })).forEach(function(status) {
+        var chunk = grouped[status] || [];
+        if (!chunk.length) return;
+        result.push({ __group: true, status: status, count: chunk.length });
+        chunk.sort(compareTuitionPreviousPayment_).forEach(function(row) { result.push(row); });
+      });
+      return result;
     }
 
     function compareTuitionPreviousPayment_(a, b) {
