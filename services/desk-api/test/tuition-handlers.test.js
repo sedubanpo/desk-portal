@@ -135,6 +135,19 @@ test('monthly sales daily payer names exclude refund-only students', async () =>
 
 test('month summary reads the snapshot and attaches student memo warnings', async () => {
   const seed = tuitionSeed();
+  const earlierPayment = {
+    ...seed.documents['tuitionPaymentReadIndexes/payment_month_26-06s'].payments[0],
+    requestId: 'previous-earlier-payment', paidAt: '6/03', inputAt: '6/03 09:00', paymentType: '현금', approvalNo: 'prev-0'
+  };
+  const refund = {
+    ...earlierPayment,
+    requestId: 'previous-refund', paidAt: '6/01', inputAt: '6/01 09:00', paymentType: '환불', approvalNo: 'refund-0', amount: 90000
+  };
+  const adjustment = {
+    ...earlierPayment,
+    requestId: 'previous-adjustment', paidAt: '6/02', inputAt: '6/02 09:00', paymentType: '수강료 정정', approvalNo: 'PORTAL-ADJ', amount: -1000, countsAsPayment: false
+  };
+  seed.documents['tuitionPaymentReadIndexes/payment_month_26-06s'].payments.push(earlierPayment, refund, adjustment);
   const memoKey = `tuitionStudentMemos/${studentMemoId('김재희')}`;
   seed.documents[memoKey] = { studentName: '김재희', memos: { 'memo-1': { id: 'memo-1', createdAt: '2026-07-14T01:00:00.000Z', memo: '안내 보류', author: '관리자' } } };
   const result = await createTuitionHandlers({ store: memoryStore(seed.documents) }).getTuitionMonthSummary({ monthName: seed.month });
@@ -142,6 +155,7 @@ test('month summary reads the snapshot and attaches student memo warnings', asyn
   assert.equal(result.rows.length, 1);
   assert.equal(result.rows[0].tuitionMemoWarning.latestMemo, '안내 보류');
   assert.equal(result.rows[0].previousPaymentMethod, '계좌이체');
+  assert.equal(result.rows[0].previousPaymentDate, '2026-06-03');
   assert.equal(result.cache.source, 'firestore-snapshot');
 });
 

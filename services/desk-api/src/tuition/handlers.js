@@ -536,14 +536,15 @@ async function buildMonthSummary(store, payload) {
   const statusFilter = text(payload.statusFilter);
   const keyword = text(payload.keyword).toLowerCase().replace(/\s+/g, '');
   const masterRows = studentDocuments.filter(isActiveStudent).map(studentMasterTuitionRow).filter(Boolean);
-  const previousMethods = previousPaymentMethodMap(previousMonthPayments?.payments || []);
+  const previousPayments = previousMonthPaymentMetadata(previousMonthPayments?.payments || []);
   const rows = mergeStudentMasterRows(snapshot.rows, masterRows).filter(row => {
     if (statusFilter && statusFilter !== '전체' && unpaidStatus(row.unpaidStatus) !== statusFilter) return false;
     if (!keyword) return true;
     return [row.studentName, row.school, row.grade].join('').toLowerCase().replace(/\s+/g, '').includes(keyword);
   }).map(row => ({
     ...row,
-    previousPaymentMethod: previousMethods[studentName(row.studentName)] || '',
+    previousPaymentMethod: previousPayments.methods[studentName(row.studentName)] || '',
+    previousPaymentDate: previousPayments.earliestDates[studentName(row.studentName)] || '',
     tuitionMemoWarning: warnings[studentName(row.studentName)] || memoWarning([])
   }));
   const allPayments = mergePayments(snapshot.allPayments || [], recent?.payments || []);
@@ -1297,12 +1298,21 @@ function previousMonthName(value) {
   return `${String(date.getFullYear()).slice(-2)}-${String(date.getMonth() + 1).padStart(2, '0')}s`;
 }
 
-function previousPaymentMethodMap(rows) {
-  return mergePayments(rows || []).reduce((methods, row) => {
+function previousMonthPaymentMetadata(rows) {
+  return mergePayments(rows || []).reduce((metadata, row) => {
     const student = studentName(row.studentName);
-    if (student && !methods[student] && text(row.paymentType)) methods[student] = text(row.paymentType);
-    return methods;
-  }, {});
+    if (!student) return metadata;
+    if (!metadata.methods[student] && text(row.paymentType)) metadata.methods[student] = text(row.paymentType);
+    const paidDate = paidDateKey(row);
+    if (isActualPayment(row) && paidDate && (!metadata.earliestDates[student] || paidDate < metadata.earliestDates[student])) {
+      metadata.earliestDates[student] = paidDate;
+    }
+    return metadata;
+  }, { methods: {}, earliestDates: {} });
+}
+
+function isActualPayment(row) {
+  return row?.countsAsPayment !== false && row?.entryKind !== 'adjustment' && number(row?.amount) < 0;
 }
 
 function monthLabel(value) {

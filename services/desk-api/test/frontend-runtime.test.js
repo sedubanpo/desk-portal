@@ -698,3 +698,27 @@ test('supplies save clears dirty state only when the current payload still match
   await write;
   assert.equal(state.desk.supplies.unsavedChanges, true, 'a newer local payload remains dirty after an older save succeeds');
 });
+
+test('tuition orders oldest previous payment across statuses and missing history last', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const compare = loadFunction(source, 'compareTuitionPreviousPayment_', {});
+  const rows = [{studentName:'미기록'}, {studentName:'늦음',previousPaymentDate:'2026-08-20',status:'안내이전'}, {studentName:'빠름',previousPaymentDate:'2026-08-01',status:'납부완료'}];
+  assert.deepEqual(rows.slice().sort(compare).map(r=>r.studentName), ['빠름','늦음','미기록']);
+});
+
+test('tuition receipt defaults to unpaid remainder and preserves collection sign', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const toNumber = (v,f) => Number.isFinite(Number(v)) ? Number(v) : f;
+  const format = loadFunction(source, 'formatSignedAmountInput', {});
+  const amount = loadFunction(source, 'getTuitionPaymentDefaultAmount_', {toNumber,formatSignedAmountInput:format});
+  for (const [guideAmount,collectedAmount,expected] of [[500000,200000,'-300,000'],[500000,0,'-500,000'],[500000,500000,'0'],[500000,600000,'0'],[500000,-100000,'-500,000'],[0,0,'']]) assert.equal(amount({guideAmount,collectedAmount}), expected);
+  assert.equal(amount(null), '');
+});
+
+test('tuition captions validate dates and include weekdays', async () => {
+  const format = loadFunction(await readFile(frontendPath, 'utf8'), 'formatTuitionInputDate_', {});
+  assert.equal(format('26-09-05'), '2026년 9월 5일 (토)');
+  assert.equal(format('2024-02-29'), '2024년 2월 29일 (목)');
+  assert.equal(format('2026-12-31'), '2026년 12월 31일 (목)');
+  assert.equal(format('2026-02-29'), '날짜를 확인해 주세요.');
+});

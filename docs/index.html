@@ -17669,6 +17669,13 @@
       .desk-attendance-summary { grid-template-columns:repeat(2,1fr); }
       .desk-attendance-summary article:nth-child(2) { border-right:0; }
     }
+    #tuitionPaymentModal .field > label { display:flex; align-items:baseline; gap:8px; font-size:13px; font-weight:700; color:#334155; margin-bottom:7px; }
+    #tuitionPaymentModal .tuition-field-hint { font-size:12px; font-weight:400; color:#64748b; line-height:1.5; }
+    #tuitionPaymentModal .tuition-date-caption { margin-top:6px; font-size:13px; font-weight:600; color:#334155; font-variant-numeric:tabular-nums; }
+    #tuitionPaymentModal #tuitionPaymentAmount { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+    #tuitionPaymentModal #tuitionPaymentAmountHint { margin-top:6px; }
+    #tuitionPaymentModal .amount-negative { color:#b91c1c; }
+    #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
 </head>
 <body>
@@ -18248,7 +18255,7 @@
             <header class="table-head">
               <div>
                 <h2 class="table-title">수강료 정산 상세</h2>
-                <div class="desk-muted">안내·수납 금액을 누르면 수정할 수 있습니다. 미납액은 자동 계산됩니다.</div>
+                <div class="desk-muted">전월 첫 납부일이 오래된 순입니다. 전월 납부 기록이 없으면 뒤에 표시됩니다. 안내·수납 금액을 눌러 수정할 수 있습니다.</div>
               </div>
               <div class="meta-bar">
                 <button class="tuition-hidden-toggle-btn" id="tuitionHiddenStudentsBtn" type="button" title="숨긴 학생 표시" aria-pressed="false" hidden><i data-lucide="eye" aria-hidden="true"></i><span>숨김 0명</span></button>
@@ -20676,16 +20683,19 @@
       </div>
       <div class="tuition-modal-grid">
         <div class="field">
-          <label for="tuitionPaymentDueDate">납입기한 (월 1일)</label>
-          <input id="tuitionPaymentDueDate" class="modal-input" type="text" placeholder="예: 26-02-01(토)">
+          <label for="tuitionPaymentDueDate">납입 기한 <span class="tuition-field-hint">해당 월 1일</span></label>
+          <input id="tuitionPaymentDueDate" class="modal-input" type="text" placeholder="예: 26-09-01" aria-describedby="tuitionPaymentDueDateDisplay">
+          <div class="tuition-date-caption" id="tuitionPaymentDueDateDisplay" aria-live="polite"></div>
         </div>
         <div class="field">
-          <label for="tuitionPaymentAmount">금액 (받은 금액은 음수)</label>
-          <input id="tuitionPaymentAmount" class="modal-input" type="text" inputmode="numeric" autocomplete="off">
+          <label for="tuitionPaymentAmount">수납 금액 <span class="tuition-field-hint">원</span></label>
+          <input id="tuitionPaymentAmount" class="modal-input" type="text" inputmode="numeric" autocomplete="off" aria-describedby="tuitionPaymentAmountHint">
+          <div class="tuition-field-hint" id="tuitionPaymentAmountHint">받은 금액은 음수(−), 환불은 양수(+)로 입력하세요.</div>
         </div>
         <div class="field">
-          <label for="tuitionPaymentPaidAt">납부일</label>
-          <input id="tuitionPaymentPaidAt" class="modal-input" type="date">
+          <label for="tuitionPaymentPaidAt">납부 일자</label>
+          <input id="tuitionPaymentPaidAt" class="modal-input" type="date" aria-describedby="tuitionPaymentPaidAtDisplay">
+          <div class="tuition-date-caption" id="tuitionPaymentPaidAtDisplay" aria-live="polite"></div>
         </div>
         <div class="field">
           <label for="tuitionPaymentBusiness">사업자</label>
@@ -38049,7 +38059,10 @@
       bindTuitionChoiceButtons_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl);
       tuitionPaymentAmountEl.addEventListener("input", function() {
         tuitionPaymentAmountEl.value = formatSignedAmountInput(tuitionPaymentAmountEl.value);
+        updateTuitionPaymentPresentation_();
       });
+      tuitionPaymentDueDateEl.addEventListener("input", updateTuitionPaymentPresentation_);
+      tuitionPaymentPaidAtEl.addEventListener("input", updateTuitionPaymentPresentation_);
       closeTuitionAmountAdjustBtnEl.addEventListener("click", closeTuitionAmountAdjustModal_);
       saveTuitionAmountAdjustBtnEl.addEventListener("click", saveTuitionAmountAdjustment_);
       saveTuitionPaymentDeleteBtnEl.addEventListener("click", saveTuitionPaymentDelete_);
@@ -39354,41 +39367,9 @@
         }
         return;
       }
-      var groupOrder = ["안내이전", "안내완료", "일부완료", "납부예정", "연락두절", "확인필요", "이월금", "납부완료"];
-      var grouped = {};
-      rows.forEach(function(row) {
-        var st = String(row.unpaidStatus || "안내이전");
-        if (!grouped[st]) grouped[st] = [];
-        grouped[st].push(row);
-      });
-
-      var sortedRows = [];
-      groupOrder.forEach(function(st) {
-        var chunk = grouped[st] || [];
-        if (!chunk.length) return;
-        sortedRows.push({ __group: true, status: st, count: chunk.length });
-        chunk.sort(function(a, b) {
-          return String(a.studentName || "").localeCompare(String(b.studentName || ""), "ko");
-        }).forEach(function(item) {
-          sortedRows.push(item);
-        });
-      });
-      Object.keys(grouped).forEach(function(st) {
-        if (groupOrder.indexOf(st) !== -1) return;
-        var chunk = grouped[st] || [];
-        if (!chunk.length) return;
-        sortedRows.push({ __group: true, status: st, count: chunk.length });
-        chunk.sort(function(a, b) {
-          return String(a.studentName || "").localeCompare(String(b.studentName || ""), "ko");
-        }).forEach(function(item) {
-          sortedRows.push(item);
-        });
-      });
+      var sortedRows = rows.slice().sort(compareTuitionPreviousPayment_);
 
       tuitionStudentBodyEl.innerHTML = sortedRows.map(function(row) {
-        if (row.__group) {
-          return '<tr class="tuition-group-row"><td colspan="9">' + escapeHtml(row.status) + '<span class="g-meta">' + row.count + '명</span></td></tr>';
-        }
         var carryInfo = getTuitionPreviousMonthCarryInfo_(row.studentName, state.tuition.selectedMonth, { currentRow: row });
         var rowClass = "tuition-row-default";
         if (row.unpaidStatus === "안내이전") rowClass = "tuition-row-unguided";
@@ -41634,6 +41615,39 @@
       refreshLucideIcons_();
     }
 
+    function compareTuitionPreviousPayment_(a, b) {
+      var first = String(a.previousPaymentDate || "9999-99-99");
+      var second = String(b.previousPaymentDate || "9999-99-99");
+      return first.localeCompare(second) || String(a.studentName || "").localeCompare(String(b.studentName || ""), "ko");
+    }
+
+    function getTuitionPaymentDefaultAmount_(row) {
+      if (!row) return "";
+      var guide = toNumber(row.guideAmount, 0);
+      if (guide <= 0) return "";
+      var remaining = Math.max(0, Math.round(guide - Math.max(0, toNumber(row.collectedAmount, 0))));
+      return formatSignedAmountInput(String(remaining ? -remaining : 0));
+    }
+
+    function formatTuitionInputDate_(value) {
+      var match = String(value || "").trim().match(/^(\d{2}|\d{4})-(\d{1,2})-(\d{1,2})(?:\s*\([^)]*\))?$/);
+      if (!match) return value ? "날짜를 확인해 주세요." : "날짜를 선택해 주세요.";
+      var year = Number(match[1]) + (match[1].length === 2 ? 2000 : 0);
+      var month = Number(match[2]);
+      var day = Number(match[3]);
+      var date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return "날짜를 확인해 주세요.";
+      return year + "년 " + month + "월 " + day + "일 (" + ["일", "월", "화", "수", "목", "금", "토"][date.getDay()] + ")";
+    }
+
+    function updateTuitionPaymentPresentation_() {
+      var amount = toNumber(tuitionPaymentAmountEl.value, 0);
+      tuitionPaymentAmountEl.classList.toggle("amount-negative", amount < 0);
+      tuitionPaymentAmountEl.classList.toggle("amount-positive", amount > 0);
+      document.getElementById("tuitionPaymentDueDateDisplay").textContent = formatTuitionInputDate_(tuitionPaymentDueDateEl.value);
+      document.getElementById("tuitionPaymentPaidAtDisplay").textContent = formatTuitionInputDate_(tuitionPaymentPaidAtEl.value);
+    }
+
     function openTuitionPaymentModal(studentName, overrideTarget) {
       var row = overrideTarget || findTuitionRowByStudent(studentName);
       state.tuition.paymentTarget = row || null;
@@ -41646,13 +41660,14 @@
       tuitionPaymentTargetEl.textContent = formatTuitionMonthLabel_(state.tuition.selectedMonth) + " / " + formatStudentName(studentName);
       var monthText = String(state.tuition.selectedMonth || "").replace(/s$/i, "");
       tuitionPaymentDueDateEl.value = monthText + "-01";
-      tuitionPaymentAmountEl.value = row && row.guideAmount ? formatSignedAmountInput(String(-Math.max(0, toNumber(row.guideAmount, 0)))) : "";
+      tuitionPaymentAmountEl.value = getTuitionPaymentDefaultAmount_(row);
       tuitionPaymentPaidAtEl.value = getTodayDateKey_();
       tuitionPaymentBusinessEl.value = "반포";
       selectTuitionChoice_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl, "");
       tuitionPaymentApprovalNoEl.value = "";
       tuitionPaymentCardCompanyEl.value = "";
       tuitionPaymentIssueMemoEl.value = "";
+      updateTuitionPaymentPresentation_();
       tuitionPaymentModalEl.style.display = "flex";
       var paymentBox = tuitionPaymentModalEl.querySelector(".modal-box");
       if (paymentBox) paymentBox.scrollTop = 0;
@@ -41731,6 +41746,7 @@
       tuitionPaymentEditReasonFieldEl.hidden = false;
       tuitionPaymentEditNoteEl.hidden = false;
       saveTuitionPaymentBtnEl.textContent = "수정 저장";
+      updateTuitionPaymentPresentation_();
       tuitionPaymentModalEl.style.display = "flex";
       var paymentBox = tuitionPaymentModalEl.querySelector(".modal-box");
       if (paymentBox) paymentBox.scrollTop = 0;
