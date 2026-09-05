@@ -1,136 +1,33 @@
 # Desk Portal
 
-`데스크포털`을 GitHub 원본 구조로 이주하기 위한 작업용 스타터입니다.
+운영 화면은 `docs/index.html`, 업무 API는 `services/desk-api`에서 관리합니다. GitHub Pages는 `main`의 `/docs`를 배포합니다.
 
-## 추천 운영 원칙
+- 포털 주소: https://sedubanpo.github.io/desk-portal/
+- 인증: Firebase ID 토큰과 Cloud Run의 Firestore 계정·앱 권한 검증
+- 데이터 접근: Cloud Run 런타임 서비스 계정의 Application Default Credentials(ADC)
+- 급여 추가 인증: 서버에서 관리하는 급여 PIN 및 제한된 유효기간의 토큰
 
-1. GitHub repo를 원본으로 사용합니다.
-2. Apps Script에 배포할 파일은 `apps-script/payroll/Code.gs`, `apps-script/payroll/Index.html`로 관리합니다.
-3. 현재처럼 Google Apps Script 편집기에서 직접 붙여넣어 반영할 수 있습니다.
-4. 나중에 필요하면 `clasp`를 연결해 `push` 배포로 전환합니다.
-
-## 폴더 구조
-
-```text
-desk-portal/
-  apps-script/
-    payroll/
-      Code.gs
-      Index.html
-  docs/
-    index.html
-  scripts/
-    sync_from_canonical.sh
-    sync_to_canonical.sh
-  .gitignore
-  README.md
-```
-
-## 현재 기준 파일
-
-- canonical server:
-  `/Users/anjongseong/Documents/프로그램/에스에듀 개발/payroll/code.gs`
-- canonical frontend:
-  `/Users/anjongseong/Documents/프로그램/에스에듀 개발/payroll/payroll_portal.html`
-
-## 권장 이주 순서
-
-1. 이 폴더를 별도 위치의 새 repo로 복사합니다.
-2. `git init` 후 첫 커밋을 만듭니다.
-3. GitHub 원격 저장소를 연결합니다.
-4. 이후 수정은 `apps-script/payroll/Code.gs`, `Index.html`만 기준으로 진행합니다.
-5. Apps Script 편집기 반영이 필요할 때 `scripts/sync_to_canonical.sh` 또는 수동 복사로 반영합니다.
-
-## 첫 GitHub 업로드 예시
+## 개발과 검증
 
 ```bash
-cd ~/Documents
-cp -R "/Users/anjongseong/Documents/New project/desk-portal-starter" desk-portal
-cd desk-portal
-
-git init
-git add .
-git commit -m "Initial import of desk portal payroll app"
-
-git branch -M main
-git remote add origin <YOUR_GITHUB_REPO_URL>
-git push -u origin main
+npm --prefix services/desk-api ci
+npm --prefix services/desk-api test
 ```
 
-## 이후 작업 흐름
+운영 데이터나 인증된 운영 화면을 테스트 자료로 저장하지 않습니다. 합성 데이터로 검증하고 `.superloopy/`의 로컬 증거는 배포하거나 커밋하지 않습니다.
 
-### 1. canonical -> repo 복사
+## 구형 Apps Script 폐기
 
-```bash
-bash scripts/sync_from_canonical.sh
-```
+`apps-script/payroll`은 기존 웹앱 주소의 이전 안내만 제공합니다. 업무 함수, 고정 비밀번호 검증, 브라우저의 데이터베이스 인증값은 제거했습니다. 기존 API 요청에는 `legacy_retired` 오류를 반환합니다. JSONP 콜백은 실행하지 않습니다.
 
-### 2. repo 수정
+구형 동기화·이관·비교 도구는 실행을 차단했습니다. 다른 폴더의 예전 파일을 가져오거나 옛 Apps Script 버전을 다시 배포하지 마세요. 현재 화면은 Apps Script를 호출하지 않습니다.
 
-- `apps-script/payroll/Code.gs`
-- `apps-script/payroll/Index.html`
+배포는 `apps-script/payroll`에서 `clasp push` 후 새 버전을 만들고, 기존 배포 ID들을 새 버전으로 갱신합니다. 파일에서 인증값을 제거해도 데이터베이스 비밀값 자체가 폐기되지는 않습니다. Firebase 콘솔에서 기존 비밀값을 별도로 취소해야 합니다. 데이터베이스와 Cloud Run 서비스 계정 권한은 현재 업무에 필요하므로 유지합니다.
 
-### 3. repo -> canonical 반영
+Git 기록의 기존 값과 외부 복제본은 별도 관리 대상입니다. 기록 재작성은 별도 승인 없이 수행하지 않습니다.
 
-```bash
-bash scripts/sync_to_canonical.sh
-```
+## 배포
 
-### 4. GAS 편집기 반영
+API 배포·권한 설명은 `services/desk-api/README.md`를 참고하세요. 프론트엔드와 API 변경이 서로 의존할 경우 함께 반영해야 합니다.
 
-- `Code.gs` 내용 붙여넣기
-- `Index.html` 내용 붙여넣기
-- 저장
-- 웹앱 새 버전 배포가 필요하면 새 배포 실행
-
-## GitHub Pages 연결
-
-이 repo는 GitHub Pages에서 정적 소개 페이지를 띄우고, 실제 서비스는 GAS 웹앱으로 연결하는 구조를 권장합니다.
-
-### Pages 설정
-
-1. GitHub repo의 `Settings`로 이동합니다.
-2. `Pages` 메뉴를 엽니다.
-3. `Build and deployment`에서 `Deploy from a branch`를 선택합니다.
-4. Branch는 `main`, Folder는 `/docs`로 설정합니다.
-5. 저장 후 `https://sedubanpo.github.io/desk-portal/`에서 확인합니다.
-
-### 정적 페이지 목적
-
-- 프로젝트 소개
-- 현재 모듈 안내
-- 소스 코드 경로 안내
-- 실제 GAS 웹앱 링크 허브
-
-`docs/index.html`은 GitHub Pages용 정적 메인 페이지입니다. 실제 운영 URL이 확정되면 페이지 안의 웹앱 링크 상수만 수정하면 됩니다.
-
-## 나중에 clasp를 붙일 때
-
-실제 운영 GAS 프로젝트 폴더에 아래 파일을 두는 구조를 추천합니다.
-
-```text
-desk-portal/
-  apps-script/
-    payroll/
-      .clasp.json
-      appsscript.json
-      Code.gs
-      Index.html
-```
-
-그 뒤에는 보통 아래 순서로 진행합니다.
-
-```bash
-clasp status
-clasp push
-clasp deployments
-```
-
-현재는 payroll을 GAS 편집기에서 직접 반영하고 있으므로, 우선은 GitHub 원본화부터 하는 것이 가장 안전합니다.
-
-## Cloud Run API 마이그레이션
-
-Apps Script 중계를 단계적으로 제거하기 위한 API 서비스는 `services/desk-api`에 있습니다. 현재 1단계는 Firebase Auth/Firestore 권한 검증과 배포 기반만 추가했으며 기존 운영 업무 요청은 계속 기존 경로를 사용합니다.
-
-- 서비스 안내: `services/desk-api/README.md`
-- 단계별 전환 원칙: `docs/cloud-run-migration.md`
+현재 GitHub 요금제에서 비공개 저장소의 Pages가 비활성화된 경우, 소스 반영만으로 포털이 복구되지는 않습니다. Pages 사용 조건과 저장소 공개 상태를 확인해야 합니다.

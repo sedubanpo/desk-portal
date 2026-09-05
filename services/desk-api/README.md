@@ -34,31 +34,15 @@ GOOGLE_CLOUD_PROJECT=fir-lms-prod bash scripts/deploy.sh
 
 쓰기 요청은 반드시 `x-idempotency-key`를 포함해야 하며, 동일 사용자·메서드·키의 완료 응답은 Firestore 영수증에서 재사용됩니다. 수강료 입력은 `clientRequestId`도 함께 저장해 브라우저 재시도와 서버 재시작 뒤에도 중복 입력을 막습니다. 결제 원장, 월·일·최근 인덱스, 월별 스냅샷, 삭제 감사기록은 Firestore 트랜잭션으로 함께 변경됩니다. 비품 수량 변경은 Realtime Database 트랜잭션으로 처리합니다.
 
-## 급여 설정 이관
+## 구형 인증 경로 폐기
 
-Apps Script의 급여 설정과 기존 RTDB의 월별 수동 보정값은 다음 스크립트로 Firestore에 복사합니다. 기존 값은 삭제하지 않으며 자격 증명은 환경 변수로만 전달합니다.
+기존 Apps Script 고정 비밀번호와 RTDB 비밀값을 사용하는 이관·비교 스크립트는 실행을 차단했습니다. 현재 운영 API는 이 값들을 사용하지 않습니다. 추가 유지보수는 ADC와 현행 권한 검증을 사용해 별도로 구현해야 합니다.
 
-```bash
-GOOGLE_CLOUD_PROJECT=fir-lms-prod \
-LEGACY_PORTAL_KEY=... \
-LEGACY_PRIVILEGED_KEY=... \
-LEGACY_FIREBASE_SECRET=... \
-npm run migrate:payroll-config
-```
-
-최종 전환 전에는 같은 급여 월을 기존 Apps Script와 Cloud 계산기로 각각 계산해 KPI와 상세 행 수를 대조합니다.
-
-```bash
-GOOGLE_CLOUD_PROJECT=fir-lms-prod \
-GOOGLE_WORKSPACE_SERVICE_ACCOUNT=desk-portal-api-runtime@fir-lms-prod.iam.gserviceaccount.com \
-LEGACY_PORTAL_KEY=... \
-LEGACY_PRIVILEGED_KEY=... \
-npm run verify:payroll-parity
-```
+Firebase 콘솔의 데이터베이스 비밀값 취소는 소스 제거와 별도 작업입니다. RTDB 데이터베이스와 런타임 서비스 계정 IAM은 계속 필요합니다.
 
 ## 안전 경계
 
-- 급여·캘린더 Cloud Run 구현과 데이터 이관은 완료됐지만 운영 기능 플래그는 최종 검증 전까지 전환하지 않습니다.
+- 급여·캘린더를 포함한 현재 운영 호출은 Cloud Run을 사용합니다.
 - GitHub Pages의 운영 호출은 Firebase ID 토큰을 사용하는 Cloud Run 경로만 허용합니다.
 - 과거 수강료 백필 메서드는 유지보수 전용으로 남아 있으며 운영 라우터에서 거부됩니다.
 - 서비스 계정 키 파일을 저장소나 프론트엔드에 두지 않습니다.

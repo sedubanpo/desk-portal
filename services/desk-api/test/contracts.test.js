@@ -4,16 +4,8 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LEGACY_API_METHODS } from '../src/contracts.js';
 
-test('migration contract exactly mirrors the Apps Script API allowlist', async () => {
-  const codePath = fileURLToPath(new URL('../../../apps-script/payroll/Code.gs', import.meta.url));
-  const code = await readFile(codePath, 'utf8');
-  const allowlistBlock = code.match(/const PAYROLL_API_ALLOWED_METHODS = \{([\s\S]*?)\n\};/);
-  assert.ok(allowlistBlock, 'PAYROLL_API_ALLOWED_METHODS was not found');
-
-  const appsScriptMethods = [...allowlistBlock[1].matchAll(/^\s*([A-Za-z0-9_]+): true,?$/gm)]
-    .map(match => match[1])
-    .sort();
-  const contractMethods = [...LEGACY_API_METHODS].sort();
-
-  assert.deepEqual(contractMethods, appsScriptMethods);
+test('Cloud API preserves the retired Apps Script method contract', async () => {
+  const fixturePath = fileURLToPath(new URL('./fixtures/retired-apps-script-methods.json', import.meta.url));
+  const retiredMethods = JSON.parse(await readFile(fixturePath, 'utf8'));
+  assert.deepEqual([...LEGACY_API_METHODS].sort(), retiredMethods);
 });
