@@ -42225,6 +42225,13 @@
       });
     }
 
+window.SeduHubAdapter={
+ async signIn(token,uid){const auth=await initializeDeskFirebaseAuth_();if(!auth)throw Error('Auth unavailable');
+  await auth.signOut();state.cloudApiReady=false;await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+  const credential=await auth.signInWithCustomToken(token);if(credential.user.uid!==uid)throw Error('Identity mismatch');
+  await verifyDeskCloudUser_(credential.user);enterDeskPortal_(state.portalAccessKey);
+ },async signOut(){await (await initializeDeskFirebaseAuth_()).signOut();logoutDeskPortal_();}
+};
     function initializeDeskFirebaseAuth_() {
       if (state.firebaseAuthPromise) return state.firebaseAuthPromise;
       state.firebaseAuthPromise = loadDeskFirebaseScript_("https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js")
@@ -45036,5 +45043,6 @@
       };
     }
   </script>
+<script type="module" src="hub-start.mjs"></script>
 </body>
 </html>
