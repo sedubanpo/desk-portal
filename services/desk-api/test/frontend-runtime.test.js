@@ -742,3 +742,23 @@ test('tuition status groups put unguided first and order dates within each group
   assert.equal(unknown[0].status,'안내이전');
   assert.equal(unknown[2].status,'새상태');
 });
+
+
+test('desk navigation returns from settlement even when the remembered desk tab matches', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const marker = source.lastIndexOf('Array.prototype.forEach.call(deskTabEls, function(btn)');
+  const start = source.indexOf('function()', marker);
+  const handler = extractFunctionAt(source, start);
+  let renders = 0;
+  const state = { activeModule: 'tuition', desk: { activeTab: 'dailyJournal' } };
+  const click = vm.runInNewContext(`(${handler})`, {
+    state, btn: { getAttribute: () => 'dailyJournal' },
+    renderModuleLayout: () => { renders += 1; }
+  });
+  click();
+  assert.equal(state.activeModule, 'expense');
+  assert.equal(state.desk.activeTab, 'dailyJournal');
+  assert.equal(renders, 1);
+  click();
+  assert.equal(renders, 1, 'already selected desk workflow should not re-render');
+});

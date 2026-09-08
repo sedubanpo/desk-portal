@@ -17677,6 +17677,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
+  <link rel="stylesheet" href="./workspace.css">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -17706,6 +17707,22 @@
         <p class="brand-sub" id="brandSub">근무표와 데스크 운영 기록을 한 화면에서 관리</p>
       </section>
 
+      <nav class="workspace-nav" aria-label="주요 업무">
+        <p class="workspace-nav-label">데스크 업무</p>
+          <section class="desk-subtabs">
+            <button class="desk-subtab active" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="supplies"><i data-lucide="package-check" aria-hidden="true"></i><span>물품 관리</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="recruiting"><i data-lucide="user-round-search" aria-hidden="true"></i><span>인사 관리</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="messageTemplates"><i data-lucide="messages-square" aria-hidden="true"></i><span>메시지 템플릿</span></button>
+          </section>
+        <p class="workspace-nav-label">정산</p>
+        <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
+        <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab">강사 시수 정산</button>
+      </nav>
+      <details class="workspace-support">
+        <summary>오늘의 근무자 · 업무 도움말</summary>
       <div class="sidebar-section" id="sidebarDeskSection">
         <section class="sidebar-card">
           <h3>오늘의 근무자</h3>
@@ -17763,6 +17780,7 @@
         </section>
       </div>
 
+      </details>
       <button class="sidebar-action" id="openSettingsBtn" type="button">
         <span class="sidebar-gear">⚙</span>
         <span>설정 센터</span>
@@ -17776,9 +17794,7 @@
     <main class="main" id="mainShell">
       <section class="global-topbar"></section>
       <section class="module-tabs">
-        <button class="module-tab active" type="button" data-module="expense">데스크 관리</button>
-        <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
-        <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab">강사 시수 정산</button>
+        <div class="workspace-heading"><span>반포관</span><span aria-hidden="true"> / </span><span id="workspaceCurrentPage">일일 업무일지</span></div>
         <div class="desk-global-tools" aria-label="데스크 포털 상태 도구">
           <div class="desk-global-notice" id="deskGlobalNotice" aria-label="공동 업무 공지" aria-live="polite">
             <i data-lucide="megaphone" aria-hidden="true"></i>
@@ -18286,14 +18302,7 @@
 
       <section id="moduleExpense" style="display:none;">
         <div class="desk-shell">
-          <section class="desk-subtabs">
-            <button class="desk-subtab active" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="supplies"><i data-lucide="package-check" aria-hidden="true"></i><span>물품 관리</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="recruiting"><i data-lucide="user-round-search" aria-hidden="true"></i><span>인사 관리</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="messageTemplates"><i data-lucide="messages-square" aria-hidden="true"></i><span>메세지 템플릿</span></button>
-          </section>
+
 
           <section class="desk-panel hidden" data-desk-panel="monthlySchedule">
             <header class="desk-panel-head">
@@ -19459,7 +19468,7 @@
                     <label class="wide">대응 절차<textarea id="deskResponseGuideStepsInput" rows="5" placeholder="한 줄에 하나씩 입력"></textarea></label>
                   </div>
                   <div class="desk-guide-editor-foot">
-                    <span>대상별 안내 문구는 메세지 템플릿의 연결 유형 문구를 우선 사용합니다.</span>
+                    <span>대상별 안내 문구는 메시지 템플릿의 연결 유형 문구를 우선 사용합니다.</span>
                     <button type="button" id="deskResponseSaveGuideBtn">가이드 저장</button>
                   </div>
                 </div>
@@ -19473,8 +19482,8 @@
             <div class="desk-template-shell">
               <header class="desk-template-topbar">
                 <div>
-                  <div class="desk-template-breadcrumb">데스크 관리 / 응대 센터 / <strong>메세지 템플릿</strong></div>
-                  <h2 class="desk-template-title">메세지 템플릿</h2>
+                  <div class="desk-template-breadcrumb">데스크 관리 / 응대 센터 / <strong>메시지 템플릿</strong></div>
+                  <h2 class="desk-template-title">메시지 템플릿</h2>
                   <p class="desk-template-sub">상황별 응대 문구를 유형 태그로 정리하고 대상별로 관리합니다.</p>
                 </div>
                 <div class="desk-template-badges">
@@ -21143,7 +21152,7 @@
           completedTasksExpanded: false,
           workerDetailTab: "memos",
           liveFeedDateKey: "",
-          liveFeedCollapsed: false,
+          liveFeedCollapsed: true,
           liveFeedPage: 1,
           liveFeedPageSize: 10,
           liveFeedLoadedDays: DESK_LIVE_FEED_INITIAL_LOAD_DAYS,
@@ -22076,6 +22085,17 @@
         }
       };
       var config = configMap[state.activeModule] || configMap.expense;
+      var pageNames = { dailyJournal: "일일 업무일지", responseCenter: "응대 센터", monthlySchedule: "월별 근무표", supplies: "물품 관리", recruiting: "인사 관리", messageTemplates: "메시지 템플릿" };
+      var currentPage = document.getElementById("workspaceCurrentPage");
+      if (currentPage) currentPage.textContent = state.activeModule === "expense" ? (pageNames[state.desk.activeTab] || config.title) : config.title;
+      Array.prototype.forEach.call(deskTabEls, function(btn) {
+        var selected = state.activeModule === "expense" && btn.getAttribute("data-desk-tab") === state.desk.activeTab;
+        btn.classList.toggle("active", selected);
+        if (selected) btn.setAttribute("aria-current", "page"); else btn.removeAttribute("aria-current");
+      });
+      Array.prototype.forEach.call(moduleTabEls, function(btn) {
+        if (btn.dataset.module === state.activeModule) btn.setAttribute("aria-current", "page"); else btn.removeAttribute("aria-current");
+      });
       if (brandTitleEl) brandTitleEl.textContent = config.title;
       if (brandSubEl) brandSubEl.textContent = config.sub;
       var isDailyJournal = state.activeModule === "expense" && state.desk.activeTab === "dailyJournal";
@@ -27809,7 +27829,10 @@
     function renderDeskLayout_() {
       renderSidebarLayout_();
       Array.prototype.forEach.call(deskTabEls, function(btn) {
-        btn.classList.toggle("active", (btn.getAttribute("data-desk-tab") || "") === state.desk.activeTab);
+        var selected = state.activeModule === "expense" && (btn.getAttribute("data-desk-tab") || "") === state.desk.activeTab;
+        btn.classList.toggle("active", selected);
+        if (selected) btn.setAttribute("aria-current", "page");
+        else btn.removeAttribute("aria-current");
       });
       Array.prototype.forEach.call(deskPanelEls, function(panel) {
         panel.classList.toggle("hidden", (panel.getAttribute("data-desk-panel") || "") !== state.desk.activeTab);
@@ -35866,9 +35889,10 @@
       Array.prototype.forEach.call(deskTabEls, function(btn) {
         btn.addEventListener("click", function() {
           var nextTab = btn.getAttribute("data-desk-tab") || "monthlySchedule";
-          if (nextTab === state.desk.activeTab) return;
+          if (nextTab === state.desk.activeTab && state.activeModule === "expense") return;
           state.desk.activeTab = nextTab;
-          renderDeskLayout_();
+          state.activeModule = "expense";
+          renderModuleLayout();
         });
       });
 

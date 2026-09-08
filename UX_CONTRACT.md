@@ -1,46 +1,18 @@
-# Desk Operations UX Contract
+# Workspace redesign — 2026-09-08
 
-## Scope
+## Evidence and scope
+Supplied desktop standalone/SSO screenshots show repeated module navigation, full worker roster, and an always-visible activity rail competing with the daily journal. User requests intranet-inspired clarity and no dark left accent stripes. Reference authority covers hierarchy and tone, not exact pixel replication or invented capabilities.
 
-This contract covers the daily shared-work notice ledger, the shared asset ledger, purchase-request composition, consumable quantity adjustment, and monthly tuition reconciliation export.
+## Decisions
+- Six desk workflows and two settlement workflows are always reachable from one named navigation region.
+- Desk workflow navigation switches back from settlement using the existing module renderer. Teacher payroll continues through its original privileged-access handler.
+- Existing employee roster and settlement rules are retained inside a native details disclosure. Activity begins collapsed and remains expandable with its existing toggle.
+- The main header supplies location, clock, account controls and existing notice. Page task headings remain owned by their panels.
+- Light neutral surfaces, restrained indigo active navigation, ordinary text weight and consistent controls replace heavy green surfaces. Semantic payment red/blue remains.
+- Narrow layouts retain all controls; wide tables own horizontal scrolling. No decorative left/right accent strips.
 
-## Users And Jobs
+## Invariants and proof
+No service/schema or financial rules change. No production mutation or authentication changes. Source/runtime tests cover module routing and prior regressions. Local synthetic HTML fixture uses production markup/CSS with simulated navigation solely for rendered layout geometry; it does not prove authenticated business operations. Desktop, embedded-width and narrow layout are checked through browser DOM/computed geometry without screenshots under the prior capture constraint.
 
-- Staff need to notice shared work before entering individual records and acknowledge it without losing context.
-- Asset operators need to find equipment by category, branch, status, location, or responsible staff member and update it in place.
-- Purchase operators need to select low-stock items, set request quantities, add new items, and produce a readable request message.
-- All authorized desk accounts need consumable increment and decrement controls to update the intended item even when legacy inventory rows have been normalized.
-- Tuition operators need a complete monthly workbook that can explain differences between the portal collection total, the transaction ledger, and an Access tuition amount.
-
-## Invariants
-
-- Shared work remains visible to every authorized account and shows recorder, acknowledgement ratio, and latest update.
-- Opening one shared-work row does not hide the other rows or reset during normal rerenders.
-- Asset records keep the existing persisted fields; responsible staff selection remains compatible with free-text shared ownership.
-- Purchase selection and quantities remain persisted through the existing supply snapshot.
-- Quantity adjustment resolves an exact item ID first. Identity fallback requires an exact match of item name, product name, and unit; it must not guess from partial text.
-- Errors on the supply surface identify themselves as `물품 관리`, never as another portal.
-- Tuition export always uses the selected month's unfiltered students and payment records. It must preserve numeric amounts and show the portal-versus-ledger difference before an operator enters any Access amount.
-
-## States
-
-- Loading and empty shared-work states occupy the ledger body and explain the next available action.
-- Asset and purchase filters return a truthful empty state without clearing stored records.
-- Selected purchase candidates have a visible row state and remain first in the candidate order.
-- Narrow screens collapse ledger metadata before content and actions, preserving readable task and product identity.
-
-## Traceability
-
-| Contract | Owner | Verification |
-| --- | --- | --- |
-| Shared work is the first operational database surface | `docs/index.html` | Signed-in desktop and mobile visual QA |
-| Asset category, staff identity, filters, and compact actions are available | `docs/index.html` | Signed-in asset-tab interaction and screenshot |
-| Purchase candidates and request composer form one workflow | `docs/index.html` | Signed-in purchase-tab interaction and screenshot |
-| Legacy ID adjustment reaches the canonical inventory item | `services/desk-api/src/desk/handlers.js` | `desk-handlers.test.js` regression test |
-| Supply errors use the correct portal label | `docs/index.html` | Source assertion and browser error-path inspection |
-| Monthly tuition exports include summary, student reconciliation, and transaction sheets | `docs/index.html` | Source assertions and signed-in download QA |
-
-## Risks
-
-- Existing free-text asset managers may not match a staff icon; they remain readable as text.
-- Very long purchase messages remain scrollable and copyable; the composer does not truncate stored content.
+## Limitations
+No participant study or production business-operation testing. The user confirmed the daily journal as the default landing workflow. Keyboard native buttons/details, visible focus, current-page state and unclipped navigation are required.
