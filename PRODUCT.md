@@ -11,3 +11,5 @@ Preserve existing authenticated handlers, payroll authorization, unsaved data, p
 
 ## Current request
 Use the supplied intranet as structural and visual guidance: a light navigation rail, quiet surfaces, clear working area. The user confirmed that the daily journal remains the default landing screen.
+
+User confirmed light lime green as brand color; prioritize detailed daily journal, employee workspace, attendance, and clean login in this iteration.

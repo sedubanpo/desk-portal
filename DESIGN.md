@@ -96,3 +96,7 @@ Depth is border-led. Use one soft operational shadow only for panels that float 
 ## Workspace structure — September 2026
 
 `docs/workspace.css`, loaded after legacy styles, is the presentation authority. Use a light 220px sidebar with six desk workflows and two settlement destinations. Daily journal is the user-confirmed landing screen. Keep contextual roster/help in native disclosure and activity collapsed in document flow. At narrow widths navigation stays visible above content. Do not add decorative left accent borders or inset stripes. Preserve semantic status colors and red negative / blue positive payment values.
+
+## Daily journal and login — lime brand refinement
+
+User correction: Desk Portal brand is light lime green. `docs/workspace.css` supplies the lime/olive palette; `docs/login.css` supplies the opaque warm login surface. Favicon is a local lime S mark. Daily journal uses a full-width content-first textarea, horizontal types/templates, and compact report/save footer. DOM follows visual reading order. Clock-in/out controls are 44px high; login inputs and submit 50px. Preserve all disabled states, handlers and semantic financial colors. Use readable dark olive over lime, with no dark left accent stripes.

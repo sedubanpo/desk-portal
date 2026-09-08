@@ -69,7 +69,8 @@ test('production frontend has no Apps Script or direct RTDB transport fallback',
   assert.match(source, /DESK_DAILY_DIRECT_TASK_WRITE_ENABLED = false/);
   assert.match(source, /DESK_DAILY_DIRECT_MEMO_WRITE_ENABLED = false/);
   assert.match(source, /Cloud Run으로 이전되지 않은 기능입니다/);
-  assert.match(source, /Firebase에 등록된 근무자 로그인 ID와 비밀번호/);
+  assert.match(source, /autocomplete="username"/);
+  assert.match(source, /autocomplete="current-password"/);
   assert.doesNotMatch(source, /canFallbackFromDeskFirebaseLogin_/);
   assert.doesNotMatch(source, /verifyDeskLegacyPassword_/);
 });
