@@ -334,3 +334,50 @@ body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status strong { f
 body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status span { display:none; }
 body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status span { display:block; font-size:11px; }
 body.desk-daily-journal-mode .journal-header-tools .desk-journal-date-nav { margin:0; align-items:center; }
+
+/* Dedicated activity rail and full-width management workspaces. */
+body .workspace-nav :is(.desk-subtab,.module-tab) { display:flex; align-items:center; justify-content:flex-start; gap:10px; font-weight:700; }
+body .workspace-nav :is(.desk-subtab,.module-tab) svg { width:18px; height:18px; flex:0 0 18px; margin:0; }
+body.desk-daily-journal-mode .desk-panel[data-desk-panel="dailyJournal"] > .desk-panel-head { justify-content:space-between; align-items:center; }
+body .journal-header-tools { margin-left:auto; justify-content:flex-end; }
+body .journal-workspace:has(.overview-mode),body .journal-workspace:has(.manager-mode) { grid-template-columns:minmax(0,1fr); }
+body .journal-workspace:has(:is(.overview-mode,.manager-mode)) .desk-journal-worker-tabs { max-width:900px; }
+body.desk-daily-journal-mode .journal-review-column .desk-journal-layout.manager-mode { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:20px; }
+body.desk-daily-journal-mode .desk-journal-layout.manager-mode .desk-journal-side { grid-column:1; grid-row:1; }
+body.desk-daily-journal-mode .desk-journal-layout.manager-mode .desk-journal-main { grid-column:2; grid-row:1; }
+body.desk-daily-journal-mode .desk-journal-layout:is(.manager-mode,.overview-mode) .desk-journal-timeline-card { display:none; }
+body.desk-daily-journal-mode #deskJournalTaskEditorCard { padding:22px; border:1px solid #dce5d0; border-radius:12px; background:#fff; box-shadow:none; }
+body.desk-daily-journal-mode #deskJournalTaskEditorCard :is(input,select,textarea) { border-color:#dce5d0; border-radius:6px; }
+body.desk-daily-journal-mode #deskJournalTaskEditorCard .desk-side-title { font-size:17px; font-weight:700; color:#35432b; }
+body.desk-daily-journal-mode .desk-queue-summary { align-items:center; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-staff-avatar { display:inline-flex; width:24px; height:24px; flex:0 0 24px; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-title { font-size:15px; font-weight:700; flex:1 1 180px; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-meta { font-size:13px; font-weight:700; align-items:center; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-meta .desk-staff-name { font-size:13px; font-weight:700; }
+body.desk-daily-journal-mode .desk-queue-due-pill { font-size:12px; }
+body.desk-daily-journal-mode .desk-queue-top { padding:12px 0; }
+@media(min-width:1101px) {
+ body.desk-daily-journal-mode .main { margin-right:310px; }
+ body.desk-daily-journal-mode .main.expense-live-collapsed { margin-right:74px; }
+ body.desk-daily-journal-mode .journal-review-column #deskLiveFeed { position:fixed; inset:80px 12px 14px auto; width:286px; max-height:none; margin:0; padding:20px 14px 14px; z-index:30; border:1px solid #d5dfc5; border-radius:0 12px 12px 12px; background:#f4f7ec; box-shadow:0 5px 20px #35432b08; }
+ body.desk-daily-journal-mode #deskLiveFeed::before { content:""; position:absolute; top:-19px; left:-1px; width:132px; height:19px; border:1px solid #d5dfc5; border-bottom:0; border-radius:9px 16px 0 0; background:#f4f7ec; }
+ body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-head { flex-wrap:wrap; gap:12px; flex-shrink:0; }
+ body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-head-right { display:flex; flex-direction:row; align-items:center; width:100%; justify-content:space-between; }
+ body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-list { flex:1; min-height:0; max-height:none; overflow-y:auto; }
+ body.desk-daily-journal-mode .journal-review-column #deskLiveFeed.collapsed { width:54px; padding:12px 8px; }
+ body.desk-daily-journal-mode #deskLiveFeed.collapsed::before { width:42px; }
+ body.desk-daily-journal-mode #deskLiveFeed.collapsed .desk-live-feed-head > div:first-child { display:none; }
+ body.desk-daily-journal-mode #deskLiveFeed.collapsed .desk-live-feed-head-right { width:auto; }
+}
+@media(max-width:1100px) {
+ body.desk-daily-journal-mode .journal-review-column .desk-journal-layout.manager-mode { grid-template-columns:minmax(0,1fr); }
+ body.desk-daily-journal-mode .desk-journal-layout.manager-mode .desk-journal-main { grid-column:1; grid-row:2; }
+}
+body .sidebar .workspace-nav :is(.desk-subtab,.module-tab,.desk-subtab.active,.module-tab.active) { font-weight:700; gap:10px; }
+body.desk-daily-journal-mode .desk-task-ledger-head { padding:18px 20px; background:#f6f9ef; border-bottom:1px solid #e1e8d6; }
+body.desk-daily-journal-mode .desk-task-ledger-title { font-size:17px; font-weight:700; color:#35432b; }
+body.desk-daily-journal-mode .desk-task-ledger-summary { background:#fff; border-bottom:1px solid #e1e8d6; }
+body.desk-daily-journal-mode .desk-task-ledger-stat strong { color:#435a20; font-size:20px; }
+body.desk-daily-journal-mode .desk-task-ledger-stat.attention strong { color:#a84b20; }
+body.desk-daily-journal-mode .desk-task-ledger-table :is(input,select) { border-color:#dce5d0; border-radius:6px; min-height:36px; }
+body.desk-daily-journal-mode .desk-task-ledger-table th { background:#f4f7ec; color:#566845; }
