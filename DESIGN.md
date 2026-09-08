@@ -100,3 +100,7 @@ Depth is border-led. Use one soft operational shadow only for panels that float 
 ## Daily journal and login — lime brand refinement
 
 User correction: Desk Portal brand is light lime green. `docs/workspace.css` supplies the lime/olive palette; `docs/login.css` supplies the opaque warm login surface. Favicon is a local lime S mark. Daily journal uses a full-width content-first textarea, horizontal types/templates, and compact report/save footer. DOM follows visual reading order. Clock-in/out controls are 44px high; login inputs and submit 50px. Preserve all disabled states, handlers and semantic financial colors. Use readable dark olive over lime, with no dark left accent stripes.
+
+## Daily workbench columns
+
+At desktop width, equal left/right columns: staff selector (four buttons per row; seven staff/utility buttons span two rows) and composer on the left; unresolved queue, records, and collapsible live widget on the right. Under 1000px stack columns. Today roster is visible beneath sidebar navigation, separate from help disclosure. Task statuses and carryover dates are plain metadata, not pills. Brand logo uses a green tint.

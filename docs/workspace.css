@@ -251,3 +251,43 @@ body.desk-daily-journal-mode .desk-journal-side .desk-note-icon-actions button {
   body.desk-daily-journal-mode .desk-memo-action-stack { display: flex; }
   body.desk-daily-journal-mode :is(.desk-task-queue-card,.desk-journal-side .desk-journal-timeline-card) { padding: 16px; }
 }
+
+/* Daily workbench: write on the left, resolve and review on the right. */
+body .brand-logo { filter: grayscale(1) sepia(1) saturate(3) hue-rotate(35deg); }
+body .journal-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; align-items:start; }
+.journal-writing-column,.journal-review-column { min-width:0; display:grid; gap:14px; align-content:start; }
+body.desk-daily-journal-mode .desk-journal-worker-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; padding:0; background:transparent; border:0; }
+body.desk-daily-journal-mode .desk-worker-tab { width:100%; min-width:0; min-height:44px; padding:9px 7px; justify-content:center; border:1px solid #e0e7d4; background:#fff; border-radius:7px; font-size:12px; }
+body.desk-daily-journal-mode .desk-journal-composer { padding:18px; }
+body.desk-daily-journal-mode .desk-journal-composer-head { padding-bottom:10px; }
+body.desk-daily-journal-mode .desk-memo-compose-input { min-height:112px; }
+body.desk-daily-journal-mode .desk-composer-group,body.desk-daily-journal-mode .desk-template-panel { grid-template-columns:minmax(0,1fr); gap:8px; }
+body.desk-daily-journal-mode .desk-type-panel-head,body.desk-daily-journal-mode .desk-template-panel-head { flex-direction:row; justify-content:space-between; align-items:center; }
+body.desk-daily-journal-mode .desk-type-auto-hint { display:inline; margin-left:6px; }
+body.desk-daily-journal-mode .journal-review-column .desk-journal-layout { display:flex; flex-direction:column; gap:14px; }
+body.desk-daily-journal-mode .journal-review-column .desk-journal-main,body.desk-daily-journal-mode .journal-review-column .desk-journal-side { width:100%; min-width:0; }
+body.desk-daily-journal-mode .desk-task-queue-card { padding:16px; }
+body.desk-daily-journal-mode .desk-task-queue-card .desk-card-title-row { margin-bottom:8px; gap:8px; }
+body.desk-daily-journal-mode .desk-task-queue-card .desk-side-sub { font-size:12px; }
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-card { border:0; border-top:1px solid #e5eadd; border-radius:0; margin:0; background:transparent; box-shadow:none; }
+body.desk-daily-journal-mode .desk-queue-top { padding:11px 0; gap:9px; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-title { font-size:13px; line-height:1.5; }
+body.desk-daily-journal-mode .desk-task-status,body.desk-daily-journal-mode .desk-queue-due-pill { border:0; border-radius:0; background:transparent; box-shadow:none; padding:0; min-width:0; font-size:11px; font-weight:500; color:#68735c; }
+body.desk-daily-journal-mode .desk-task-status.pending { color:#8b572b; background:transparent; }
+body.desk-daily-journal-mode .desk-queue-expand-btn { border:0; background:transparent; width:30px; height:32px; }
+body.desk-daily-journal-mode .desk-queue-detail { padding:12px; margin-bottom:10px; background:#f7f9f2; border:0; border-radius:6px; }
+body .journal-review-column .desk-live-feed { position:static; margin:0; padding:16px; width:100%; border:1px solid #dfe6d3; border-radius:10px; }
+body .journal-review-column .desk-live-feed-title { font-size:15px; }
+body .journal-review-column .desk-live-feed-list { max-height:300px; overflow-y:auto; }
+body #sidebarDeskSection .sidebar-card { padding:0; border:0; background:transparent; box-shadow:none; }
+body #sidebarDeskSection h3 { font-size:13px; color:#43552e; margin:0 0 6px; }
+body #sidebarDeskSection .worker-list { display:grid; gap:0; }
+body #sidebarDeskSection .worker-item { padding:10px 0; border:0; border-bottom:1px solid #dfe5d5; border-radius:0; background:transparent; gap:4px; min-height:0; box-shadow:none; }
+body #sidebarDeskSection .worker-item .v { font-size:13px; font-weight:600; }
+body #sidebarDeskSection .worker-item .k,body #sidebarDeskSection .worker-item .sub { font-size:11px; color:#637254; }
+body #sidebarDeskSection .worker-item-progress,body #sidebarDeskSection .percent-badge { display:none; }
+body #sidebarDeskSection .desk-notice { padding:8px 0; border:0; background:transparent; font-size:11px; }
+@media(max-width:1000px) { body .journal-workspace { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:480px) { body.desk-daily-journal-mode .desk-journal-worker-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+body.desk-daily-journal-mode .journal-review-column .desk-journal-timeline-card { min-height:180px; }
+body.desk-daily-journal-mode .journal-review-column .desk-journal-note-list { min-height:0; }

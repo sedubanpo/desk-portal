@@ -17726,8 +17726,6 @@
         <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
         <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab">강사 시수 정산</button>
       </nav>
-      <details class="workspace-support">
-        <summary>오늘의 근무자 · 업무 도움말</summary>
       <div class="sidebar-section" id="sidebarDeskSection">
         <section class="sidebar-card">
           <h3>오늘의 근무자</h3>
@@ -17737,6 +17735,8 @@
         </section>
       </div>
 
+      <details class="workspace-support">
+        <summary>업무 도움말</summary>
       <div class="sidebar-section hidden" id="sidebarDailyAuxSection">
         <section class="sidebar-card desk-daily-user-card">
           <div class="desk-daily-user-avatar">안</div>
@@ -19662,6 +19662,8 @@
                 </div>
               </section>
 
+              <div class="journal-workspace">
+                <div class="journal-writing-column">
               <section class="desk-journal-worker-tabs" id="deskJournalWorkerTabs"></section>
 
               <article class="desk-journal-composer" id="deskJournalMemoEditorCard">
@@ -19750,6 +19752,8 @@
                 </form>
               </article>
 
+                </div>
+                <div class="journal-review-column">
               <section class="desk-journal-layout" id="deskJournalLayout">
                 <div class="desk-journal-main">
                   <article class="desk-editor-card desk-task-queue-card">
@@ -19927,13 +19931,6 @@
                 </div>
 	              </section>
 
-              <div class="desk-journal-pending-list hidden" id="deskJournalPendingList"></div>
-              <div class="desk-notice">일일 업무일지는 근무표와 별도로 Firebase 서버에 저장됩니다. 다른 PC에서도 같은 날짜의 업무 배정, 완료 체크, 현장 기록을 그대로 이어서 볼 수 있습니다.</div>
-            </div>
-          </section>
-        </div>
-      </section>
-      <div class="desk-task-alert-stack" id="deskTaskAssignAlertStack" aria-live="polite" aria-atomic="false"></div>
       <aside class="desk-live-feed" id="deskLiveFeed" aria-live="polite">
         <div class="desk-live-feed-head">
           <div>
@@ -19957,6 +19954,16 @@
         </div>
         <button type="button" class="desk-live-feed-more" id="deskLiveFeedMoreBtn">전체 현황 더보기</button>
       </aside>
+                </div>
+              </div>
+              <div class="desk-journal-pending-list hidden" id="deskJournalPendingList"></div>
+              <div class="desk-notice">일일 업무일지는 근무표와 별도로 Firebase 서버에 저장됩니다. 다른 PC에서도 같은 날짜의 업무 배정, 완료 체크, 현장 기록을 그대로 이어서 볼 수 있습니다.</div>
+            </div>
+          </section>
+        </div>
+      </section>
+      <div class="desk-task-alert-stack" id="deskTaskAssignAlertStack" aria-live="polite" aria-atomic="false"></div>
+
     </main>
   </div>
 
@@ -34382,7 +34389,7 @@
         deskJournalMemoPaginationEl.innerHTML = "";
       }
       if (!pageItems.length) {
-        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 Enter로 바로 저장할 수 있습니다.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
+        deskJournalMemoListEl.innerHTML = '<div class="desk-empty">' + (isWorkerView ? '아직 이 근무자가 남긴 기록이 없습니다. 왼쪽 입력창에서 업무를 작성하고 저장하세요.' : '근무자 탭을 선택하면 입력 기록을 확인할 수 있습니다.') + '</div>';
         syncDeskWorkerDetailTabs_();
         return;
       }
