@@ -291,3 +291,46 @@ body #sidebarDeskSection .desk-notice { padding:8px 0; border:0; background:tran
 @media(max-width:480px) { body.desk-daily-journal-mode .desk-journal-worker-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 body.desk-daily-journal-mode .journal-review-column .desk-journal-timeline-card { min-height:180px; }
 body.desk-daily-journal-mode .journal-review-column .desk-journal-note-list { min-height:0; }
+
+/* Compact toolbar and scan-first daily details. */
+body .journal-header-tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+body.desk-daily-journal-mode .desk-panel[data-desk-panel="dailyJournal"] > .desk-panel-head { flex-wrap:wrap; justify-content:flex-start; gap:14px; }
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-strip { display:flex; padding:0; border:0; background:transparent; gap:0; }
+body .journal-header-tools .desk-attendance-status { display:none; }
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-btn { min-height:36px; }
+body .roster-hours { margin-top:7px; display:grid; gap:4px; }
+.roster-hours-track { height:5px; background:#e1e8d6; border-radius:3px; overflow:hidden; }
+.roster-hours-track span { display:block; height:100%; background:#95b653; border-radius:3px; }
+.roster-hours small { font-size:10px; color:#62734c; text-align:right; }
+body.desk-daily-journal-mode .desk-queue-summary { display:flex; align-items:baseline; flex-wrap:wrap; column-gap:10px; row-gap:3px; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-title { order:2; font-weight:700; flex:1 1 150px; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-meta { order:1; margin:0; display:flex; flex-wrap:nowrap; gap:6px; font-weight:600; }
+body.desk-daily-journal-mode .desk-queue-summary .desk-staff-avatar { display:none; }
+body.desk-daily-journal-mode .desk-queue-top { padding:9px 0; }
+body.desk-daily-journal-mode #deskMemoTypeChips button { display:inline-flex; gap:6px; align-items:center; color:var(--type-ink,#526638); background:var(--type-bg,#f0f5e5); border-color:var(--type-line,#d5e1bd); }
+body.desk-daily-journal-mode #deskMemoTypeChips button.active { outline:2px solid var(--type-ink,#526638); outline-offset:1px; font-weight:700; }
+#deskMemoTypeChips button svg { width:14px; height:14px; }
+#deskMemoTypeChips [data-desk-memo-type="상담"] { --type-ink:#9a4f19; --type-bg:#fff3e7; --type-line:#eed4b9; }
+#deskMemoTypeChips [data-desk-memo-type="시설"] { --type-ink:#316a80; --type-bg:#ecf6fa; --type-line:#c7e0ea; }
+#deskMemoTypeChips [data-desk-memo-type="자료"] { --type-ink:#57429b; --type-bg:#f2eefb; --type-line:#dcd2ee; }
+#deskMemoTypeChips [data-desk-memo-type="학생"] { --type-ink:#236f59; --type-bg:#ebf7f1; --type-line:#c5e5d7; }
+#deskMemoTypeChips [data-desk-memo-type="긴급"] { --type-ink:#b42336; --type-bg:#fff0f2; --type-line:#efcbd1; }
+#deskMemoTypeChips [data-desk-memo-type="수납"] { --type-ink:#336d40; --type-bg:#eff8ea; --type-line:#cfe4c3; }
+#deskMemoTypeChips [data-desk-memo-type="인사"] { --type-ink:#92516e; --type-bg:#fbf0f5; --type-line:#e9d0dc; }
+#deskMemoTypeChips [data-desk-memo-type="개발"] { --type-ink:#3f5b91; --type-bg:#eef3fb; --type-line:#d0dcee; }
+#deskMemoTypeChips [data-desk-memo-type="강사"] { --type-ink:#85611f; --type-bg:#fbf6e9; --type-line:#e7dbb8; }
+body.desk-daily-journal-mode .desk-journal-shared-strip { border:1px solid #dce5cc; border-radius:12px; background:#fff; box-shadow:none; overflow:hidden; }
+body.desk-daily-journal-mode .desk-shared-summary-heading { padding:16px 18px; background:#f1f6e7; }
+body.desk-daily-journal-mode .desk-shared-summary-heading strong { font-size:15px; color:#3c5229; }
+body.desk-daily-journal-mode .desk-shared-summary-task strong { font-size:13px; font-weight:650; color:#35462a; }
+body.desk-daily-journal-mode .desk-shared-summary-task small { color:#68745e; margin-top:4px; line-height:1.5; }
+body.desk-daily-journal-mode .desk-shared-summary-task .desk-badge { background:#edf4df; color:#536c31; border:0; border-radius:4px; padding:4px 7px; }
+body.desk-daily-journal-mode .desk-shared-summary-columns { color:#657453; background:#fafbf7; padding-block:8px; }
+body .journal-review-column .desk-live-feed-list { min-height:80px; }
+@media(max-width:760px) { body .journal-header-tools { width:100%; } body .journal-header-tools .desk-journal-date-nav { flex-wrap:wrap; } }
+
+body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status { margin-top:6px; font-size:11px; }
+body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status strong { font-size:11px; font-weight:500; }
+body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status span { display:none; }
+body.desk-daily-journal-mode .desk-panel-head .desk-attendance-status span { display:block; font-size:11px; }
+body.desk-daily-journal-mode .journal-header-tools .desk-journal-date-nav { margin:0; align-items:center; }

@@ -104,3 +104,5 @@ User correction: Desk Portal brand is light lime green. `docs/workspace.css` sup
 ## Daily workbench columns
 
 At desktop width, equal left/right columns: staff selector (four buttons per row; seven staff/utility buttons span two rows) and composer on the left; unresolved queue, records, and collapsible live widget on the right. Under 1000px stack columns. Today roster is visible beneath sidebar navigation, separate from help disclosure. Task statuses and carryover dates are plain metadata, not pills. Brand logo uses a green tint.
+
+Daily details: roster gauges represent scheduled hours/10 (cap100%, resident excluded); live feed opens by default. Attendance actions follow date navigation, status and errors remain beneath heading. Type buttons use icons and distinct readable hues. Queue identity, carryover date and bold title share a wrapping horizontal line.

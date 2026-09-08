@@ -17723,8 +17723,8 @@
             <button class="desk-subtab" type="button" data-desk-tab="messageTemplates"><i data-lucide="messages-square" aria-hidden="true"></i><span>메시지 템플릿</span></button>
           </section>
         <p class="workspace-nav-label">정산</p>
-        <button class="module-tab" type="button" data-module="tuition">수강료 정산</button>
-        <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab">강사 시수 정산</button>
+        <button class="module-tab" type="button" data-module="tuition"><i data-lucide="wallet" aria-hidden="true"></i>수강료 정산</button>
+        <button class="module-tab" type="button" data-module="teacher" id="teacherModuleTab"><i data-lucide="calculator" aria-hidden="true"></i>강사 시수 정산</button>
       </nav>
       <div class="sidebar-section" id="sidebarDeskSection">
         <section class="sidebar-card">
@@ -19626,22 +19626,26 @@
               <div>
                 <h2 class="desk-panel-title">일일 업무일지</h2>
                 <p class="desk-panel-sub">빠른 기록, 미해결 업무 처리, 보고용 복사를 한 화면에서 처리합니다.</p>
+              <div class="desk-attendance-status"><i data-lucide="scan-line"></i><div><strong id="deskAttendanceTodayTitle">오늘 근태를 확인하는 중입니다.</strong><span id="deskAttendanceTodayMeta">출퇴근 기록은 로그인 계정 기준으로 저장됩니다.</span></div></div>
               </div>
+              <div class="journal-header-tools">
               <div class="desk-journal-date-nav">
                 <button class="desk-nav-btn" id="deskJournalPrevDateBtn" type="button"><i data-lucide="chevron-left"></i><span>전날</span></button>
                 <input id="deskJournalDateInput" class="desk-month-input" type="date">
                 <button class="desk-nav-btn" id="deskJournalNextDateBtn" type="button"><span>다음날</span><i data-lucide="chevron-right"></i></button>
                 <button class="desk-nav-btn accent" id="deskJournalTodayBtn" type="button">오늘</button>
               </div>
-            </header>
             <section class="desk-attendance-strip" id="deskAttendanceStrip">
-              <div class="desk-attendance-status"><i data-lucide="scan-line"></i><div><strong id="deskAttendanceTodayTitle">오늘 근태를 확인하는 중입니다.</strong><span id="deskAttendanceTodayMeta">출퇴근 기록은 로그인 계정 기준으로 저장됩니다.</span></div></div>
+
               <div class="desk-attendance-actions">
                 <button class="desk-attendance-btn primary" id="deskClockInBtn" type="button"><i data-lucide="log-in"></i> 출근</button>
                 <button class="desk-attendance-btn" id="deskClockOutBtn" type="button"><i data-lucide="log-out"></i> 퇴근</button>
                 <button class="desk-attendance-btn" id="openDeskAttendanceCorrectionBtn" type="button"><i data-lucide="clock-arrow-up"></i> 출퇴근 정정 요청</button>
               </div>
             </section>
+              </div>
+            </header>
+
             <div class="desk-journal-shell">
               <section class="desk-journal-statusbar hidden" aria-hidden="true">
                 <span class="hidden" id="deskJournalTaskSummary">0건</span>
@@ -21164,7 +21168,7 @@
           completedTasksExpanded: false,
           workerDetailTab: "memos",
           liveFeedDateKey: "",
-          liveFeedCollapsed: true,
+          liveFeedCollapsed: false,
           liveFeedPage: 1,
           liveFeedPageSize: 10,
           liveFeedLoadedDays: DESK_LIVE_FEED_INITIAL_LOAD_DAYS,
@@ -23169,7 +23173,7 @@
           var normalized = normalizeDeskMemoType_(item, 0);
           var active = normalized.label === (state.desk.daily.memoType || "일반");
           return '<button class="desk-memo-type-chip ' + escapeHtml(getDeskMemoTypeClass_(normalized.label)) + (active ? ' active' : '') + '" type="button" data-desk-memo-type="' + escapeHtml(normalized.label) + '">' +
-            escapeHtml(normalized.label) +
+            '<i data-lucide="' + escapeHtml(getDeskMemoTypeIcon_(normalized.label)) + '" aria-hidden="true"></i>' + escapeHtml(normalized.label) +
           '</button>';
         }).join("");
       }
@@ -29615,6 +29619,7 @@
               '<span class="worker-shift-time">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>' +
             '</div>' +
             '<div class="worker-shift-note">' + escapeHtml(item.note || getDeskToneLabel_(tone)) + '</div>' +
+            (!item.resident && !item.unavailable ? '<div class="roster-hours" aria-label="' + escapeHtml(formatDeskHours_(getDeskShiftDurationHours_(item))) + ' / 기준 10시간"><div class="roster-hours-track"><span style="width:' + Math.min(100, getDeskShiftDurationHours_(item) * 10) + '%"></span></div><small>' + escapeHtml(formatDeskHours_(getDeskShiftDurationHours_(item))) + ' / 10시간</small></div>' : '') +
             '<div class="worker-item-progress">' +
               '<div class="worker-item-progress-track"><div class="worker-item-progress-fill" data-desk-worker-fill></div></div>' +
               '<div class="worker-item-meta-row">' +
