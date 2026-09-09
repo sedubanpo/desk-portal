@@ -109,3 +109,6 @@ Daily details: roster gauges represent scheduled hours/10 (cap100%, resident exc
 
 ## Daily journal rails and management modes (2026-09-08)
 The activity feed is a fixed right-hand folder panel on desktop (over 1100px), with a reserved content gutter and a narrow collapsed tab. At smaller widths it returns to document flow. Date navigation and attendance actions align together at the right of the heading. Overview uses the full workbench width; manager mode puts its editor left and unresolved work right, stacking on smaller screens. Personal mode retains its two-column writing/review layout. Queue identities retain role avatars and use larger bold text; navigation labels are bold with consistent icon spacing. No business-state or persistence behavior changes.
+
+## Shared student gender identities (2026-09-09)
+Student names use students.gender (male/female) and the current sharedIconAssets lookupKey student-gender:male/female imageUrl. Icons are 1.1em capped at20px, with .28em spacing, aligned to the name baseline; no badge background. Unselected/unknown/ambiguous identities omit icons. Assets and student gender updates refresh mounted names through authenticated Firestore subscriptions; logout clears subscriptions and data. Text fields, sorting, exports and message templates retain plain names.

@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
+const genderContext = vm.createContext({});
+vm.runInContext(await readFile(new URL('../../../docs/student-gender-icons.js', import.meta.url), 'utf8'), genderContext);
+
 const frontendPath = new URL('../../../docs/index.html', import.meta.url);
 
 function extractFunction(source, name) {
@@ -315,13 +318,14 @@ function historyHarness(source) {
   const mainA = deferred();
   const mainB = deferred();
   const renders = [];
-  const summary = { textContent: '' };
+  const summary = { innerHTML: '' };
   const list = { innerHTML: '' };
   const state = { tuition: {} };
   const openTuitionStudentHistoryModal = loadFunction(source, 'openTuitionStudentHistoryModal_', {
     state,
     formatStudentName: (name) => String(name || '').trim(),
     tuitionStudentHistorySummaryEl: summary,
+    renderStudentIdentityHtml_: genderContext.StudentGenderIcons.render,
     tuitionStudentHistoryListEl: list,
     tuitionStudentHistoryModalEl: { style: {} },
     renderTuitionStudentMemoPanel_: () => {},
@@ -365,7 +369,7 @@ test('a late student-history failure cannot replace the current student with an 
   harness.mainA.reject(new Error('A unavailable'));
   await nextTurn();
 
-  assert.equal(harness.summary.textContent.includes('A · 조회 실패'), false);
+  assert.equal(harness.summary.innerHTML.includes('조회 실패'), false);
   assert.equal(harness.list.innerHTML.includes('A unavailable'), false);
   assert.deepEqual(harness.renders.map((item) => item.name), ['B']);
 });
