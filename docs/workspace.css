@@ -427,3 +427,70 @@ body #moduleTeacher .att-etc { background:#edf0e8; color:#626f54; }
 .payroll-subject-buttons svg { width:15px; height:15px; flex:0 0 15px; }
 body #moduleTeacher #printPayslipBtn { display:inline-flex; align-items:center; justify-content:center; gap:7px; }
 body #moduleTeacher #printPayslipBtn svg { width:16px; height:16px; }
+
+/* Payroll calendar, revenue and hourly detail: shared operational hierarchy. */
+body #moduleTeacher .payroll-visual-layout { align-items:start; gap:16px; }
+body #moduleTeacher .payroll-visual-layout > .panel { min-width:0; padding:16px; border-radius:12px; }
+body #moduleTeacher .payroll-visual-layout .panel-head { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--ds-border); gap:8px; flex-wrap:wrap; }
+body #moduleTeacher .calendar-grid { gap:6px; }
+body #moduleTeacher .week-head { padding:8px 0; font-size:12px; font-weight:700; color:var(--ds-muted); background:var(--ds-bg-subtle); border-radius:4px; }
+body #moduleTeacher .day-cell { min-width:0; padding:8px; gap:4px; border:1px solid var(--ds-border); border-radius:8px; background:var(--ds-bg-panel); box-shadow:none; font-variant-numeric:tabular-nums; }
+body #moduleTeacher .day-cell.day-has-work { background:var(--ds-bg-subtle); border-color:#d3dfba; box-shadow:none; }
+body #moduleTeacher .day-cell.active { background:#edf4db; border-color:var(--ds-primary); outline:1px solid var(--ds-primary); box-shadow:none; }
+body #moduleTeacher .day-cell[data-date-key]:hover { border-color:var(--ds-primary); }
+body #moduleTeacher .day-cell:focus-visible { outline:2px solid var(--ds-primary); outline-offset:2px; }
+body #moduleTeacher .day-empty { border:0; background:transparent; }
+body #moduleTeacher .day-top { margin-bottom:4px; flex-wrap:wrap; }
+body #moduleTeacher .day-num { font-size:15px; color:var(--ds-fg); }
+body #moduleTeacher .day-hour { background:#ddecad; color:var(--ds-primary-strong); border-radius:4px; font-size:11px; padding:2px 4px; }
+body #moduleTeacher .day-sale { font-size:11px; line-height:1.45; overflow-wrap:anywhere; letter-spacing:0; }
+body #moduleTeacher .day-sale.sales { font-weight:800; }
+body #moduleTeacher .day-hourly-viz { height:12px; padding:1px; border:0; border-radius:3px; margin-block:4px; }
+body #moduleTeacher .hour-col.on { background:var(--ds-primary); }
+body #moduleTeacher .type-wrap { gap:3px; padding-top:6px; }
+body #moduleTeacher .type-chip { border-radius:4px; padding:2px 4px; font-size:10px; white-space:normal; }
+body #moduleTeacher .day-detail { margin-top:16px; padding:16px 0 0; border:0; border-top:1px solid var(--ds-border); border-radius:0; background:transparent; }
+body #moduleTeacher .day-detail-title { font-size:14px; color:var(--ds-fg); margin-bottom:12px; }
+body #moduleTeacher .day-detail-summary { background:var(--ds-bg-subtle); border:0; padding:12px; gap:12px; }
+body #moduleTeacher .day-detail-sum-value { font-size:14px; font-variant-numeric:tabular-nums; }
+body #moduleTeacher .day-detail-item { border:0; border-bottom:1px solid var(--ds-border-soft); border-radius:0; padding:12px 0; margin:0; flex-wrap:wrap; }
+body #moduleTeacher .day-detail-item > div { min-width:0; }
+body #moduleTeacher .day-detail-main { font-size:13px; }
+body #moduleTeacher .day-detail-sub { line-height:1.6; overflow-wrap:anywhere; }
+body #moduleTeacher .day-detail-meta { font-size:12px; }
+body #moduleTeacher .chart-wrap { height:340px; padding:8px 0; }
+body #moduleTeacher .type-finance-wrap { margin-top:16px; border-color:var(--ds-border); border-radius:8px; }
+body #moduleTeacher :is(.type-finance-head,.type-finance-row) { padding:10px 12px; gap:8px; font-size:12px; line-height:1.5; font-variant-numeric:tabular-nums; }
+body #moduleTeacher .type-finance-head { background:var(--ds-bg-subtle); color:var(--ds-muted); }
+body #moduleTeacher :is(.type-finance-head,.type-finance-row) > span:not(:first-child) { text-align:right; overflow-wrap:anywhere; }
+body #moduleTeacher .day-time-rail { margin-top:20px; padding:16px 0 0; border:0; border-top:1px solid var(--ds-border); border-radius:0; }
+body #moduleTeacher .time-rail-title { font-size:14px; color:var(--ds-fg); margin-bottom:12px; }
+body #moduleTeacher .time-rail-kpi { gap:8px; margin-bottom:20px; }
+body #moduleTeacher .time-rail-kpi .summary-chip { border:0; border-radius:6px; background:var(--ds-bg-subtle); padding:8px 10px; color:var(--ds-fg); font-size:12px; font-variant-numeric:tabular-nums; }
+body #moduleTeacher .time-rail-kpi .summary-chip:last-child { background:#edf4db; color:var(--ds-primary-strong); }
+body #moduleTeacher .time-rail-layout { grid-template-columns:64px minmax(0,1fr); gap:12px; padding-top:8px; }
+body #moduleTeacher .time-axis { border:0; border-radius:0; background:transparent; overflow:visible; }
+body #moduleTeacher .time-axis-label { left:0; font-size:11px; color:var(--ds-muted); white-space:nowrap; }
+body #moduleTeacher .time-grid { background:var(--ds-bg-subtle); border-color:var(--ds-border); border-radius:6px; }
+body #moduleTeacher .time-grid-events { min-height:0; left:6px; right:0; }
+body #moduleTeacher .time-event { border:1px solid #cbdc9c; border-radius:6px; background:#edf4db; color:var(--ds-primary-strong); box-shadow:none; padding:8px; overflow:auto; }
+body #moduleTeacher .time-event.ev-cancel { background:#ffedeb; border-color:#edc5bf; color:#aa463b; }
+body #moduleTeacher .time-event.ev-late { background:#fff3db; border-color:#ead7ae; color:#956118; }
+body #moduleTeacher .time-event.ev-supp { background:#eaf2fc; border-color:#cadcf1; color:#446ba0; }
+body #moduleTeacher .time-event.ev-gap { background:var(--ds-bg-subtle); border:1px dashed var(--ds-muted); color:var(--ds-muted); }
+body #moduleTeacher .time-event-title { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+body #moduleTeacher .time-event-sub { font-size:11px; line-height:1.5; opacity:1; overflow-wrap:anywhere; }
+body #moduleTeacher .time-event-range { margin-block:4px; font-variant-numeric:tabular-nums; }
+body #moduleTeacher .time-rail-gaps { grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; border:0; border-radius:6px; padding:12px; background:var(--ds-bg-subtle); }
+body #moduleTeacher .time-gap-title { margin:0 4px 0 0; font-size:12px; }
+body #moduleTeacher .time-gap-item { margin:0; padding:0; border:0; background:transparent; font-size:12px; }
+@media(max-width:1200px) { body #moduleTeacher .payroll-visual-layout { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) {
+  body #moduleTeacher .payroll-visual-layout > .panel { padding:10px; }
+  body #moduleTeacher .calendar-grid { gap:3px; }
+  body #moduleTeacher .day-cell { padding:4px; }
+  body #moduleTeacher .day-sale { font-size:10px; }
+  body #moduleTeacher .day-detail-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body #moduleTeacher .time-rail-layout { grid-template-columns:52px minmax(0,1fr); gap:6px; }
+  body #moduleTeacher .time-event { padding:4px; }
+}

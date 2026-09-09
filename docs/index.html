@@ -17915,7 +17915,7 @@
         <button class="refresh-btn" id="printPayslipBtn" type="button"><i data-lucide="printer" aria-hidden="true"></i><span>급여 내역서 출력</span></button>
       </section>
 
-      <section class="layout">
+      <section class="layout payroll-visual-layout">
         <article class="panel">
           <header class="panel-head">
             <h2 class="panel-title">월별 캘린더 시수</h2>
@@ -43769,7 +43769,7 @@ window.SeduHubAdapter={
               '<div class="day-sale hourly-pay">일급 ' + formatWon(day.settlementAmount || 0) + '</div>')
             : ('<div class="day-sale settlement">정산 ' + formatWon(day.settlementAmount || 0) + "</div>");
           html += '' +
-            '<div class="day-cell' + workClass + activeClass + '" data-date-key="' + escapeHtml(day.dateKey) + '">' +
+            '<div class="day-cell' + workClass + activeClass + '" role="button" tabindex="0" aria-pressed="' + (state.selectedDateKey === day.dateKey) + '" aria-label="' + escapeHtml(day.dateKey + ' 상세 수업 보기') + '" data-date-key="' + escapeHtml(day.dateKey) + '">' +
               '<div class="day-top">' +
                 '<span class="day-num">' + day.day + "</span>" +
                 '<span class="day-hour">' + formatHours(day.recognizedHours || 0) + 'h</span>' +
@@ -43785,10 +43785,18 @@ window.SeduHubAdapter={
       grid.innerHTML = html;
 
       Array.prototype.forEach.call(grid.querySelectorAll(".day-cell[data-date-key]"), function(cell) {
+        cell.addEventListener("keydown", function(event) {
+          if (event.key === "Enter" || event.key === " ") { event.preventDefault(); cell.click(); }
+        });
         cell.addEventListener("click", function() {
+          var restoreFocus = document.activeElement === cell;
           state.selectedDateKey = cell.dataset.dateKey || "";
           renderDerivedViews();
           renderCalendar(calendarData);
+          if (restoreFocus) {
+            var selectedCell = grid.querySelector('.day-cell.active');
+            if (selectedCell) selectedCell.focus({ preventScroll: true });
+          }
         });
       });
     }
@@ -43914,7 +43922,7 @@ window.SeduHubAdapter={
 
       if (!list.length) return "";
       var startMin = Math.floor(list[0].start / 60) * 60;
-      var endMin = Math.ceil(list[list.length - 1].end / 60) * 60;
+      var endMin = Math.ceil(Math.max.apply(null, list.map(function(item) { return item.end; })) / 60) * 60;
       if (endMin - startMin < 240) endMin = startMin + 240;
       var pxPerHour = 64;
       var totalHeight = Math.max(240, Math.round(((endMin - startMin) / 60) * pxPerHour));
@@ -43947,6 +43955,7 @@ window.SeduHubAdapter={
         var toneClass = getTimeEventToneClass(item.attendanceCode, item.recognized);
         return '<div class="time-event ' + toneClass + '" style="top:' + top + '%;height:' + Math.max(height, 8) + '%;left:' + left + '%;width:calc(' + width + '% - 8px);">' +
           '<div class="time-event-title">' + renderStudentIdentityHtml_(item.student) + escapeHtml(" · " + item.classType) + '</div>' +
+          '<div class="time-event-sub time-event-range">' + escapeHtml(formatTimeRangeByMinutes(item.start, item.end)) + '</div>' +
           '<div class="time-event-sub">' + escapeHtml(item.className) + '</div>' +
           '<div class="time-event-sub">' + escapeHtml(item.attendanceCode + (item.recognized ? " · 인정" : " · 미인정")) + '</div>' +
         '</div>';
@@ -44577,8 +44586,8 @@ window.SeduHubAdapter={
               label: "총매출",
               data: chartData.grossSales || [],
               yAxisID: "yWon",
-              backgroundColor: "rgba(15, 126, 83, 0.28)",
-              borderColor: "rgba(15, 126, 83, 0.75)",
+              backgroundColor: "#ddecad",
+              borderColor: "#cbdc9c",
               borderWidth: 1,
               borderRadius: 5
             },
@@ -44587,10 +44596,10 @@ window.SeduHubAdapter={
               label: "순매출",
               data: chartData.netSales || [],
               yAxisID: "yWon",
-              borderColor: "#0f6a4d",
-              backgroundColor: "rgba(15, 106, 77, 0.15)",
-              pointBackgroundColor: "#0f6a4d",
-              pointRadius: 3,
+              borderColor: "#526a25",
+              backgroundColor: "rgba(112,139,48,0.06)",
+              pointBackgroundColor: "#526a25",
+              pointRadius: 2,
               pointHoverRadius: 4,
               tension: 0.32,
               fill: true
@@ -44612,10 +44621,11 @@ window.SeduHubAdapter={
           maintainAspectRatio: false,
           interaction: { mode: "index", intersect: false },
           plugins: {
-            legend: { position: "top", labels: { boxWidth: 12, usePointStyle: true, font: { size: 11, weight: "700" } } }
+            legend: { position: "top", align: "start", labels: { padding: 16, color: "#48556b", boxWidth: 10, usePointStyle: true, font: { size: 12, weight: "700" } } },
+            tooltip: { backgroundColor: "#293449", padding: 12, cornerRadius: 8, titleFont: { size: 13 }, bodyFont: { size: 12 }, callbacks: { label: function(context) { return context.dataset.label + ": " + (context.dataset.yAxisID === "yHour" ? formatHours(context.parsed.y) + "h" : formatWon(context.parsed.y)); } } }
           },
           scales: {
-            x: { grid: { color: "rgba(148, 163, 184, 0.15)" } },
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 12, color: "#5e6b80" } },
             yWon: {
               position: "left",
               grid: { color: "rgba(148, 163, 184, 0.2)" },
