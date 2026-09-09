@@ -766,3 +766,20 @@ test('desk navigation returns from settlement even when the remembered desk tab 
   click();
   assert.equal(renders, 1, 'already selected desk workflow should not re-render');
 });
+
+test('payroll amount changes parse grouped won and reject malformed or negative input', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const start = source.indexOf('var key = String(event.target.dataset.amountRowKey');
+  const end = source.indexOf('savePayrollOverridesAndRefresh_();', start) + 'savePayrollOverridesAndRefresh_();'.length;
+  assert.ok(start > 0 && end > start);
+  const state = { amountOverrides: {} }; let saves = 0;
+  const apply = vm.runInNewContext('(function(event){' + source.slice(start,end) + '})', {
+    state, toNumber: (value, fallback) => Number(value) || fallback,
+    savePayrollOverridesAndRefresh_: () => saves++
+  });
+  const target = {dataset:{amountRowKey:'row',baseAmount:'100000'},value:'225,000'};
+  apply({target});assert.equal(state.amountOverrides.row,225000);assert.equal(target.value,'225,000');
+  target.value='100,000';apply({target});assert.equal(state.amountOverrides.row,undefined);
+  for (const value of ['-1','abc','12,34','', '1e5','1234,567','9'.repeat(400),'9007199254740993']) {target.value=value;apply({target});assert.equal(target.value,'100,000');}
+  assert.equal(saves,2);
+});

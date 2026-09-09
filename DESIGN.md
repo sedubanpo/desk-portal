@@ -112,3 +112,6 @@ The activity feed is a fixed right-hand folder panel on desktop (over 1100px), w
 
 ## Shared student gender identities (2026-09-09)
 Student names use students.gender (male/female) and the current sharedIconAssets lookupKey student-gender:male/female imageUrl. Icons are 1.1em capped at20px, with .28em spacing, aligned to the name baseline; no badge background. Unselected/unknown/ambiguous identities omit icons. Assets and student gender updates refresh mounted names through authenticated Firestore subscriptions; logout clears subscriptions and data. Text fields, sorting, exports and message templates retain plain names.
+
+## Payroll controls (2026-09-09)
+Five compact subject buttons use distinct muted colors and line icons; repeated selection clears the subject filter. Existing native select models remain authoritative behind custom month/teacher/detail pickers, with searchable teacher lists, Escape/arrow-key support and outside-click dismissal. Salary actions follow the lime palette. Attendance colors retain semantic labels and add symbols. Detail rows use stronger typography; editable won amounts display grouped digits but persist numeric values, rejecting malformed input. No salary formulas change.

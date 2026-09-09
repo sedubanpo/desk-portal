@@ -17896,8 +17896,8 @@
         <div class="field">
           <label>급여 방식</label>
           <div class="mode-wrap">
-            <button class="mode-btn active" type="button" id="modeRatioBtn">비율제</button>
-            <button class="mode-btn" type="button" id="modeHourlyBtn">시급제</button>
+            <button class="mode-btn active" type="button" id="modeRatioBtn"><span aria-hidden="true">%</span> 비율제</button>
+            <button class="mode-btn" type="button" id="modeHourlyBtn"><span aria-hidden="true">◷</span> 시급제</button>
           </div>
         </div>
         <div class="field" id="ratioField">
@@ -17912,7 +17912,7 @@
           <label>추가 정보</label>
           <div class="message" id="salaryGuide">비율제: 인정 순매출 x 50%</div>
         </div>
-        <button class="refresh-btn" id="printPayslipBtn" type="button">급여 내역서 출력</button>
+        <button class="refresh-btn" id="printPayslipBtn" type="button"><i data-lucide="printer" aria-hidden="true"></i><span>급여 내역서 출력</span></button>
       </section>
 
       <section class="layout">
@@ -20839,6 +20839,7 @@
   </div>
 
   <script src="./student-gender-icons.js"></script>
+<script defer src="./payroll-controls.js"></script>
 <script>
     var DESK_CLOUD_API_BASE = "https://desk-portal-api-furtzykzmq-du.a.run.app";
     var DESK_FIREBASE_CONFIG = {
@@ -43877,7 +43878,7 @@ window.SeduHubAdapter={
           return '' +
             '<div class="day-detail-item">' +
               '<div>' +
-                '<div class="day-detail-badges"><span class="attendance-badge ' + badgeClass + '">' + escapeHtml(row.attendanceCode) + "</span></div>" +
+                '<div class="day-detail-badges"><span class="attendance-badge ' + badgeClass + '">' + renderPayrollAttendanceLabel_(row.attendanceCode) + "</span></div>" +
                 '<div class="day-detail-main">' + escapeHtml(row.className) + "</div>" +
                 '<div class="day-detail-sub">' +
                   '학생: ' + renderStudentIdentityHtml_(row.name || '-') +
@@ -44406,7 +44407,7 @@ window.SeduHubAdapter={
       var original = Math.round(toNumber(row.originalAmount, row.amount));
       var badge = row.amountManuallyOverridden ? '<span class="rate-adjust-badge">수동</span>' : "";
       return '<span class="payroll-amount-edit-wrap">' +
-        '<input class="payroll-amount-input" type="number" min="0" step="1000" inputmode="numeric" aria-label="' + escapeHtml(formatStudentName(row.name)) + ' 금액" data-amount-row-key="' + escapeHtml(row.rowKey) + '" data-base-amount="' + escapeHtml(String(original)) + '" value="' + escapeHtml(String(Math.round(toNumber(value, 0)))) + '">' +
+        '<input class="payroll-amount-input" type="text" inputmode="numeric" aria-label="' + escapeHtml(formatStudentName(row.name)) + ' 금액" data-amount-row-key="' + escapeHtml(row.rowKey) + '" data-base-amount="' + escapeHtml(String(original)) + '" value="' + escapeHtml(Math.round(toNumber(value, 0)).toLocaleString("en-US")) + '">' +
         badge +
       '</span>';
     }
@@ -44474,7 +44475,7 @@ window.SeduHubAdapter={
             '<td data-col="status"><span class="status-badge ' + statusClass + '">' + escapeHtml(row.recognitionLabel) + "</span></td>" +
             '<td data-col="recog"><label class="free-toggle"><input class="recognition-check" type="checkbox" data-row-key="' +
               escapeHtml(row.rowKey) + '" data-base-recognized="' + (row.baseRecognized ? "1" : "0") + '" ' + checked + '>인정</label></td>' +
-            '<td data-col="attendance"><span class="attendance-badge ' + attendanceClass + '">' + escapeHtml(row.attendanceCode) + "</span></td>" +
+            '<td data-col="attendance"><span class="attendance-badge ' + attendanceClass + '">' + renderPayrollAttendanceLabel_(row.attendanceCode) + "</span></td>" +
             '<td data-col="date">' + escapeHtml(row.classDateLabel) + "</td>" +
             '<td data-col="student">' + renderStudentIdentityHtml_(row.name) + "</td>" +
             '<td data-col="className">' + escapeHtml(row.className) + "</td>" +
@@ -44532,12 +44533,13 @@ window.SeduHubAdapter={
         input.addEventListener("change", function(event) {
           var key = String(event.target.dataset.amountRowKey || "");
           var raw = String(event.target.value || "").trim();
-          var value = Math.round(toNumber(raw, -1));
+          var value = /^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)$/.test(raw) ? Number(raw.replace(/,/g, "")) : -1;
           var base = Math.round(toNumber(event.target.dataset.baseAmount, 0));
-          if (!key || raw === "" || value < 0) {
-            event.target.value = String(base);
+          if (!key || raw === "" || !Number.isSafeInteger(value) || value < 0) {
+            event.target.value = base.toLocaleString("en-US");
             return;
           }
+          event.target.value = value.toLocaleString("en-US");
           if (value === base) delete state.amountOverrides[key];
           else state.amountOverrides[key] = value;
           savePayrollOverridesAndRefresh_();
@@ -44630,6 +44632,11 @@ window.SeduHubAdapter={
           }
         }
       });
+    }
+
+    function renderPayrollAttendanceLabel_(code) {
+      var symbols = {"출석":"✓", "지각":"◷", "당일취소":"×", "결석예고":"◴", "결석":"−", "프리":"☆", "보강":"↻", "결석보강":"↻"};
+      return '<span aria-hidden="true">' + (symbols[code] || "•") + '</span> ' + escapeHtml(code);
     }
 
     function getAttendanceBadgeClass(code) {
