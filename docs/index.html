@@ -42712,7 +42712,7 @@ window.SeduHubAdapter={
           groups.forEach(function(group) {
             var list = (group.teachers || []).slice().sort(function(a, b) { return a.localeCompare(b, "ko"); });
             if (!list.length) return;
-            html += '<tr class="settings-group-row"><td colspan="8">' + escapeHtml(group.subject || "기타") + ' · ' + list.length + '명</td></tr>';
+            html += '<tr class="settings-group-row"><td colspan="8">' + renderPayrollIdentity_(group.subject || "기타", true) + ' · ' + list.length + '명</td></tr>';
             list.forEach(function(name) {
               html += buildSettingsTeacherRowHtml(name, teacherSubjectMap[name] || (group.subject || "기타"));
             });
@@ -42742,6 +42742,29 @@ window.SeduHubAdapter={
       return map;
     }
 
+    function renderPayrollIdentity_(name, subject) {
+      var paths = subject ? {
+        '국어': '<path d="M3 5c3-1 6-1 9 1 3-2 6-2 9-1v14c-3-1-6-1-9 1-3-2-6-2-9-1zM12 6v14"/>',
+        '영어': '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18"/>',
+        '수학': '<path d="M5 7h6M8 4v6M15 6h5M5 16l5 5m0-5-5 5M15 16h5m-5 4h5"/>',
+        '과학': '<path d="M9 3h6m-5 0v6l-6 10a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3M7 15h10"/>',
+        '사회': '<path d="m3 9 9-6 9 6H3m2 3v7m7-7v7m7-7v7M3 21h18"/>'
+      } : null;
+      var key = /국어/.test(name) ? '국어' : /영어/.test(name) ? '영어' : /수학/.test(name) ? '수학' : /과학|물리|화학|생명|지학/.test(name) ? '과학' : '사회';
+      var path = subject ? paths[key] : '<circle cx="12" cy="8" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3M4 3h16"/>';
+      return '<span class="payroll-identity ' + (subject ? 'payroll-subject-label' : 'payroll-teacher-label') + '"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' + escapeHtml(name || '미지정') + '</span>';
+    }
+
+    function renderPayrollHourDots_(value) {
+      var hours = Math.max(0, Number(value) || 0);
+      if (!Number.isFinite(hours)) hours = 0;
+      var dots = '';
+      for (var i = 0; i < Math.min(24, Math.ceil(hours)); i++) {
+        dots += '<span class="payroll-hour-dot" style="--fill:' + Math.round(Math.min(1, hours - i) * 100) + '%"></span>';
+      }
+      return '<span class="payroll-hours" aria-label="' + formatHours(hours) + '시간"><span class="payroll-hour-dots" aria-hidden="true">' + dots + '</span><span aria-hidden="true">' + formatHours(hours) + 'h</span></span>';
+    }
+
     function buildSettingsTeacherRowHtml(name, subject) {
       var cfg = (state.teacherSettings || {})[name] || {};
       var paidMap = cfg.paidByMonth || {};
@@ -42754,8 +42777,8 @@ window.SeduHubAdapter={
 
       return '' +
       '<tr data-teacher-row="' + escapeHtml(name) + '">' +
-        '<td><span class="teacher-chip"><span class="dot"></span>' + escapeHtml(name) + '</span></td>' +
-        '<td>' + escapeHtml(subject || "기타") + '</td>' +
+        '<td>' + renderPayrollIdentity_(name, false) + '</td>' +
+        '<td>' + renderPayrollIdentity_(subject || "기타", true) + '</td>' +
         '<td><select class="modal-select" data-f-key="salaryMode"><option value="ratio"' + (mode === "ratio" ? " selected" : "") + '>비율제</option><option value="hourly"' + (mode === "hourly" ? " selected" : "") + '>시급제</option></select></td>' +
         '<td><div class="settings-hourly-wrap" style="' + (mode === "hourly" ? "" : "display:none;") + '"><input class="modal-input" data-f-key="hourlyRate" type="number" min="0" step="1000" value="' + escapeHtml(hourlyValue) + '"><div class="settings-inline-note">시급제 선택 시만 사용</div></div></td>' +
         '<td><select class="modal-select" data-f-key="oneToOneSettlementMode"><option value="hourly"' + (oneToOneMode === "hourly" ? " selected" : "") + '>시급 포함</option><option value="ratio"' + (oneToOneMode === "ratio" ? " selected" : "") + '>비율 전환</option></select></td>' +
@@ -44488,11 +44511,11 @@ window.SeduHubAdapter={
             '<td data-col="date">' + escapeHtml(row.classDateLabel) + "</td>" +
             '<td data-col="student">' + renderStudentIdentityHtml_(row.name) + "</td>" +
             '<td data-col="className">' + escapeHtml(row.className) + "</td>" +
-            '<td data-col="subject">' + escapeHtml(row.subject) + "</td>" +
+            '<td data-col="subject">' + renderPayrollIdentity_(row.subject, true) + "</td>" +
             '<td data-col="classType">' + escapeHtml(row.classType) + "</td>" +
-            '<td data-col="teacher">' + escapeHtml(row.teacher) + "</td>" +
+            '<td data-col="teacher">' + renderPayrollIdentity_(row.teacher, false) + "</td>" +
             '<td data-col="timeRange">' + escapeHtml(row.start + " ~ " + row.end) + "</td>" +
-            '<td data-col="hours">' + formatHours(row.hours) + "</td>" +
+            '<td data-col="hours">' + renderPayrollHourDots_(row.hours) + "</td>" +
             '<td data-col="rate">' + rateCell + "</td>" +
             '<td data-col="settlementPercent">' + settlementPercentCell + "</td>" +
             '<td data-col="amount">' + amountCell + "</td>" +
@@ -44586,8 +44609,8 @@ window.SeduHubAdapter={
               label: "총매출",
               data: chartData.grossSales || [],
               yAxisID: "yWon",
-              backgroundColor: "#ddecad",
-              borderColor: "#cbdc9c",
+              backgroundColor: "#e2e5e9",
+              borderColor: "#cbd1d8",
               borderWidth: 1,
               borderRadius: 5
             },
@@ -44596,9 +44619,9 @@ window.SeduHubAdapter={
               label: "순매출",
               data: chartData.netSales || [],
               yAxisID: "yWon",
-              borderColor: "#526a25",
-              backgroundColor: "rgba(112,139,48,0.06)",
-              pointBackgroundColor: "#526a25",
+              borderColor: "#738092",
+              backgroundColor: "rgba(115,128,146,0.04)",
+              pointBackgroundColor: "#738092",
               pointRadius: 2,
               pointHoverRadius: 4,
               tension: 0.32,

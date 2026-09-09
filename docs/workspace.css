@@ -429,20 +429,61 @@ body #moduleTeacher #printPayslipBtn { display:inline-flex; align-items:center; 
 body #moduleTeacher #printPayslipBtn svg { width:16px; height:16px; }
 
 /* Payroll calendar, revenue and hourly detail: shared operational hierarchy. */
+body #moduleTeacher, body #settingsModal { font-family:"Segoe UI", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-variant-numeric:lining-nums tabular-nums; }
+body :is(#moduleTeacher,#settingsModal) :is(input,select,button,.value) { font-family:inherit; font-variant-numeric:lining-nums tabular-nums; letter-spacing:normal; }
+body #moduleTeacher #kpiNetSales { color:#b73535; }
+body #moduleTeacher #kpiPay { color:#245fc4; }
+body #moduleTeacher .payroll-visual-layout { --ds-bg-subtle:#f5f6f8; --ds-primary:#64748b; --ds-primary-strong:#475569; }
+.payroll-identity { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; font-size:12px; font-weight:600; line-height:1.5; }
+.payroll-identity svg { width:16px; height:16px; flex:none; }
+.payroll-teacher-label { padding:5px 8px; border:1px solid #dfe5ed; border-radius:6px; background:#f1f4f8; color:#405574; }
+.payroll-subject-label { color:#5b687a; }
+.payroll-hours { display:inline-flex; flex-direction:column; align-items:flex-start; gap:5px; color:#526176; font-size:11px; }
+.payroll-hour-dots { display:flex; flex-wrap:wrap; gap:3px; max-width:69px; }
+.payroll-hour-dot { width:6px; height:6px; border-radius:50%; background:linear-gradient(to right,#71839b var(--fill),#e4e8ee var(--fill)); }
+body #settingsModal { padding:24px; background:rgba(30,41,59,.35); backdrop-filter:blur(4px); }
+body #settingsModal .modal-box { width:min(1180px,100%); max-height:calc(100dvh - 48px); padding:24px; border:1px solid #e1e5ec; border-radius:16px; box-shadow:0 20px 70px rgba(30,41,59,.16); }
+body #settingsModal .modal-head { padding-bottom:20px; margin-bottom:0; }
+body #settingsModal .modal-title { font-size:22px; letter-spacing:-.025em; color:#293449; }
+body #settingsModal .modal-sub { margin-top:6px; font-size:13px; color:#667387; line-height:1.6; }
+body #settingsModal .modal-tabbar { gap:6px; padding:6px; margin-bottom:20px; background:#f2f4f7; border:0; border-radius:10px; }
+body #settingsModal .modal-tab-btn { padding:10px 14px; border:0; background:transparent; color:#667387; border-radius:7px; }
+body #settingsModal .modal-tab-btn.active { color:#293449; background:#fff; box-shadow:0 1px 4px #29344914; }
+body #settingsModal .modal-table-wrap { border:1px solid #e4e8ee; border-radius:10px; }
+body #settingsModal .modal-table th { background:#f7f8fa; color:#667387; padding:12px; font-size:12px; }
+body #settingsModal .modal-table td { padding:12px; border-bottom:1px solid #edf0f4; }
+body #settingsModal .settings-group-row td { background:#eef1f5; color:#48556b; font-weight:700; padding:10px 12px; }
+body #settingsModal :is(.modal-input,.modal-select) { min-height:36px; border:1px solid #dce2ea; border-radius:7px; background:#fff; color:#36445a; padding:7px 9px; font-size:13px; }
+body #settingsModal .check-inline { border:0; background:#f5f6f8; padding:8px; border-radius:6px; }
+body #settingsModal .account-toggle-btn { border:0; background:#eef2f7; border-radius:6px; padding:6px 9px; color:#405574; }
+body #settingsModal .modal-foot { position:sticky; bottom:-24px; padding:16px 0; margin-top:20px; background:#fff; border-top:1px solid #e4e8ee; z-index:2; }
+body #moduleTeacher .table-panel { border:1px solid #e1e5ec; border-radius:12px; background:#fff; }
+body #moduleTeacher :is(.table-head,.table-tabs,.table-tools,.payroll-amount-bulk-tool,.table-filter-row) { background:#fff; padding:14px 16px; border-bottom:1px solid #e9edf2; }
+body #moduleTeacher .table-title { font-size:16px; }
+body #moduleTeacher .hint-bubble { display:none; }
+body #moduleTeacher .table-tools { gap:6px; background:#fafbfc; }
+body #moduleTeacher .table-tools label { border:0; border-radius:5px; background:transparent; color:#64748b; padding:5px 7px; }
+body #moduleTeacher .table-tools label:has(input:checked) { background:#eaf0f7; color:#405574; }
+body #moduleTeacher .table-panel :is(th,td) { border-bottom:1px solid #edf0f4; }
+body #moduleTeacher .table-panel th { background:#f4f6f8; color:#667387; padding-block:12px; }
+body #moduleTeacher .table-panel tbody tr { background:#fff; }
+body #moduleTeacher .table-panel tbody tr:nth-child(even) { background:#fafbfc; }
+body #moduleTeacher .table-panel tbody tr:hover { background:#f0f4f8; }
+@media(max-width:600px) { body #settingsModal { padding:8px; } body #settingsModal .modal-box { padding:16px; max-height:calc(100dvh - 16px); } body #settingsModal .modal-tabbar { flex-wrap:wrap; } }
 body #moduleTeacher .payroll-visual-layout { align-items:start; gap:16px; }
 body #moduleTeacher .payroll-visual-layout > .panel { min-width:0; padding:16px; border-radius:12px; }
 body #moduleTeacher .payroll-visual-layout .panel-head { margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--ds-border); gap:8px; flex-wrap:wrap; }
 body #moduleTeacher .calendar-grid { gap:6px; }
 body #moduleTeacher .week-head { padding:8px 0; font-size:12px; font-weight:700; color:var(--ds-muted); background:var(--ds-bg-subtle); border-radius:4px; }
 body #moduleTeacher .day-cell { min-width:0; padding:8px; gap:4px; border:1px solid var(--ds-border); border-radius:8px; background:var(--ds-bg-panel); box-shadow:none; font-variant-numeric:tabular-nums; }
-body #moduleTeacher .day-cell.day-has-work { background:var(--ds-bg-subtle); border-color:#d3dfba; box-shadow:none; }
-body #moduleTeacher .day-cell.active { background:#edf4db; border-color:var(--ds-primary); outline:1px solid var(--ds-primary); box-shadow:none; }
+body #moduleTeacher .day-cell.day-has-work { background:#f6f7f9; border-color:#e1e4e8; box-shadow:none; }
+body #moduleTeacher .day-cell.active { background:#e9edf2; border-color:#738092; outline:1px solid #738092; box-shadow:none; }
 body #moduleTeacher .day-cell[data-date-key]:hover { border-color:var(--ds-primary); }
 body #moduleTeacher .day-cell:focus-visible { outline:2px solid var(--ds-primary); outline-offset:2px; }
 body #moduleTeacher .day-empty { border:0; background:transparent; }
 body #moduleTeacher .day-top { margin-bottom:4px; flex-wrap:wrap; }
 body #moduleTeacher .day-num { font-size:15px; color:var(--ds-fg); }
-body #moduleTeacher .day-hour { background:#ddecad; color:var(--ds-primary-strong); border-radius:4px; font-size:11px; padding:2px 4px; }
+body #moduleTeacher .day-hour { background:#e5e9ee; color:#48556b; border-radius:4px; font-size:11px; padding:2px 4px; }
 body #moduleTeacher .day-sale { font-size:11px; line-height:1.45; overflow-wrap:anywhere; letter-spacing:0; }
 body #moduleTeacher .day-sale.sales { font-weight:800; }
 body #moduleTeacher .day-hourly-viz { height:12px; padding:1px; border:0; border-radius:3px; margin-block:4px; }
