@@ -20376,7 +20376,7 @@
   </div>
 
   <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-box">
+    <div class="loading-box" role="status" aria-live="polite"><div class="portal-loading-mark" aria-hidden="true"><img src="./favicon.svg" alt=""><span></span></div>
       <div class="loading-label" id="loadingText">정산 데이터를 계산 중입니다...</div>
       <div class="loading-bar-track"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
       <div class="loading-sub">잠시만 기다려 주세요</div>
@@ -33757,7 +33757,6 @@
                 '<span class="desk-live-feed-worker">' + escapeHtml(item.worker || "-") + '</span>' +
                 seqHtml +
               '</div>' +
-              '<span class="desk-live-feed-edit" aria-hidden="true"><i data-lucide="pencil"></i></span>' +
             '</div>' +
             '<div class="desk-live-feed-content">' + escapeHtml(item.content || "-") + '</div>' +
           '</div>' +
@@ -45111,26 +45110,10 @@ window.SeduHubAdapter={
 
     function setLoading(isLoading, text) {
       loadingOverlayEl.style.display = isLoading ? "flex" : "none";
+      loadingOverlayEl.setAttribute("aria-busy", String(!!isLoading));
       loadingTextEl.textContent = text || "처리 중입니다...";
-      if (isLoading) {
-        loadingProgressValue = 10;
-        loadingBarFillEl.style.width = loadingProgressValue + "%";
-        if (loadingProgressTimer) clearInterval(loadingProgressTimer);
-        loadingProgressTimer = setInterval(function() {
-          loadingProgressValue += (loadingProgressValue < 70 ? 8 : 2);
-          if (loadingProgressValue > 92) loadingProgressValue = 92;
-          loadingBarFillEl.style.width = loadingProgressValue + "%";
-        }, 180);
-      } else {
-        if (loadingProgressTimer) {
-          clearInterval(loadingProgressTimer);
-          loadingProgressTimer = null;
-        }
-        loadingBarFillEl.style.width = "100%";
-        setTimeout(function() {
-          loadingBarFillEl.style.width = "0%";
-        }, 180);
-      }
+      if (loadingProgressTimer) clearInterval(loadingProgressTimer);
+      loadingProgressTimer = null;
     }
 
     function showClientMessage(message) {

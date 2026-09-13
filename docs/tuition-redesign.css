@@ -245,3 +245,9 @@ body #moduleTuition .tr-recent-panel {min-height:0;}
 
 @media(min-width:761px){.tr-collection-report{padding:24px}.tr-collection-report>header{padding-bottom:14px}.tr-report-body{grid-template-columns:240px 1fr;padding:20px 0!important;gap:24px}.tr-report-ring{width:220px;height:220px;padding:18px}.tr-report-ring strong{font-size:40px}.tr-status-report{padding:16px 0}.tr-status-report header{display:block;border:0;padding:0}.tr-status-report header p{margin:5px 0 10px}.tr-status-report li{padding:6px 0}.tr-collection-report footer{padding:12px 16px}.tr-collection-report footer div{margin-bottom:7px}}
 .tuition-cal-day-line .tr-method-logo,.tuition-cal-day-line .tr-detail-icon{width:16px;height:16px;margin-right:3px}
+
+/* Shared soft-lime actions; financial amount colors retain their meaning. */
+body #moduleTuition :is(.tuition-month-grid button.active,.tuition-action-btn.primary,.tuition-log-page-btn.active,#tuitionRefreshBtn,.tuition-table [data-pay-student]),
+body :is(#tuitionPaymentModal,#tuitionContactModal) .modal-action.primary,
+.tr-popover footer .tr-primary { background:var(--portal-action-bg); color:var(--portal-action-ink); border-color:var(--portal-action-border); box-shadow:none; font-weight:700; }
+body #moduleTuition :is(.tuition-action-btn.primary,#tuitionRefreshBtn,.tuition-table [data-pay-student]):hover:not(:disabled) {background:var(--portal-action-hover);color:var(--portal-action-ink);}

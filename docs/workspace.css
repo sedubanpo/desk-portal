@@ -561,3 +561,18 @@ body.desk-daily-journal-mode .journal-header-tools .desk-attendance-btn { displa
 body.desk-daily-journal-mode .journal-header-tools .desk-attendance-btn :is(svg,i) { display:block; width:17px; height:17px; flex:0 0 17px; margin:0; }
 body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-bubble { background:var(--desk-feed-bg,#f1f5f9); color:var(--desk-feed-fg,#334155); border:1px solid var(--desk-card-border,#d6dee8); border-left:3px solid var(--desk-worker-accent,#64748b); border-radius:8px; padding:10px; }
 body.desk-daily-journal-mode #deskLiveFeed :is(.desk-live-feed-worker,.desk-live-feed-content) { color:var(--desk-feed-fg,#334155); }
+
+:root { --portal-action-bg:#ddecad; --portal-action-hover:#d0e49a; --portal-action-ink:#35491b; --portal-action-border:#c6d897; }
+body .loading-overlay { background:rgba(244,247,236,.78); backdrop-filter:blur(5px); }
+body .loading-box { width:min(360px,calc(100vw - 40px)); padding:30px 24px; border:1px solid #e0e8d2; border-radius:24px; background:#fff; text-align:center; box-shadow:0 12px 40px #35491b12; }
+body .loading-label { color:#35432b; font-size:15px; line-height:1.6; font-weight:700; }
+body .loading-sub { color:#67705f; margin-top:8px; font-size:12px; }
+body .loading-bar-track { display:none; }
+.portal-loading-mark { height:94px; display:grid; justify-items:center; align-content:start; padding-top:6px; }
+.portal-loading-mark img { width:54px; height:54px; border-radius:16px; animation:portal-hop 1.15s cubic-bezier(.36,0,.24,1) infinite; }
+.portal-loading-mark span { width:32px; height:5px; margin-top:13px; border-radius:50%; background:#dce8bf; animation:portal-shadow 1.15s ease-in-out infinite; }
+@keyframes portal-hop { 0%,100% {transform:translateY(0) rotate(-3deg)} 45% {transform:translateY(-12px) rotate(4deg)} 70% {transform:translateY(0) scale(1.04,.96)} }
+@keyframes portal-shadow { 0%,100% {transform:scaleX(1);opacity:.8} 45% {transform:scaleX(.65);opacity:.4} }
+@media(prefers-reduced-motion:reduce) { .portal-loading-mark img,.portal-loading-mark span {animation:none} }
+body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-bubble { border:1px solid var(--desk-card-border,#d6dee8); padding:12px; border-radius:10px; }
+body .desk-worker-detail-tab.active { background:var(--portal-action-bg); color:var(--portal-action-ink); border-color:var(--portal-action-border); box-shadow:none; font-weight:700; }
