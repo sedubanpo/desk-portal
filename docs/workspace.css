@@ -535,3 +535,12 @@ body #moduleTeacher .time-gap-item { margin:0; padding:0; border:0; background:t
   body #moduleTeacher .time-rail-layout { grid-template-columns:52px minmax(0,1fr); gap:6px; }
   body #moduleTeacher .time-event { padding:4px; }
 }
+
+/* Approved tuition workspace palette, September 2026. */
+#moduleTuition, .payment-link-dialog, .tr-drawer, #tuitionContactModal, #tuitionPaymentModal, #tuitionAmountAdjustModal {
+  --tr-ink:#142b49; --tr-muted:#60758d; --tr-green:#087653; --tr-green-dark:#065c43;
+  --tr-line:#dfe9ed; --tr-soft:#f5f9fa; --tr-bg:#f4f9f7; --tr-white:#fff;
+  --tr-unguided:#f5f7fa; --tr-guided:#fff9e8; --tr-check:#fff0e5;
+  --tr-paid:#f1fbf6; --tr-partial:#f1f6ff; --tr-danger:#c73446;
+  --tr-radius:12px; --tr-shadow:0 8px 24px rgba(23,69,54,.05);
+}

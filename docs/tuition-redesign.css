@@ -1,0 +1,153 @@
+/* Layout follows the approved student-first tuition reference. Tokens: workspace.css. */
+body #moduleTuition .tuition-shell {background:var(--tr-bg);padding:0;gap:10px;border:0;box-shadow:none;color:var(--tr-ink);font-size:13px;}
+body #moduleTuition .tuition-page-head {background:var(--tr-white);border:1px solid var(--tr-line);border-bottom:0;border-radius:var(--tr-radius) var(--tr-radius) 0 0;padding:20px 20px 10px;margin:0;}
+body #moduleTuition .tuition-page-title {font-size:25px;color:var(--tr-ink);letter-spacing:-.8px;line-height:1.3;}
+body #moduleTuition .tuition-page-sub {font-size:12px;margin-top:5px;color:var(--tr-muted);}
+body #moduleTuition .tuition-sync-note {display:flex;align-items:center;gap:12px;font-size:11px;color:var(--tr-muted);}
+.tr-sync {border:1px solid #ccebdc;background:var(--tr-paid);color:var(--tr-green);border-radius:20px;padding:7px 10px;white-space:nowrap;}
+body #moduleTuition .tuition-topbar {display:flex;flex-wrap:wrap;gap:14px;background:var(--tr-white);border:1px solid var(--tr-line);border-top:0;border-radius:0 0 var(--tr-radius) var(--tr-radius);padding:8px 20px 16px;margin-top:-10px;box-shadow:var(--tr-shadow);}
+body #moduleTuition .tuition-month-browser {display:grid;grid-template-columns:130px minmax(300px,1fr) minmax(170px,250px) auto;align-items:center;width:100%;gap:12px;}
+body #moduleTuition .tuition-month-browser-head {display:contents;}
+body #moduleTuition .tuition-month-browser-label {display:none;}
+body #moduleTuition .tuition-year-nav {grid-column:1;grid-row:1;gap:8px;}
+body #moduleTuition .tuition-month-grid {grid-column:2;grid-row:1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:3px;margin:0;}
+body #moduleTuition .tuition-month-grid button {padding:8px 1px;min-width:0;font-size:11px;border-radius:5px;min-height:34px;}
+body #moduleTuition .tuition-month-grid button.active {background:var(--tr-green);color:white;border-color:var(--tr-green);}
+body #moduleTuition .tuition-month-search {grid-column:3;grid-row:1;min-width:0;height:36px;border:1px solid var(--tr-line);border-radius:6px;}
+body #moduleTuition .tuition-month-search input {font-size:12px;}
+body #moduleTuition .tuition-month-create-btn {grid-column:4;grid-row:2;width:auto;justify-self:end;}
+body #moduleTuition .tuition-month-create-btn::after {content:'다음 달 시작';font-size:11px;}
+body #moduleTuition .tuition-topbar>.field {display:flex;align-items:center;gap:12px;flex:0 1 240px;margin-left:auto;}
+body #moduleTuition .tuition-topbar>.field label {white-space:nowrap;margin:0;font-size:12px;}
+body #moduleTuition .tuition-topbar>.field select {min-height:34px;}
+body #moduleTuition .tuition-topbar-actions {display:flex;gap:8px;flex:none;}
+body #moduleTuition button,body #moduleTuition select {font:inherit;}
+body #moduleTuition .tuition-topbar-actions button {min-height:35px;padding:8px 12px;border:1px solid var(--tr-green);border-radius:6px;box-shadow:none;background:var(--tr-white);color:var(--tr-green);font-size:12px;}
+body #moduleTuition #tuitionRefreshBtn {background:var(--tr-green);color:white;}
+body #moduleTuition .tuition-ops-status {order:20;margin:0;background:transparent;border:0;padding:5px 12px;}
+body #moduleTuition .tuition-cards {display:grid;grid-template-columns:repeat(4,minmax(100px,1fr)) repeat(2,minmax(158px,1.35fr)) 90px;gap:8px;padding:16px;background:var(--tr-white);border:1px solid var(--tr-line);border-radius:var(--tr-radius);}
+body #moduleTuition .tuition-metric-card {display:flex;align-items:center;gap:10px;border:1px solid var(--tr-line);border-radius:8px;padding:15px 10px;min-height:86px;box-shadow:none;}
+body #moduleTuition .tuition-metric-card .label {font-size:11px;color:var(--tr-ink);font-weight:650;}
+body #moduleTuition .tuition-metric-card .value {font-size:21px;color:var(--tr-ink);font-weight:750;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+body #moduleTuition .tuition-metric-card .meta {font-size:10px;color:var(--tr-muted);margin-top:3px;}
+body #moduleTuition .tuition-metric-icon {width:36px;height:36px;flex:0 0 36px;border:0;border-radius:50%;background:#e7faf1;color:var(--tr-green);}
+body #moduleTuition .tuition-metric-icon.blue {background:#eef4ff;color:#386edc;}
+body #moduleTuition .tuition-metric-icon.warn {background:#fff3e8;color:#e27329;}
+body #moduleTuition .tuition-money-row {display:block;}
+body #moduleTuition .tuition-outstanding-side {font-size:10px;border:0;background:none;padding:0;color:var(--tr-muted);margin-top:4px;}
+body #moduleTuition .tuition-unpaid-btn {padding:0;min-height:0;border:0;background:none;font-size:10px;color:var(--tr-green);text-decoration:underline;}
+.tr-rate {width:76px;height:76px;border-radius:50%;background:conic-gradient(var(--tr-green) var(--rate,0%),#e4eced 0);align-self:center;justify-self:center;padding:8px;box-sizing:border-box;}
+.tr-rate>div {border-radius:50%;background:white;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.tr-rate small {font-size:9px;color:var(--tr-muted);}.tr-rate strong {font-size:13px;}
+body #moduleTuition .tuition-action-frame {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:4px;border:1px solid var(--tr-line);border-radius:9px;background:white;}
+body #moduleTuition .tuition-action-btn {display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;border-radius:6px;border:0;color:var(--tr-ink);background:white;font-size:12px;box-shadow:none;}
+body #moduleTuition .tuition-action-btn.primary {background:var(--tr-green);color:white;}
+body #moduleTuition .tuition-action-btn svg {width:17px;height:17px;}
+body #moduleTuition .table-panel {border:1px solid var(--tr-line);border-radius:var(--tr-radius);box-shadow:var(--tr-shadow);background:white;padding:16px;min-height:0!important;overflow:visible;}
+body #moduleTuition .table-head {border:0;padding:0 0 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+body #moduleTuition .table-title {font-size:16px;color:var(--tr-ink);}
+body #moduleTuition .desk-muted {font-size:11px;color:var(--tr-muted);margin-top:5px;}
+body #moduleTuition .meta-bar {margin-left:auto;}
+.tr-table-tools {display:flex;gap:8px;align-items:center;}
+body #moduleTuition .tr-table-tools select,body #moduleTuition .tr-table-tools summary,body #moduleTuition .meta-bar button,.tr-filter-anchor>button {border:1px solid var(--tr-line);border-radius:6px;background:white;color:var(--tr-ink);padding:8px 10px;font-size:11px;cursor:pointer;}
+.tr-columns {position:relative;}.tr-columns>div {position:absolute;z-index:6;right:0;top:36px;width:160px;padding:12px;border:1px solid var(--tr-line);border-radius:8px;background:white;box-shadow:var(--tr-shadow);}.tr-columns label {display:block;padding:6px;}
+.tr-list-summary {display:flex;flex-wrap:wrap;gap:18px;padding:11px 12px;border:1px solid var(--tr-line);border-radius:7px 7px 0 0;font-size:11px;}.tr-list-summary span:last-child {margin-left:auto;color:var(--tr-muted);}
+body #moduleTuition .tuition-table-wrap {max-height:none;overflow:auto;border:1px solid var(--tr-line);border-top:0;border-radius:0 0 7px 7px;}
+body #moduleTuition .tuition-table {width:100%;min-width:1060px;border-collapse:collapse;table-layout:auto;}
+body #moduleTuition .tuition-table th {background:var(--tr-soft);padding:12px 9px;font-size:11px;color:var(--tr-ink);font-weight:650;white-space:nowrap;border-bottom:1px solid var(--tr-line);}
+body #moduleTuition .tuition-table td {padding:9px;font-size:12px;color:var(--tr-ink);border-bottom:1px solid var(--tr-line);height:46px;box-sizing:border-box;}
+body #moduleTuition .tuition-table tr.tuition-row-unguided td {background:var(--tr-unguided);}
+body #moduleTuition .tuition-table tr.tuition-row-guided td {background:var(--tr-guided);}
+body #moduleTuition .tuition-table tr.tuition-row-check td {background:var(--tr-check);}
+body #moduleTuition .tuition-table tr.tuition-row-paid td {background:var(--tr-paid);}
+body #moduleTuition .tuition-table tr.tuition-row-partial td {background:var(--tr-partial);}
+body #moduleTuition .tuition-table tr:hover td {box-shadow:inset 0 0 0 999px rgba(12,82,60,.025);}
+body #moduleTuition .tuition-table th:nth-child(3),body #moduleTuition .tuition-table th:nth-child(4),body #moduleTuition .tuition-table th:nth-child(5) {text-align:right;}
+body #moduleTuition .tuition-student-cell {min-width:105px;gap:0;}
+body #moduleTuition .tuition-student-primary-line {gap:5px;flex-wrap:nowrap;}
+body #moduleTuition .tuition-name-link {text-decoration:none;font-size:12px;}
+body #moduleTuition .student-gender-icon,body #moduleTuition .identity-fallback {border-radius:50%;width:28px;height:28px;flex-basis:28px;}
+body #moduleTuition .tuition-student-hide-btn {opacity:.6;width:23px;height:23px;}
+body #moduleTuition .tuition-school-cell {white-space:nowrap;}
+body #moduleTuition .school-identity {gap:8px;}
+body #moduleTuition .tuition-amount-cell {display:flex;justify-content:flex-end;min-width:80px;padding:0;border:0;background:transparent;box-shadow:none;text-align:right;}
+body #moduleTuition .tuition-amount-copy .k {display:none;}
+body #moduleTuition .tuition-amount-cell .v {font-size:12px;font-weight:550;color:var(--tr-ink);font-variant-numeric:tabular-nums;}
+body #moduleTuition .tuition-amount-cell.outstanding .v {color:var(--tr-danger);}
+body #moduleTuition .tuition-amount-cell svg {display:none;}
+body #moduleTuition .tuition-col-contact {min-width:110px;max-width:140px;}
+body #moduleTuition .tuition-contact-last {font-size:11px;gap:3px;}
+body #moduleTuition .tuition-contact-last svg {display:none;}
+body #moduleTuition .tuition-contact-memo {max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;}
+body #moduleTuition .tuition-table .act-btn {border:1px solid var(--tr-line);border-radius:5px;background:white;color:var(--tr-green);box-shadow:none;font-size:11px;padding:6px 9px;min-height:30px;white-space:nowrap;}
+body #moduleTuition .tuition-table [data-pay-student] {color:white;background:var(--tr-green);border-color:var(--tr-green);}
+body #moduleTuition .tuition-table [data-pay-student] svg {width:13px;height:13px;}
+body #moduleTuition .tuition-table [data-status-select-student] {font-size:11px;padding:5px 3px;min-height:28px;border:1px solid var(--tr-line);border-radius:5px;max-width:90px;}
+body #moduleTuition .tuition-table [data-status-save-student] {font-size:10px;background:white;border:1px solid var(--tr-line);color:var(--tr-green);padding:4px;border-radius:4px;}
+.tr-student-pagination {display:flex;align-items:center;justify-content:center;gap:6px;padding-top:14px;font-size:11px;}
+.tr-student-pagination button {border:1px solid var(--tr-line);border-radius:5px;min-width:30px;min-height:30px;background:white;color:var(--tr-ink);cursor:pointer;}
+.tr-student-pagination button[aria-current] {background:var(--tr-green);color:white;border-color:var(--tr-green);}
+.tr-student-pagination button:disabled {opacity:.4;cursor:default;}.tr-student-pagination>span {color:var(--tr-muted);margin-left:8px;}
+.tr-support {padding:12px;border:1px solid var(--tr-line);border-radius:8px;background:white;}.tr-support summary {cursor:pointer;color:var(--tr-muted);font-size:12px;}.tr-support .tuition-layout {margin-top:12px;}
+body #moduleTuition .tr-inline-report {position:static;inset:auto;background:none;padding:0;z-index:auto;align-items:stretch;justify-content:stretch;width:100%;height:auto;}
+body #moduleTuition .tr-inline-report>.tuition-wide-modal {width:100%;max-width:none!important;max-height:none;overflow:visible;border:1px solid var(--tr-line);box-shadow:none;margin:0;padding:20px;border-radius:10px;}
+#moduleTuition [hidden],.tr-drawer [hidden] {display:none!important;}
+.tr-hide-school .tuition-school-cell,.tr-hide-school .tuition-table th:nth-child(2),.tr-hide-contact .tuition-table td:nth-child(7),.tr-hide-contact .tuition-table th:nth-child(7),.tr-hide-count .tuition-table td:nth-child(8),.tr-hide-count .tuition-table th:nth-child(8) {display:none;}
+.tr-filter-anchor {position:relative;grid-column:4;grid-row:1;}
+.tr-popover {position:absolute;right:0;top:44px;z-index:50;width:300px;max-width:calc(100vw - 48px);padding:18px;border:1px solid var(--tr-line);border-radius:10px;background:white;box-shadow:0 12px 40px #193c2926;}
+.tr-popover-title {display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.tr-popover-title button {border:0;background:none;color:var(--tr-green);font-size:11px;}
+.tr-filter-grid {display:grid;grid-template-columns:1fr 1fr;gap:14px;}.tr-filter-grid label {display:flex;flex-direction:column;gap:7px;font-size:12px;}.tr-filter-grid select,.tr-filter-grid input {box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--tr-line);border-radius:6px;padding:8px;background:white;color:var(--tr-ink);font-size:12px;}.tr-filter-grid select:disabled {background:var(--tr-soft);color:var(--tr-muted);cursor:not-allowed;}.tr-filter-grid small {color:var(--tr-muted);font-size:10px;}.tr-span {grid-column:1/-1;}
+.tr-popover footer {display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}.tr-popover footer button,.tr-section-heading button,.tr-receipts button {border:1px solid var(--tr-line);border-radius:6px;padding:7px 12px;background:white;color:var(--tr-green);cursor:pointer;}.tr-popover footer .tr-primary {background:var(--tr-green);color:white;}.tr-filter-error {font-size:12px;color:var(--tr-danger);}
+body .tr-drawer {padding:0;justify-content:flex-end;background:rgba(13,32,47,.22);}
+body .tr-drawer>.tuition-wide-modal {width:490px;max-width:min(490px,100vw)!important;height:100dvh;max-height:100dvh;border-radius:12px 0 0 12px;padding:24px;box-sizing:border-box;background:white;box-shadow:-12px 0 40px #18302415;overflow:auto;color:var(--tr-ink);}
+.tr-drawer .tuition-wide-title {font-size:19px;}.tr-drawer .tuition-wide-title .student-identity {display:flex;align-items:center;gap:12px;}.tr-drawer .tuition-wide-title img {width:40px;height:40px;}
+.tr-drawer .tuition-history-tabs {display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--tr-line);padding:0;margin:18px 0;}
+.tr-drawer .tuition-history-tab {font-size:12px;padding:10px 8px;border:0;border-radius:0;background:white;color:var(--tr-muted);box-shadow:none;}.tr-drawer .tuition-history-tab.active {color:var(--tr-green);border-bottom:2px solid var(--tr-green);background:white;}.tr-drawer .tuition-history-tab:disabled {font-size:10px;opacity:.65;}
+.tr-drawer-kpis {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}.tr-drawer-kpis>div {padding:15px 10px;border:1px solid var(--tr-line);background:var(--tr-soft);border-radius:7px;}.tr-drawer-kpis small {display:block;color:var(--tr-muted);font-size:11px;}.tr-drawer-kpis strong {display:block;font-size:16px;margin-top:8px;font-variant-numeric:tabular-nums;}
+.tr-section-heading {display:flex;justify-content:space-between;align-items:center;margin:22px 0 10px;font-size:13px;}.tr-section-heading button {font-size:12px;}
+.tr-receipts article {display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--tr-line);}.tr-receipts strong {font-size:14px;}.tr-receipts small {display:block;color:var(--tr-muted);margin-top:5px;font-size:11px;}
+.tr-empty {text-align:center;color:var(--tr-muted);padding:30px 8px;font-size:13px;}.tr-muted {color:var(--tr-muted);font-size:12px;}
+.tr-contact-entry {display:grid;grid-template-columns:1fr auto;gap:8px;padding:16px 0;border-bottom:1px solid var(--tr-line);}.tr-contact-entry time {font-size:11px;color:var(--tr-muted);}.tr-contact-entry p {grid-column:1/-1;margin:0;font-size:13px;white-space:pre-wrap;}.tr-contact-entry small {grid-column:1/-1;color:var(--tr-muted);font-size:11px;}.tr-channel {color:var(--tr-green);background:var(--tr-paid);border-radius:5px;padding:3px 7px;font-size:11px;}.tr-actor {display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:var(--tr-soft);margin-right:6px;}
+.tr-drawer .tuition-history-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}.tr-drawer .tuition-history-item {display:block;}.tr-drawer .tuition-history-item .right {display:none;}
+body #tuitionPaymentModal>.modal-box,body #tuitionContactModal>.modal-box {max-width:600px!important;border-radius:12px;padding:24px;box-shadow:0 12px 50px #142b4926;}
+body #tuitionPaymentModal .modal-head,body #tuitionContactModal .modal-head {padding:0 0 16px;margin-bottom:16px;border-bottom:1px solid var(--tr-line);}
+body #tuitionPaymentModal .tuition-modal-grid,body #tuitionContactModal .tuition-modal-grid {gap:13px;}
+body #tuitionPaymentModal .field label,body #tuitionContactModal .field label {font-size:12px;color:var(--tr-ink);}
+body #tuitionPaymentModal .tuition-choice-btn,body #tuitionContactModal .tuition-choice-btn {padding:8px;min-height:36px;box-shadow:none;font-size:12px;}
+body #tuitionPaymentModal .tuition-choice-btn svg,body #tuitionContactModal .tuition-choice-btn svg {width:16px;height:16px;}
+body #tuitionPaymentModal .modal-action.primary,body #tuitionContactModal .modal-action.primary {background:var(--tr-green);color:white;border-color:var(--tr-green);box-shadow:none;}
+.tr-assistant-details {margin-top:16px;color:var(--tr-muted);font-size:12px;}.tr-assistant-details summary {cursor:pointer;}.tr-assistant-details .tuition-assistant {margin-top:12px;}
+#moduleTuition :focus-visible,.tr-drawer :focus-visible,#tuitionContactModal :focus-visible,#tuitionPaymentModal :focus-visible {outline:2px solid var(--tr-green);outline-offset:3px;}
+@media(max-width:1400px){body #moduleTuition .tuition-cards {grid-template-columns:repeat(4,minmax(110px,1fr));}body #moduleTuition .tuition-metric-card:nth-child(5),body #moduleTuition .tuition-metric-card:nth-child(6){grid-column:span 1;}body #moduleTuition .tr-rate {grid-column:span 2;}body #moduleTuition .tuition-month-browser {grid-template-columns:130px minmax(300px,1fr) auto;}body #moduleTuition .tuition-month-search {grid-column:1/3;grid-row:2;}body #moduleTuition .tr-filter-anchor {grid-column:3;grid-row:2;}body #moduleTuition .tuition-month-create-btn{grid-column:3;grid-row:1;}}
+@media(max-width:760px){body #moduleTuition .tuition-page-head{padding:16px;display:block;}body #moduleTuition .tuition-sync-note{margin-top:10px;flex-wrap:wrap;}body #moduleTuition .tuition-topbar{padding:10px 16px;gap:10px;}body #moduleTuition .tuition-month-browser{grid-template-columns:1fr auto;}body #moduleTuition .tuition-year-nav{grid-column:1;grid-row:1;}body #moduleTuition .tuition-month-grid{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(6,1fr);}body #moduleTuition .tuition-month-create-btn{grid-column:2;grid-row:1;}body #moduleTuition .tuition-month-search{grid-column:1;grid-row:3;}body #moduleTuition .tr-filter-anchor{grid-column:2;grid-row:3;}body #moduleTuition .tuition-topbar>.field{margin-left:0;flex:1 1 100%;}body #moduleTuition .tuition-topbar-actions{flex-wrap:wrap;width:100%;}body #moduleTuition .tuition-topbar-actions button{flex:1;font-size:11px;}body #moduleTuition .tuition-cards{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;}body #moduleTuition .tuition-metric-card{padding:12px 8px;gap:7px;}body #moduleTuition .tuition-metric-card .value{font-size:17px;}body #moduleTuition .tuition-metric-icon{width:28px;height:28px;flex-basis:28px;}body #moduleTuition .tuition-action-frame{display:flex;overflow:auto;}body #moduleTuition .tuition-action-btn{flex:0 0 auto;padding:10px;}body #moduleTuition .table-panel{padding:10px;}body #moduleTuition .tr-table-tools{flex-wrap:wrap;}body #moduleTuition .meta-bar{margin-left:0;}body #moduleTuition .tr-list-summary{gap:8px;}body #moduleTuition .tr-list-summary span:last-child{margin-left:0;}body .tr-drawer>.tuition-wide-modal{border-radius:0;padding:18px;}body #tuitionPaymentModal>.modal-box,body #tuitionContactModal>.modal-box{padding:18px;} .tr-drawer-kpis strong{font-size:14px;}}
+.payment-link-dialog {--ds-primary:var(--tr-green);--ds-fg:var(--tr-ink);width:min(1060px,calc(100vw - 32px));border-color:var(--tr-line);box-shadow:0 20px 70px #10263926;}
+.payment-link-dialog header {padding:22px 24px;}.payment-link-dialog header h2 {font-size:20px;}
+.payment-link-file {position:relative;display:flex;flex-direction:column;justify-content:center;gap:8px;text-align:center;background:var(--tr-soft);border:1px dashed #bacdd3;min-height:140px;padding:20px;}
+.payment-link-file strong {font-size:16px;color:var(--tr-ink);}.payment-link-file>span:not(.payment-link-upload-icon),.payment-link-file small {color:var(--tr-muted);font-weight:400;font-size:12px;}.payment-link-upload-icon {font-size:30px;line-height:1;color:var(--tr-green);}
+.payment-link-file input {font-size:12px;}.payment-link-file input::file-selector-button {border:1px solid var(--tr-line);background:white;border-radius:5px;padding:6px 10px;color:var(--tr-green);cursor:pointer;}
+.payment-link-summary {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 10px;}.payment-link-summary:empty {display:none;}.payment-link-summary>span {border:1px solid var(--tr-line);border-radius:6px;padding:9px 12px;color:var(--tr-muted);font-size:12px;}.payment-link-summary strong {margin-left:6px;color:var(--tr-ink);}
+.payment-link-result-filter {display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0;font-size:12px;}.payment-link-result-filter>span {overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--tr-muted);max-width:60%;}
+.payment-link-dialog:has([data-preview]:empty) .payment-link-result-filter {display:none;}
+.payment-link-table {max-height:36vh;}.payment-link-table td {font-size:12px;}.payment-link-table tr[data-result=review] td {background:var(--tr-check);}.payment-link-table tr[data-result=duplicate] td {color:var(--tr-muted);}.payment-link-table tr[data-result=ready] td {background:var(--tr-paid);}
+.payment-link-dialog button:disabled {opacity:1;color:#8696a6;background:#f3f6f7;border-color:#e4ebee;cursor:not-allowed;}.payment-link-dialog select:disabled {color:#708092;opacity:1;background:#f4f7f8;}
+.payment-link-dialog footer {position:sticky;bottom:0;background:white;padding-bottom:8px;}.payment-link-dialog [data-stop] {margin-right:auto;}.payment-link-dialog [data-save]:disabled {background:#e5ece8;color:#728779;border-color:#e5ece8;}
+@media(min-width:1101px) and (max-width:1400px){body #moduleTuition .tuition-cards{grid-template-columns:repeat(4,minmax(90px,1fr)) repeat(2,minmax(140px,1.35fr)) 76px;}body #moduleTuition .tuition-cards .tr-rate{grid-column:auto;}body #moduleTuition .tuition-metric-card{gap:7px;padding:12px 8px;}body #moduleTuition .tuition-metric-card .value{font-size:18px;}body #moduleTuition .tuition-metric-icon{width:30px;height:30px;flex-basis:30px;}}
+body #moduleTuition .tuition-month-browser {padding:0;border:0;}
+body #moduleTuition .tuition-topbar>.field {flex-direction:row;}
+body #moduleTuition .tuition-topbar>.field select {height:35px;min-height:35px;padding:6px 10px;font-size:12px;}
+body #moduleTuition .tuition-table .tuition-amount-cell {min-height:28px;}
+body #moduleTuition .tuition-student-cell {padding:0;display:inline-flex;vertical-align:middle;}
+body #moduleTuition .tuition-table td:first-child {white-space:nowrap;}
+#moduleTuition [data-tr-select],#tuitionSelectPage {accent-color:var(--tr-green);vertical-align:middle;margin-right:8px;}
+.tr-selected-control {font-size:11px;display:flex;align-items:center;gap:4px;color:var(--tr-muted);}
+body #moduleTuition .tuition-table-wrap {max-height:560px;}
+body #moduleTuition .tuition-table th {position:sticky;top:0;z-index:2;}
+.tr-toasts {position:fixed;right:24px;bottom:24px;z-index:11000;display:grid;gap:8px;max-width:calc(100vw - 48px);}
+.tr-toast {display:flex;gap:18px;align-items:center;justify-content:space-between;border:1px solid #b8e4d0;border-radius:8px;background:#f0fff8;color:#086344;padding:14px 18px;box-shadow:0 6px 24px #163f2420;font-size:13px;max-width:440px;}
+.tr-toast.is-error {background:#fff2f3;border-color:#f1c5cb;color:#aa283b;}.tr-toast button {border:0;background:none;color:inherit;font-size:20px;cursor:pointer;}
+#tuitionPaymentModal [hidden],#tuitionContactModal [hidden],#tuitionAmountAdjustModal [hidden] {display:none!important;}
+body #moduleTuition .tuition-table [data-status-select-student] {color:var(--tr-ink);}
+body #moduleTuition .tuition-row-paid [data-status-select-student] {color:var(--tr-green);background:#e0f7ec;border-color:#c7e8d8;}
+body #moduleTuition .tuition-row-check [data-status-select-student] {color:#a04a10;background:#ffead8;border-color:#f1d3b9;}
+body #moduleTuition .tuition-row-guided [data-status-select-student] {color:#8c631b;background:#fff3cf;border-color:#e9dbb3;}

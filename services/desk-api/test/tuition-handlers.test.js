@@ -819,3 +819,13 @@ test('first amount adjustment for a master-only student materializes a snapshot 
   assert.equal(row.collectedAmount, 0);
   assert.equal(row.outstandingAmount, 300000);
 });
+
+test('student history returns only that students contact events with trusted saved actors', async () => {
+  const store = memoryStore({
+    'tuitionContactLogs/a':{studentName:'가학생',monthName:'26-09s',contactAt:'2026-09-12T10:00:00Z',contactChannel:'전화',memo:'두 번째',actorName:'담당자'},
+    'tuitionContactLogs/b':{studentName:'나학생',monthName:'26-09s',contactAt:'2026-09-13T10:00:00Z',memo:'다른 학생'},
+    'tuitionContactLogs/c':{studentName:'가학생',monthName:'26-08s',contactAt:'2026-08-12T10:00:00Z',contactChannel:'문자',memo:'첫 기록',actorName:'이전 담당자'}
+  });
+  const result=await createTuitionHandlers({store}).getTuitionStudentMonthlyHistory({studentName:'가학생'});
+  assert.equal(result.success,true);assert.equal(result.contacts.length,2);assert.equal(result.contacts[0].actorName,'담당자');assert.equal(result.contacts[1].memo,'첫 기록');assert.equal(result.contactsTruncated,false);
+});

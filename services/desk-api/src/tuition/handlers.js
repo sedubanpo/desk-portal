@@ -306,7 +306,11 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
         stats.maxContacts = Math.max(stats.maxContacts, row.contactCount);
         return stats;
       }, { totalMonths: rows.length, guidedMonths: 0, totalContacts: 0, paidMonths: 0, unpaidMonths: 0, totalGuideAmount: 0, totalCollectedAmount: 0, totalOutstandingAmount: 0, maxContacts: 0 });
-      return { success: true, studentName: student, overview, rows, reportIndex: reportSource(snapshots) };
+      const logs = await store.listWhere(COLLECTIONS.contactLogs, 'studentName', '==', student, 5000);
+      const contacts = logs.map(log => ({ monthName: monthName(log.monthName), contactAt: text(log.contactAt),
+        contactChannel: contactChannel(log.contactChannel), memo: text(log.memo, 2000), actorName: text(log.actorName),
+        guideAmount: number(log.guideAmount) })).sort((a,b) => b.contactAt.localeCompare(a.contactAt));
+      return { success: true, studentName: student, overview, rows, contacts, contactsTruncated: logs.length === 5000, reportIndex: reportSource(snapshots) };
     },
 
     async getTuitionGuideDashboard() {

@@ -15,3 +15,12 @@ test('ambiguous names/months, cancellations and file duplicates stay visible for
   assert.equal(rows[0].studentName,''); assert.equal(rows[0].monthName,''); assert.equal(rows[1].issue,'파일 내 중복'); assert.match(rows[2].issue,/취소/);
   assert.throws(() => parse([['잘못된 파일']],[],'26-09s'),/필수 열/);
 });
+
+test('item student takes precedence over recipient siblings, suffixes and fullwidth month are preserved', () => {
+  const header=['결제상태','결제일시','이름','품목','승인번호','금액(원)'];
+  const students=['백승재','백시은','박태민','박시언','강민재','최시영','최시영b','장민우','장민재'].map(studentName=>({studentName}));
+  const rows=[['백승재 백시은 학부모님','백시은 ９월 수업 수강료'],['박태민 학생 학부모님','박시언 9월 수업 수강료'],['강민재학생','9월 첫등록'],['최시영b 학생 학부모','최시영 학생 9월 수강료'],['장민우 학생','장민우, 장민재 학생 8월 수강료']];
+  const result=parse([header,...rows.map((r,i)=>['결제','2026-09-12 10:00:00',...r,'000'+i,100000])],students,'26-09s');
+  assert.deepEqual(Array.from(result,r=>r.studentName),['백시은','박시언','강민재','최시영b','']);
+  assert.equal(result[0].monthName,'26-09s');assert.match(result[4].issue,/합산/);assert.equal(result[0].approvalNo,'0000');
+});

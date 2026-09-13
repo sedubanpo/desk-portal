@@ -730,7 +730,7 @@ test('tuition captions validate dates and include weekdays', async () => {
 test('tuition status groups put unguided first and order dates within each group', async () => {
   const source = await readFile(frontendPath, 'utf8');
   const compare = loadFunction(source, 'compareTuitionPreviousPayment_', {});
-  const group = loadFunction(source, 'groupTuitionRowsByStatus_', {compareTuitionPreviousPayment_:compare});
+  const group = loadFunction(source, 'groupTuitionRowsByStatus_', {compareTuitionPreviousPayment_:compare,state:{tuition:{studentSort:'previous'}}});
   const rows = [
     {studentName:'완료', unpaidStatus:'납부완료', previousPaymentDate:'2026-08-01'},
     {studentName:'늦음', unpaidStatus:'안내이전', previousPaymentDate:'2026-08-20'},
@@ -782,4 +782,14 @@ test('payroll amount changes parse grouped won and reject malformed or negative 
   target.value='100,000';apply({target});assert.equal(state.amountOverrides.row,undefined);
   for (const value of ['-1','abc','12,34','', '1e5','1234,567','9'.repeat(400),'9007199254740993']) {target.value=value;apply({target});assert.equal(target.value,'100,000');}
   assert.equal(saves,2);
+});
+
+test('tuition redesign puts confirmation third and keeps secondary sort within statuses', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const state = {tuition:{studentSort:'outstanding'}};
+  const group = loadFunction(source,'groupTuitionRowsByStatus_', {state,toNumber:(v,f)=>Number(v)||f});
+  const rows=[{studentName:'완료',unpaidStatus:'납부완료',outstandingAmount:0},{studentName:'확인',unpaidStatus:'확인필요',outstandingAmount:10000},{studentName:'나',unpaidStatus:'안내이전',outstandingAmount:10},{studentName:'가',unpaidStatus:'안내이전',outstandingAmount:5},{studentName:'안내',unpaidStatus:'안내완료',outstandingAmount:50}];
+  assert.deepEqual(Array.from(group(rows).filter(r=>!r.__group),r=>r.studentName),['나','가','안내','확인','완료']);
+  state.tuition.studentSort='name';
+  assert.deepEqual(Array.from(group(rows).filter(r=>!r.__group),r=>r.studentName),['가','나','안내','확인','완료']);
 });

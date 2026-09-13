@@ -8,16 +8,28 @@
     return rows.slice(start + 1).filter(function(row) { return row.some(function(v) { return v !== '' && v != null; }); }).map(function(row, index) {
       function get(key) { return String(row[headers.indexOf(key)] == null ? '' : row[headers.indexOf(key)]).trim(); }
       var name = get('이름'), item = get('품목'), paidAt = get('결제일시').slice(0,10);
-      var candidates = students.filter(function(student) {
-        var n = String(student.studentName || student.name || '').trim();
-        return n && (name === n || name.startsWith(n + ' ') || item.startsWith(n + ' 학생'));
-      });
-      var names = Array.from(new Set(candidates.map(function(s) { return s.studentName || s.name; })));
-      var itemMonths = Array.from(item.matchAll(/(?:^|[^0-9])(1[0-2]|[1-9])월/g)).map(function(m) { return m[1].padStart(2,'0'); });
+      function normalized(v) { return String(v || '').normalize('NFKC').trim(); }
+      function mentions(text, n) {
+        var at = -1;
+        while ((at = text.indexOf(n, at + 1)) !== -1) {
+          var before = text.slice(0, at), after = text.slice(at + n.length);
+          if ((!before || !/[가-힣a-zA-Z]$/.test(before)) && (!after || /^(?:학생|[\s,/(·)\-])/.test(after))) return true;
+        }
+        return false;
+      }
+      var allNames = Array.from(new Set(students.map(function(s) { return s.studentName || s.name; }).filter(Boolean)));
+      var sourceNames = allNames.filter(function(n) { return mentions(normalized(name), normalized(n)); });
+      var itemNames = allNames.filter(function(n) { return mentions(normalized(item), normalized(n)); });
+      // A bill's item is authoritative for siblings; a suffix in the recipient disambiguates names.
+      var names = itemNames.length ? itemNames : sourceNames;
+      if (itemNames.length === 1 && sourceNames.length === 1 && sourceNames[0].replace(/[a-z]$/i,'') === itemNames[0]) names = sourceNames;
+      var combined = itemNames.length > 1;
+      var normalizedItem = normalized(item);
+      var itemMonths = Array.from(normalizedItem.matchAll(/(?:^|[^0-9])(1[0-2]|[1-9])월/g)).map(function(m) { return m[1].padStart(2,'0'); });
       var month = itemMonths.length === 1 ? selectedMonth.slice(0,3) + itemMonths[0] + 's' : '';
       var amount = Number(get('금액(원)').replace(/,/g,''));
       var status = get('결제상태'), cancelledAt = get('취소일시');
-      var issue = status !== '결제' || cancelledAt ? '취소 건 · 원결제/환불 확인 필요' : !Number.isSafeInteger(amount) || amount <= 0 ? '금액 확인 필요' : !/^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? '결제일 확인 필요' : '';
+      var issue = combined ? '합산 결제 · 수납 관리에서 학생별 분리 필요' : status !== '결제' || cancelledAt ? '취소 건 · 원결제/환불 확인 필요' : !Number.isSafeInteger(amount) || amount <= 0 ? '금액 확인 필요' : !/^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? '결제일 확인 필요' : '';
       var key = [get('승인번호'), paidAt, amount].join('|');
       if (seen.has(key)) issue = '파일 내 중복';
       seen.add(key);
