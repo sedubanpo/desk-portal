@@ -17686,13 +17686,13 @@
   <div class="gate-overlay" id="entryGate">
     <section class="gate-box" aria-labelledby="entryTitle">
       <div class="gate-head">
-        <img class="gate-logo" src="./favicon.svg" alt="">
-        <span class="gate-brand">에스에듀 · 반포관</span>
+        <img class="gate-logo" src="./assets/desk-portal-logo.svg" alt="데스크 포털">
+        <span class="gate-brand"><strong>데스크 포털</strong><small>에스에듀 · 반포관</small></span>
       </div>
-      <h1 class="gate-title" id="entryTitle">데스크 포털 로그인</h1>
+      <h1 class="gate-title" id="entryTitle">오늘도, 반갑습니다.</h1>
       <p class="gate-desc">오늘의 업무를 이어가세요.<br>근무자 계정으로 로그인할 수 있습니다.</p>
       <label class="gate-label" for="entryLoginIdInput">로그인 ID</label>
-      <input id="entryLoginIdInput" class="gate-input" type="text" inputmode="tel" autocomplete="username" placeholder="등록된 휴대전화 번호">
+      <div class="gate-phone"><span aria-hidden="true">010 <b>−</b></span><input id="entryLoginIdInput" class="gate-input" type="text" inputmode="numeric" autocomplete="username" placeholder="1234-5678" aria-describedby="entryPhoneHint"></div><p id="entryPhoneHint" class="gate-hint">010을 제외한 휴대전화 번호 8자리</p>
       <label class="gate-label" for="entryPasswordInput">비밀번호</label>
       <input id="entryPasswordInput" class="gate-input" type="password" autocomplete="current-password" placeholder="비밀번호를 입력하세요">
       <div class="gate-error" id="entryErrorText" role="alert" aria-live="polite"></div>
@@ -17707,8 +17707,8 @@
     <aside class="sidebar">
       <section class="brand">
         <div class="brand-kicker">
-          <img class="brand-logo" src="https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" alt="SEDU 로고">
-          <span>S-LMS 데스크 포털</span>
+          <img class="brand-logo" src="./assets/desk-portal-logo.svg" alt="데스크 포털 로고">
+          <span>데스크 포털</span>
         </div>
         <h1 class="brand-title" id="brandTitle">데스크 관리</h1>
         <p class="brand-sub" id="brandSub">근무표와 데스크 운영 기록을 한 화면에서 관리</p>
@@ -38729,7 +38729,7 @@
         workbook.Props = {
           Title: formatTuitionMonthLabel_(monthName) + " 수납 대조",
           Subject: "수강료 순수 수납액과 거래 원장 대조",
-          Author: "S-LMS 데스크 포털",
+          Author: "데스크 포털",
           CreatedDate: exportedAt
         };
         workbook.Workbook = { CalcPr: { fullCalcOnLoad: true, forceFullCalc: true } };
@@ -42252,6 +42252,8 @@
     }
 
     function showEntryGate() {
+      var welcome = document.getElementById("deskWelcome");
+      if (welcome) welcome.remove();
       entryGateEl.style.display = "flex";
       entryPasswordInputEl.value = "";
       entryErrorTextEl.textContent = "";
@@ -42261,6 +42263,7 @@
     }
 
     function bindEntryGateEvents() {
+      entryLoginIdInputEl.addEventListener("input", function() { entryLoginIdInputEl.value = formatDeskPhone_(entryLoginIdInputEl.value); });
       entrySubmitBtnEl.addEventListener("click", verifyEntryPassword);
       entryLoginIdInputEl.addEventListener("keydown", function(event) {
         if (event.key === "Enter") {
@@ -42282,6 +42285,7 @@
       applyDeskIdentityUi_();
       startDeskHeaderRuntime_();
       renderModuleLayout();
+      showDeskWelcome_();
     }
 
     function loadDeskFirebaseScript_(src) {
@@ -42496,12 +42500,44 @@ window.SeduHubAdapter={
         });
     }
 
+    function formatDeskPhone_(value) {
+      var digits = String(value || "").replace(/\D/g, "");
+      if (digits.length === 11 && digits.indexOf("010") === 0) digits = digits.slice(3);
+      digits = digits.slice(0, 8);
+      return digits.length > 4 ? digits.slice(0, 4) + "-" + digits.slice(4) : digits;
+    }
+
+    function deskGreeting_(hour) {
+      if (hour < 9) return "이른 시간부터 반갑습니다.";
+      if (hour < 12) return "좋은 아침입니다. 오늘의 업무를 시작해 볼까요?";
+      if (hour < 14) return "점심은 드셨나요? 오후도 함께 준비해요.";
+      if (hour < 18) return "반갑습니다. 오늘의 수업과 업무를 확인해 보세요.";
+      if (hour < 21) return "저녁에도 수고 많으세요. 남은 업무를 함께 확인해요.";
+      return "늦은 시간까지 수고 많으세요. 오늘도 잘 마무리하세요.";
+    }
+
+    function showDeskWelcome_() {
+      var name = String((state.cloudIdentity || {}).name || "").trim();
+      if (!name) return;
+      var old = document.getElementById("deskWelcome");
+      if (old) old.remove();
+      var hour = Number(new Intl.DateTimeFormat("en-GB", {timeZone:"Asia/Seoul",hour:"2-digit",hourCycle:"h23"}).format(new Date()));
+      var welcome = document.createElement("aside");
+      welcome.id = "deskWelcome";
+      welcome.setAttribute("role", "status");
+      welcome.innerHTML = renderDeskStaffAvatarHtml_(name) + '<div><strong>' + escapeHtml(name) + '님, 환영합니다.</strong><p>' + escapeHtml(deskGreeting_(hour)) + '</p></div><button type="button" aria-label="환영 메시지 닫기">×</button>';
+      welcome.querySelector("button").onclick = function() { welcome.remove(); };
+      document.body.appendChild(welcome);
+      setTimeout(function() { welcome.remove(); }, 12000);
+    }
+
     function verifyEntryPassword() {
       if (entryVerificationPromise_) return entryVerificationPromise_;
-      var loginId = String(entryLoginIdInputEl.value || "").trim();
+      var digits = formatDeskPhone_(entryLoginIdInputEl.value).replace(/\D/g, "");
+      var loginId = "010" + digits;
       var password = String(entryPasswordInputEl.value || "").trim();
-      if (!loginId) {
-        entryErrorTextEl.textContent = "근무자 로그인 ID를 입력해 주세요.";
+      if (digits.length !== 8) {
+        entryErrorTextEl.textContent = "010을 제외한 번호 8자리를 입력해 주세요.";
         entryLoginIdInputEl.focus();
         return;
       }
@@ -42512,7 +42548,9 @@ window.SeduHubAdapter={
 
       entryErrorTextEl.textContent = "";
       entrySubmitBtnEl.disabled = true;
-      entrySubmitBtnEl.textContent = "확인 중...";
+      entrySubmitBtnEl.textContent = "로그인 확인 중";
+      entrySubmitBtnEl.classList.add("is-loading");
+      entrySubmitBtnEl.setAttribute("aria-busy", "true");
       entryVerificationPromise_ = loginDeskFirebase_(loginId, password)
         .then(function() { enterDeskPortal_(state.portalAccessKey); })
         .catch(function(err) { entryErrorTextEl.textContent = err.message || "근무자 로그인에 실패했습니다."; })
@@ -42520,6 +42558,8 @@ window.SeduHubAdapter={
           entryVerificationPromise_ = null;
           entrySubmitBtnEl.disabled = false;
           entrySubmitBtnEl.textContent = "로그인";
+          entrySubmitBtnEl.classList.remove("is-loading");
+          entrySubmitBtnEl.removeAttribute("aria-busy");
         });
       return entryVerificationPromise_;
     }
