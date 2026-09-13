@@ -21,12 +21,17 @@ export function createTuitionStore(firestore) {
       const snapshot = await firestore.collection(collection).where(field, operator, value).limit(limit).get();
       return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     },
-    async transaction(keys, mutate) {
+    async transaction(keys, mutate, queries = []) {
       const uniqueKeys = [...new Set(keys.filter(Boolean))];
       return firestore.runTransaction(async transaction => {
         const refs = uniqueKeys.map(reference);
         const snapshots = refs.length ? await transaction.getAll(...refs) : [];
         const documents = Object.fromEntries(uniqueKeys.map((key, index) => [key, snapshots[index].exists ? snapshots[index].data() : null]));
+        for (const query of queries) {
+          const result = await transaction.get(firestore.collection(query.collection).where(query.field, '==', query.value).limit(5001));
+          if (result.size > 5000) throw new Error('중복 검사 범위를 초과했습니다. 관리자에게 문의해 주세요.');
+          documents[query.key] = result.docs.map(doc => doc.data());
+        }
         const change = await mutate(documents);
         if (!change) return null;
         Object.entries(change.writes || {}).forEach(([key, value]) => transaction.set(reference(key), value));

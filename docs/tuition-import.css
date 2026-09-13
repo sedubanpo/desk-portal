@@ -1,0 +1,62 @@
+/* Tuition uses the shared identity assets and existing desk design tokens. */
+.identity-fallback { display:inline-flex; width:24px; height:24px; flex:0 0 24px; align-items:center; justify-content:center; border:1px solid var(--ds-border); border-radius:6px; color:var(--ds-muted); background:var(--ds-bg-subtle); }
+.identity-fallback svg { width:17px; height:17px; }
+.identity-fallback:has(+ img) { display:none; }
+.school-identity { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.school-identity-icon { width:24px; height:24px; object-fit:contain; }
+.tuition-shell .student-identity { gap:8px; font-weight:650; color:var(--ds-fg); }
+.tuition-shell .student-gender-icon { width:26px; height:26px; object-fit:contain; padding:3px; border:1px solid var(--ds-border-soft); border-radius:6px; background:var(--ds-bg-panel); }
+.tuition-shell .tuition-student-dot { display:none; }
+.tuition-shell .tuition-table tr[class*="tuition-row-"] td { background:var(--ds-bg-panel); border-bottom:1px solid var(--ds-border-soft); }
+.tuition-shell .tuition-table tr[class*="tuition-row-"]:hover td { background:var(--ds-bg-subtle); }
+.tuition-shell .tuition-table td { padding-top:12px; padding-bottom:12px; }
+.tuition-shell .tuition-log-table { min-width:620px; }
+.tuition-shell .tuition-recent-table-wrap { max-height:350px; }
+.tuition-shell .tuition-layout { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.tuition-shell .tuition-layout > .tuition-panel-soft:last-child { grid-column:1 / -1; min-height:0; }
+.tuition-shell .tuition-log-table th:nth-child(2),.tuition-shell .tuition-log-table td:nth-child(2) { text-align:right; }
+@media(max-width:760px) { .tuition-shell .tuition-layout { grid-template-columns:minmax(0,1fr); } }
+.tuition-shell .tuition-student-primary-line { gap:8px; flex-wrap:wrap; }
+.tuition-shell .tuition-student-identity { margin-left:0; font-size:12px; color:var(--ds-muted); }
+.tuition-shell .tuition-payment-amount { font-variant-numeric:tabular-nums; font-weight:650; white-space:nowrap; }
+.tuition-shell .tuition-payment-amount.negative { color:var(--ds-fg); }
+.tuition-shell .tuition-payment-amount.positive { color:var(--ds-danger); }
+.tuition-shell .tuition-payment-actions button { width:30px; height:30px; border:1px solid var(--ds-border); border-radius:7px; background:var(--ds-bg-panel); box-shadow:none; }
+.tuition-shell .tuition-panel-soft { border:1px solid var(--ds-border); box-shadow:none; background:var(--ds-bg-panel); }
+.tuition-shell .tuition-panel-soft td { padding:11px 9px; border-bottom:1px solid var(--ds-border-soft); font-size:12px; }
+.tuition-shell .tuition-panel-soft th { background:var(--ds-bg-subtle); color:var(--ds-muted); padding:10px 9px; }
+.payment-link-dialog { width:min(1120px, calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:0; border:1px solid var(--ds-border); border-radius:16px; background:var(--ds-bg-panel); color:var(--ds-fg); font:13px/1.5 "Pretendard","Segoe UI","Malgun Gothic",sans-serif; }
+.payment-link-dialog::backdrop { background:rgba(15,23,42,.35); }
+.payment-link-dialog [hidden] { display:none!important; }
+.payment-link-dialog header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:24px; border-bottom:1px solid var(--ds-border); }
+.payment-link-dialog h2 { margin:0; font-size:21px; }
+.payment-link-dialog header p { margin:6px 0 0; color:var(--ds-muted); }
+.payment-link-dialog button,.payment-link-dialog select { min-height:36px; padding:6px 12px; border:1px solid var(--ds-border); border-radius:8px; color:var(--ds-fg); background:var(--ds-bg-panel); font:inherit; }
+.payment-link-dialog button { cursor:pointer; }
+.payment-link-dialog button:disabled { cursor:default; opacity:.45; }
+.payment-link-dialog :focus-visible { outline:2px solid var(--ds-primary); outline-offset:3px; }
+.payment-link-dialog nav { display:flex; gap:8px; padding:16px 24px 0; }
+.payment-link-dialog nav [aria-pressed=true] { background:var(--ds-bg-subtle); color:var(--ds-primary); border-color:var(--ds-primary); font-weight:650; }
+.payment-link-dialog section { padding:20px 24px; }
+.payment-link-file { display:flex; gap:16px; align-items:center; flex-wrap:wrap; padding:20px; border:1px dashed var(--ds-border); border-radius:12px; background:var(--ds-bg-subtle); font-weight:650; }
+.payment-link-file input { max-width:100%; font:inherit; }
+.payment-link-help { color:var(--ds-muted); }
+.payment-link-table { overflow:auto; max-height:48vh; border:1px solid var(--ds-border); border-radius:10px; }
+.payment-link-table:empty { display:none; }
+.payment-link-table table { width:100%; border-collapse:collapse; min-width:880px; font:inherit; }
+.payment-link-table th { position:sticky; top:0; background:var(--ds-bg-subtle); text-align:left; }
+.payment-link-table td,.payment-link-table th { padding:10px; border-bottom:1px solid var(--ds-border-soft); }
+.payment-link-table small,.payment-link-event small { display:block; color:var(--ds-muted); margin-top:4px; }
+.payment-link-table select { max-width:140px; }
+.payment-link-money { white-space:nowrap; font-variant-numeric:tabular-nums; text-align:right; }
+.payment-link-dialog footer { display:flex; justify-content:flex-end; gap:8px; padding-top:16px; }
+.payment-link-dialog [data-save] { background:var(--ds-primary); color:var(--ds-on-primary); border-color:var(--ds-primary); }
+.payment-link-message { margin:0; padding:14px 24px; border-top:1px solid var(--ds-border); background:var(--ds-bg-subtle); }
+.payment-link-history-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:16px; }
+.payment-link-event { display:flex; gap:12px; padding:16px 0; border-bottom:1px solid var(--ds-border); }
+.payment-link-event p { margin:8px 0 0; }
+.payment-link-event time { display:block; color:var(--ds-muted); font-size:12px; }
+.payment-link-actor-icon { display:inline-flex; flex:0 0 34px; width:34px; height:34px; border-radius:50%; align-items:center; justify-content:center; background:var(--ds-bg-subtle); color:var(--ds-primary); border:1px solid var(--ds-border); }
+.payment-link-action { margin-left:8px; color:var(--ds-primary); }
+.payment-link-empty { padding:32px 0; text-align:center; color:var(--ds-muted); }
+@media(max-width:600px) { .payment-link-dialog header,.payment-link-dialog section { padding:16px; } .payment-link-dialog nav { padding:12px 16px 0; } }

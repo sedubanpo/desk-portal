@@ -1,5 +1,9 @@
 # Desk Portal Design System
 
+## Tuition addition — 2026-09-13
+
+`docs/workspace.css` remains the current lime/neutral token authority; `docs/tuition-import.css` reuses its `--ds-*` tokens for the tuition delta. Student tiles reuse shared gender assets, with an explicit neutral person fallback; schools reuse `sharedIconAssets` school keys and a school-building fallback. Do not infer gender. Recent receipts span the briefing grid and display receipt/refund labels with tabular amounts; white table rows and existing status text replace whole-row yellow/green fills. Import dialog has a 1120px maximum width, 16px minimum side clearance, a bounded independently scrolling preview table, and two named menu states. Actor initials are decorative avatars beside authenticated actor names. No new animation or brand color is introduced.
+
 ## Atmosphere / Signature
 
 Desk Portal is a dense operations console for academy front-desk work. It should feel calm, exact, and fast to scan: white working surfaces, restrained indigo command color, compact controls, clear numeric hierarchy, and border-led depth instead of decorative effects.

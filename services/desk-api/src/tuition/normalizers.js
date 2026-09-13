@@ -114,6 +114,8 @@ export function payment(source = {}) {
     createdAt: text(source.createdAt),
     updatedAt: text(source.updatedAt),
     source: text(source.source)
+    ,importKey: text(source.importKey, 64)
+    ,importFile: text(source.importFile, 180)
   };
 }
 

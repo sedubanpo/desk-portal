@@ -1,3 +1,4 @@
+import { paymentLinkKey, paymentLinkDuplicate, validatePaymentLink } from './payment-link.js';
 import {
   contactChannel,
   base64Id,
@@ -54,11 +55,11 @@ const DAILY_LIMIT = 500;
 export const TUITION_READ_METHODS = new Set([
   'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
   'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
-  'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory'
+  'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory', 'getTuitionPaymentLinkHistory', 'previewTuitionPaymentLink'
 ]);
 
 export const TUITION_WRITE_METHODS = new Set([
-  'createTuitionMonth',
+  'createTuitionMonth', 'importTuitionPaymentLink',
   'saveTuitionStatusOnly', 'saveTuitionFollowup', 'saveTuitionStudentMemo',
   'saveTuitionAmountAdjustment', 'appendTuitionPaymentEntry', 'updateTuitionPaymentEntry', 'deleteTuitionPaymentEntry'
 ]);
@@ -74,6 +75,29 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
   const nowIso = () => nowDate().toISOString();
 
   const handlers = {
+    async previewTuitionPaymentLink(payload = {}, identity = {}) {
+      return handlers.importTuitionPaymentLink({ ...payload, previewOnly: true }, identity);
+    },
+    async getTuitionPaymentLinkHistory(payload = {}) {
+      const month = monthName(payload.monthName);
+      if (!month) return failure('월 정보가 없습니다.');
+      const events = await store.listWhere(COLLECTIONS.paymentHistory, 'importMonth', '==', month, 5000);
+      return { success: true, truncated: events.length === 5000, events: events.map(normalizePaymentHistoryEvent).filter(Boolean).sort((a, b) => b.changedAt.localeCompare(a.changedAt)) };
+    },
+
+    async importTuitionPaymentLink(payload = {}, identity = {}) {
+      const error = validatePaymentLink(payload);
+      if (error) return failure(error);
+      const month = monthName(payload.monthName);
+      if (!month || !studentName(payload.studentName)) return failure('월 정보 또는 학생명이 없습니다.');
+      const record = payment({ ...payload, requestId: '', source: 'desk_portal_payment_link', originMonth: month, sourceMonth: month, sourceDueMonth: month,
+        importFile: text(payload.fileName, 180), inputAt: formatInputAt(nowDate(), timeZone), createdAt: nowIso(), updatedAt: nowIso(), paymentType: '결제링크', entryKind: 'payment', countsAsPayment: true,
+        originalPaymentKey: '', revision: '', importKey: '' });
+      record.importKey = paymentLinkKey(record);
+      record.requestId = `link_${record.importKey}`;
+      return mutatePayment({ store, action: 'append', month, record, requestId: record.requestId, identity, nowIso, nowDate, dryRun: payload.previewOnly === true });
+    },
+
     async getTuitionBootstrapData() {
       const months = await loadMonths(store);
       if (!months.length) return failure('Firestore 수강료 월 인덱스가 비어 있습니다. 수강료 Firebase 마이그레이션을 먼저 실행해 주세요.');
@@ -643,7 +667,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
   });
 }
 
-async function mutatePayment({ store, action, month, record, requestId, reason = '', identity, nowIso, nowDate }) {
+async function mutatePayment({ store, action, month, record, requestId, reason = '', identity, nowIso, nowDate, dryRun = false }) {
   const normalized = payment(record);
   const targetId = paymentId(normalized);
   const targetKey = key(COLLECTIONS.payments, targetId);
@@ -663,7 +687,22 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
     monthlyReport: reportKey('monthly_sales', 'global'),
     studentReport: reportKey('student_history', normalized.studentName)
   };
+  const importing = action === 'append' && normalized.source === 'desk_portal_payment_link';
+  if (action === 'append') keys.guard = key('tuitionPaymentImportGuards', paymentLinkKey({ ...normalized, approvalNo: normalized.studentName, amount: 0 }));
+  if (action === 'append' && normalized.approvalNo) keys.approvalGuard = key('tuitionPaymentImportGuards', paymentLinkKey(normalized));
+  if (importing) keys.importReceipt = key('tuitionPaymentImports', normalized.importKey);
   return store.transaction(Object.values(keys), documents => {
+    if (action === 'append' && !importing && paymentLinkDuplicate(normalized, (documents.__studentPayments || []).concat(documents.__approvalPayments || []).filter(row => row.source === 'desk_portal_payment_link'))) {
+      return { result: { success: true, duplicate: true, message: '결제링크로 이미 입력된 수납입니다.' } };
+    }
+    if (importing) {
+      if (documents[keys.importReceipt]) return { result: { success: true, duplicate: true, message: '이전에 처리한 결제입니다. 수정·삭제 후에도 다시 입력하지 않습니다.' } };
+      const snapshot = documents[keys.snapshot];
+      if (!snapshot?.success || !snapshot.rows?.some(row => row.studentName === normalized.studentName)) return { result: failure('선택한 월의 학생을 확인해 주세요.') };
+      const candidates = [...(documents.__studentPayments || []), ...(documents.__approvalPayments || []), ...(documents[keys.monthPayments]?.payments || []), ...(snapshot.payments || []), ...(documents[keys.recent]?.payments || [])];
+      if (paymentLinkDuplicate(normalized, candidates)) return { result: { success: true, duplicate: true, message: '기존 수납과 일치하여 제외했습니다.' } };
+      if (dryRun) return { result: { success: true, duplicate: false } };
+    }
     if (action === 'append' && documents[keys.payment]) {
       return { result: paymentResult(documents[keys.payment], true, Boolean(documents[keys.snapshot])) };
     }
@@ -681,6 +720,9 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
     const timestamp = nowIso();
     const writes = { [keys.monthIndex]: monthIndexDocument(month, timestamp, action === 'append' ? 'tuition_payment_write' : 'tuition_payment_delete') };
     const deletes = [keys.monthlyReport, keys.studentReport];
+    if (keys.guard) writes[keys.guard] = { updatedAt: timestamp, requestId };
+    if (keys.approvalGuard) writes[keys.approvalGuard] = { updatedAt: timestamp, requestId };
+    if (importing) writes[keys.importReceipt] = { requestId, importedAt: timestamp, monthName: month };
     if (action === 'append') writes[keys.payment] = { ...stored, createdAt: stored.createdAt || timestamp, updatedAt: timestamp, source: stored.source || 'desk_portal' };
     else deletes.push(keys.payment);
     writes[keys.history] = {
@@ -695,6 +737,7 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
       payment: stored,
       actorUid: text(identity.uid),
       actorName: text(identity.name),
+      importMonth: stored.source === 'desk_portal_payment_link' ? month : '',
       source: 'desk_portal'
     };
     const recent = changePaymentIndex(documents[keys.recent], stored, action, 'payments', RECENT_LIMIT, timestamp, { seeded: documents[keys.recent]?.seeded === true });
@@ -713,7 +756,7 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
         deletedPayment: stored, source: 'desk_portal', actorUid: text(identity.uid), actorName: text(identity.name)
       };
     }
-    const sheetMirrorWarning = action === 'delete' && stored.source && !/^desk_portal(?:_adjustment)?$/.test(stored.source)
+    const sheetMirrorWarning = action === 'delete' && stored.source && !/^desk_portal(?:_adjustment|_payment_link)?$/.test(stored.source)
       ? 'Firebase 수납 원장만 삭제했습니다. 원본 시트에서 가져온 건은 원본 시트도 별도로 확인해 주세요.' : '';
     return {
       writes,
@@ -722,7 +765,10 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
         ? paymentResult(stored, false, Boolean(snapshot))
         : { success: true, deletedPayment: stored, indexWarning: '', snapshotWarning: snapshot ? '' : '월별 요약 스냅샷이 없어 원장과 인덱스만 갱신되었습니다.', sheetMirrorWarning }
     };
-  });
+  }, action === 'append' ? [
+    { key: '__studentPayments', collection: COLLECTIONS.payments, field: 'studentName', value: normalized.studentName },
+    ...(normalized.approvalNo ? [{ key: '__approvalPayments', collection: COLLECTIONS.payments, field: 'approvalNo', value: normalized.approvalNo }] : [])
+  ] : []);
 }
 
 async function updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate }) {
@@ -788,6 +834,8 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       createdAt: stored.createdAt || timestamp,
       updatedAt: timestamp,
       source: stored.source || 'desk_portal'
+      ,importKey: stored.importKey
+      ,importFile: stored.importFile
     });
     const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
     if (!snapshot) return { result: failure('월별 요약을 갱신할 수 없어 수정을 중단했습니다. 새로고침 후 다시 시도해 주세요.') };
@@ -804,6 +852,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
         eventId: `tph_update_${requestId}`,
         requestId,
         paymentIdentity: paymentHistoryIdentity(updated),
+        importMonth: stored.source === 'desk_portal_payment_link' ? month : '',
         action: 'updated',
         changedAt: timestamp,
         reason,
@@ -831,7 +880,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       if (keys.newDaily) writes[keys.newDaily] = changePaymentIndex(documents[keys.newDaily], updated, 'append', 'payments', DAILY_LIMIT, timestamp, { dateKey: paidDateKey(updated) });
     }
 
-    const sheetMirrorWarning = stored.source && !/^desk_portal(?:_adjustment)?$/.test(stored.source)
+    const sheetMirrorWarning = stored.source && !/^desk_portal(?:_adjustment|_payment_link)?$/.test(stored.source)
       ? 'Firebase 수납 원장만 수정했습니다. 원본 시트에서 가져온 건은 원본 시트도 별도로 확인해 주세요.' : '';
     return {
       writes,

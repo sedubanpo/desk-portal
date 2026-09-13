@@ -17679,6 +17679,7 @@
   </style>
   <link rel="stylesheet" href="./workspace.css">
   <link rel="stylesheet" href="./login.css">
+<link rel="stylesheet" href="./tuition-import.css">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -18106,6 +18107,7 @@
             </div>
 	            <div class="tuition-topbar-actions">
                 <button class="tuition-export-btn" id="tuitionExportBtn" type="button" title="선택한 월의 수납 원장과 학생별 대조표를 엑셀로 내려받기"><i data-lucide="file-spreadsheet" aria-hidden="true"></i><span>월별 수납 엑셀</span></button>
+                <button class="tuition-export-btn" id="tuitionPaymentLinkBtn" type="button"><i data-lucide="upload" aria-hidden="true"></i><span>결제링크 업로드</span></button>
                 <button class="refresh-btn" id="tuitionRefreshBtn" type="button" title="수강료 데이터 새로고침" aria-label="수강료 데이터 새로고침"><i data-lucide="database" aria-hidden="true"></i><span>수강료 데이터 새로고침</span></button>
               </div>
 	          </section>
@@ -20855,7 +20857,7 @@
       getDeskPortalConfig: true, saveDeskPortalConfig: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
-      getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true,
+      getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
@@ -39518,7 +39520,7 @@
         var hasIssue = issueMemo && issueMemo !== "-";
         return '<tr>' +
           '<td>' + renderStudentIdentityHtml_(row.studentName) + '</td>' +
-          '<td><span class="tuition-payment-amount' + amountClass + '">' + formatWon(amount) + '</span></td>' +
+          '<td><span class="tuition-payment-amount' + amountClass + '">' + (amount < 0 ? '수납 ' : '환불 ') + formatWon(Math.abs(amount)) + '</span></td>' +
           '<td>' + escapeHtml(row.paidAt || "-") + '</td>' +
           '<td>' + escapeHtml(row.paymentType || "-") + (row.cardCompany ? '<span class="tuition-payment-card-company">' + escapeHtml(row.cardCompany) + '</span>' : '') + '</td>' +
           '<td>' + escapeHtml(row.approvalNo || "-") + '</td>' +
@@ -39870,7 +39872,7 @@
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
         '<div class="tuition-student-text">' +
-          '<div class="tuition-student-primary-line"><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button>' + buildTuitionPreviousMethod_(row.previousPaymentMethod) + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) + '<span class="tuition-student-identity">' + escapeHtml(identity) + '</span>' +
+          '<div class="tuition-student-primary-line"><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button>' + buildTuitionPreviousMethod_(row.previousPaymentMethod) + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) + '<span class="tuition-student-identity">' + StudentGenderIcons.school(school, compactGrade) + '</span>' +
             '<button type="button" class="tuition-student-hide-btn" data-toggle-tuition-hidden="' + escapeHtml(formatStudentName(row.studentName)) + '" data-hidden-next="' + (row.hiddenFromTuition ? 'false' : 'true') + '" title="' + (row.hiddenFromTuition ? '정산 상세에 다시 표시' : '정산 상세에서 숨기기') + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + (row.hiddenFromTuition ? ' 정산 상세에 다시 표시' : ' 정산 상세에서 숨기기') + '"><i data-lucide="' + (row.hiddenFromTuition ? 'eye' : 'eye-off') + '" aria-hidden="true"></i></button></div>' +
           carryHtml +
         '</div>' +
@@ -45009,7 +45011,7 @@ window.SeduHubAdapter={
     }
 
     function isRunServerWriteApi_(fnName) {
-      return /^(create|save|delete|append|update|batchUpdate|adjust|add)/.test(String(fnName || ""));
+      return /^(create|save|delete|append|update|batchUpdate|adjust|add|import)/.test(String(fnName || ""));
     }
 
     function shouldRetryRunServer_(fnName) {
@@ -45133,6 +45135,8 @@ window.SeduHubAdapter={
       };
     }
   </script>
+<script src="./payment-link-parser.js"></script>
+<script src="./payment-link-upload.js"></script>
 <script type="module" src="hub-start.mjs"></script>
 </body>
 </html>

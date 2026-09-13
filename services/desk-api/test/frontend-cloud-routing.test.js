@@ -262,7 +262,7 @@ test('attendance controls, schedule permissions, and the global shared-work rota
 test('recruiting comments use write idempotency and the applicant table keeps compact filters', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
-  assert.match(source, /\^\(create\|save\|delete\|append\|update\|batchUpdate\|adjust\|add\)/);
+  assert.match(source, /\^\(create\|save\|delete\|append\|update\|batchUpdate\|adjust\|add\|import\)/);
   assert.match(source, /addDeskRecruitingApplicantComment: true/);
   assert.match(source, /storageId: applicant && applicant\.storageId \|\| id/);
   assert.match(source, /data-desk-hr-storage-id/);

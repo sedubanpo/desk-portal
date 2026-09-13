@@ -25,9 +25,10 @@ function memoryStore(seed = {}) {
       if (operator === 'in') return Array.isArray(value) && value.includes(documentValue);
       throw new Error(`unsupported memoryStore operator: ${operator}`);
     }).slice(0, limit),
-    transaction: async (keys, mutate) => {
+    transaction: async (keys, mutate, queries = []) => {
       transactions += 1;
       const current = Object.fromEntries([...new Set(keys.filter(Boolean))].map(key => [key, clone(documents.get(key) || null)]));
+      queries.forEach(query => { current[query.key] = listDocuments(query.collection).filter(row => nestedValue(row, query.field) === query.value); });
       const change = await mutate(current);
       Object.entries(change?.writes || {}).forEach(([key, value]) => documents.set(key, clone(value)));
       (change?.deletes || []).forEach(key => documents.delete(key));

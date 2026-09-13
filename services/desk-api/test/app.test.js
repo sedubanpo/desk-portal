@@ -298,3 +298,13 @@ test('tuition writes dispatch with staff identity and idempotency context', asyn
   });
   assert.match(contexts[0].requestFingerprint, /^[a-f0-9]{64}$/);
 });
+
+test('payment-link imports require staff authentication and enter write idempotency middleware',async() => {
+  const contexts=[];
+  const app=testApp({deskHandlers:{importTuitionPaymentLink:async(payload,identity)=>({success:true,actor:identity.uid})},runIdempotent:async(context,operation)=>{contexts.push(context);return operation();}});
+  await request(app).post('/v1/desk/importTuitionPaymentLink').send({}).expect(401);
+  const response=await request(app).post('/v1/desk/importTuitionPaymentLink').set('authorization','Bearer valid-token').set('x-idempotency-key','import:qa').send({payload:{clientRequestId:'qa'}}).expect(200);
+  assert.equal(response.body.actor,'staff-1');
+  assert.equal(contexts[0].method,'importTuitionPaymentLink');
+  assert.equal(contexts[0].key,'import:qa');
+});
