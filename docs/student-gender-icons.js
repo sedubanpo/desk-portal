@@ -1,7 +1,7 @@
 /* Shared student identity presentation. Firestore remains the source of truth. */
 (function(root) {
   'use strict';
-  var students = [], assets = [], unsubscribe = [], generation = 0;
+  var links = {}, candidates = [], students = [], assets = [], unsubscribe = [], generation = 0;
   var names = new Map(), ids = new Map(), icons = new Map(), schools = new Map();
   function schoolKey(name) { return clean(name).replace(/^신반포$/, '신반포중').replace(/고등학교$/, '고').replace(/중학교$/, '중').replace(/초등학교$/, '초').replace(/\s+/g, ' ').toLowerCase(); }
   function fallback(kind) { return '<span class="identity-fallback" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">' + (kind === 'school' ? '<path d="m3 9 9-6 9 6v12H3Z M9 21v-7h6v7 M7 10h1m8 0h1"/>' : '<circle cx="12" cy="8" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/>') + '</svg></span>'; }
@@ -18,12 +18,17 @@
   }
   function reindex() {
     names = new Map(); ids = new Map(); icons = new Map(); schools = new Map();
-    students.forEach(function(s) {
+    var groups = new Map();
+    students.filter(function(s){return !s.isAlias && String(s.identityStatus || '').toUpperCase() !== 'ALIAS';}).forEach(function(s){
+      var name=clean(s.name || s.studentName),key=s.canonicalStudentId || s.mergedInto || (s.school && s.grade ? [name,s.school,s.grade].join('|') : s.id);
+      var old=groups.get(key),active=function(x){return x.active===true || x.status==='ACTIVE' || x.status==='RETURNED';};
+      if(!old || (active(s)&&!active(old)) || (active(s)===active(old) && timestamp(s.updatedAtMs || s.updatedAt)>timestamp(old.updatedAtMs || old.updatedAt)))groups.set(key,s);
+    });
+    candidates=Array.from(groups.values());
+    candidates.forEach(function(s) {
       var name = clean(s.name || s.studentName || s.displayName);
       var gender = s.gender === 'male' || s.gender === 'female' ? s.gender : '';
-      if (s.id) ids.set(String(s.id), gender);
-      if (s.studentId) ids.set(String(s.studentId), gender);
-      // Name-only legacy records cannot safely resolve duplicate students.
+      [s.id,s.studentId,s.canonicalStudentId].concat(s.studentIdAliases || []).filter(Boolean).forEach(function(id){ids.set(String(id),gender);});
       if (name) names.set(name, names.has(name) ? '' : gender);
     });
     assets.slice().sort(function(a,b) { return timestamp(a.updatedAt || a.createdAt) - timestamp(b.updatedAt || b.createdAt) || String(a.id || '').localeCompare(String(b.id || '')); }).forEach(function(a) {
@@ -34,7 +39,8 @@
     });
   }
   function image(name, id) {
-    var gender = id ? ids.get(String(id)) : names.get(clean(name));
+    var mapped=links[clean(name)];
+    var gender = mapped ? ids.get(mapped) : id ? ids.get(String(id)) : names.get(clean(name));
     var url = icons.get(gender);
     if (!icons.has(gender) && (gender === 'male' || gender === 'female')) url = 'https://sedubanpo.github.io/s-lms/account-management/assets/student-' + gender + '.svg';
     return url ? '<img class="student-gender-icon" src="' + escape(url) + '" alt="' + (gender === 'male' ? '남학생' : '여학생') + '" decoding="async" onerror="this.remove()">' : '';
@@ -60,7 +66,7 @@
   function stop() {
     generation++;
     unsubscribe.splice(0).forEach(function(fn) { fn(); });
-    students = []; assets = []; reindex(); refresh();
+    students = []; assets = []; links = {}; reindex(); refresh();
   }
   function start(db) {
     stop(); var token = generation;
@@ -78,7 +84,11 @@
       }));
     });
   }
-  var api = {render:render,school:school,start:start,stop:stop};
+  var api = {render:render,school:school,start:start,stop:stop,
+    setLinks:function(rows){links={};(rows||[]).forEach(function(r){if(r.studentId)links[clean(r.studentName)]=r.studentId;});refresh();},
+    candidates:function(){return candidates.map(function(s){return {id:s.id,name:clean(s.name||s.studentName),school:s.school||'',grade:s.grade||'',gender:s.gender||''};});},
+    connection:function(name){var key=clean(name),mapped=links[key],matches=candidates.filter(function(s){return clean(s.name||s.studentName)===key;});return {studentId:mapped || (matches.length===1?matches[0].id:''),manual:!!mapped,label:mapped?(ids.has(mapped)?'직접 연결':'연결 대상 확인 필요'):matches.length>1?'동명이인 · 연결 필요':matches.length===0?'일치 학생 없음':!matches[0].gender?'성별 미등록':'자동 연결'};}
+  };
   root.StudentGenderIcons = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -189,3 +189,36 @@ body #moduleTuition .tr-rate {border:0;cursor:pointer;color:var(--tr-ink);paddin
 body #moduleTuition .tuition-amount-cell .v {font-weight:700;}
 body #moduleTuition .tuition-shell {font-weight:700;}
 body #moduleTuition .tuition-month-create-btn {height:36px;min-height:36px;box-sizing:border-box;}
+/* Compact command header and two-row overview with recent receipts. */
+body #moduleTuition .tuition-topbar {gap:10px;padding-bottom:12px;}
+body #moduleTuition .tr-search-row {display:flex;flex-wrap:wrap;gap:8px;}
+body #moduleTuition .tr-search-row .tuition-month-search {flex:1 1 190px;max-width:none;}
+body #moduleTuition .tr-search-row>.field {display:flex;flex-direction:row;align-items:center;gap:6px;margin:0;flex:0 0 158px;}
+body #moduleTuition .tr-search-row>.field label {white-space:nowrap;margin:0;font-size:11px;}
+body #moduleTuition .tr-search-row>.field select {height:36px;min-height:36px;min-width:90px;padding:6px;font-size:12px;}
+body #moduleTuition .tr-search-row .tuition-topbar-actions {margin-left:auto;gap:6px;}
+body #moduleTuition .tr-search-row .tuition-topbar-actions button {font-size:11px;padding:5px 8px;height:36px;min-height:36px;}
+body #moduleTuition .tr-overview {display:grid;grid-template-columns:minmax(510px,1.08fr) minmax(430px,1fr);gap:12px;}
+body #moduleTuition .tr-overview .tuition-cards {grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:1fr 1fr;padding:12px;gap:8px;}
+body #moduleTuition .tr-overview .tuition-metric-card {min-height:72px;padding:10px 8px;gap:7px;}
+body #moduleTuition .tr-overview .tuition-metric-card:nth-child(5){grid-column:span 2;}
+body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6){grid-column:span 1;padding:10px 4px;}
+body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6) .tuition-metric-icon {display:none;}
+body #moduleTuition .tr-overview .tuition-metric-card .value {font-size:17px;}
+body #moduleTuition .tr-overview .tuition-metric-card .meta {font-size:9px;}
+body #moduleTuition .tr-overview .tuition-metric-icon {width:27px;height:27px;flex-basis:27px;}
+body #moduleTuition .tr-overview .tr-rate {grid-column:4;grid-row:2;width:68px;height:68px;}
+body #moduleTuition .tr-recent-panel {background:white;border:1px solid var(--tr-line);border-radius:var(--tr-radius);padding:14px;min-width:0;box-shadow:none;}
+body #moduleTuition .tr-recent-panel .panel-head {margin:0 0 8px;}.tr-recent-panel .panel-title {font-size:14px;}
+body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {max-height:145px;overflow:auto;}
+body #moduleTuition .tr-recent-panel .tuition-log-table {min-width:570px;}
+body #moduleTuition .tr-recent-panel .tuition-log-pagination {margin-top:7px;}
+body #moduleTuition .tuition-ops-status {font-size:10px;padding:0 8px;}
+.tr-identity-dialog {width:min(960px,calc(100vw - 32px));max-height:85dvh;padding:24px;border:1px solid var(--tr-line);border-radius:12px;color:var(--tr-ink);font:700 13px inherit;box-sizing:border-box;}
+.tr-identity-dialog::backdrop {background:#10243b66;}.tr-identity-dialog header {display:flex;justify-content:space-between;gap:20px;}.tr-identity-dialog h2{margin:0;font-size:20px;}.tr-identity-dialog p,.tr-identity-dialog small{color:var(--tr-muted);font-size:12px;}.tr-identity-dialog input {display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:8px;border:1px solid var(--tr-line);border-radius:6px;}
+.tr-identity-list {max-height:55dvh;overflow:auto;}.tr-identity-list article {display:grid;grid-template-columns:180px minmax(180px,1fr) 60px;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--tr-line);}.tr-identity-list small{display:block;margin-top:4px;}.tr-identity-list select{min-width:0;width:100%;padding:8px;border:1px solid var(--tr-line);border-radius:6px;}.tr-identity-dialog button{padding:8px;border:1px solid var(--tr-line);border-radius:6px;background:white;color:var(--tr-green);cursor:pointer;}.tr-identity-dialog [hidden]{display:none!important;}.tr-identity-dialog :focus-visible{outline:2px solid var(--tr-green);outline-offset:2px;}
+@media(max-width:1250px){body #moduleTuition .tr-overview {grid-template-columns:1fr;}body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6){grid-column:3;padding:10px;}body #moduleTuition .tr-search-row .tuition-topbar-actions{margin-left:0;}}
+@media(max-width:760px){body #moduleTuition .tr-overview .tuition-cards {grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;}body #moduleTuition .tr-overview .tuition-metric-card:nth-child(5),body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6){grid-column:span 2;}body #moduleTuition .tr-overview .tr-rate{grid-column:span 2;grid-row:auto;}body #moduleTuition .tr-search-row>.field{flex:1;}body #moduleTuition .tr-search-row .tuition-topbar-actions{width:100%;}.tr-identity-list article{grid-template-columns:1fr 60px;}.tr-identity-list article>div{grid-column:1/-1;}}
+body #moduleTuition .tr-recent-panel {min-height:0;}
+.tr-identity-dialog {font-family:inherit;font-size:13px;font-weight:700;}
+@media(max-width:760px){body #moduleTuition .tr-search-row>.field{flex:1 1 150px;min-width:150px;}}

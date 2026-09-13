@@ -829,3 +829,16 @@ test('student history returns only that students contact events with trusted sav
   const result=await createTuitionHandlers({store}).getTuitionStudentMonthlyHistory({studentName:'가학생'});
   assert.equal(result.success,true);assert.equal(result.contacts.length,2);assert.equal(result.contacts[0].actorName,'담당자');assert.equal(result.contacts[1].memo,'첫 기록');assert.equal(result.contactsTruncated,false);
 });
+test('identity links require administrator, reject aliases and retain audit without changing student or ledger',async()=>{
+ const store=memoryStore({'students/real':{name:'정승현',gender:'male'},'students/alias':{isAlias:true}});
+ const h=createTuitionHandlers({store});
+ assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:'real'},{role:'STAFF'})).success,false);
+ assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:'alias'},{role:'ADMIN'})).success,false);
+ assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:'missing'},{role:'ADMIN'})).success,false);
+ assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:'real'},{role:'ADMIN',uid:'admin',name:'관리자'})).success,true);
+ assert.equal((await h.getTuitionIdentityLinks()).links[0].studentId,'real');
+ assert.deepEqual(store.dump()['students/real'],{name:'정승현',gender:'male'});
+ assert.ok(Object.keys(store.dump()).some(k=>k.startsWith('tuitionIdentityLinkHistory/')));
+ assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:''},{role:'ADMIN'})).success,true);
+ assert.equal((await h.getTuitionIdentityLinks()).links[0].studentId,'');
+});

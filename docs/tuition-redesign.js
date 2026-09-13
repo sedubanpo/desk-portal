@@ -66,10 +66,11 @@
   };
   report.addEventListener('close',function(){rate.focus();});
   var oldLayout=$('.tuition-layout');
+  var overview=document.createElement('section');overview.className='tr-overview';cards.before(overview);overview.appendChild(cards);var recent=document.getElementById('tuitionPaymentBody').closest('article');recent.classList.add('tr-recent-panel');overview.appendChild(recent);
   var archive=document.createElement('details'); archive.className='tr-support'; archive.innerHTML='<summary>수납 현황·우선순위 보기</summary>';archive.appendChild(oldLayout);shell.appendChild(archive);
   var brief=document.createElement('button');brief.type='button';brief.textContent='일일 수납 브리핑';brief.onclick=openTuitionBriefPopup_;$('.tuition-topbar-actions').appendChild(brief);
   monthBrowser.appendChild($('#tuitionMonthCreateBtn'));
-  var searchRow=document.createElement('div');searchRow.className='tr-search-row';searchRow.appendChild($('.tuition-month-search'));searchRow.appendChild(filterAnchor);monthBrowser.after(searchRow);
+  var searchRow=document.createElement('div');searchRow.className='tr-search-row';searchRow.appendChild($('.tuition-month-search'));searchRow.appendChild(filterAnchor);monthBrowser.after(searchRow);searchRow.appendChild($('.tuition-topbar>.field'));searchRow.appendChild($('.tuition-topbar-actions'));
   var selectedControl=document.createElement('label');selectedControl.className='tr-selected-control';selectedControl.innerHTML='<input type="checkbox" id="tuitionSelectedOnly"> 선택한 학생만 <span>0명</span>';$('.meta-bar',tablePanel).appendChild(selectedControl);
   $('#tuitionSelectedOnly').onchange=function(){ui.onlySelected=this.checked;applyTuitionLocalFilters_();};
   $('.tuition-table th').insertAdjacentHTML('afterbegin','<input type="checkbox" id="tuitionSelectPage" aria-label="현재 페이지 학생 모두 선택"> ');
@@ -182,4 +183,24 @@
   applyTuitionLocalFilters_=function(){ui.page=1;baseFilters();TuitionRedesign.afterRows();};
   refreshLucideIcons_();
   if(state.tuition.rows)renderTuitionStudentRows();
+})();
+
+/* Settings-center links only resolve presentation identity; they never move ledger entries. */
+(function(){
+  var settings=document.getElementById('settingsModal');if(!settings)return;
+  var launch=document.createElement('button');launch.type='button';launch.className='modal-action';launch.textContent='학생 아이콘 연결';settings.querySelector('.modal-head').appendChild(launch);
+  var dialog=document.createElement('dialog');dialog.className='tr-identity-dialog';dialog.setAttribute('aria-labelledby','trIdentityTitle');document.body.appendChild(dialog);
+  var links=[],loading=false;
+  function render(message){
+    var names=Array.from(new Set((state.tuition.allRows||[]).map(function(r){return r.studentName;}))).sort(function(a,b){return a.localeCompare(b,'ko');});
+    var options=StudentGenderIcons.candidates().sort(function(a,b){return a.name.localeCompare(b.name,'ko');});
+    dialog.innerHTML='<header><div><h2 id="trIdentityTitle">학생 아이콘 연결</h2><p>데스크 학생을 계정 관리의 대표 학생에 연결합니다. 수납 기록은 바뀌지 않습니다.</p></div><button type="button" data-close aria-label="학생 연결 닫기">×</button></header><label>학생 찾기<input type="search" data-find placeholder="데스크 학생명 검색"></label><p role="status" data-message>'+escapeHtml(message||'자동 연결은 대표 학생 문서만 사용합니다. 성별 미등록은 계정 관리에서 지정하세요.')+'</p><div class="tr-identity-list">'+(names.length?names.map(function(name){var c=StudentGenderIcons.connection(name);return '<article data-name="'+escapeHtml(name)+'"><div><strong>'+StudentGenderIcons.render(name)+'</strong><small>'+escapeHtml(c.label)+'</small></div><select aria-label="'+escapeHtml(name)+' 연결 학생"><option value="">자동 연결 사용</option>'+options.filter(function(o){return c.manual && c.studentId===o.id;}).map(function(o){return '<option value="'+escapeHtml(o.id)+'"'+(c.manual&&c.studentId===o.id?' selected':'')+'>'+escapeHtml(o.name+' · '+o.school+' '+o.grade+' · '+(o.gender==='male'?'남':o.gender==='female'?'여':'성별 미등록')+' · '+o.id)+'</option>';}).join('')+'</select><button type="button" data-save>저장</button></article>';}).join(''):'<p>수강료 정산에서 월별 학생 목록을 먼저 불러오세요.</p>')+'</div>';
+    if(message && message.indexOf('불러오는 중')>=0){dialog.querySelector('[data-find]').disabled=true;dialog.querySelectorAll('[data-save]').forEach(function(b){b.disabled=true;});}
+    dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
+    dialog.querySelector('[data-find]').oninput=function(){var q=this.value.trim();dialog.querySelectorAll('[data-name]').forEach(function(a){a.hidden=q&&!a.dataset.name.includes(q);});};
+    dialog.querySelectorAll('article select').forEach(function(select){select.onfocus=function(){if(this.dataset.loaded)return;var value=this.value;this.innerHTML='<option value="">자동 연결 사용</option>'+options.map(function(o){return '<option value="'+escapeHtml(o.id)+'">'+escapeHtml(o.name+' · '+o.school+' '+o.grade+' · '+(o.gender==='male'?'남':o.gender==='female'?'여':'성별 미등록')+' · '+o.id)+'</option>';}).join('');this.value=value;this.dataset.loaded='true';};});
+    dialog.querySelectorAll('[data-save]').forEach(function(btn){btn.onclick=async function(){if(loading)return;var row=btn.closest('[data-name]'),id=row.querySelector('select').value;loading=true;btn.disabled=true;var msg=dialog.querySelector('[data-message]');msg.textContent='연결 저장 중…';try{var result=await runServerWriteWithRetry_('saveTuitionIdentityLink',{studentName:row.dataset.name,studentId:id});if(!result.success)throw Error(result.message||'연결 저장 실패');links=links.filter(function(l){return l.studentName!==row.dataset.name;}).concat([result.link]);StudentGenderIcons.setLinks(links);row.querySelector('small').textContent=StudentGenderIcons.connection(row.dataset.name).label;msg.textContent='저장했습니다. 아이콘 연결이 갱신되었습니다.';}catch(e){msg.textContent=e.message||'저장하지 못했습니다. 다시 시도해 주세요.';}finally{loading=false;btn.disabled=false;}};});
+  }
+  launch.onclick=async function(){render('연결 정보를 불러오는 중…');dialog.showModal();try{var result=await runServer('getTuitionIdentityLinks',{});if(!result.success)throw Error(result.message);links=result.links||[];StudentGenderIcons.setLinks(links);render();}catch(e){render('연결 정보를 불러오지 못했습니다. 창을 닫고 다시 시도하세요.');dialog.querySelectorAll('[data-save]').forEach(function(b){b.disabled=true;});}};
+  dialog.addEventListener('close',function(){launch.focus();});
 })();

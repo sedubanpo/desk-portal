@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { paymentLinkKey, paymentLinkDuplicate, validatePaymentLink } from './payment-link.js';
 import {
   contactChannel,
@@ -53,13 +54,13 @@ const MONTH_LIMIT = 1500;
 const DAILY_LIMIT = 500;
 
 export const TUITION_READ_METHODS = new Set([
-  'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
+  'getTuitionIdentityLinks', 'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
   'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
   'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory', 'getTuitionPaymentLinkHistory', 'previewTuitionPaymentLink'
 ]);
 
 export const TUITION_WRITE_METHODS = new Set([
-  'createTuitionMonth', 'importTuitionPaymentLink',
+  'saveTuitionIdentityLink', 'createTuitionMonth', 'importTuitionPaymentLink',
   'saveTuitionStatusOnly', 'saveTuitionFollowup', 'saveTuitionStudentMemo',
   'saveTuitionAmountAdjustment', 'appendTuitionPaymentEntry', 'updateTuitionPaymentEntry', 'deleteTuitionPaymentEntry'
 ]);
@@ -75,6 +76,23 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
   const nowIso = () => nowDate().toISOString();
 
   const handlers = {
+    async getTuitionIdentityLinks() {
+      return {success:true,links:await store.list('tuitionIdentityLinks',5000)};
+    },
+    async saveTuitionIdentityLink(payload = {}, identity = {}) {
+      if(identity.role !== 'ADMIN') return failure('학생 연결은 관리자만 저장할 수 있습니다.');
+      const name=studentName(payload.studentName),id=text(payload.studentId),reason=text(payload.reason);
+      if(!name || name.length>100 || id.includes('/') || id.length>200) return failure('학생 정보가 올바르지 않습니다.');
+      const key='tuitionIdentityLinks/'+createHash('sha256').update(name).digest('hex'),target=id?'students/'+id:'';
+      return store.transaction([key,target].filter(Boolean), docs=>{
+        const student=id?docs[target]:null;
+        if(id && (!student || student.isAlias || String(student.identityStatus||'').toUpperCase()==='ALIAS'))return {result:failure('계정 관리의 대표 학생을 선택해 주세요.')};
+        const current=docs[key]||{},updatedAt=nowIso();
+        const link={studentName:name,studentId:id,updatedAt,actorName:identity.name||'',actorUid:identity.uid||'',reason};
+        const auditKey='tuitionIdentityLinkHistory/'+createHash('sha256').update(name+'|'+updatedAt+'|'+(identity.uid||'')).digest('hex');
+        return {writes:{[key]:link,[auditKey]:{...link,previousStudentId:current.studentId||''}},result:{success:true,link}};
+      });
+    },
     async previewTuitionPaymentLink(payload = {}, identity = {}) {
       return handlers.importTuitionPaymentLink({ ...payload, previewOnly: true }, identity);
     },

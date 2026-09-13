@@ -39,3 +39,10 @@ test('account-management default icons and canonical name take precedence',()=>{
  assert.doesNotMatch(s.api.render('정승현'),/identity-fallback/);
  assert.doesNotMatch(s.api.render('옛이름'),/<img/);
 });
+test('merged alias does not hide canonical icon, manual link resolves genuine duplicates',()=>{
+ const s=setup();s.send('students',[{id:'old',name:'정승현',isAlias:true,identityStatus:'ALIAS',canonicalStudentId:'ROW-199'}, {id:'ROW-199',name:'정승현',gender:'male',canonicalStudentId:'ROW-199'}, {id:'other',name:'동명',gender:'male',school:'가중',grade:'1'},{id:'other2',name:'동명',gender:'female',school:'나중',grade:'1'}]);
+ assert.match(s.api.render('정승현'),/student-male.svg/);assert.equal(s.api.connection('정승현').label,'자동 연결');
+ assert.equal(s.api.connection('동명').label,'동명이인 · 연결 필요');assert.doesNotMatch(s.api.render('동명'),/<img/);
+ s.api.setLinks([{studentName:'동명',studentId:'other2'}]);assert.match(s.api.render('동명'),/student-female.svg/);
+ s.api.setLinks([]);assert.doesNotMatch(s.api.render('동명'),/<img/);
+});
