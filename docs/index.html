@@ -31666,6 +31666,9 @@
     function getDeskWorkerPalette_(name) {
       var safeName = canonicalizeDeskWorkerName_(name);
       var map = {
+        "박승빈": { bg: "#fff1f2", fg: "#9f1239", border: "#fecdd3", accent: "#e11d48", accentFg: "#ffffff" },
+        "이성진": { bg: "#eff6ff", fg: "#1e40af", border: "#bfdbfe", accent: "#2563eb", accentFg: "#ffffff" },
+        "전소희": { bg: "#ecfdf5", fg: "#065f46", border: "#a7f3d0", accent: "#059669", accentFg: "#ffffff" },
         "홍성우": { bg: "#fff2e7", fg: "#b45309", border: "#f4c9a8", accent: "#ea580c", accentFg: "#ffffff" },
         "이상언": { bg: "#e7fbf3", fg: "#0f766e", border: "#b8ead9", accent: "#0f766e", accentFg: "#ffffff" },
         "안정성": { bg: "#efe7ff", fg: "#6d28d9", border: "#d9c6fb", accent: "#7c3aed", accentFg: "#ffffff" },
@@ -31676,7 +31679,9 @@
         "김유민": { bg: "#eef2ff", fg: "#4338ca", border: "#c7d2fe", accent: "#4f46e5", accentFg: "#ffffff" },
         "이창연": { bg: "#e9fbf6", fg: "#0f766e", border: "#bee9dd", accent: "#14b8a6", accentFg: "#0f172a" }
       };
-      return map[safeName] || { bg: "#eef2f7", fg: "#334155", border: "#d6dee8", accent: "#64748b", accentFg: "#ffffff" };
+      if (map[safeName]) return map[safeName];
+      var hue = Array.from(safeName).reduce(function(hash, ch) { return (hash * 31 + ch.charCodeAt(0)) % 360; }, 0);
+      return { bg: "hsl(" + hue + ",60%,96%)", fg: "hsl(" + hue + ",55%,28%)", border: "hsl(" + hue + ",45%,82%)", accent: "hsl(" + hue + ",55%,42%)", accentFg: "#ffffff" };
     }
 
     function getDeskWorkerBadgeStyle_(name) {
@@ -33738,7 +33743,7 @@
           ? '<span class="desk-live-feed-seq">' + escapeHtml(String(item.workerRunIndex) + '/' + String(item.workerRunTotal)) + '</span>'
           : '';
         var palette = getDeskWorkerPalette_(item.worker || "");
-        var style = (item.style || "") + ';--desk-worker-accent:' + (palette.accent || palette.fg || '#0d684d') + ';--desk-card-border:' + (palette.border || '#d8e4de') + ';';
+        var style = (item.style || "") + ';--desk-feed-bg:' + palette.bg + ';--desk-feed-fg:' + palette.fg + ';--desk-worker-accent:' + (palette.accent || palette.fg || '#0d684d') + ';--desk-card-border:' + (palette.border || '#d8e4de') + ';';
         return '<article class="desk-live-feed-item" style="' + escapeHtml(style) + '">' +
           '<span class="desk-live-feed-dot" aria-hidden="true"></span>' +
           '<div class="desk-live-feed-timeblock">' +

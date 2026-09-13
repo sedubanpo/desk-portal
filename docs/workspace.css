@@ -546,3 +546,18 @@ body #moduleTeacher .time-gap-item { margin:0; padding:0; border:0; background:t
 }
 /* Tuition detail polish: user-approved financial display semantics. */
 :root {--tr-money-in:#245ddd;--tr-money-out:#d52e46;--tr-report-track:#edf1f6;}
+
+/* Keep shared navigation full-width while the journal reserves its activity rail. */
+body .workspace-heading, body .workspace-heading strong,
+body .desk-global-tools, body .desk-global-tools :is(span,button),
+body .module-tabs .module-tab { font-weight:700; }
+@media(min-width:1101px) {
+ body.desk-daily-journal-mode .main > .module-tabs { margin-right:-342px; }
+ body.desk-daily-journal-mode .main.expense-live-collapsed > .module-tabs { margin-right:-106px; }
+}
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-strip { margin:0; align-items:center; }
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-actions { display:flex; align-items:center; gap:8px; }
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; line-height:1; white-space:nowrap; padding:0 14px; }
+body.desk-daily-journal-mode .journal-header-tools .desk-attendance-btn :is(svg,i) { display:block; width:17px; height:17px; flex:0 0 17px; margin:0; }
+body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-bubble { background:var(--desk-feed-bg,#f1f5f9); color:var(--desk-feed-fg,#334155); border:1px solid var(--desk-card-border,#d6dee8); border-left:3px solid var(--desk-worker-accent,#64748b); border-radius:8px; padding:10px; }
+body.desk-daily-journal-mode #deskLiveFeed :is(.desk-live-feed-worker,.desk-live-feed-content) { color:var(--desk-feed-fg,#334155); }
