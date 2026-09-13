@@ -17677,7 +17677,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260914-lime">
+  <link rel="stylesheet" href="./workspace.css?v=20260914-manager">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260914-lime">
@@ -19869,7 +19869,7 @@
                       </div>
                       <div class="field" style="margin-top:10px;">
                         <label for="deskJournalSharedNote">공동 업무 내용</label>
-                        <input id="deskJournalSharedNote" class="modal-input" type="text" placeholder="확인해야 할 내용이나 전달 사항을 적어 주세요">
+                        <textarea id="deskJournalSharedNote" class="modal-input" rows="4" placeholder="확인해야 할 내용이나 전달 사항을 적어 주세요"></textarea>
                       </div>
                       <div class="desk-shared-edit-options">
                         <label class="check-inline"><input id="deskJournalSharedVisible" type="checkbox" checked>상단 공동 업무/공지에 노출</label>
@@ -19878,7 +19878,7 @@
                         <label>대상 근무자</label>
                         <div class="desk-assignee-quick-row" id="deskJournalSharedTargetQuick"></div>
                       </div>
-                      <div class="desk-routine-meta-hint" style="margin-top:8px;">대상 근무자를 비워두면 해당 날짜 모든 근무자에게 표시됩니다. 확인자는 상단 공지 상세에서 근무자가 직접 선택합니다.</div>
+                      <div class="desk-routine-meta-hint" style="margin-top:8px;">선택하지 않으면 모든 근무자에게 표시됩니다. 공지를 읽은 근무자는 본인의 확인란을 체크합니다.</div>
                       <div class="desk-form-actions" style="margin-top:12px;">
                         <button class="modal-action primary" id="deskJournalSaveSharedBtn" type="button">공동 업무 저장</button>
                         <button class="modal-action ghost" id="deskJournalClearSharedBtn" type="button">새 항목</button>
@@ -30669,7 +30669,8 @@
     }
 
     function isDeskStaffAccount_() {
-      return String(state.cloudIdentity && state.cloudIdentity.role || "").toUpperCase() === "STAFF";
+      var role = String(state.cloudIdentity && state.cloudIdentity.role || "").toUpperCase();
+      return !!role && role !== "ADMIN";
     }
 
     function hasDeskPermission_(key) {
@@ -30950,7 +30951,7 @@
     }
 
     function getDeskSharedAckCandidates_(dateKey) {
-      return getDeskShiftWorkersForDate_(dateKey).map(function(item) { return item.worker; });
+      return normalizeDeskWorkerNameArray_(Object.values(state.desk.staffIcons.staffByName || {}).map(function(person) { return person.name; }).concat(getDeskShiftWorkersForDate_(dateKey).map(function(item) { return item.worker; }), [getDeskIdentityName_()]));
     }
 
     function hasDeskWorkerAckedTask_(item, worker) {
@@ -30961,6 +30962,7 @@
       var task = findDeskDailyTaskById_(taskId);
       var name = String(worker || "").trim();
       if (!task || !name || !isDeskSharedTask_(task)) return;
+      if (!isDeskAdminAccount_() && !isSameDeskWorkerName_(name, getDeskIdentityName_())) return;
       var next = getDeskSharedAckWorkers_(task).filter(function(item) {
         return !isSameDeskWorkerName_(item, name);
       });
@@ -33251,7 +33253,7 @@
 
     function ensureDeskDailyWorkerSelection_(workers) {
       if (isDeskStaffAccount_()) {
-        state.desk.daily.selectedWorker = getDeskIdentityName_();
+        if (["전체", DESK_ROUTINE_TAB_KEY].indexOf(state.desk.daily.selectedWorker) < 0) state.desk.daily.selectedWorker = getDeskIdentityName_();
         return;
       }
       var options = ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
@@ -33357,10 +33359,7 @@
               '<span class="desk-shared-ack-label">확인자</span>' +
               (ackCandidates.length ? ackCandidates.map(function(name) {
                 var active = hasDeskWorkerAckedTask_(item, name);
-                return '<button type="button" class="desk-shared-ack-chip' + (active ? ' active' : '') + '"' +
-                  ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
-                  ' data-desk-shared-ack="' + escapeHtml(item.id) + '"' +
-                  ' data-desk-shared-ack-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+                return '<label class="desk-person-option">' + renderDeskStaffIdentityHtml_(name) + '<input type="checkbox" data-desk-shared-ack="' + escapeHtml(item.id) + '" data-desk-shared-ack-worker="' + escapeHtml(name) + '"' + (active ? ' checked' : '') + (!isDeskAdminAccount_() && !isSameDeskWorkerName_(name, getDeskIdentityName_()) ? ' disabled' : '') + '><span class="desk-person-check" aria-hidden="true"></span></label>';
               }).join("") : '<span class="desk-muted">이 날짜의 근무자가 없습니다.</span>') +
             '</div>' +
           '</div>' +
@@ -33783,7 +33782,7 @@
       var pending = tasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); });
       var sharedCount = tasks.filter(isDeskSharedTask_).length;
       var carryoverLoading = isDeskDailyCarryoverLoading_(dateKey) && state.desk.daily.carryoverDateKey !== dateKey;
-      var tabs = isDeskStaffAccount_() ? scopeDeskWorkersForIdentity_(workers) : ["전체", DESK_ROUTINE_TAB_KEY].concat(workers || []);
+      var tabs = ["전체", DESK_ROUTINE_TAB_KEY].concat(isDeskStaffAccount_() ? scopeDeskWorkersForIdentity_(workers) : (workers || []));
       deskJournalWorkerTabsEl.innerHTML = tabs.map(function(name) {
         var label = name === DESK_ROUTINE_TAB_KEY ? "업무 관리자" : name;
         var style = getDeskWorkerTabStyle_(name);
@@ -33807,6 +33806,7 @@
 
     function renderDeskDailyWorkerInputs_(workers) {
       var names = (workers || []).slice();
+      if (isDeskStaffAccount_()) state.desk.daily.editorMode = "shared";
       var isRoutineManager = state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY;
       var isOverviewTab = state.desk.daily.selectedWorker === "전체";
       if (deskJournalWorkerNameListEl) {
@@ -33829,6 +33829,7 @@
       }
       if (deskJournalEditorTabsEl) {
         Array.prototype.forEach.call(deskJournalEditorTabsEl.querySelectorAll("[data-desk-editor-tab]"), function(btn) {
+          btn.hidden = !isDeskAdminAccount_() && btn.getAttribute("data-desk-editor-tab") !== "shared";
           btn.classList.toggle("active", (btn.getAttribute("data-desk-editor-tab") || "manager") === (state.desk.daily.editorMode || "manager"));
         });
       }
@@ -33844,7 +33845,7 @@
       if (deskJournalTaskEditorTitleEl) {
         deskJournalTaskEditorTitleEl.textContent =
           state.desk.daily.editorMode === "routine" ? "루틴 업무" :
-          state.desk.daily.editorMode === "shared" ? "공지/공동업무 관리" :
+          state.desk.daily.editorMode === "shared" ? "공동 공지 작성" :
           "업무 배정";
       }
       if (deskJournalTaskEditorSubEl) {
@@ -33852,7 +33853,7 @@
           state.desk.daily.editorMode === "routine"
             ? "반복해서 쓰는 기본 업무를 따로 저장해 두고, 필요할 때 오늘 근무자에게 빠르게 배정합니다."
             : state.desk.daily.editorMode === "shared"
-              ? "상단 공지 노출, 대상 근무자, 순서를 관리합니다."
+              ? "함께 알아야 할 내용을 남기고, 확인할 근무자를 선택하세요."
               : "업무 관리자 탭에서는 오늘 근무자에게 바로 배정할 업무를 추가합니다.";
       }
       if (deskTaskQueueTitleEl) {
@@ -33885,7 +33886,7 @@
           ? names.map(function(name) {
               return '<button type="button" class="desk-assignee-quick-btn' + (isSameDeskWorkerName_(assignedValue, name) ? ' active' : '') + '"' +
                 ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
-                ' data-desk-assign-worker="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+                ' data-desk-assign-worker="' + escapeHtml(name) + '">' + renderDeskStaffIdentityHtml_(name) + '</button>';
             }).join("")
           : '<span class="desk-muted">오늘 근무자가 아직 없습니다.</span>';
       }
@@ -33897,9 +33898,7 @@
         deskJournalSharedTargetQuickEl.innerHTML = targetNames.length
           ? targetNames.map(function(name) {
               var active = selectedTargets.some(function(target) { return isSameDeskWorkerName_(target, name); });
-              return '<button type="button" class="desk-assignee-quick-btn' + (active ? ' active' : '') + '"' +
-                ' style="' + escapeHtml(getDeskWorkerBadgeStyle_(name)) + '"' +
-                ' data-desk-shared-target="' + escapeHtml(name) + '">' + escapeHtml(name) + '</button>';
+              return '<label class="desk-person-option">' + renderDeskStaffIdentityHtml_(name) + '<input type="checkbox" data-desk-shared-target="' + escapeHtml(name) + '"' + (active ? ' checked' : '') + '><span class="desk-person-check" aria-hidden="true"></span></label>';
             }).join("")
           : '<span class="desk-muted">이 날짜의 근무자가 아직 없습니다.</span>';
       }
@@ -34016,14 +34015,18 @@
         var syncMeta = item.syncState === "error"
           ? '<div class="desk-task-ledger-meta" style="color:#b91c1c;">서버 저장 확인 필요</div>'
           : (item.syncState === "saving" ? '<div class="desk-task-ledger-meta" style="color:#1d4ed8;">서버 저장 중</div>' : '');
-        var statusControl = item.deleted
+        var statusControl = !isDeskAdminAccount_()
+          ? '<span class="desk-task-ledger-status">' + escapeHtml(status) + '</span>'
+          : item.deleted
           ? '<span class="desk-task-ledger-status is-deleted">삭제됨</span>'
           : '<select data-desk-ledger-status="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.title) + ' 진행 상태">' +
               ["대기", "진행 중", "확인 필요", "완료"].map(function(value) {
                 return '<option value="' + value + '"' + (value === status ? ' selected' : '') + '>' + value + '</option>';
               }).join("") +
             '</select>';
-        var followupControl = item.deleted
+        var followupControl = !isDeskAdminAccount_()
+          ? '<div>' + escapeHtml(item.unresolvedReason || "—") + '</div><div class="desk-task-ledger-meta">' + escapeHtml(item.nextAction || "—") + '</div>'
+          : item.deleted
           ? '<div class="desk-task-ledger-meta">' + escapeHtml(item.unresolvedReason || item.nextAction || "삭제된 업무") + '</div>'
           : '<div class="desk-task-ledger-followup">' +
               '<input type="text" data-desk-ledger-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="미해결 사유">' +
@@ -34037,7 +34040,7 @@
           '<td><div>' + escapeHtml(assignedAt) + '</div><div class="desk-task-ledger-meta">업무일 ' + escapeHtml(item.dateKey || "-") + '</div></td>' +
           '<td>' + statusControl + '<div class="desk-task-ledger-meta">수정 ' + escapeHtml(updatedAt) + '</div></td>' +
           '<td>' + followupControl + deletedMeta + '</td>' +
-          '<td>' + (item.deleted ? '' : '<button class="desk-task-ledger-save" type="button" data-desk-ledger-save="' + escapeHtml(item.id) + '" title="상태와 후속 단계 저장"><i data-lucide="save"></i></button>') + '</td>' +
+          '<td>' + (item.deleted || !isDeskAdminAccount_() ? '' : '<button class="desk-task-ledger-save" type="button" data-desk-ledger-save="' + escapeHtml(item.id) + '" title="상태와 후속 단계 저장"><i data-lucide="save"></i></button>') + '</td>' +
         '</tr>';
       }).join("") : '<tr><td colspan="7"><div class="desk-task-ledger-empty">조건에 맞는 업무 배정이 없습니다.</div></td></tr>';
       deskJournalTaskBoardEl.innerHTML = '<section class="desk-task-ledger">' +
@@ -34076,6 +34079,11 @@
         if (!state.desk.daily.taskLedgerLoaded && !state.desk.daily.taskLedgerLoading && !state.desk.daily.taskLedgerError) {
           setTimeout(function() { loadDeskTaskLedger_(false); }, 0);
         }
+        return;
+      }
+      if (isManagerTab && !isDeskAdminAccount_()) {
+        renderDeskTaskLedger_();
+        if (!state.desk.daily.taskLedgerLoaded && !state.desk.daily.taskLedgerLoading) setTimeout(function() { loadDeskTaskLedger_(false); }, 0);
         return;
       }
       var allVisibleTasks = (tasks || []).filter(function(item) {
@@ -34306,20 +34314,20 @@
               '<div class="desk-task-meta">' +
                 '<span class="desk-badge tone-hybrid">' + escapeHtml(meta.label) + '</span>' +
                 '<span>' + (item.hiddenFromWorkerBand ? '상단 숨김' : '상단 노출') + '</span>' +
-                '<span>대상 ' + escapeHtml(targets.length ? targets.join(", ") : "전체") + '</span>' +
+                '<span>대상 ' + (targets.length ? targets.map(function(name) { return renderDeskStaffIdentityHtml_(name); }).join(" ") : "모든 근무자") + '</span>' +
                 '<span>확인 ' + escapeHtml(String(getDeskSharedAckWorkers_(item).length)) + '명</span>' +
               '</div>' +
             '</div>' +
             '<span class="desk-task-status pending">' + escapeHtml(String(position + 1)) + '</span>' +
           '</div>' +
           (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
-          '<div class="desk-task-actions">' +
+          (isDeskAdminAccount_() ? '<div class="desk-task-actions">' +
             '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="-1">위로</button>' +
             '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="1">아래로</button>' +
             '<button class="modal-action ghost" type="button" data-desk-shared-edit="' + escapeHtml(item.id) + '">편집</button>' +
             '<button class="modal-action ghost" type="button" data-desk-shared-visibility="' + escapeHtml(item.id) + '">' + (item.hiddenFromWorkerBand ? '상단 노출' : '상단 숨김') + '</button>' +
             '<button class="modal-action ghost danger" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">삭제</button>' +
-          '</div>' +
+          '</div>' : '') +
         '</article>';
       }).join("") + '</div>' : '<div class="desk-empty compact">' + (shared.length ? '검색 조건에 맞는 공동 업무가 없습니다.' : '등록된 공지/공동업무가 없습니다.') + '</div>');
       refreshLucideIcons_();
@@ -35406,7 +35414,7 @@
         label: String(deskJournalSharedLabelEl && deskJournalSharedLabelEl.value || "공지").trim() || "공지",
         hiddenFromWorkerBand: !(deskJournalSharedVisibleEl && deskJournalSharedVisibleEl.checked),
         targetWorkers: deskJournalSharedTargetQuickEl
-          ? Array.prototype.slice.call(deskJournalSharedTargetQuickEl.querySelectorAll("[data-desk-shared-target].active")).map(function(btn) {
+          ? Array.prototype.slice.call(deskJournalSharedTargetQuickEl.querySelectorAll("[data-desk-shared-target]:checked")).map(function(btn) {
               return btn.getAttribute("data-desk-shared-target") || "";
             })
           : []
@@ -35438,6 +35446,7 @@
       if (deskJournalSharedTargetQuickEl) {
         Array.prototype.forEach.call(deskJournalSharedTargetQuickEl.querySelectorAll("[data-desk-shared-target]"), function(btn) {
           btn.classList.remove("active");
+          if (btn.matches("[data-desk-shared-target]")) btn.checked = false;
         });
       }
     }
@@ -35498,6 +35507,7 @@
 
     function saveDeskSharedTaskFromForm_() {
       var draft = collectDeskSharedTaskDraft_();
+      if (draft.id && !isDeskAdminAccount_()) return;
       if (!draft.dateKey) {
         alert("공동 업무 일자를 입력해 주세요.");
         return;
@@ -37202,7 +37212,7 @@
           var btn = event.target.closest("[data-desk-journal-worker]");
           if (!btn) return;
           var requestedWorker = btn.getAttribute("data-desk-journal-worker") || "전체";
-          state.desk.daily.selectedWorker = isDeskStaffAccount_() ? getDeskIdentityName_() : requestedWorker;
+          state.desk.daily.selectedWorker = isDeskStaffAccount_() && ["전체", DESK_ROUTINE_TAB_KEY].indexOf(requestedWorker) < 0 ? getDeskIdentityName_() : requestedWorker;
           if (state.desk.daily.selectedWorker === DESK_ROUTINE_TAB_KEY) {
             state.desk.daily.editorMode = "shared";
           }
@@ -37275,10 +37285,10 @@
         });
       }
       if (deskJournalSharedTargetQuickEl) {
-        deskJournalSharedTargetQuickEl.addEventListener("click", function(event) {
+        deskJournalSharedTargetQuickEl.addEventListener("change", function(event) {
           var btn = event.target.closest("[data-desk-shared-target]");
           if (!btn) return;
-          btn.classList.toggle("active");
+          btn.classList.toggle("active", btn.checked);
         });
       }
       if (deskJournalSharedSummaryListEl) {
@@ -37331,6 +37341,7 @@
           }
           var ledgerSaveBtn = event.target.closest("[data-desk-ledger-save]");
           if (ledgerSaveBtn) {
+            if (!isDeskAdminAccount_()) return;
             var ledgerId = ledgerSaveBtn.getAttribute("data-desk-ledger-save") || "";
             var ledgerTask = (state.desk.daily.taskLedger || []).find(function(item) { return item.id === ledgerId; });
             if (!ledgerTask) return;

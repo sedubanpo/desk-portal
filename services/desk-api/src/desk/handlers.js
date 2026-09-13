@@ -375,6 +375,29 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       if (payload.task?.id && !requestedId) return failure('업무 ID가 올바르지 않습니다.');
       const existing = requestedId ? await store.get(`${PATHS.journal}/${key}/tasks/${requestedId}`) : null;
       const task = dailyTask({ ...(existing || {}), ...(payload.task || {}) }, payload.task?.id, key, stamp);
+      if (identity.role && identity.role !== 'ADMIN') {
+        if (existing) {
+          if (existing.deleted) return failure('삭제된 업무는 관리자만 변경할 수 있습니다.');
+          const before = dailyTask(existing, requestedId, key, stamp);
+          if (isSharedTask(before)) {
+            const protectedFields = ['worker','title','note','category','completed','progressStatus','unresolvedReason','nextAction','targetWorkers','hiddenFromWorkerBand','sortOrder'];
+            if (protectedFields.some(field => JSON.stringify(before[field]) !== JSON.stringify(task[field]))) return failure('공지 수정은 관리자만 할 수 있습니다.');
+            const own = workerKey(identity.name);
+            const others = list => (list || []).filter(name => workerKey(name) !== own).map(workerKey).sort();
+            if (JSON.stringify(others(before.ackWorkers)) !== JSON.stringify(others(task.ackWorkers))) return failure('본인의 확인 상태만 변경할 수 있습니다.');
+          } else {
+            if (workerKey(before.worker) !== workerKey(identity.name)) return failure('다른 근무자의 배정은 변경할 수 없습니다.');
+            const protectedFields = ['worker','title','note','category','targetWorkers','hiddenFromWorkerBand','sortOrder'];
+            if (protectedFields.some(field => JSON.stringify(before[field]) !== JSON.stringify(task[field]))) return failure('업무 배정 수정은 관리자만 할 수 있습니다.');
+          }
+        } else {
+          if (!isSharedTask(task)) return failure('업무 배정은 관리자만 할 수 있습니다.');
+          task.ackWorkers = [];
+          task.completed = false;
+          task.createdByUid = identity.uid || '';
+          task.createdByName = identity.name || '';
+        }
+      }
       if (!rtdbKey(task.id)) return failure('업무 ID가 올바르지 않습니다.');
       if (!task.worker) return failure('업무 대상 근무자가 필요합니다.');
       if (!task.title) return failure('업무 제목을 입력해 주세요.');
@@ -395,6 +418,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
     },
 
     async deleteDeskDailyJournalTask(payload = {}, identity = {}) {
+      if (identity.role && identity.role !== 'ADMIN') return failure('업무 삭제는 관리자만 할 수 있습니다.');
       const key = dateKey(payload.dateKey);
       const id = rtdbKey(payload.id);
       if (!key) return failure('dateKey가 올바르지 않습니다.');

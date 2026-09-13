@@ -566,3 +566,21 @@ test('portal config CAS retries a cached-null callback against the server baseli
   assert.deepEqual(result.value, [{ id: 'saved', label: '저장 완료' }]);
   assert.deepEqual(stored, [{ id: 'saved', label: '저장 완료' }]);
 });
+
+
+test('staff publishes shared notices but cannot edit assignments or delete', async () => {
+ const handlers=createDeskHandlers({store:memoryStore()});
+ const staff={role:'STAFF',uid:'s',name:'테스트근무자'},admin={role:'ADMIN',uid:'a',name:'관리자'};
+ const save=(task,who=staff)=>handlers.saveDeskDailyJournalTask({dateKey:'2026-09-14',task},who);
+ const notice=await save({id:'notice',worker:'공동업무',category:'__shared__::공지',title:'공지',createdByName:'위조'});
+ assert.equal(notice.success,true); assert.equal(notice.task.createdByName,staff.name);
+ assert.equal((await save({...notice.task,title:'변경'})).success,false);
+ assert.equal((await save({...notice.task,progressStatus:'확인 필요'})).success,false);
+ assert.equal((await save({...notice.task,ackWorkers:[staff.name]})).success,true);
+ assert.equal((await save({...notice.task,ackWorkers:['다른근무자']})).success,false);
+ const assigned=await save({id:'assigned',worker:'다른근무자',title:'업무'},admin);
+ assert.equal((await handlers.getDeskDailyJournalTaskLedger({},staff)).tasks.length,1);
+ assert.equal((await save({...assigned.task,completed:true})).success,false);
+ assert.equal((await handlers.deleteDeskDailyJournalTask({dateKey:'2026-09-14',id:'assigned'},staff)).success,false);
+ assert.equal((await handlers.deleteDeskDailyJournalTask({dateKey:'2026-09-14',id:'assigned'},admin)).success,true);
+});

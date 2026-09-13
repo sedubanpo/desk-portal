@@ -576,3 +576,25 @@ body .loading-bar-track { display:none; }
 @media(prefers-reduced-motion:reduce) { .portal-loading-mark img,.portal-loading-mark span {animation:none} }
 body.desk-daily-journal-mode #deskLiveFeed .desk-live-feed-bubble { border:1px solid var(--desk-card-border,#d6dee8); padding:12px; border-radius:10px; }
 body .desk-worker-detail-tab.active { background:var(--portal-action-bg); color:var(--portal-action-ink); border-color:var(--portal-action-border); box-shadow:none; font-weight:700; }
+
+/* Work manager: editor above its notice archive, roster selection as people rows. */
+body #deskJournalSharedPanel { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; }
+body #deskJournalSharedPanel.hidden { display:none; }
+body #deskJournalSharedPanel > :is(.desk-form-actions,.desk-shared-manager-board),body #deskJournalSharedPanel > .field:has(#deskJournalSharedNote),body #deskJournalSharedPanel > .field:has(#deskJournalSharedTargetQuick) { grid-column:1/-1; }
+body #deskJournalSharedPanel textarea { min-height:110px; resize:vertical; line-height:1.7; }
+body .desk-person-option { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 4px; border:0; border-bottom:1px solid #e6eadf; background:transparent; color:#35432b; font-size:13px; cursor:pointer; position:relative; }
+body .desk-person-option .desk-staff-avatar { width:28px; height:28px; flex:0 0 28px; }
+body .desk-person-option input { width:17px; height:17px; accent-color:#72963d; margin-left:auto; }
+body .desk-person-option:focus-within { outline:2px solid #72963d; outline-offset:3px; border-radius:4px; }
+body #deskJournalSharedTargetQuick,body .desk-shared-ack-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:0 18px; }
+body .desk-shared-ack-label { grid-column:1/-1; }
+body .desk-person-check { display:none; }
+body #deskJournalEditorTabs { background:transparent; border-bottom:1px solid #dce5d0; border-radius:0; padding:0; gap:18px; }
+body #deskJournalEditorTabs button { border:0; border-radius:0; box-shadow:none; background:transparent; color:#67705f; padding:12px 0; }
+body #deskJournalEditorTabs button.active { border-bottom:2px solid #72963d; color:#35491b; font-weight:700; background:transparent; }
+body #deskJournalEditorTabs button[hidden] { display:none; }
+body .desk-shared-manager-list .desk-task-card { border:0; border-top:1px solid #e1e8d6; border-radius:0; background:transparent; padding:18px 0; box-shadow:none; }
+body .desk-shared-manager-list .desk-task-title { font-size:15px; line-height:1.6; }
+body .desk-shared-manager-list .desk-task-actions { gap:16px; }
+body .desk-shared-manager-list .desk-task-actions button { border:0; background:transparent; padding:5px 0; box-shadow:none; }
+@media(max-width:760px) { body #deskJournalSharedPanel { grid-template-columns:1fr; } }
