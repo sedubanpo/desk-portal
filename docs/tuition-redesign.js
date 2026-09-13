@@ -62,6 +62,16 @@
       '<div class="tr-report-body"><div class="tr-report-ring" style="--report-rate:'+fill+'%" role="img" aria-label="안내 금액 대비 수납률 '+(pct===null?'산정 불가':pct.toFixed(1)+'%')+'"><div><span>안내 금액 대비 수납률</span><strong>'+(pct===null?'—':pct.toFixed(1)+'<small>%</small>')+'</strong><span>순수납액 기준</span></div></div><div class="tr-report-numbers">'+
       [['안내 금액 합계',expected,'+','tr-money-in'],['순수납액',collected,'-','tr-money-out'],['미납액',outstanding,'+','tr-money-in']].map(function(v){return '<section class="'+v[3]+'"><span>'+v[0]+'</span><strong>'+v[2]+formatWon(Math.abs(v[1]))+'</strong></section>';}).join('')+'</div></div>'+
       '<footer><div><strong>전체 '+(k.totalStudents||0)+'명</strong><span>납부완료 '+(k.paidStudents||0)+'명</span><span>미납 '+(k.unpaidStudents||0)+'명</span></div><p>수납률 = 순수납액 ÷ 안내 금액 합계 × 100</p><p>미납액은 학생별 미납액의 합계로, 안내 합계와 순수납액의 차이와 다를 수 있습니다.</p>'+(pct===null?'<p>안내 금액이 없어 수납률을 산정할 수 없습니다.</p>':pct>100?'<p>수납률이 100%를 초과하여 원형 그래프는 전체 채움으로 표시합니다.</p>':collected<0?'<p>순수납액이 음수여서 원형 그래프는 채움 없이 표시합니다.</p>':'')+'</footer>';
+    var statusRows=(state.tuition.allRows||[]).filter(function(r){return !r.hiddenFromTuition;});
+    var counts={};statusRows.forEach(function(r){var s=r.unpaidStatus||'안내이전';counts[s]=(counts[s]||0)+1;});
+    var order=['안내이전','안내완료','확인필요','납부예정','일부완료','연락두절','이월금','납부완료'];
+    Object.keys(counts).forEach(function(s){if(!order.includes(s))order.push(s);});
+    var colors=['#94a3b8','#d69b24','#ed6a43','#7864c4','#319db2','#ca4264','#5680bc','#098567'];
+    var total=statusRows.length,at=0,stops=[];
+    var legend=order.map(function(s,i){var n=counts[s]||0,p=total?n/total*100:0,c=colors[i%colors.length];if(n){stops.push(c+' '+at+'% '+(at+p)+'%');at+=p;}return '<li><span class="tr-status-dot" style="background:'+c+'"></span><span>'+tuitionStatusVisual_(s)+esc(s)+'</span><strong>'+n+'명</strong><b>'+p.toFixed(1)+'%</b></li>';}).join('');
+    var section=document.createElement('section');section.className='tr-status-report';
+    section.innerHTML='<header><h3>학생 상태별 현황</h3><p>숨긴 학생 제외 · 전체 '+total+'명</p></header><div class="tr-status-report-body"><div class="tr-status-ring" style="background:'+(stops.length?'conic-gradient('+stops.join(',')+')':'#e8edf2')+'" role="img" aria-label="학생 상태별 비율. 상세 명수와 비율은 옆 목록 참조"><div><span>전체 학생</span><strong>'+total+'<small>명</small></strong></div></div><ul>'+legend+'</ul></div>';
+    report.querySelector('footer').before(section);
     report.querySelector('[data-close-report]').onclick=function(){report.close();};report.showModal();
   };
   report.addEventListener('close',function(){rate.focus();});

@@ -39527,7 +39527,7 @@
         var hasIssue = issueMemo && issueMemo !== "-";
         return '<tr>' +
           '<td>' + renderStudentIdentityHtml_(row.studentName) + '</td>' +
-          '<td><span class="tuition-payment-amount' + amountClass + '">' + (amount < 0 ? '수납 ' : '환불 ') + formatWon(Math.abs(amount)) + '</span></td>' +
+          '<td><span class="tuition-payment-amount' + amountClass + '">' + (amount < 0 ? '수납 ' : '환불 ') + tuitionMoneyHtml_(amount) + '</span></td>' +
           '<td>' + escapeHtml(row.paidAt || "-") + '</td>' +
           '<td>' + escapeHtml(row.paymentType || "-") + (row.cardCompany ? '<span class="tuition-payment-card-company">' + escapeHtml(row.cardCompany) + '</span>' : '') + '</td>' +
           '<td>' + escapeHtml(row.approvalNo || "-") + '</td>' +
@@ -39535,9 +39535,9 @@
             ? '<span class="tuition-issue-tooltip" tabindex="0"><span class="tuition-issue-chip has">이슈있음</span><span class="tuition-issue-tooltip-text" role="tooltip">' + escapeHtml(issueMemo) + '</span></span>'
             : '<span class="tuition-issue-chip" title="이슈 없음">이슈없음</span>') + '</td>' +
           '<td class="tuition-payment-action-cell"><div class="tuition-payment-actions">' +
-            '<button type="button" class="tuition-payment-edit-btn" data-edit-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 수정" title="수납 내역 수정"><i data-lucide="pencil" aria-hidden="true"></i></button>' +
-            '<button type="button" class="tuition-payment-history-btn" data-history-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 변경 히스토리" title="수납 변경 히스토리"><i data-lucide="history" aria-hidden="true"></i></button>' +
-            '<button type="button" class="tuition-payment-delete-btn" data-delete-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 삭제" title="수납 내역 삭제"><i data-lucide="trash-2" aria-hidden="true"></i></button>' +
+            '<button type="button" class="tuition-payment-edit-btn" data-edit-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 수정" title="수납 내역 수정">' + tuitionDetailIcon_('edit') + '</button>' +
+            '<button type="button" class="tuition-payment-history-btn" data-history-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 변경 히스토리" title="수납 변경 히스토리">' + tuitionDetailIcon_('history') + '</button>' +
+            '<button type="button" class="tuition-payment-delete-btn" data-delete-payment-key="' + escapeHtml(getTuitionPaymentClientMergeKey_(row)) + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + ' 수납 내역 삭제" title="수납 내역 삭제">' + tuitionDetailIcon_('delete') + '</button>' +
           '</div></td>' +
         '</tr>';
       }).join("");
@@ -39663,10 +39663,10 @@
           '<div>' +
             '<button type="button" class="nm tuition-name-link" data-student-history="' + escapeHtml(row.studentName) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button>' +
             '<div class="meta">' + escapeHtml((row.school || "학교미입력") + " / " + formatTuitionGradeLabel(row.grade)) + '</div>' +
-            '<div class="meta">' + buildTuitionStatusBadge(row.unpaidStatus) + ' · 안내 ' + formatWon(row.guideAmount) + ' · 수납 ' + formatWon(row.collectedAmount) + '</div>' +
+            '<div class="meta">' + buildTuitionStatusBadge(row.unpaidStatus) + '<span class="tr-unpaid-breakdown">안내 ' + '<span class="tr-money-in">+' + formatWon(Math.abs(row.guideAmount||0)) + '</span>' + ' · 수납 ' + tuitionMoneyHtml_(-Math.abs(row.collectedAmount)) + '</span>' + '</div>' +
           '</div>' +
           '<div>' +
-            '<div class="amt">' + formatWon(row.outstandingAmount) + '</div>' +
+            '<div class="amt"><small>미납액</small><span class="tr-money-in">+' + formatWon(Math.abs(row.outstandingAmount)) + '</span>' + '</div>' +
           '</div>' +
         '</article>';
       }).join("");
@@ -39906,7 +39906,7 @@
     function buildTuitionPreviousMethod_(value) {
       var method = normalizeTuitionPaymentMethod_(value);
       if (!method) return "";
-      return '<span class="tuition-previous-method" title="이전 달 수납 방법: ' + escapeHtml(method) + '" aria-label="이전 달 수납 방법 ' + escapeHtml(method) + '"><i data-lucide="' + getTuitionPaymentMethodIcon_(method) + '" aria-hidden="true"></i></span>';
+      return '<span class="tuition-previous-method" title="이전 달 수납 방법: ' + escapeHtml(method) + '" aria-label="이전 달 수납 방법 ' + escapeHtml(method) + '">' + tuitionMethodVisual_(method) + '</span>';
     }
 
     function getTuitionContactChannelIcon_(value) {
@@ -40845,7 +40845,7 @@
       });
       tuitionCalendarMonthSummaryEl.innerHTML =
         month + "월 총 수납액" +
-        "<strong>" + formatWon(totalAmount) + '<span class="meta">(' + totalCount + "건)</span></strong>";
+        "<strong>" + tuitionMoneyHtml_(-totalAmount) + '<span class="meta">(' + totalCount + "건)</span></strong>";
 
       var firstOfMonth = new Date(year, month - 1, 1);
       var startDate = new Date(year, month - 1, 1 - firstOfMonth.getDay());
@@ -40875,10 +40875,10 @@
         var totalDay = 0;
         list.forEach(function(row) { totalDay += (0 - toNumber(row.amount, 0)); });
         var lines = list.slice(0, 2).map(function(row) {
-          return '<div class="tuition-cal-day-line"><span class="n">' + renderStudentIdentityHtml_(row.studentName) + '</span><span>' + formatWonNoSuffix_(0 - toNumber(row.amount, 0)) + "</span></div>";
+          return '<div class="tuition-cal-day-line"><span class="n">' + tuitionMethodVisual_(row.paymentType) + renderStudentIdentityHtml_(row.studentName) + '</span><span>' + tuitionMoneyHtml_(row.amount) + "</span></div>";
         }).join("");
         if (list.length > 2) lines += '<div class="tuition-cal-day-more">+' + (list.length - 2) + "건</div>";
-        var totalHtml = list.length ? '<div class="tuition-cal-day-total">합계 ' + formatWonNoSuffix_(totalDay) + "</div>" : "";
+        var totalHtml = list.length ? '<div class="tuition-cal-day-total">합계 ' + tuitionMoneyHtml_(-totalDay) + "</div>" : "";
         html += '<button type="button" class="' + cls + '" data-tuition-cal-day="' + i + '">' +
           '<div class="tuition-cal-day-num">' + dDay + "</div>" +
           '<div class="tuition-cal-day-body">' + lines + totalHtml + "</div>" +
@@ -40931,7 +40931,7 @@
       list.forEach(function(row) {
         dailyTotal += (0 - toNumber(row.amount, 0));
       });
-      tuitionCalendarDetailTotalEl.textContent = formatWon(dailyTotal);
+      tuitionCalendarDetailTotalEl.innerHTML = tuitionMoneyHtml_(-dailyTotal);
       if (!list.length) {
         tuitionCalendarDetailListEl.innerHTML = '<div class="tuition-cal-empty">해당 일자 수납 내역이 없습니다.</div>';
         return;
@@ -40944,10 +40944,10 @@
         return '<div class="tuition-cal-detail-item">' +
           '<div class="tuition-cal-detail-main">' +
             '<div><div class="tuition-cal-detail-name">' + renderStudentIdentityHtml_(row.studentName) + '</div><div class="tuition-cal-detail-campus">' + escapeHtml((row.business || "반포") + " 캠퍼스") + "</div></div>" +
-            '<div class="tuition-cal-detail-amount">' + formatWon(amount) + "</div>" +
+            '<div class="tuition-cal-detail-amount">' + tuitionMoneyHtml_(-amount) + "</div>" +
           "</div>" +
           '<div class="tuition-cal-detail-sub">' +
-            '<span class="tuition-cal-detail-chip ' + chipClass + '">' + escapeHtml(route) + "</span>" +
+            '<span class="tuition-cal-detail-chip ' + chipClass + '">' + tuitionMethodVisual_(row.paymentType) + escapeHtml(route) + "</span>" +
             '<span>🕒 ' + escapeHtml(paidTime + " 납부") + "</span>" +
           "</div>" +
         "</div>";
@@ -41433,6 +41433,21 @@
       return "rgba(" + r + "," + g + "," + b + "," + clampNumber(toNumber(alpha, 1), 0, 1) + ")";
     }
 
+    function tuitionMoneyHtml_(amount) {
+      var n = toNumber(amount, 0);
+      return '<span class="tr-ledger-money ' + (n > 0 ? 'tr-money-in' : 'tr-money-out') + '">' + (n > 0 ? '+' : '-') + formatWon(Math.abs(n)) + '</span>';
+    }
+    function tuitionDetailIcon_(kind) {
+      var paths = {edit:'M16 3l5 5M4 20l4-1L21 6l-3-3L5 16z',history:'M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2',delete:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7',card:'M3 7h18v12H3zM3 11h18M6 15h4',cash:'M2 6h20v13H2zM10 9h4v7h-4zM5 12h1M18 12h1',bank:'M3 9l9-6 9 6zM5 11v7M10 11v7M15 11v7M20 11v7M2 21h20',other:'M4 6h16v15H4zM8 3h8v6H8M8 13h8M8 17h5',before:'M12 3a9 9 0 1 0 9 9M12 7v5l3 2',guided:'M3 5h18v13H8l-5 3zM7 9h10M7 13h7',paid:'M20 11a8 8 0 1 1-5-7M9 10l3 3 9-9',check:'M12 3L2 21h20zM12 9v5M12 17v1',carry:'M4 7h14l-4-4M20 17H6l4 4',plan:'M4 5h16v16H4zM8 2v6M16 2v6M4 10h16',partial:'M12 3a9 9 0 1 0 0 18zM12 3a9 9 0 0 1 0 18',lost:'M4 4l16 16M5 12a7 7 0 0 1 12-5M19 12a7 7 0 0 1-12 5'};
+      return '<svg class="tr-detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(paths[kind]||paths.other)+'"/></svg>';
+    }
+    function tuitionMethodVisual_(value) {
+      var m=normalizeTuitionPaymentMethod_(value);
+      if(m==='결제링크'||m==='서울페이') return '<img class="tr-method-logo" src="./assets/'+(m==='결제링크'?'payment-teacher.png':'seoul-pay.png')+'" alt="'+m+'">';
+      return tuitionDetailIcon_({'현장카드':'card','계좌이체':'bank','현금':'cash'}[m]||'other');
+    }
+    function tuitionStatusVisual_(s) { return tuitionDetailIcon_({'안내이전':'before','안내완료':'guided','납부완료':'paid','확인필요':'check','이월금':'carry','일부완료':'partial','납부예정':'plan','연락두절':'lost'}[s]||'before'); }
+
     function buildTuitionStatusBadge(status) {
       var s = String(status || "안내이전");
       var cls = "st-before";
@@ -41443,7 +41458,7 @@
       else if (s === "연락두절") cls = "st-lost";
       else if (s === "확인필요") cls = "st-check";
       else if (s === "납부예정") cls = "st-plan";
-      return '<span class="status-chip ' + cls + '">' + escapeHtml(s) + '</span>';
+      return '<span class="status-chip ' + cls + '">' + tuitionStatusVisual_(s) + escapeHtml(s) + '</span>';
     }
 
     function buildTuitionStatusControl(row) {
@@ -41452,7 +41467,7 @@
       var options = ["안내이전", "안내완료", "일부완료", "확인필요", "납부예정", "연락두절", "이월금", "납부완료"].map(function(v) {
         return '<option value="' + escapeHtml(v) + '"' + (v === s ? " selected" : "") + ">" + v + "</option>";
       }).join("");
-      return '<div class="status-edit-wrap">' +
+      return '<div class="status-edit-wrap">' + tuitionStatusVisual_(s) +
         '<select class="status-edit-select" data-status-select-student="' + escapeHtml(studentName) + '">' + options + '</select>' +
         '<button class="status-edit-btn" data-status-save-student="' + escapeHtml(studentName) + '" type="button">적용</button>' +
       "</div>";
