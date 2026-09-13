@@ -151,3 +151,41 @@ body #moduleTuition .tuition-table [data-status-select-student] {color:var(--tr-
 body #moduleTuition .tuition-row-paid [data-status-select-student] {color:var(--tr-green);background:#e0f7ec;border-color:#c7e8d8;}
 body #moduleTuition .tuition-row-check [data-status-select-student] {color:#a04a10;background:#ffead8;border-color:#f1d3b9;}
 body #moduleTuition .tuition-row-guided [data-status-select-student] {color:#8c631b;background:#fff3cf;border-color:#e9dbb3;}
+/* Authoritative detail adjustments: account-management identity and reporting. */
+body #moduleTuition :is(p,span,small,label,strong,button,input,select,th,td,summary),body :is(.tr-drawer,#tuitionPaymentModal,#tuitionContactModal,.payment-link-dialog) :is(p,span,small,label,strong,button,input,select,td) {font-weight:700;}
+body #moduleTuition .student-identity {display:inline-flex;align-items:center;gap:7px;}
+body #moduleTuition .student-identity>.student-gender-icon,body .tr-drawer .student-identity>.student-gender-icon {width:30px;height:30px;min-width:30px;max-width:none;max-height:none;flex:0 0 30px;margin:0;border-radius:0;object-fit:contain;vertical-align:middle;}
+body #moduleTuition .tuition-month-browser {grid-template-columns:150px minmax(300px,1fr) auto;gap:16px;}
+body #moduleTuition .tuition-year-nav {display:flex;align-items:center;justify-content:space-between;gap:8px;width:150px;margin:0;}
+body #moduleTuition .tuition-year-nav strong {flex:1;text-align:center;white-space:nowrap;}
+body #moduleTuition .tuition-year-btn {display:inline-flex;align-items:center;justify-content:center;flex:0 0 32px;width:32px;height:36px;padding:0;margin:0;position:static;transform:none;}
+body #moduleTuition .tuition-year-btn svg {width:16px;height:16px;}
+body #moduleTuition .tuition-month-create-btn {grid-column:3;grid-row:1;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:8px 12px;}
+body #moduleTuition .tr-search-row {display:flex;align-items:center;gap:10px;flex:1 1 100%;}
+body #moduleTuition .tr-search-row .tuition-month-search {flex:1;max-width:480px;}
+body #moduleTuition .tr-search-row .tr-filter-anchor {flex:none;}
+body #moduleTuition .tuition-topbar-actions {flex-wrap:wrap;}
+body #moduleTuition .tr-payment-logo {width:26px;height:26px;object-fit:contain;border-radius:5px;flex:none;}
+body #moduleTuition .tuition-amount-cell.guide .v,body #moduleTuition .tuition-amount-cell.outstanding .v,body #moduleTuition #tuitionExpectedAmount,body #moduleTuition #tuitionOutstandingMeta,body #moduleTuition .tuition-metric-card:has(#tuitionExpectedAmount) .label,.tr-money-in :is(small,strong,span) {color:var(--tr-money-in);}
+body #moduleTuition .tuition-amount-cell.collected .v,body #moduleTuition #tuitionCollectedAmount,body #moduleTuition .tuition-metric-card:has(#tuitionCollectedAmount) .label,.tr-money-out :is(small,strong,span) {color:var(--tr-money-out);}
+body #moduleTuition .tuition-table th:nth-child(3),body #moduleTuition .tuition-table th:nth-child(5) {color:var(--tr-money-in);}
+body #moduleTuition .tuition-table th:nth-child(4) {color:var(--tr-money-out);}
+body #moduleTuition .tr-rate {border:0;cursor:pointer;color:var(--tr-ink);padding:8px;}
+.tr-collection-report {box-sizing:border-box;width:min(820px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:32px;border:1px solid var(--tr-line);border-radius:18px;background:white;color:var(--tr-ink);box-shadow:0 24px 80px #152c4933;font-family:inherit;font-weight:700;}
+.tr-collection-report::backdrop {background:#10243b66;}
+.tr-collection-report header {display:flex;justify-content:space-between;gap:16px;padding-bottom:24px;border-bottom:1px solid var(--tr-line);}
+.tr-collection-report header p {margin:0 0 8px;color:var(--tr-green);font-size:13px;}
+.tr-collection-report h2 {margin:0 0 10px;font-size:27px;letter-spacing:-.7px;}
+.tr-collection-report header small {color:var(--tr-muted);font-size:12px;}
+.tr-collection-report [data-close-report] {align-self:flex-start;width:32px;height:32px;border:1px solid var(--tr-line);border-radius:50%;background:white;color:var(--tr-muted);font-size:22px;cursor:pointer;}
+.tr-report-body {display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:center;padding:36px 0;}
+.tr-report-ring {width:280px;height:280px;border-radius:50%;padding:23px;box-sizing:border-box;background:conic-gradient(var(--tr-money-out) var(--report-rate),var(--tr-report-track) 0);}
+.tr-report-ring>div {width:100%;height:100%;border-radius:50%;background:white;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.tr-report-ring span {font-size:12px;color:var(--tr-muted);}.tr-report-ring strong {font-size:48px;letter-spacing:-2px;font-variant-numeric:tabular-nums;}.tr-report-ring strong small {font-size:22px;margin-left:3px;}
+.tr-report-numbers section {padding:18px 0;border-bottom:1px solid var(--tr-line);}.tr-report-numbers span {display:block;font-size:13px;margin-bottom:8px;}.tr-report-numbers strong {display:block;font-size:25px;font-variant-numeric:tabular-nums;letter-spacing:-.5px;}
+.tr-collection-report footer {padding:20px;background:var(--tr-soft);border-radius:10px;}.tr-collection-report footer div {display:flex;flex-wrap:wrap;gap:20px;font-size:13px;margin-bottom:14px;}.tr-collection-report footer p {font-size:11px;line-height:1.7;color:var(--tr-muted);margin:3px 0;}
+.tr-collection-report :focus-visible {outline:2px solid var(--tr-green);outline-offset:3px;}
+@media(max-width:760px){body #moduleTuition .tuition-month-browser {grid-template-columns:1fr auto;gap:10px;}body #moduleTuition .tuition-month-create-btn {grid-column:2;grid-row:1;}body #moduleTuition .tuition-month-grid {grid-column:1/-1;grid-row:2;}body #moduleTuition .tr-search-row .tuition-month-search{max-width:none;} .tr-collection-report{padding:20px;}.tr-report-body{grid-template-columns:1fr;gap:12px;padding:24px 0;}.tr-report-ring{justify-self:center;width:240px;height:240px;}.tr-report-numbers strong{font-size:23px;}.tr-collection-report h2{font-size:22px;}}
+body #moduleTuition .tuition-amount-cell .v {font-weight:700;}
+body #moduleTuition .tuition-shell {font-weight:700;}
+body #moduleTuition .tuition-month-create-btn {height:36px;min-height:36px;box-sizing:border-box;}

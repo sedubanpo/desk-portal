@@ -18108,7 +18108,7 @@
             </div>
 	            <div class="tuition-topbar-actions">
                 <button class="tuition-export-btn" id="tuitionExportBtn" type="button" title="선택한 월의 수납 원장과 학생별 대조표를 엑셀로 내려받기"><i data-lucide="file-spreadsheet" aria-hidden="true"></i><span>월별 수납 엑셀</span></button>
-                <button class="tuition-export-btn" id="tuitionPaymentLinkBtn" type="button"><i data-lucide="upload" aria-hidden="true"></i><span>결제링크 업로드</span></button>
+                <button class="tuition-export-btn" id="tuitionPaymentLinkBtn" type="button"><img class="tr-payment-logo" src="./assets/payment-teacher.png" alt=""><span>결제링크 업로드</span></button>
                 <button class="refresh-btn" id="tuitionRefreshBtn" type="button" title="수강료 데이터 새로고침" aria-label="수강료 데이터 새로고침"><i data-lucide="database" aria-hidden="true"></i><span>수강료 데이터 새로고침</span></button>
               </div>
 	          </section>
@@ -38876,9 +38876,9 @@
         }).length;
         contactNeededEl.textContent = contactNeeded + "명";
       }
-      document.getElementById("tuitionExpectedAmount").textContent = formatWon(kpi.expectedAmount || 0);
-      document.getElementById("tuitionCollectedAmount").textContent = formatWon(kpi.collectedAmount || 0);
-      document.getElementById("tuitionOutstandingMeta").textContent = "미납 " + formatWon(kpi.outstandingAmount || 0);
+      document.getElementById("tuitionExpectedAmount").textContent = "+" + formatWon(Math.abs(kpi.expectedAmount || 0));
+      document.getElementById("tuitionCollectedAmount").textContent = "-" + formatWon(Math.abs(kpi.collectedAmount || 0));
+      document.getElementById("tuitionOutstandingMeta").textContent = "미납 +" + formatWon(Math.abs(kpi.outstandingAmount || 0));
 
       renderTuitionChart();
       renderTuitionStudentRows();
@@ -39944,7 +39944,7 @@
       var inner =
         '<span class="tuition-amount-copy">' +
           '<span class="k">' + keyText + '</span>' +
-          '<span class="v">' + formatWon(amount || 0) + '</span>' +
+          '<span class="v">' + (kind === 'collected' ? '-' : '+') + formatWon(Math.abs(amount || 0)) + '</span>' +
         '</span>';
       if (!editable) return '<div class="tuition-amount-cell ' + kind + '">' + inner + '</div>';
       return '<button type="button" class="tuition-amount-cell ' + kind + ' is-editable" data-tuition-amount-edit="' + studentName + '" data-tuition-amount-focus="' + kind + '" title="' + keyText + ' 금액 수정">' +

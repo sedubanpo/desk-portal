@@ -24,11 +24,18 @@ test('escapes names, rejects unsafe assets and updates asset URL',()=>{
  s.send('sharedIconAssets',[{id:'student-gender:male',imageUrl:'javascript:alert(1)'}]);
  assert.doesNotMatch(s.api.render('<학생>'),/<img|<학생>/);
  s.send('sharedIconAssets',[{id:'student-gender:male',imageUrl:'https://example.org/v2.png'}]);assert.match(s.api.render('<학생>'),/v2.png/);
- s.errors.sharedIconAssets();assert.doesNotMatch(s.api.render('<학생>'),/<img/);
+ s.errors.sharedIconAssets();assert.match(s.api.render('<학생>'),/account-management\/assets\/student-male.svg/);
 });
 test('old subscription callbacks cannot repopulate icons after logout',()=>{
  const s=setup();s.api.stop();
  s.send('students',[{id:'a',name:'가학생',gender:'male'}]);
  s.send('sharedIconAssets',[{id:'student-gender:male',imageUrl:'https://example.org/a.png'}]);
  assert.doesNotMatch(s.api.render('가학생'),/<img/);
+});
+
+test('account-management default icons and canonical name take precedence',()=>{
+ const s=setup();s.send('students',[{id:'a',name:'정승현',studentName:'옛이름',gender:'male'}]);
+ assert.match(s.api.render('정승현'),/account-management\/assets\/student-male.svg/);
+ assert.doesNotMatch(s.api.render('정승현'),/identity-fallback/);
+ assert.doesNotMatch(s.api.render('옛이름'),/<img/);
 });

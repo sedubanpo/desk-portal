@@ -544,3 +544,5 @@ body #moduleTeacher .time-gap-item { margin:0; padding:0; border:0; background:t
   --tr-paid:#f1fbf6; --tr-partial:#f1f6ff; --tr-danger:#c73446;
   --tr-radius:12px; --tr-shadow:0 8px 24px rgba(23,69,54,.05);
 }
+/* Tuition detail polish: user-approved financial display semantics. */
+:root {--tr-money-in:#245ddd;--tr-money-out:#d52e46;--tr-report-track:#edf1f6;}

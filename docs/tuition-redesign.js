@@ -52,11 +52,24 @@
   var cards=$('.tuition-cards'), metrics=Array.from(cards.querySelectorAll('.tuition-metric-card'));
   metrics.forEach(function(el){cards.appendChild(el);});
   cards.querySelectorAll('.tuition-metric-group').forEach(function(el){el.remove();});
-  var rate=document.createElement('div');rate.className='tr-rate';rate.innerHTML='<div><small>수납률</small><strong>—</strong></div>';cards.appendChild(rate);
+  var rate=document.createElement('button');rate.type='button';rate.className='tr-rate';rate.innerHTML='<div><small>수납률</small><strong>—</strong></div>';cards.appendChild(rate);
+  var report=document.createElement('dialog');report.className='tr-collection-report';report.setAttribute('aria-labelledby','trReportTitle');document.body.appendChild(report);
+  rate.onclick=function(){
+    var k=state.tuition.kpi||{},expected=Number(k.expectedAmount)||0,collected=Number(k.collectedAmount)||0,outstanding=Number(k.outstandingAmount)||0;
+    var pct=expected>0?collected/expected*100:null;
+    var fill=Math.max(0,Math.min(100,pct||0));
+    report.innerHTML='<header><div><p>에스에듀 · 반포관</p><h2 id="trReportTitle">'+esc(formatTuitionMonthLabel_(state.tuition.selectedMonth))+' 수납 보고서</h2><small>'+esc($('#tuitionUpdatedLabel').textContent)+'</small></div>'+button('×','data-close-report aria-label="보고서 닫기"')+'</header>'+
+      '<div class="tr-report-body"><div class="tr-report-ring" style="--report-rate:'+fill+'%" role="img" aria-label="안내 금액 대비 수납률 '+(pct===null?'산정 불가':pct.toFixed(1)+'%')+'"><div><span>안내 금액 대비 수납률</span><strong>'+(pct===null?'—':pct.toFixed(1)+'<small>%</small>')+'</strong><span>순수납액 기준</span></div></div><div class="tr-report-numbers">'+
+      [['안내 금액 합계',expected,'+','tr-money-in'],['순수납액',collected,'-','tr-money-out'],['미납액',outstanding,'+','tr-money-in']].map(function(v){return '<section class="'+v[3]+'"><span>'+v[0]+'</span><strong>'+v[2]+formatWon(Math.abs(v[1]))+'</strong></section>';}).join('')+'</div></div>'+
+      '<footer><div><strong>전체 '+(k.totalStudents||0)+'명</strong><span>납부완료 '+(k.paidStudents||0)+'명</span><span>미납 '+(k.unpaidStudents||0)+'명</span></div><p>수납률 = 순수납액 ÷ 안내 금액 합계 × 100</p><p>미납액은 학생별 미납액의 합계로, 안내 합계와 순수납액의 차이와 다를 수 있습니다.</p>'+(pct===null?'<p>안내 금액이 없어 수납률을 산정할 수 없습니다.</p>':pct>100?'<p>수납률이 100%를 초과하여 원형 그래프는 전체 채움으로 표시합니다.</p>':collected<0?'<p>순수납액이 음수여서 원형 그래프는 채움 없이 표시합니다.</p>':'')+'</footer>';
+    report.querySelector('[data-close-report]').onclick=function(){report.close();};report.showModal();
+  };
+  report.addEventListener('close',function(){rate.focus();});
   var oldLayout=$('.tuition-layout');
   var archive=document.createElement('details'); archive.className='tr-support'; archive.innerHTML='<summary>수납 현황·우선순위 보기</summary>';archive.appendChild(oldLayout);shell.appendChild(archive);
-  var brief=document.createElement('button');brief.type='button';brief.textContent='일일 수납 브리핑';brief.onclick=openTuitionBriefPopup_;$('.meta-bar',tablePanel).prepend(brief);
-  $('.meta-bar',tablePanel).prepend($('#tuitionMonthCreateBtn'));
+  var brief=document.createElement('button');brief.type='button';brief.textContent='일일 수납 브리핑';brief.onclick=openTuitionBriefPopup_;$('.tuition-topbar-actions').appendChild(brief);
+  monthBrowser.appendChild($('#tuitionMonthCreateBtn'));
+  var searchRow=document.createElement('div');searchRow.className='tr-search-row';searchRow.appendChild($('.tuition-month-search'));searchRow.appendChild(filterAnchor);monthBrowser.after(searchRow);
   var selectedControl=document.createElement('label');selectedControl.className='tr-selected-control';selectedControl.innerHTML='<input type="checkbox" id="tuitionSelectedOnly"> 선택한 학생만 <span>0명</span>';$('.meta-bar',tablePanel).appendChild(selectedControl);
   $('#tuitionSelectedOnly').onchange=function(){ui.onlySelected=this.checked;applyTuitionLocalFilters_();};
   $('.tuition-table th').insertAdjacentHTML('afterbegin','<input type="checkbox" id="tuitionSelectPage" aria-label="현재 페이지 학생 모두 선택"> ');
@@ -115,7 +128,7 @@
   }
   function renderReceipts(name){var row=(state.tuition.allRows||[]).find(function(r){return r.studentName===name;})||{};
     var list=buildTuitionEffectivePaymentRows_(state.tuition.monthPayments||[]).filter(function(p){return p.studentName===name&&!isTuitionAdjustmentPayment_(p);}).sort(compareTuitionPaymentRowsDesc_);
-    receiptPanel.innerHTML='<p class="tr-muted">'+esc(formatTuitionMonthLabel_(state.tuition.selectedMonth))+' 기준</p><div class="tr-drawer-kpis">'+[['안내금액',row.guideAmount],['납부금액',row.collectedAmount],['미납액',row.outstandingAmount]].map(function(k){return '<div><small>'+k[0]+'</small><strong>'+formatWon(k[1]||0)+'</strong></div>';}).join('')+'</div><div class="tr-section-heading"><strong>최근 수납 내역</strong>'+button('+ 수납 입력','data-drawer-pay')+'</div>'+
+    receiptPanel.innerHTML='<p class="tr-muted">'+esc(formatTuitionMonthLabel_(state.tuition.selectedMonth))+' 기준</p><div class="tr-drawer-kpis">'+[['안내금액',row.guideAmount],['순수납액',row.collectedAmount],['미납액',row.outstandingAmount]].map(function(k){return '<div class="'+(k[0]==='순수납액'?'tr-money-out':'tr-money-in')+'"><small>'+k[0]+'</small><strong>'+(k[0]==='순수납액'?'-':'+')+formatWon(Math.abs(k[1]||0))+'</strong></div>';}).join('')+'</div><div class="tr-section-heading"><strong>최근 수납 내역</strong>'+button('+ 수납 입력','data-drawer-pay')+'</div>'+
       (list.length?'<div class="tr-receipts">'+list.map(function(p){return '<article><div><strong>'+formatWon(Math.abs(p.amount))+'</strong><small>'+esc(p.paidAt||'-')+' · '+esc(p.paymentType||'-')+' · '+(p.amount<0?'수납':'환불')+'</small><small>승인 '+esc(p.approvalNo||'-')+' · 귀속 '+esc((p.sourceDueMonth||state.tuition.selectedMonth).replace(/s$/,''))+'</small></div>'+button('관리','data-receipt-key="'+esc(getTuitionPaymentClientMergeKey_(p))+'"')+'</article>';}).join('')+'</div>':'<p class="tr-empty">이 월의 수납 내역이 없습니다.</p>');
     $('[data-drawer-pay]',receiptPanel).onclick=function(){drawer.style.display='none';openTuitionPaymentModal(name);};
     receiptPanel.querySelectorAll('[data-receipt-key]').forEach(function(b){b.onclick=function(){drawer.style.display='none';openTuitionPaymentEditModal_(b.dataset.receiptKey);};});

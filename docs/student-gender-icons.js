@@ -19,7 +19,7 @@
   function reindex() {
     names = new Map(); ids = new Map(); icons = new Map(); schools = new Map();
     students.forEach(function(s) {
-      var name = clean(s.studentName || s.name || s.displayName);
+      var name = clean(s.name || s.studentName || s.displayName);
       var gender = s.gender === 'male' || s.gender === 'female' ? s.gender : '';
       if (s.id) ids.set(String(s.id), gender);
       if (s.studentId) ids.set(String(s.studentId), gender);
@@ -36,11 +36,12 @@
   function image(name, id) {
     var gender = id ? ids.get(String(id)) : names.get(clean(name));
     var url = icons.get(gender);
+    if (!icons.has(gender) && (gender === 'male' || gender === 'female')) url = 'https://sedubanpo.github.io/s-lms/account-management/assets/student-' + gender + '.svg';
     return url ? '<img class="student-gender-icon" src="' + escape(url) + '" alt="' + (gender === 'male' ? '남학생' : '여학생') + '" decoding="async" onerror="this.remove()">' : '';
   }
   function render(name, id) {
     name = clean(name);
-    return '<span class="student-identity" data-student-icon-name="' + escape(name) + '" data-student-icon-id="' + escape(id) + '">' + fallback('student') + image(name,id) + '<span>' + escape(name) + '</span></span>';
+    return '<span class="student-identity" data-student-icon-name="' + escape(name) + '" data-student-icon-id="' + escape(id) + '">' + image(name,id) + '<span>' + escape(name) + '</span></span>';
   }
   function refresh() {
     if (!root.document) return;
