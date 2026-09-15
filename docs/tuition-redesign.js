@@ -76,7 +76,7 @@
   };
   report.addEventListener('close',function(){rate.focus();});
   var oldLayout=$('.tuition-layout');
-  var overview=document.createElement('section');overview.className='tr-overview';cards.before(overview);overview.appendChild(cards);var recent=document.getElementById('tuitionPaymentBody').closest('article');recent.classList.add('tr-recent-panel');overview.appendChild(recent);
+  var overview=document.createElement('section');overview.className='tr-overview';cards.before(overview);overview.appendChild(cards);var recent=document.getElementById('tuitionPaymentBody').closest('article');recent.classList.add('tr-recent-panel');shell.appendChild(recent);recent.setAttribute('aria-label','최근 수납 내역');
   var archive=document.createElement('details'); archive.className='tr-support'; archive.innerHTML='<summary>수납 현황·우선순위 보기</summary>';archive.appendChild(oldLayout);shell.appendChild(archive);
   var brief=document.createElement('button');brief.type='button';brief.textContent='일일 수납 브리핑';brief.onclick=openTuitionBriefPopup_;$('.tuition-topbar-actions').appendChild(brief);
   monthBrowser.appendChild($('#tuitionMonthCreateBtn'));

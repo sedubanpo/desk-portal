@@ -109,7 +109,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const month = monthName(payload.monthName);
       if (!month || !studentName(payload.studentName)) return failure('월 정보 또는 학생명이 없습니다.');
       const record = payment({ ...payload, requestId: '', source: 'desk_portal_payment_link', originMonth: month, sourceMonth: month, sourceDueMonth: month,
-        importFile: text(payload.fileName, 180), inputAt: formatInputAt(nowDate(), timeZone), createdAt: nowIso(), updatedAt: nowIso(), paymentType: '결제링크', entryKind: 'payment', countsAsPayment: true,
+        importFile: text(payload.fileName, 180), importEventType: payload.status, importOriginalPaidAt: text(payload.originalPaidAt || payload.paidAt,40), importCancelledAt: text(payload.cancelledAt,40), inputAt: formatInputAt(nowDate(), timeZone), createdAt: nowIso(), updatedAt: nowIso(), paymentType: '결제링크', entryKind: 'payment', countsAsPayment: true,
         originalPaymentKey: '', revision: '', importKey: '' });
       record.importKey = paymentLinkKey(record);
       record.requestId = `link_${record.importKey}`;
@@ -858,6 +858,9 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       source: stored.source || 'desk_portal'
       ,importKey: stored.importKey
       ,importFile: stored.importFile
+      ,importEventType: stored.importEventType
+      ,importOriginalPaidAt: stored.importOriginalPaidAt
+      ,importCancelledAt: stored.importCancelledAt
     });
     const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
     if (!snapshot) return { result: failure('월별 요약을 갱신할 수 없어 수정을 중단했습니다. 새로고침 후 다시 시도해 주세요.') };

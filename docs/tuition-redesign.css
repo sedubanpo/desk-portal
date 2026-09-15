@@ -251,3 +251,21 @@ body #moduleTuition :is(.tuition-month-grid button.active,.tuition-action-btn.pr
 body :is(#tuitionPaymentModal,#tuitionContactModal) .modal-action.primary,
 .tr-popover footer .tr-primary { background:var(--portal-action-bg); color:var(--portal-action-ink); border-color:var(--portal-action-border); box-shadow:none; font-weight:700; }
 body #moduleTuition :is(.tuition-action-btn.primary,#tuitionRefreshBtn,.tuition-table [data-pay-student]):hover:not(:disabled) {background:var(--portal-action-hover);color:var(--portal-action-ink);}
+
+/* Recent receipts remain beside the working area, with all existing actions intact. */
+body #moduleTuition .tuition-shell {position:relative;padding-right:292px;}
+body #moduleTuition .tr-overview {display:block;}
+body #moduleTuition .tr-recent-panel {position:absolute;right:0;top:0;width:276px;box-sizing:border-box;background:var(--tr-bg);padding:14px;}
+body #moduleTuition .tr-recent-panel .panel-head {display:block;}
+body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {max-height:calc(100vh - 250px);overflow:auto;}
+body #moduleTuition .tr-recent-panel .tuition-log-table {min-width:0;width:100%;display:block;}
+body #moduleTuition .tr-recent-panel thead {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+body #moduleTuition .tr-recent-panel tbody {display:block;}
+body #moduleTuition .tr-recent-panel tr {display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;padding:12px;background:var(--tr-white);border:1px solid var(--tr-line);border-radius:10px;}
+body #moduleTuition .tr-recent-panel td {display:block;padding:0;border:0;min-width:0;font-size:11px;white-space:normal;}
+body #moduleTuition .tr-recent-panel td:nth-child(2) {text-align:right;}
+body #moduleTuition .tr-recent-panel td:nth-child(5)::before {content:'승인 ';color:var(--tr-muted);}
+body #moduleTuition .tr-recent-panel td:last-child {grid-column:1/-1;}
+body #moduleTuition .tr-recent-panel .tuition-payment-actions {justify-content:flex-end;}
+body #moduleTuition .tr-recent-panel .tuition-log-pagination {flex-wrap:wrap;gap:4px;}
+@media(max-width:1100px){body #moduleTuition .tuition-shell {padding-right:0;}body #moduleTuition .tr-recent-panel {position:static;width:auto;}body #moduleTuition .tr-recent-panel tbody {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {max-height:380px;}}

@@ -116,6 +116,9 @@ export function payment(source = {}) {
     source: text(source.source)
     ,importKey: text(source.importKey, 64)
     ,importFile: text(source.importFile, 180)
+    ,importEventType: text(source.importEventType, 20)
+    ,importOriginalPaidAt: text(source.importOriginalPaidAt, 40)
+    ,importCancelledAt: text(source.importCancelledAt, 40)
   };
 }
 

@@ -12,7 +12,7 @@ test('payment workbook matches exact names with guardian text, keeps leading zer
 test('ambiguous names/months, cancellations and file duplicates stay visible for review',() => {
   const row = ['결제','2026-09-12','홍테스트b 학생','8월 9월 수강료','123456','300000',''];
   const rows = parse([headers,row,row,['취소','2026-09-12','홍테스트 학생','9월 수강료','999999','300000','2026-09-13']], [{studentName:'홍테스트'}],'26-09s');
-  assert.equal(rows[0].studentName,''); assert.equal(rows[0].monthName,''); assert.equal(rows[1].issue,'파일 내 중복'); assert.match(rows[2].issue,/취소/);
+  assert.equal(rows[0].studentName,''); assert.equal(rows[0].monthName,''); assert.equal(rows[1].issue,'파일 내 중복'); assert.equal(rows[2].amount,-300000); assert.equal(rows[3].amount,300000); assert.equal(rows[3].paidAt,'2026-09-13'); assert.equal(rows[3].status,'환불');
   assert.throws(() => parse([['잘못된 파일']],[],'26-09s'),/필수 열/);
 });
 

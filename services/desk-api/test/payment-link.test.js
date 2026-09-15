@@ -71,3 +71,18 @@ test('invalid dates, cancellation, unknown students and zero amounts cannot muta
 test('amount adjustments are never mistaken for receipts',() => {
   assert.equal(paymentLinkDuplicate(input,[{...input,entryKind:'adjustment'}]),undefined);
 });
+
+test('refund, replacement and installment receipts retain separate history and replay safely', async () => {
+  const {handlers:h,docs}=fixture();
+  const refund={...input,status:'환불',amount:300000,paidAt:'2026-09-13',cancelledAt:'2026-09-13 12:00:00'};
+  const replacement={...input,paidAt:'2026-09-13',approvalNo:'99990001'};
+  const installment={...replacement,approvalNo:'99990002'};
+  for(const row of [input,refund,replacement,installment]) assert.equal((await h.importTuitionPaymentLink(row,{name:'직원'})).duplicate,false);
+  for(const row of [input,refund,replacement,installment]) assert.equal((await h.importTuitionPaymentLink(row)).duplicate,true);
+  const payments=[...docs].filter(([k])=>k.startsWith('tuitionPayments/')).map(([,v])=>v);
+  assert.equal(payments.length,4);
+  assert.equal(payments.reduce((total,p)=>total+p.amount,0),-600000);
+  assert.equal((await h.getTuitionPaymentLinkHistory({monthName:month})).events.length,4);
+  assert.equal((await h.importTuitionPaymentLink({...refund,amount:-300000})).success,false);
+  assert.equal((await h.importTuitionPaymentLink({...refund,cancelledAt:''})).success,false);
+});

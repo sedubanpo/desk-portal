@@ -6,7 +6,7 @@
   dialog.setAttribute('aria-labelledby', 'paymentLinkTitle');
   dialog.innerHTML = '<header><div><h2 id="paymentLinkTitle">결제링크 업로드</h2><p>결제내역을 대조하고 새 수납만 입력합니다.</p></div><button type="button" data-close aria-label="팝업 닫기">✕</button></header>' +
     '<nav aria-label="결제링크 메뉴"><button type="button" data-tab="upload" aria-pressed="true">엑셀 업로드</button><button type="button" data-tab="history" aria-pressed="false">입력·수정·삭제 이력</button></nav>' +
-    '<section data-pane="upload"><label class="payment-link-file"><span class="payment-link-upload-icon" aria-hidden="true">⇧</span><strong>결제링크 파일 업로드</strong><span>파일을 끌어 놓거나 아래에서 선택하세요.</span><small>.xlsx · 최대 5MB</small><input type="file" accept=".xlsx" aria-label="결제내역 엑셀 파일"></label><p class="payment-link-help">학생·귀속 월을 확인한 뒤 중복 검사를 실행하세요. 취소 건은 원결제와 환불을 확인한 후 수납 관리에서 처리합니다.</p><div class="payment-link-summary" data-counts aria-live="polite"></div><div class="payment-link-result-filter"><label>대조 결과 <select data-result-filter><option value="all">전체</option><option value="review">확인 필요</option><option value="ready">입력 가능</option><option value="duplicate">중복 제외</option><option value="saved">입력 완료</option></select></label><span data-file-name></span></div><div class="payment-link-table" data-preview></div><footer><button type="button" data-stop hidden>현재 작업 후 중지</button><button type="button" data-check disabled>중복 검사</button><button type="button" data-save disabled>새 수납 입력</button></footer></section>' +
+    '<section data-pane="upload"><label class="payment-link-file"><span class="payment-link-upload-icon" aria-hidden="true">⇧</span><strong>결제링크 파일 업로드</strong><span>파일을 끌어 놓거나 아래에서 선택하세요.</span><small>.xlsx · 최대 5MB</small><input type="file" accept=".xlsx" aria-label="결제내역 엑셀 파일"></label><p class="payment-link-help">학생·귀속 월을 확인한 뒤 중복 검사를 실행하세요. 취소 건은 원결제와 환불로 나누어 표시됩니다. 각각 확인하고 입력하세요.</p><div class="payment-link-summary" data-counts aria-live="polite"></div><div class="payment-link-result-filter"><label>대조 결과 <select data-result-filter><option value="all">전체</option><option value="review">확인 필요</option><option value="ready">입력 가능</option><option value="duplicate">중복 제외</option><option value="saved">입력 완료</option><option value="excluded">선택 제외</option></select></label><span data-file-name></span></div><div class="payment-link-table" data-preview></div><footer><button type="button" data-reset>초기화</button><button type="button" data-stop hidden>현재 작업 후 중지</button><button type="button" data-check disabled>중복 검사</button><button type="button" data-save disabled>새 수납 입력</button></footer></section>' +
     '<section data-pane="history" hidden><div class="payment-link-history-controls"><label>귀속 월 <select data-month></select></label><label>변경 유형 <select data-action><option value="">전체</option><option value="created">입력</option><option value="updated">수정</option><option value="deleted">삭제</option></select></label><button type="button" data-reload>이력 새로고침</button></div><div data-history></div></section><p class="payment-link-message" role="status" aria-live="polite"></p>';
   document.body.appendChild(dialog);
   var rows = [], roster = [], busy = false, events = [], fileName = '', monthAtOpen = '', stopRequested = false, filter = 'all', processing = false;
@@ -21,28 +21,28 @@
     $('[data-stop]').disabled = stopRequested; $('[data-stop]').hidden = !processing;
     $('[data-result-filter]').disabled = false;
     if (!value) {
-      dialog.querySelectorAll('[data-row]').forEach(function(el) { var r = rows[Number(el.dataset.row)]; el.disabled = !!r.issue || r.result === 'saved'; });
+      dialog.querySelectorAll('[data-include],[data-pick]').forEach(function(el){el.disabled=rows[Number(el.dataset.include || el.dataset.pick)].result==='saved';});
+      dialog.querySelectorAll('[data-row]').forEach(function(el) { var r = rows[Number(el.dataset.row)]; el.disabled = r.result === 'saved'; });
       $('[data-check]').disabled = !rows.some(eligible);
-      $('[data-save]').disabled = !rows.some(function(r) { return r.result === 'ready'; });
+      $('[data-save]').disabled = !rows.some(function(r) { return eligible(r) && r.result === 'ready'; });
     }
   }
-  function eligible(r) { return !r.issue && r.studentName && r.monthName; }
+  function eligible(r) { return !r.excluded && !r.issue && r.studentName && r.monthName; }
   function options(values, selected) { return '<option value="">선택 필요</option>' + values.map(function(v) { return '<option value="' + esc(v) + '"' + (v === selected ? ' selected' : '') + '>' + esc(v.replace(/s$/, '')) + '</option>'; }).join(''); }
-  function category(r) { return r.issue || !eligible(r) || r.result === 'error' ? 'review' : r.result || 'unchecked'; }
+  function category(r) { if (r.excluded) return 'excluded'; return r.issue || !eligible(r) || r.result === 'error' ? 'review' : r.result || 'unchecked'; }
   function render() {
     var counts = rows.reduce(function(a,r) { var c=category(r); a[c]=(a[c]||0)+1; return a; },{});
-    $('[data-counts]').innerHTML = rows.length ? [['전체',rows.length],['확인 필요',counts.review||0],['입력 가능',counts.ready||0],['중복 제외',counts.duplicate||0],['입력 완료',counts.saved||0]].map(function(c){return '<span>'+c[0]+' <strong>'+c[1]+'건</strong></span>';}).join('') : '';
+    $('[data-counts]').innerHTML = rows.length ? [['전체',rows.length],['선택 제외',counts.excluded||0],['확인 필요',counts.review||0],['입력 가능',counts.ready||0],['중복 제외',counts.duplicate||0],['입력 완료',counts.saved||0]].map(function(c){return '<span>'+c[0]+' <strong>'+c[1]+'건</strong></span>';}).join('') : '';
     $('[data-file-name]').textContent = fileName;
 
-    var names = Array.from(new Set(roster.map(function(r) { return r.studentName; }))).sort(function(a,b) { return a.localeCompare(b,'ko'); });
-    $('[data-preview]').innerHTML = rows.length ? '<table><thead><tr><th>원본 이름 / 품목</th><th>학생</th><th>귀속 월</th><th>결제일 / 승인번호</th><th>금액</th><th>대조 결과</th></tr></thead><tbody>' + rows.map(function(r,i) {
+    $('[data-preview]').innerHTML = rows.length ? '<table><thead><tr><th>포함</th><th>원본 이름 / 품목</th><th>학생</th><th>귀속 월</th><th>결제일 / 승인번호</th><th>금액</th><th>대조 결과</th></tr></thead><tbody>' + rows.map(function(r,i) {
       if (filter !== 'all' && category(r) !== filter) return '';
-      return '<tr data-result="' + category(r) + '"><td>' + esc(r.rawName) + '<small>' + esc(r.itemName) + '</small></td><td><select aria-label="' + r.rowNumber + '행 학생" data-row="' + i + '" data-field="studentName"' + (r.issue ? ' disabled' : '') + '>' + options(names,r.studentName) + '</select></td><td><select aria-label="' + r.rowNumber + '행 귀속 월" data-row="' + i + '" data-field="monthName"' + (r.issue ? ' disabled' : '') + '>' + options(state.tuition.months || [monthAtOpen],r.monthName) + '</select></td><td>' + esc(r.paidAt) + '<small>' + esc(r.approvalNo) + '</small></td><td class="payment-link-money">' + window.tuitionMoneyHtml_((r.status !== '결제' || r.cancelledAt) ? Math.abs(r.amount) : r.amount) + '</td><td>' + esc(r.issue || r.message || (!eligible(r) ? '학생·월 확인 필요' : '검사 전')) + '</td></tr>';
+      return '<tr data-result="' + category(r) + '"><td><input type="checkbox" data-include="' + i + '" aria-label="' + r.rowNumber + '행 ' + r.status + ' 포함"' + (!r.excluded ? ' checked' : '') + (r.result === 'saved' ? ' disabled' : '') + '></td><td><strong class="payment-link-kind">' + r.status + '</strong> ' + esc(r.rawName) + '<small>' + esc(r.itemName) + '</small></td><td><button type="button" class="payment-student-trigger" data-pick="' + i + '" aria-haspopup="dialog" aria-label="' + r.rowNumber + '행 ' + r.status + ' 학생 선택"' + (r.result === 'saved' ? ' disabled' : '') + '>' + esc(r.studentName || '학생 선택') + '<small>' + esc(studentInfo(r.studentName)) + '</small></button></td><td><select aria-label="' + r.rowNumber + '행 ' + r.status + ' 귀속 월" data-row="' + i + '" data-field="monthName"' + (r.issue ? ' disabled' : '') + '>' + options(state.tuition.months || [monthAtOpen],r.monthName) + '</select></td><td>' + esc(r.paidAt) + '<small>' + esc(r.approvalNo) + '</small></td><td class="payment-link-money">' + window.tuitionMoneyHtml_((r.status !== '결제' || r.cancelledAt) ? Math.abs(r.amount) : r.amount) + '</td><td>' + esc(r.excluded ? '선택 제외' : r.issue || r.message || (!eligible(r) ? '학생·월 확인 필요' : '검사 전')) + '</td></tr>';
     }).join('') + '</tbody></table>' : '';
   }
-  function payload(r) { return { monthName:r.monthName, studentName:r.studentName, paidAt:r.paidAt, amount:r.amount, approvalNo:r.approvalNo, cardCompany:r.cardCompany, status:r.status, cancelledAt:r.cancelledAt, itemName:r.itemName, fileName:fileName, dueDate:r.monthName.replace(/s$/,'') + '-01', business:'반포' }; }
+  function payload(r) { return { monthName:r.monthName, studentName:r.studentName, paidAt:r.paidAt, amount:r.amount, approvalNo:r.approvalNo, cardCompany:r.cardCompany, status:r.status, cancelledAt:r.cancelledAt, originalPaidAt:r.originalPaidAt, itemName:r.itemName, fileName:fileName, dueDate:r.monthName.replace(/s$/,'') + '-01', business:'반포' }; }
   async function process(save) {
-    var targets = rows.filter(function(r) { return save ? r.result === 'ready' : eligible(r) && r.result !== 'saved'; });
+    var targets = rows.filter(function(r) { return save ? eligible(r) && r.result === 'ready' : eligible(r) && r.result !== 'saved'; });
     stopRequested = false; processing = true; setBusy(true);
     var completed = 0;
     try {
@@ -64,8 +64,8 @@
       async function worker() { while (!stopRequested && next < targets.length) { var r = targets[next++]; await runOne(r); } }
       await Promise.all(Array.from({length:save ? 1 : Math.min(3,targets.length)},worker));
       render();
-      var counts = rows.reduce(function(a,r) { a[r.result || 'review'] = (a[r.result || 'review'] || 0) + 1; return a; },{});
-      message((stopRequested ? '중지됨 · 처리 결과는 유지됩니다. ' : '') + '입력 완료 ' + (counts.saved || 0) + '건 · 중복 제외 ' + (counts.duplicate || 0) + '건 · 입력 가능 ' + (counts.ready || 0) + '건 · 확인 필요 ' + ((counts.error || 0) + (counts.review || 0)) + '건');
+      var counts = rows.reduce(function(a,r) { var c=category(r);a[c] = (a[c] || 0) + 1; return a; },{});
+      message((stopRequested ? '중지됨 · 처리 결과는 유지됩니다. ' : '') + '입력 완료 ' + (counts.saved || 0) + '건 · 중복 제외 ' + (counts.duplicate || 0) + '건 · 입력 가능 ' + (counts.ready || 0) + '건 · 확인 필요 ' + (counts.review || 0) + '건');
       if (save) { refreshTuitionSummary(true); if(window.TuitionRedesign) TuitionRedesign.toast('입력 완료 '+(counts.saved||0)+'건 · 중복 제외 '+(counts.duplicate||0)+'건'); }
     } finally { processing = false; setBusy(false); }
   }
@@ -74,7 +74,7 @@
     var list = events.filter(function(e) { return !action || e.action === action; });
     $('[data-history]').innerHTML = list.length ? list.map(function(e) {
       var p = e.payment || {}, before = e.previousPayment;
-      return '<article class="payment-link-event"><span class="payment-link-actor-icon" aria-hidden="true">' + esc((e.actorName || '?').slice(0,1)) + '</span><div><strong>' + esc(e.actorName) + '</strong> <span class="payment-link-action">' + ({created:'입력',updated:'수정',deleted:'삭제'}[e.action]) + '</span><time>' + esc(new Date(e.changedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})) + '</time><p>' + StudentGenderIcons.render(p.studentName) + ' <b>' + window.tuitionMoneyHtml_(p.amount) + '</b> · ' + esc(p.paidAt) + ' · 승인 ' + esc(p.approvalNo || '-') + '</p>' + (before && e.action === 'updated' ? '<small>변경 전: ' + window.tuitionMoneyHtml_(before.amount) + ' · ' + esc(before.paidAt) + ' · 승인 ' + esc(before.approvalNo || '-') + '</small>' : '') + '<small>' + esc(e.reason || '') + (p.importFile ? ' · ' + esc(p.importFile) : '') + '</small></div></article>';
+      return '<article class="payment-link-event"><span class="payment-link-actor-icon" aria-hidden="true">' + esc((e.actorName || '?').slice(0,1)) + '</span><div><strong>' + esc(e.actorName) + '</strong> <span class="payment-link-action">' + ({created:'입력',updated:'수정',deleted:'삭제'}[e.action]) + '</span><time>' + esc(new Date(e.changedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})) + '</time><p>' + StudentGenderIcons.render(p.studentName) + ' <b>' + (Number(p.amount)>0?'환불 ':'결제 ') + window.tuitionMoneyHtml_(p.amount) + '</b> · ' + esc(p.paidAt) + ' · 승인 ' + esc(p.approvalNo || '-') + '</p>' + (before && e.action === 'updated' ? '<small>변경 전: ' + window.tuitionMoneyHtml_(before.amount) + ' · ' + esc(before.paidAt) + ' · 승인 ' + esc(before.approvalNo || '-') + '</small>' : '') + '<small>' + esc(e.reason || '') + (p.importFile ? ' · ' + esc(p.importFile) : '') + '</small></div></article>';
     }).join('') : '<p class="payment-link-empty">이 월에 해당하는 변경 이력이 없습니다.</p>';
   }
   async function history() {
@@ -99,7 +99,7 @@
   });
   async function readFile(file) {
     if (!file || busy) return;
-    rows = []; fileName = ''; setBusy(true); message('엑셀을 읽는 중입니다.');
+    rows = []; fileName = ''; filter='all'; $('[data-result-filter]').value='all'; setBusy(true); message('엑셀을 읽는 중입니다.');
     try {
       if (!/\.xlsx$/i.test(file.name) || file.size > 5 * 1024 * 1024) throw new Error('5MB 이하의 .xlsx 파일을 선택해 주세요.');
       var workbook = XLSX.read(await file.arrayBuffer(), {type:'array',cellDates:false,sheetRows:2002});
@@ -112,7 +112,7 @@
       render();
       message(rows.length + '건을 읽었습니다. 학생과 귀속 월을 확인해 주세요.');
     } catch (error) { render(); message(error.message); }
-    finally { setBusy(false); }
+    finally { $('input[type=file]').value=''; setBusy(false); }
   }
   $('input[type=file]').addEventListener('change',function(e){readFile(e.target.files[0]);});
   $('.payment-link-file').addEventListener('dragover',function(e){e.preventDefault();});
@@ -120,9 +120,28 @@
   $('[data-stop]').onclick=function(){stopRequested=true;this.disabled=true;message('진행 중인 요청을 마친 후 중지합니다. 완료된 결과는 유지됩니다.');};
   $('[data-result-filter]').onchange=function(){filter=this.value;render();setBusy(busy);};
   $('[data-preview]').addEventListener('change', function(e) {
-    var el = e.target; if (!el.dataset.field) return;
+    var el = e.target; if (el.dataset.include !== undefined) { rows[Number(el.dataset.include)].excluded=!el.checked; var index=el.dataset.include; render(); setBusy(false); var replacement=$('[data-include="'+index+'"]'); if(replacement)replacement.focus(); return; } if (!el.dataset.field) return;
     var r = rows[Number(el.dataset.row)]; r[el.dataset.field] = el.value; r.result = ''; r.message = ''; render(); setBusy(false);
   });
+
+  function studentInfo(name) {
+    var student=roster.find(function(r){return r.studentName===name && r.school;}) || roster.find(function(r){return r.studentName===name;}) || {};
+    return [student.school,student.grade].filter(Boolean).join(' · ') || (name ? '학교·학년 정보 없음' : '이름·학교 검색');
+  }
+  var picker=document.createElement('dialog'); picker.className='payment-student-picker'; picker.setAttribute('aria-label','학생 검색');
+  picker.innerHTML='<header><strong>학생 선택</strong><button type="button" data-picker-close aria-label="학생 선택 닫기">✕</button></header><input type="search" aria-label="학생 이름 학교 학년 검색" placeholder="이름, 학교, 학년 검색"><div class="payment-student-results"></div>';
+  dialog.appendChild(picker); var pickIndex=-1;
+  function renderStudents(){
+    var query=picker.querySelector('input').value.trim().toLocaleLowerCase();
+    var names=Array.from(new Set(roster.map(function(r){return r.studentName;}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'ko');});
+    picker.querySelector('.payment-student-results').innerHTML=names.filter(function(n){return (n+' '+studentInfo(n)).toLocaleLowerCase().includes(query);}).map(function(n){return '<button type="button" data-student="'+esc(n)+'"><strong>'+esc(n)+'</strong><small>'+esc(studentInfo(n))+'</small></button>';}).join('') || '<p>검색 결과가 없습니다.</p>';
+  }
+  $('[data-preview]').addEventListener('click',function(e){var button=e.target.closest('[data-pick]');if(!button || busy)return;pickIndex=Number(button.dataset.pick);picker.querySelector('input').value='';renderStudents();picker.showModal();picker.querySelector('input').focus();});
+  picker.querySelector('input').oninput=renderStudents;
+  picker.querySelector('[data-picker-close]').onclick=function(){picker.close();};
+  picker.addEventListener('click',function(e){var button=e.target.closest('[data-student]');if(!button)return;var r=rows[pickIndex];r.studentName=button.dataset.student;r.result='';r.message='';picker.close();render();setBusy(false);});
+  picker.addEventListener('close',function(){var button=$('[data-pick="'+pickIndex+'"]');if(button)button.focus();});
+  $('[data-reset]').onclick=function(){if(busy)return;rows=[];fileName='';filter='all';$('[data-result-filter]').value='all';$('input[type=file]').value='';render();setBusy(false);message('미리보기를 초기화했습니다. 이미 저장된 수납 이력은 유지됩니다.');};
   $('[data-check]').addEventListener('click',function() { process(false); });
   $('[data-save]').addEventListener('click',function() { process(true); });
   $('[data-reload]').addEventListener('click',history);
