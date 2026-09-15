@@ -52,7 +52,7 @@
   var cards=$('.tuition-cards'), metrics=Array.from(cards.querySelectorAll('.tuition-metric-card'));
   metrics.forEach(function(el){cards.appendChild(el);});
   cards.querySelectorAll('.tuition-metric-group').forEach(function(el){el.remove();});
-  var rate=document.createElement('button');rate.type='button';rate.className='tr-rate';rate.innerHTML='<div><small>수납률</small><strong>—</strong></div>';cards.appendChild(rate);
+  var rate=document.createElement('button');rate.type='button';rate.className='tr-rate';rate.innerHTML='<div><small>안내 대비 수납</small><strong>—</strong></div><span class="tr-rate-track"><span></span></span><small class="tr-rate-caption">수납 현황 자세히 보기 →</small>';cards.appendChild(rate);
   var report=document.createElement('dialog');report.className='tr-collection-report';report.setAttribute('aria-labelledby','trReportTitle');document.body.appendChild(report);
   rate.onclick=function(){
     var k=state.tuition.kpi||{},expected=Number(k.expectedAmount)||0,collected=Number(k.collectedAmount)||0,outstanding=Number(k.outstandingAmount)||0;
@@ -67,10 +67,13 @@
     var order=['안내이전','안내완료','확인필요','납부예정','일부완료','연락두절','이월금','납부완료'];
     Object.keys(counts).forEach(function(s){if(!order.includes(s))order.push(s);});
     var colors=['#94a3b8','#d69b24','#ed6a43','#7864c4','#319db2','#ca4264','#5680bc','#098567'];
-    var total=statusRows.length,at=0,stops=[];
-    var legend=order.map(function(s,i){var n=counts[s]||0,p=total?n/total*100:0,c=colors[i%colors.length];if(n){stops.push(c+' '+at+'% '+(at+p)+'%');at+=p;}return '<li><span class="tr-status-dot" style="background:'+c+'"></span><span>'+tuitionStatusVisual_(s)+esc(s)+'</span><strong>'+n+'명</strong><b>'+p.toFixed(1)+'%</b></li>';}).join('');
+    var total=statusRows.length,at=0,arcs=[];
+    var legend=order.map(function(s,i){var n=counts[s]||0,p=total?n/total*100:0,c=colors[i%colors.length],label=s+' · '+n+'명 · '+p.toFixed(1)+'%';
+      if(n){arcs.push('<circle class="tr-status-arc" cx="110" cy="110" r="86" pathLength="100" fill="none" stroke="'+c+'" stroke-width="26" stroke-dasharray="'+Math.max(0.1,p-0.65)+' '+(100-Math.max(0.1,p-0.65))+'" stroke-dashoffset="'+(-at)+'" transform="rotate(-90 110 110)" tabindex="0" data-status-info="'+esc(label)+'" aria-label="'+esc(label)+'"><title>'+esc(label)+'</title></circle>');at+=p;}
+      return '<li tabindex="0" data-status-info="'+esc(label)+'"><span class="tr-status-dot" style="background:'+c+'"></span><span>'+tuitionStatusVisual_(s)+esc(s)+'</span><strong>'+n+'명</strong><b>'+p.toFixed(1)+'%</b></li>';}).join('');
     var section=document.createElement('section');section.className='tr-status-report';
-    section.innerHTML='<header><h3>학생 상태별 현황</h3><p>숨긴 학생 제외 · 전체 '+total+'명</p></header><div class="tr-status-report-body"><div class="tr-status-ring" style="background:'+(stops.length?'conic-gradient('+stops.join(',')+')':'#e8edf2')+'" role="img" aria-label="학생 상태별 비율. 상세 명수와 비율은 옆 목록 참조"><div><span>전체 학생</span><strong>'+total+'<small>명</small></strong></div></div><ul>'+legend+'</ul></div>';
+    section.innerHTML='<header><h3>학생 상태별 현황</h3><p>숨긴 학생 제외 · 전체 '+total+'명</p></header><div class="tr-status-report-body"><div class="tr-status-chart"><svg viewBox="0 0 220 220" aria-label="학생 상태별 비율"><circle cx="110" cy="110" r="86" fill="none" stroke="#eef2f4" stroke-width="26"/>'+arcs.join('')+'</svg><div class="tr-status-center"><span>전체 학생</span><strong>'+total+'<small>명</small></strong></div><p class="tr-status-info" role="status">상태에 마우스를 올려 확인하세요</p></div><ul>'+legend+'</ul></div>';
+    section.querySelectorAll('[data-status-info]').forEach(function(el){function show(){section.querySelector('.tr-status-info').textContent=el.dataset.statusInfo;}el.addEventListener('mouseenter',show);el.addEventListener('focus',show);el.addEventListener('click',show);});
     report.querySelector('footer').before(section);
     report.querySelector('[data-close-report]').onclick=function(){report.close();};report.showModal();
   };

@@ -277,3 +277,31 @@ body #moduleTuition .tuition-contact-actions {display:flex;flex-direction:column
   body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {flex:1;min-height:0;max-height:none;}
   body #moduleTuition .tr-recent-panel .tuition-log-pagination {flex-shrink:0;}
 }
+
+/* Unified month selection and aligned metric typography; existing card grid retained. */
+body #moduleTuition .tuition-month-grid button.is-selected {background:var(--portal-action-bg);color:var(--portal-action-ink);border-color:var(--portal-action-border);box-shadow:none;}
+body #moduleTuition .tuition-month-grid button:not(:disabled):hover {background:var(--portal-action-hover);color:var(--portal-action-ink);}
+body #moduleTuition .tr-overview .tuition-metric-card {align-items:center;text-align:left;}
+body #moduleTuition .tr-overview .tuition-metric-card .label {font-size:12px;line-height:1.35;}
+body #moduleTuition .tr-overview .tuition-metric-card .value {font-size:clamp(17px,1.35vw,21px);line-height:1.35;letter-spacing:-.6px;white-space:nowrap;}
+body #moduleTuition .tr-overview .tuition-metric-card .meta {font-size:10px;line-height:1.4;}
+body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6) {padding:10px 8px;}
+body #moduleTuition .tr-overview .tuition-metric-card:nth-child(6) .tuition-metric-icon {display:inline-flex;color:var(--tr-money-out);}
+body #moduleTuition .tuition-money-row {display:block;min-width:0;}
+body #moduleTuition .tuition-outstanding-side {text-align:left;font-size:10px;margin-top:4px;}
+body #moduleTuition .tr-overview .tr-rate {width:100%;height:68px;background:none;border-radius:0;padding:4px 10px;display:flex;flex-direction:column;justify-content:center;gap:6px;text-align:left;}
+body #moduleTuition .tr-rate>div {background:none;border-radius:0;flex-direction:row;justify-content:space-between;height:auto;gap:6px;}
+body #moduleTuition .tr-rate strong {font-size:22px;font-variant-numeric:tabular-nums;}
+body #moduleTuition .tr-rate small {font-size:10px;}
+.tr-rate-track {display:block;width:100%;height:9px;border-radius:5px;background:var(--tr-report-track);overflow:hidden;}
+.tr-rate-track>span {display:block;width:var(--rate,0%);height:100%;background:var(--portal-action-ink);border-radius:inherit;}
+.tr-rate-caption {color:var(--tr-muted);}
+.tr-status-chart {position:relative;width:220px;padding-bottom:32px;}
+.tr-status-chart svg {display:block;width:220px;height:220px;overflow:visible;}
+.tr-status-center {position:absolute;top:70px;left:40px;width:140px;text-align:center;pointer-events:none;}
+.tr-status-center span {display:block;color:var(--tr-muted);font-size:12px;margin-bottom:8px;}
+.tr-status-center strong {font-size:34px;line-height:1.1;}.tr-status-center small {font-size:13px;margin-left:4px;}
+.tr-status-info {margin:8px -16px 0;text-align:center;font-size:12px;color:var(--tr-ink);min-height:18px;}
+.tr-status-arc {cursor:help;transition:stroke-width .15s;}.tr-status-arc:hover,.tr-status-arc:focus {stroke-width:33;outline:none;}
+.tr-status-report li:hover,.tr-status-report li:focus {background:var(--tr-soft);outline:2px solid var(--portal-action-border);outline-offset:2px;border-radius:5px;}
+@media(prefers-reduced-motion:reduce){.tr-status-arc{transition:none;}}
