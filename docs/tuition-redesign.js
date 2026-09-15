@@ -153,7 +153,7 @@
   function openStudent(name,tab){openTuitionStudentHistoryModal_(name);headerStudent(name);renderReceipts(name);contactPanel.innerHTML='<p class="tr-empty" role="status">연락 기록을 불러오는 중입니다.</p>';setTuitionStudentHistoryTab_(tab||'receipts');}
   // Compact contact composer retains its optional assistant.
   var assistant=document.querySelector('#tuitionContactModal .tuition-assistant');
-  var assistDetails=document.createElement('details');assistDetails.className='tr-assistant-details';assistDetails.innerHTML='<summary>학부모 응대 도우미</summary>';assistant.before(assistDetails);assistDetails.appendChild(assistant);
+  var assistDetails=document.createElement('details');assistDetails.className='tr-assistant-details';assistDetails.open=true;assistDetails.innerHTML='<summary>학부모 응대 도우미</summary>';assistant.before(assistDetails);assistDetails.appendChild(assistant);
   // Focus containment and Escape apply to the existing custom tuition dialogs.
   var modalIds=['tuitionStudentHistoryModal','tuitionContactModal','tuitionPaymentModal','tuitionAmountAdjustModal'];
   modalIds.forEach(function(id){var modal=document.getElementById(id);var focusBefore=null;var wasOpen=false;

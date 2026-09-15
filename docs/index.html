@@ -17680,7 +17680,7 @@
   <link rel="stylesheet" href="./workspace.css?v=20260914-manager">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
-<link rel="stylesheet" href="./tuition-redesign.css?v=20260915-payments">
+<link rel="stylesheet" href="./tuition-redesign.css?v=20260915-contact">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -39459,11 +39459,16 @@
               : '<div class="tuition-contact-memo muted">메모 없음</div>') +
           '</td>' +
           '<td><span class="tuition-contact-count">' + Math.max(0,toNumber(row.contactCount,0)) + '회</span></td>' +
-          '<td><button class="act-btn" data-contact-student="' + escapeHtml(row.studentName) + '">기록 보기</button></td>' +
+          '<td><div class="tuition-contact-actions"><button class="act-btn" data-guide-student="' + escapeHtml(row.studentName) + '">안내 연락</button><button class="act-btn" data-contact-student="' + escapeHtml(row.studentName) + '">기록 보기</button></div></td>' +
           '<td><button class="act-btn" data-pay-student="' + escapeHtml(row.studentName) + '"><i data-lucide="circle-plus"></i>수납 입력</button></td>' +
         '</tr>';
       }).join("");
 
+      Array.prototype.forEach.call(document.querySelectorAll("[data-guide-student]"), function(btn) {
+        btn.addEventListener("click", function() {
+          openTuitionContactModal(btn.getAttribute("data-guide-student") || "");
+        });
+      });
       Array.prototype.forEach.call(document.querySelectorAll("[data-contact-student]"), function(btn) {
         btn.addEventListener("click", function() {
           var studentName = btn.getAttribute("data-contact-student") || "";
@@ -45209,7 +45214,7 @@ window.SeduHubAdapter={
   </script>
 <script src="./payment-link-parser.js?v=20260915-payments"></script>
 <script src="./payment-link-upload.js?v=20260915-payments"></script>
-<script src="./tuition-redesign.js?v=20260915-payments"></script>
+<script src="./tuition-redesign.js?v=20260915-contact"></script>
 <script type="module" src="hub-start.mjs"></script>
 </body>
 </html>

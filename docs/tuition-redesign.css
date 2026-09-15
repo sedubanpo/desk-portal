@@ -269,3 +269,11 @@ body #moduleTuition .tr-recent-panel td:last-child {grid-column:1/-1;}
 body #moduleTuition .tr-recent-panel .tuition-payment-actions {justify-content:flex-end;}
 body #moduleTuition .tr-recent-panel .tuition-log-pagination {flex-wrap:wrap;gap:4px;}
 @media(max-width:1100px){body #moduleTuition .tuition-shell {padding-right:0;}body #moduleTuition .tr-recent-panel {position:static;width:auto;}body #moduleTuition .tr-recent-panel tbody {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {max-height:380px;}}
+
+/* Keep contact composition directly reachable and extend the receipt rail to the workspace. */
+body #moduleTuition .tuition-contact-actions {display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:66px;}
+@media(min-width:1101px){
+  body #moduleTuition .tr-recent-panel {bottom:0;display:flex;flex-direction:column;}
+  body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {flex:1;min-height:0;max-height:none;}
+  body #moduleTuition .tr-recent-panel .tuition-log-pagination {flex-shrink:0;}
+}
