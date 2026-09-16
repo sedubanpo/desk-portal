@@ -598,3 +598,14 @@ body .desk-shared-manager-list .desk-task-title { font-size:15px; line-height:1.
 body .desk-shared-manager-list .desk-task-actions { gap:16px; }
 body .desk-shared-manager-list .desk-task-actions button { border:0; background:transparent; padding:5px 0; box-shadow:none; }
 @media(max-width:760px) { body #deskJournalSharedPanel { grid-template-columns:1fr; } }
+
+/* Teacher settlement: subject identity and compact duration. */
+body #moduleTeacher .student-identity > .student-gender-icon {width:1.65em;height:1.65em;max-width:none;max-height:none;object-fit:contain;vertical-align:middle;}
+.payroll-hours {flex-direction:row;white-space:nowrap;align-items:center;font-size:12px;font-variant-numeric:tabular-nums;}
+.payroll-teacher-label {padding:3px 7px;gap:4px;font-size:12px;border-radius:5px;}
+.payroll-teacher-label.payroll-subject-korean {color:#be3454;background:#fff1f3;border-color:#ffd2dc;}
+.payroll-teacher-label.payroll-subject-english {color:#1476a5;background:#edf8ff;border-color:#bee6fc;}
+.payroll-teacher-label.payroll-subject-math {color:#5340c5;background:#f2efff;border-color:#dcd4ff;}
+.payroll-teacher-label.payroll-subject-science {color:#23884b;background:#effcf3;border-color:#c7efd4;}
+.payroll-teacher-label.payroll-subject-social {color:#a25d16;background:#fff7e9;border-color:#f3dcad;}
+.payroll-pending {color:#96540c;white-space:nowrap;}

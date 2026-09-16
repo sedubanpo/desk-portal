@@ -71,3 +71,13 @@ test('payroll write receipts are isolated by method and staff identity', async (
   assert.deepEqual(replay.settings, settings.settings);
   assert.equal(firestore.documents.size, 6);
 });
+
+test('stale second browser cannot overwrite saved amount and percentage', async()=>{
+ const db=fakeFirestore(),store=createPayrollStore(db);
+ const {payrollOverrideSignature}=await import('../src/payroll/normalizers.js');
+ const base={requestId:'first',monthName:'26-09',identity,nowIso:'today'};
+ const first=await store.saveOverrides({...base,overrides:{expectedSignature:payrollOverrideSignature({}),amountOverrides:[{rowKey:'lesson',amount:50000}],settlementPercentOverrides:[{rowKey:'lesson',percent:65}]}});
+ const second=await store.saveOverrides({...base,requestId:'second',overrides:{expectedSignature:payrollOverrideSignature({}),amountOverrides:[{rowKey:'lesson',amount:1}]}});
+ assert.equal(first.success,true);assert.equal(second.success,false);assert.equal(second.conflict,true);
+ assert.equal(db.documents.get('payrollOverrides/po_26-09').overrides.amountOverrides[0].amount,50000);
+});

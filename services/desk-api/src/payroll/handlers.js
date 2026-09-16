@@ -1,3 +1,4 @@
+import { isIntranetMonth, payrollMonths } from './intranet.js';
 import {
   applyPayrollSettingsUpdates,
   buildPayrollSummary,
@@ -27,14 +28,27 @@ export const PAYROLL_WRITE_METHODS = Object.freeze([
 function successFailure(message) { return { success: false, message }; }
 function requestId(payload) { return String(payload?.clientRequestId || '').replace(/[^\w:.-]/g, '').slice(0, 120); }
 
-export function createPayrollHandlers({ store, sheets, now = () => new Date() }) {
+export function createPayrollHandlers({ store, sheets, intranet, now = () => new Date() }) {
   if (!store || !sheets) throw new TypeError('payroll store and sheets reader are required.');
 
+  const listMonths = async () => {
+    const legacy = await sheets.listPayrollMonths().catch(error => { if (!intranet) throw error; return []; });
+    return intranet ? payrollMonths(legacy,now()) : legacy;
+  };
+  const readSource = async (name) => {
+    if (isIntranetMonth(name)) {
+      if (!intranet) throw new Error('인트라넷 데이터 연결이 설정되지 않았습니다.');
+      const source = await intranet.readMonth(name);
+      return {...source, sourceName:'intranet'};
+    }
+    const source = await sheets.readPayrollMonth(name);
+    return {rows:parsePayrollRows(source,parsePayrollMonthName(name)),version:payrollSourceVersion(source),sourceName:'google-sheets-api'};
+  };
   const handlers = {
     async getPayrollBootstrapData() {
-      const months = await sheets.listPayrollMonths();
+      const months = await listMonths();
       return months.length
-        ? { success: true, months, selectedMonth: months[0], source: 'google-sheets-api' }
+        ? { success: true, months, selectedMonth: months[0], source: isIntranetMonth(months[0]) ? 'intranet' : 'google-sheets-api' }
         : successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
     },
 
@@ -43,20 +57,20 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
     },
 
     async getPayrollMonthSummary(payload = {}) {
-      const months = await sheets.listPayrollMonths();
+      const months = await listMonths();
       if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
       const monthName = String(payload.monthName || months[0]).trim();
       const monthMeta = parsePayrollMonthName(monthName);
       if (!monthMeta) return successFailure(`월 탭 이름 형식이 올바르지 않습니다: ${monthName}`);
       if (!months.includes(monthName)) return successFailure(`선택한 월 탭을 찾을 수 없습니다: ${monthName}`);
       const [source, settings, savedOverrides] = await Promise.all([
-        sheets.readPayrollMonth(monthName),
+        readSource(monthName),
         store.getSettings(),
         store.getOverrides(monthName)
       ]);
       const requestedOverrides = normalizePayrollOverrideBundle(payload);
       const effectiveOverrides = mergePayrollOverrideBundles(savedOverrides, requestedOverrides);
-      const rows = parsePayrollRows(source, monthMeta);
+      const rows = source.rows;
       const summary = buildPayrollSummary(rows, monthMeta, payrollOptions(payload, settings, effectiveOverrides));
       return {
         ...summary,
@@ -69,12 +83,14 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
         months,
         savedOverrides: effectiveOverrides,
         overrideSignature: payrollOverrideSignature(effectiveOverrides),
-        cache: { source: 'google-sheets-api', hit: false, sheetVersion: payrollSourceVersion(source), forceRefresh: Boolean(payload.forceRefresh) }
+        teacherSettings: settings,
+        sourcePendingCount: rows.filter(row => row.sourcePending).length,
+        cache: { source: source.sourceName, hit: false, sheetVersion: source.version, forceRefresh: Boolean(payload.forceRefresh) }
       };
     },
 
     async getPayrollMonthlyAnalysis(payload = {}) {
-      const months = await sheets.listPayrollMonths();
+      const months = await listMonths();
       if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
       const limit = Math.min(24, Math.max(1, Math.trunc(Number(payload.limit) || 12)));
       const selectedMonths = months.slice(0, limit);
@@ -88,10 +104,10 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
           const monthMeta = parsePayrollMonthName(monthName);
           if (!monthMeta) throw new Error('invalid month tab name');
           const [source, overrides] = await Promise.all([
-            sheets.readPayrollMonth(monthName),
+            readSource(monthName),
             store.getOverrides(monthName)
           ]);
-          const parsedRows = parsePayrollRows(source, monthMeta);
+          const parsedRows = source.rows;
           const summary = buildPayrollSummary(parsedRows, monthMeta, payrollOptions(calculationPayload, settings, overrides));
           const kpi = summary.kpi || {};
           const teacherCount = new Set((summary.rows || [])
@@ -131,7 +147,7 @@ export function createPayrollHandlers({ store, sheets, now = () => new Date() })
         ruleBasis: 'current-saved-teacher-settings',
         ratioPercent: payrollOptions(calculationPayload, settings, {}).ratioPercent,
         hourlyRate: payrollOptions(calculationPayload, settings, {}).hourlyRate,
-        source: 'google-sheets-api',
+        source: 'month-dependent',
         generatedAt: now().toISOString()
       };
     },

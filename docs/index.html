@@ -17677,7 +17677,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260914-manager">
+  <link rel="stylesheet" href="./workspace.css?v=20260916-payroll">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -32282,7 +32282,9 @@
 
     function applyDeskTimePreset_(presetKey, useModal) {
       var preset = DESK_TIME_PRESETS[presetKey];
-      if (!preset) return;
+      preset = preset || {salaryMode:"ratio", hourlyRate:30000, ratioPercent:50};
+      state.ratioPercent = toNumber(preset.ratioPercent,50);
+      ratioInputEl.value = state.ratioPercent;
       var roleEl = useModal ? deskShiftModalRoleEl : deskShiftRoleEl;
       var startEl = useModal ? deskShiftModalStartEl : deskShiftStartEl;
       var endEl = useModal ? deskShiftModalEndEl : deskShiftEndEl;
@@ -37906,25 +37908,25 @@
         if (state.salaryMode === "ratio") return;
         state.salaryMode = "ratio";
         renderModeState();
-        refreshSummary(false);
+        saveSelectedPayrollSetting_();
       });
 
       modeHourlyBtnEl.addEventListener("click", function() {
         if (state.salaryMode === "hourly") return;
         state.salaryMode = "hourly";
         renderModeState();
-        refreshSummary(false);
+        saveSelectedPayrollSetting_();
       });
 
-      ratioInputEl.addEventListener("input", debounce(function() {
+      ratioInputEl.addEventListener("change", function() {
         state.ratioPercent = toNumber(ratioInputEl.value, 50);
-        refreshSummary(false);
-      }, 260));
+        saveSelectedPayrollSetting_();
+      });
 
-      hourlyInputEl.addEventListener("input", debounce(function() {
+      hourlyInputEl.addEventListener("change", function() {
         state.hourlyRate = toNumber(hourlyInputEl.value, 30000);
-        refreshSummary(false);
-      }, 260));
+        saveSelectedPayrollSetting_();
+      });
 
       tableCollapseBtnEl.addEventListener("click", function() {
         state.tableCollapsed = !state.tableCollapsed;
@@ -42721,6 +42723,9 @@ window.SeduHubAdapter={
 
           state.months = res.months || state.months;
           state.selectedMonth = res.selectedMonth || state.selectedMonth;
+          state.payroll.overrideSignature = res.overrideSignature;
+          if (res.teacherSettings) state.teacherSettings = res.teacherSettings;
+          applyTeacherSettingPreset();
           applyPayrollSavedOverrides_(res.savedOverrides || {});
           if (isMonthRefresh) {
             state.selectedSubject = "";
@@ -42777,17 +42782,33 @@ window.SeduHubAdapter={
       return state.payroll.settingsLoadingPromise;
     }
 
+    function saveSelectedPayrollSetting_() {
+      if (!state.selectedTeacher) return Promise.resolve();
+      var teacher = state.selectedTeacher;
+      var update = {teacher:teacher, salaryMode:state.salaryMode, ratioPercent:state.ratioPercent, hourlyRate:state.hourlyRate};
+      setLoading(true, "강사 정산 설정을 저장 중입니다...");
+      return savePayrollSettingsRequest_([update]).then(function(res) {
+        if (!res || !res.success) throw new Error(res && res.message || "설정 저장 실패");
+        state.teacherSettings = res.settings || {};
+        state.payroll.monthlyAnalysis.loaded = false;
+        return refreshSummary(false);
+      }).catch(function(error) {
+        applyTeacherSettingPreset();
+        showClientMessage("설정 저장 오류: " + error.message);
+      }).finally(function() { setLoading(false); });
+    }
+
     function applyTeacherSettingPreset() {
       if (!state.selectedTeacher) return;
       var preset = (state.teacherSettings || {})[state.selectedTeacher];
-      if (!preset) return;
+      preset = preset || {salaryMode:"ratio", hourlyRate:30000, ratioPercent:50};
+      state.ratioPercent = toNumber(preset.ratioPercent,50);
+      ratioInputEl.value = state.ratioPercent;
       var mode = String(preset.salaryMode || "").toLowerCase();
+      state.hourlyRate = toNumber(preset.hourlyRate,30000);
+      hourlyInputEl.value = String(Math.round(state.hourlyRate));
       if (mode === "hourly") {
         state.salaryMode = "hourly";
-        if (toNumber(preset.hourlyRate, 0) > 0) {
-          state.hourlyRate = toNumber(preset.hourlyRate, state.hourlyRate);
-          hourlyInputEl.value = String(Math.round(state.hourlyRate));
-        }
       } else if (mode === "ratio") {
         state.salaryMode = "ratio";
       }
@@ -42838,26 +42859,22 @@ window.SeduHubAdapter={
     }
 
     function renderPayrollIdentity_(name, subject) {
-      var paths = subject ? {
+      var paths = {
         '국어': '<path d="M3 5c3-1 6-1 9 1 3-2 6-2 9-1v14c-3-1-6-1-9 1-3-2-6-2-9-1zM12 6v14"/>',
         '영어': '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c5 5 5 13 0 18-5-5-5-13 0-18"/>',
         '수학': '<path d="M5 7h6M8 4v6M15 6h5M5 16l5 5m0-5-5 5M15 16h5m-5 4h5"/>',
         '과학': '<path d="M9 3h6m-5 0v6l-6 10a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2L14 9V3M7 15h10"/>',
         '사회': '<path d="m3 9 9-6 9 6H3m2 3v7m7-7v7m7-7v7M3 21h18"/>'
-      } : null;
-      var key = /국어/.test(name) ? '국어' : /영어/.test(name) ? '영어' : /수학/.test(name) ? '수학' : /과학|물리|화학|생명|지학/.test(name) ? '과학' : '사회';
-      var path = subject ? paths[key] : '<circle cx="12" cy="8" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3M4 3h16"/>';
-      return '<span class="payroll-identity ' + (subject ? 'payroll-subject-label' : 'payroll-teacher-label') + '"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' + escapeHtml(name || '미지정') + '</span>';
+      };
+      var subjectName = subject ? name : (getTeacherSubjectMap()[name] || '기타');
+      var key = /국어/.test(subjectName) ? '국어' : /영어/.test(subjectName) ? '영어' : /수학/.test(subjectName) ? '수학' : /과학|물리|화학|생명|지학/.test(subjectName) ? '과학' : /사회|사탐|역사|지리/.test(subjectName) ? '사회' : '기타';
+      var path = paths[key] || '<circle cx="12" cy="8" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3M4 3h16"/>';
+      return '<span class="payroll-identity ' + (subject ? 'payroll-subject-label' : 'payroll-teacher-label') + ' payroll-subject-' + ({'국어':'korean','영어':'english','수학':'math','과학':'science','사회':'social'}[key] || 'other') + '"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' + escapeHtml(name || '미지정') + '</span>';
     }
 
     function renderPayrollHourDots_(value) {
       var hours = Math.max(0, Number(value) || 0);
-      if (!Number.isFinite(hours)) hours = 0;
-      var dots = '';
-      for (var i = 0; i < Math.min(24, Math.ceil(hours)); i++) {
-        dots += '<span class="payroll-hour-dot" style="--fill:' + Math.round(Math.min(1, hours - i) * 100) + '%"></span>';
-      }
-      return '<span class="payroll-hours" aria-label="' + formatHours(hours) + '시간"><span class="payroll-hour-dots" aria-hidden="true">' + dots + '</span><span aria-hidden="true">' + formatHours(hours) + 'h</span></span>';
+      return '<span class="payroll-hours">' + formatHours(hours) + 'h</span>';
     }
 
     function buildSettingsTeacherRowHtml(name, subject) {
@@ -43365,16 +43382,18 @@ window.SeduHubAdapter={
     function savePayrollOverrides_() {
       var seq = ++state.payroll.overrideSaveSeq;
       var tail = state.payroll.overrideSaveTail || Promise.resolve();
-      var job = tail.catch(function() {}).then(function() {
-        var payload = Object.assign({
+      var payload = Object.assign({
           monthName: state.selectedMonth,
+          expectedSignature: state.payroll.overrideSignature,
           clientRequestId: buildClientRequestId_("savePayrollOverrides")
         }, buildPayrollOverridesPayload_());
+      var job = tail.catch(function() {}).then(function() {
         return runServer("savePayrollOverrides", payload);
       })
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "수동 보정 저장 실패");
-          if (seq === state.payroll.overrideSaveSeq) {
+          if (payload.monthName === state.selectedMonth) state.payroll.overrideSignature = res.overrideSignature;
+          if (seq === state.payroll.overrideSaveSeq && payload.monthName === state.selectedMonth) {
             applyPayrollSavedOverrides_(res.overrides || {});
             state.payroll.monthlyAnalysis.loaded = false;
             state.payroll.monthlyAnalysis.inputSignature = "";
@@ -43383,9 +43402,10 @@ window.SeduHubAdapter={
           return { success: true, stale: true };
         });
       state.payroll.overrideSaveTail = job;
-      state.payroll.overrideSavingPromise = job.finally(function() {
-        if (state.payroll.overrideSavingPromise === job) state.payroll.overrideSavingPromise = null;
+      var pending = job.finally(function() {
+        if (state.payroll.overrideSavingPromise === pending) state.payroll.overrideSavingPromise = null;
       });
+      state.payroll.overrideSavingPromise = pending;
       return state.payroll.overrideSavingPromise;
     }
 
@@ -43398,7 +43418,7 @@ window.SeduHubAdapter={
         })
         .catch(function(err) {
           showClientMessage("수동 보정 저장 오류: " + (err.message || String(err)));
-          return refreshSummary(false, { includeLocalOverrides: true });
+          return refreshSummary(false);
         });
     }
 
@@ -43649,7 +43669,7 @@ window.SeduHubAdapter={
       document.getElementById("kpiPureHours").textContent = formatHours(kpi.pureTeachingHours || 0) + "h";
       document.getElementById("kpiOverride").textContent = "수동 인정/제외 " + countOverrides(data.rows || []) + "건";
       var payrollPageContextEl = document.getElementById("payrollPageContext");
-      if (payrollPageContextEl) payrollPageContextEl.textContent = (data.monthLabel || state.selectedMonth || "정산 월") + " · " + (state.selectedTeacher || "전체 강사") + " · Google Sheets 기준";
+      if (payrollPageContextEl) payrollPageContextEl.textContent = (data.monthLabel || state.selectedMonth || "정산 월") + " · " + (state.selectedTeacher || "전체 강사") + " · " + (data.cache && data.cache.source === "intranet" ? "인트라넷 기준" : "Google Sheets 기준") + (data.sourcePendingCount ? " · 금액·시수 확인 필요 " + data.sourcePendingCount + "건 (정산 제외)" : "");
       document.getElementById("freeCountPill").textContent = "수동 인정/제외 " + countOverrides(data.rows || []) + "건";
       document.getElementById("suspectCountPill").textContent = "의심 " + countSuspects(data.rows || []) + "건";
       renderModeState();
@@ -44529,6 +44549,7 @@ window.SeduHubAdapter={
     }
 
     function buildPayrollAmountCell(row) {
+      if (row.sourcePending) return '<span class="payroll-pending">금액·시수 확인 필요</span>';
       var value = state.amountOverrides[row.rowKey];
       if (value == null || value === "") value = row.amount;
       var original = Math.round(toNumber(row.originalAmount, row.amount));
@@ -44601,7 +44622,7 @@ window.SeduHubAdapter={
           '<tr class="' + rowClass + '">' +
             '<td data-col="status"><span class="status-badge ' + statusClass + '">' + escapeHtml(row.recognitionLabel) + "</span></td>" +
             '<td data-col="recog"><label class="free-toggle"><input class="recognition-check" type="checkbox" data-row-key="' +
-              escapeHtml(row.rowKey) + '" data-base-recognized="' + (row.baseRecognized ? "1" : "0") + '" ' + checked + '>인정</label></td>' +
+              escapeHtml(row.rowKey) + '" data-base-recognized="' + (row.baseRecognized ? "1" : "0") + '" ' + checked + (row.sourcePending ? ' disabled' : '') + '>인정</label></td>' +
             '<td data-col="attendance"><span class="attendance-badge ' + attendanceClass + '">' + renderPayrollAttendanceLabel_(row.attendanceCode) + "</span></td>" +
             '<td data-col="date">' + escapeHtml(row.classDateLabel) + "</td>" +
             '<td data-col="student">' + renderStudentIdentityHtml_(row.name) + "</td>" +
@@ -44615,7 +44636,7 @@ window.SeduHubAdapter={
             '<td data-col="settlementPercent">' + settlementPercentCell + "</td>" +
             '<td data-col="amount">' + amountCell + "</td>" +
             '<td data-col="discount">' + discountCell + "</td>" +
-            '<td data-col="netAmount">' + (row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
+            '<td data-col="netAmount">' + (row.sourcePending ? '확인 필요' : row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
             '<td data-col="suspect">' + suspectLabel + "</td>" +
             '<td data-col="note"><span class="note">' + escapeHtml(row.note || "") + "</span></td>" +
           "</tr>";

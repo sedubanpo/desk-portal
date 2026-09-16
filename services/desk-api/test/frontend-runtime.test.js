@@ -793,3 +793,11 @@ test('tuition redesign puts confirmation third and keeps secondary sort within s
   state.tuition.studentSort='name';
   assert.deepEqual(Array.from(group(rows).filter(r=>!r.__group),r=>r.studentName),['가','나','안내','확인','완료']);
 });
+
+test('payroll top controls wait for server persistence before recalculation', async()=>{
+ const source=await readFile(frontendPath,'utf8'), gate=deferred();let refreshed=false,patch;
+ const state={selectedTeacher:'검증강사',salaryMode:'hourly',hourlyRate:45000,ratioPercent:65,payroll:{monthlyAnalysis:{loaded:true}}};
+ const save=loadFunction(source,'saveSelectedPayrollSetting_',{state,setLoading:()=>{},savePayrollSettingsRequest_:updates=>{patch=updates[0];return gate.promise;},refreshSummary:()=>{refreshed=true;},applyTeacherSettingPreset:()=>{},showClientMessage:message=>{throw Error(message);}});
+ const job=save();assert.equal(refreshed,false);assert.equal(patch.hourlyRate,45000);assert.equal(patch.ratioPercent,65);
+ gate.resolve({success:true,settings:{'검증강사':{hourlyRate:45000,ratioPercent:65}}});await job;assert.equal(refreshed,true);assert.equal(state.teacherSettings['검증강사'].hourlyRate,45000);
+});

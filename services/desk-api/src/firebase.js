@@ -9,6 +9,7 @@ import { createTuitionHandlers } from './tuition/handlers.js';
 import { createTuitionStore } from './tuition/store.js';
 import { createGoogleWorkspaceReader } from './google-workspace.js';
 import { createPayrollHandlers } from './payroll/handlers.js';
+import { createIntranetPayrollReader } from './payroll/intranet.js';
 import { createPayrollStore } from './payroll/store.js';
 
 function firebaseApp(projectId) {
@@ -48,7 +49,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),
-      ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace })
+      ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace, intranet:createIntranetPayrollReader(firestore) })
     },
     runIdempotent: createIdempotencyExecutor(firestore)
   };

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { normalizePayrollOverrideBundle, normalizePayrollSettings } from './normalizers.js';
+import { normalizePayrollOverrideBundle, normalizePayrollSettings, payrollOverrideSignature } from './normalizers.js';
 
 const COLLECTIONS = Object.freeze({
   settings: 'payrollSettings',
@@ -65,9 +65,13 @@ export function createPayrollStore(firestore) {
         const method = 'savePayrollOverrides';
         const audit = auditRef({ requestId, method, identity });
         const target = overrideRef(monthName);
-        const [auditSnapshot, legacyAuditSnapshot] = await transaction.getAll(audit, legacyAuditRef(requestId));
+        const [auditSnapshot, legacyAuditSnapshot, targetSnapshot] = await transaction.getAll(audit, legacyAuditRef(requestId), target);
         const previous = matchingAuditResult(auditSnapshot, { method, identity }) || matchingAuditResult(legacyAuditSnapshot, { method, identity });
         if (previous) return { ...previous, duplicate: true };
+        const current = normalizePayrollOverrideBundle(targetSnapshot.exists ? targetSnapshot.data()?.overrides : {});
+        if ((targetSnapshot.exists && !overrides.expectedSignature) || (overrides.expectedSignature && overrides.expectedSignature !== payrollOverrideSignature(current))) {
+          return {success:false, conflict:true, message:'다른 PC에서 정산 내역을 수정했습니다. 새로고침 후 다시 수정해 주세요.'};
+        }
         const normalized = { ...normalizePayrollOverrideBundle(overrides), updatedAt: nowIso };
         const result = { success: true, monthName, overrides: normalized };
         transaction.set(target, { monthName, overrides: normalized, updatedAt: nowIso, updatedBy: identity.uid || '', updatedByName: identity.name || '' });
