@@ -13,6 +13,8 @@ export function payrollMonths(legacy, now = new Date()) {
 // Same precedence as intranet GET /daily, including deletion tombstones.
 export function combineLessons(current, past, drafts) {
   const rows = new Map(), publishedAt = new Map();
+  // Published deletions remain authoritative even after draft cleanup/re-import.
+  const deleted = new Set(current.flatMap(p => (p.publishedDeletedIds || []).map(id => `${p.studentId}|${id}`)));
   for (const p of [...past, ...current]) for (const l of p.lessons || []) rows.set(`${p.studentId}|${l.id}`, {...l,studentId:p.studentId});
   for (const p of current) for (const l of p.lessons || []) publishedAt.set(`${p.studentId}|${l.id}`,p.updatedAt?.toMillis?.() || 0);
   for (const d of drafts) {
@@ -21,7 +23,7 @@ export function combineLessons(current, past, drafts) {
     const newer= !l.deletedAt && old && !changed(old,l) && !['teacher-portal-history','access-history'].includes(l.source) && (publishedAt.get(key)||0)>Date.parse(d.updatedAt);
     rows.set(key,newer?old:l);
   }
-  return [...rows.values()].filter(l=>!l.deletedAt);
+  return [...rows.values()].filter(l=>!l.deletedAt && !deleted.has(`${l.studentId}|${l.id}`));
 }
 
 export function intranetRows(lessons, students, meta) {

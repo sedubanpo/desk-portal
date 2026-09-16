@@ -801,3 +801,10 @@ test('payroll top controls wait for server persistence before recalculation', as
  const job=save();assert.equal(refreshed,false);assert.equal(patch.hourlyRate,45000);assert.equal(patch.ratioPercent,65);
  gate.resolve({success:true,settings:{'검증강사':{hourlyRate:45000,ratioPercent:65}}});await job;assert.equal(refreshed,true);assert.equal(state.teacherSettings['검증강사'].hourlyRate,45000);
 });
+
+test('reopening payroll monthly analysis fetches changed intranet totals even with unchanged settings',async()=>{
+ const source=await readFile(frontendPath,'utf8');let calls=0;
+ const analysis={loaded:true,rows:[{netSales:1}],inputSignature:JSON.stringify({ratioPercent:50,hourlyRate:30000,teacherSettings:{}})};
+ const load=loadFunction(source,'loadPayrollMonthlyAnalysis_',{state:{payroll:{monthlyAnalysis:analysis},ratioPercent:50,hourlyRate:30000,teacherSettings:{}},toNumber:(n)=>Number(n),document:{getElementById:()=>null},payrollAnalysisRefreshBtnEl:null,runServer:async()=>({success:true,rows:[{netSales:++calls*100}]}),renderPayrollAnalysisYearOptions_:()=>{},renderPayrollMonthlyAnalysis_:()=>{}});
+ await load(false);assert.equal(analysis.rows[0].netSales,100);await load(false);assert.equal(analysis.rows[0].netSales,200);assert.equal(calls,2);
+});

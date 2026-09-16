@@ -43496,10 +43496,7 @@ window.SeduHubAdapter={
         teacherSettings: state.teacherSettings || {}
       });
       if (analysis.loadingPromise) return analysis.loadingPromise;
-      if (analysis.loaded && !forceRefresh && analysis.inputSignature === inputSignature) {
-        renderPayrollMonthlyAnalysis_();
-        return Promise.resolve();
-      }
+      // Intranet records may change outside this browser; each opening reloads.
       var statusEl = document.getElementById("payrollAnalysisStatus");
       if (statusEl) {
         statusEl.classList.remove("is-error");

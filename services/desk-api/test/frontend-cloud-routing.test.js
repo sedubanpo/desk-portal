@@ -31,7 +31,6 @@ test('teacher payroll exposes an unfiltered monthly sales and teacher-pay analys
   assert.match(source, /runServer\("getPayrollMonthlyAnalysis", \{/);
   assert.match(source, /ratioPercent: state\.ratioPercent/);
   assert.match(source, /teacherSettings: state\.teacherSettings \|\| \{\}/);
-  assert.match(source, /analysis\.inputSignature === inputSignature/);
   assert.match(source, /state\.payroll\.monthlyAnalysis\.loaded = false/);
   assert.match(source, /state\.payroll\.monthlyAnalysis\.inputSignature = ""/);
   assert.match(source, /전체 강사 · 필터 미적용 · 현재 저장 규칙/);

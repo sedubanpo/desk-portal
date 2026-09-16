@@ -46,3 +46,31 @@ test('actual duration remains visible while teacher pay minutes control recogniz
  const s=buildPayrollSummary(input,meta,{teacherSettings:{'강사':{salaryMode:'hourly',hourlyRate:30000}}});
  assert.equal(s.rows[0].hours,2);assert.equal(s.rows[0].recognizedHours,1);assert.equal(s.rows[1].hours,2);assert.equal(s.rows[1].recognizedHours,0);assert.equal(s.kpi.pureTeachingHours,1);assert.equal(s.kpi.estimatedPay,30000);
 });
+
+test('published deletion survives draft cleanup and stale history/re-import without hiding another student',()=>{
+ const old=[{studentId:'student',lessons:[lesson]},{studentId:'other',lessons:[{...lesson,studentId:'other'}]}];
+ const current=[{studentId:'student',lessons:[],publishedDeletedIds:['one']}];
+ assert.equal(combineLessons(current,old,[]).length,1);
+ assert.equal(combineLessons(current,old,[{lesson}])[0].studentId,'other');
+});
+
+test('successive reads reflect edits, fee changes, new lessons and published deletions in totals',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[lesson]}]};
+ const db={collection(name){return {where(_field,_op,month){return {...this,month};},limit(){return this;},async get(){const all=(data[name]||[]).filter(r=>!this.month||r.month===this.month);return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const reader=createIntranetPayrollReader(db);
+ const summarize=async(overrides={})=>{const source=await reader.readMonth('26-09');return {source,...buildPayrollSummary(source.rows,meta,{ratioPercent:50,effectiveOverrides:overrides})};};
+ const initial=await summarize();assert.equal(initial.kpi.netSales,60000);
+ data.intranetLessonDrafts=[{month:'2026-09',lesson:{...lesson,end:'17:00',sourceMinutes:180,payMinutes:180,billMinutes:180}}];
+ const edited=await summarize();assert.equal(edited.kpi.netSales,90000);assert.equal(edited.kpi.recognizedHours,3);assert.notEqual(initial.source.version,edited.source.version);assert.equal(initial.rows[0].rowKey,edited.rows[0].rowKey);
+ data.intranetStudentFees=[{studentId:'student',month:'2026-09',assignments:[{kind:'lesson',target:'one',amount:100000,rateUnit:'perClass'}]}];
+ assert.equal((await summarize()).kpi.netSales,100000);
+ const manual={amountOverrides:[{rowKey:edited.rows[0].rowKey,amount:75000}]};
+ const corrected=await summarize(manual);assert.equal(corrected.kpi.netSales,75000);assert.equal(corrected.rows[0].originalAmount,100000);
+ data.intranetLessonDrafts.push({month:'2026-09',lesson:{...lesson,id:'new'}});
+ assert.equal((await summarize()).rows.length,2);
+ data.intranetStudentPeriods=[{studentId:'student',month:'2026-09',lessons:[],publishedDeletedIds:['one']}];
+ const removed=await summarize(manual);assert.equal(removed.rows.length,1);assert.equal(removed.kpi.netSales,60000);assert.equal(removed.kpi.estimatedPay,30000);
+ data.intranetLessonDrafts=[{month:'2026-09',lesson:{...lesson,id:'new',deletedAt:'today'}}];
+ assert.equal((await summarize()).rows.length,0);
+});
