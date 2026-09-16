@@ -613,13 +613,13 @@ test('supplies unsaved status is idle only with no dirty flag, debounce, or quan
   assert.equal(hasUnsavedDeskSupplies(), true, 'an in-flight quantity adjustment must warn');
 });
 
-test('the beforeunload callback warns only when supplies are unsaved', async () => {
+test('the beforeunload callback warns when supplies or journal writes are unsaved', async () => {
   const source = await readFile(frontendPath, 'utf8');
   const listenerStart = source.indexOf('window.addEventListener("beforeunload", function(event)');
   assert.notEqual(listenerStart, -1, 'beforeunload guard was not found');
   const handlerStart = source.indexOf('function(event)', listenerStart);
   const idleHandler = vm.runInNewContext(`(${extractFunctionAt(source, handlerStart)})`, {
-    hasUnsavedDeskSupplies_: () => false
+    hasUnsavedDeskSupplies_: () => false, deskDailyPendingTaskMutations_: {}, getDeskDailyPendingMemoWriteCount_: () => 0
   });
   const idleEvent = { prevented: false, preventDefault() { this.prevented = true; } };
   idleHandler(idleEvent);
@@ -633,6 +633,13 @@ test('the beforeunload callback warns only when supplies are unsaved', async () 
   dirtyHandler(dirtyEvent);
   assert.equal(dirtyEvent.prevented, true);
   assert.equal(dirtyEvent.returnValue, '');
+  const journalHandler = vm.runInNewContext(`(${extractFunctionAt(source, handlerStart)})`, {
+    hasUnsavedDeskSupplies_: () => false, deskDailyPendingTaskMutations_: { t: {} }, getDeskDailyPendingMemoWriteCount_: () => 0
+  });
+  const journalEvent = { prevented: false, preventDefault() { this.prevented = true; } };
+  journalHandler(journalEvent);
+  assert.equal(journalEvent.prevented, true);
+
 });
 
 test('a pending purchase debounce marks supplies dirty before its delayed save begins', async () => {
@@ -807,4 +814,50 @@ test('reopening payroll monthly analysis fetches changed intranet totals even wi
  const analysis={loaded:true,rows:[{netSales:1}],inputSignature:JSON.stringify({ratioPercent:50,hourlyRate:30000,teacherSettings:{}})};
  const load=loadFunction(source,'loadPayrollMonthlyAnalysis_',{state:{payroll:{monthlyAnalysis:analysis},ratioPercent:50,hourlyRate:30000,teacherSettings:{}},toNumber:(n)=>Number(n),document:{getElementById:()=>null},payrollAnalysisRefreshBtnEl:null,runServer:async()=>({success:true,rows:[{netSales:++calls*100}]}),renderPayrollAnalysisYearOptions_:()=>{},renderPayrollMonthlyAnalysis_:()=>{}});
  await load(false);assert.equal(analysis.rows[0].netSales,100);await load(false);assert.equal(analysis.rows[0].netSales,200);assert.equal(calls,2);
+});
+
+
+test('journal pending task acknowledgement preserves a later queued edit', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const pending = { t: { task: { id: 't', title: 'later' }, deleted: false } };
+  let persisted = 0;
+  const forget = loadFunction(source, 'forgetDeskDailyPendingTaskMutation_', { deskDailyPendingTaskMutations_: pending, persistDeskPendingTasks_: () => persisted++ });
+  forget('t', { id: 't', title: 'first' });
+  assert.ok(pending.t);
+  forget('t', { id: 't', title: 'later' });
+  assert.equal(pending.t, undefined);
+  assert.equal(persisted, 1);
+  pending.t = { deleted: true };
+  forget('t', { id: 't', title: 'older save' });
+  assert.ok(pending.t, 'older save cannot clear newer delete');
+  pending.t = { deleted: false, task: { id: 't', title: 'new edit' } };
+  forget('t', { deleted: true });
+  assert.ok(pending.t, 'older delete cannot clear newer edit');
+});
+
+test('successful read cannot mask a task or memo awaiting server save', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const state = { desk: { daily: {} } };
+  const pending = { t: {} };
+  const setStatus = loadFunction(source, 'setDeskDailySyncStatus_', { state, deskDailyPendingTaskMutations_: pending, getDeskDailyPendingMemoWriteCount_: () => 0, updateDeskDailyPendingMemoFlushButton_: () => {}, renderGlobalSyncWidget_: () => {} });
+  setStatus('idle'); assert.equal(state.desk.daily.syncStatus, 'error');
+  delete pending.t;
+  setStatus('idle'); assert.equal(state.desk.daily.syncStatus, 'idle');
+});
+
+
+test('pending journal tasks survive reload and remain isolated by signed-in account', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const storage = new Map();
+  const state = { cloudIdentity: { uid: 'a' } };
+  const context = vm.createContext({ state, deskPendingTaskOwner_: '', deskDailyPendingTaskMutations_: {}, localStorage: { getItem: k => storage.get(k), setItem: (k,v) => storage.set(k,v) }, showDeskMemoSaveStatus_: () => {} });
+  vm.runInContext(extractFunction(source, 'restoreDeskPendingTasks_') + extractFunction(source, 'persistDeskPendingTasks_'), context);
+  vm.runInContext('restoreDeskPendingTasks_(); deskDailyPendingTaskMutations_.t = { id: "t", dateKey: "2026-09-16", task: {title: "보관"} }; persistDeskPendingTasks_(); deskPendingTaskOwner_ = ""; deskDailyPendingTaskMutations_ = {}; restoreDeskPendingTasks_();', context);
+  assert.equal(context.deskDailyPendingTaskMutations_.t.task.title, '보관');
+  state.cloudIdentity.uid = 'b';
+  vm.runInContext('restoreDeskPendingTasks_();', context);
+  assert.equal(Object.keys(context.deskDailyPendingTaskMutations_).length, 0);
+  state.cloudIdentity.uid = 'a';
+  vm.runInContext('restoreDeskPendingTasks_();', context);
+  assert.ok(context.deskDailyPendingTaskMutations_.t);
 });

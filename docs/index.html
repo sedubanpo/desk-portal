@@ -14230,6 +14230,12 @@
       overflow: hidden;
       background: #fff;
     }
+    .desk-ledger-workers { display:flex; gap:8px; overflow-x:auto; flex-wrap:nowrap; padding:12px 16px; border-bottom:1px solid #d8e4de; }
+    .desk-ledger-workers button { flex:0 0 auto; display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:6px 12px; border:1px solid #d8e4de; border-radius:6px; background:#fff; color:#475569; font:inherit; cursor:pointer; }
+    .desk-ledger-workers button[aria-pressed="true"] { background:#e7f0d0; border-color:#a6bd72; color:#365314; font-weight:800; }
+    .desk-ledger-workers button:focus-visible { outline:2px solid #0d684d; outline-offset:2px; }
+    .desk-ledger-workers small { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .desk-ledger-warning { padding:12px 16px; color:#9a3412; background:#fff7ed; }
     .desk-task-ledger-head {
       display: flex;
       align-items: flex-end;
@@ -22041,7 +22047,7 @@
       showEntryGate();
       initializeDeskFirebaseAuth_();
       window.addEventListener("beforeunload", function(event) {
-        if (!hasUnsavedDeskSupplies_()) return;
+        if (!hasUnsavedDeskSupplies_() && !Object.keys(deskDailyPendingTaskMutations_).length && !getDeskDailyPendingMemoWriteCount_()) return;
         event.preventDefault();
         event.returnValue = "";
       });
@@ -22209,6 +22215,10 @@
       state.desk.daily.taskLedgerSummary = null;
       state.desk.daily.taskLedgerKeyword = "";
       state.desk.daily.taskLedgerStatus = "전체";
+      state.desk.daily.taskLedgerWorker = "전체";
+      state.desk.daily.ledgerDrafts = {};
+      deskDailyPendingTaskMutations_ = {};
+      deskPendingTaskOwner_ = "";
       resetDeskDailyCarryoverLoad_();
       state.desk.daily.loadedDates = {};
       state.desk.daily.loadingDates = {};
@@ -31079,6 +31089,7 @@
     }
 
     function setDeskDailySyncStatus_(status) {
+      if (status === "idle" && (Object.keys(deskDailyPendingTaskMutations_ || {}).length || getDeskDailyPendingMemoWriteCount_())) status = "error";
       state.desk.daily.syncStatus = status || "idle";
       updateDeskDailyPendingMemoFlushButton_();
       renderGlobalSyncWidget_();
@@ -31952,7 +31963,7 @@
 
     function renderDeskStaffAvatarHtml_(name, className) {
       var safeName = canonicalizeDeskWorkerName_(name) || "-";
-      var icon = getDeskStaffIcon_(safeName);
+      var icon = safeName === "에스에듀" ? { imageUrl: "https://raw.githubusercontent.com/whdtjd5294/whdtjd5294.github.io/main/sedu_logo.png" } : getDeskStaffIcon_(safeName);
       var imageHtml = icon && icon.imageUrl
         ? '<img src="' + escapeHtml(icon.imageUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">'
         : '';
@@ -33123,6 +33134,7 @@
         });
       }, Promise.resolve())
         .then(function() {
+          if (state.desk.activeTab === "dailyJournal" && state.desk.daily.taskLedgerLoaded && !(deskJournalTaskBoardEl && deskJournalTaskBoardEl.contains(document.activeElement))) loadDeskTaskLedger_(true);
           var afterSignature = buildDeskDailyJournalSignature_(dateKeys);
           deskDailyJournalPollErrorDelayMs_ = 0;
           deskDailyJournalNextPollAt_ = 0;
@@ -33940,6 +33952,17 @@
       syncDeskMemoComposerState_();
     }
 
+    function rememberDeskLedgerDraft_(target) {
+      var field = target.closest("[data-desk-ledger-status], [data-desk-ledger-reason], [data-desk-ledger-next]");
+      if (!field) return;
+      var id = field.getAttribute("data-desk-ledger-status") || field.getAttribute("data-desk-ledger-reason") || field.getAttribute("data-desk-ledger-next");
+      var drafts = state.desk.daily.ledgerDrafts || (state.desk.daily.ledgerDrafts = {});
+      var draft = drafts[id] || (drafts[id] = {});
+      if (field.hasAttribute("data-desk-ledger-status")) { draft.progressStatus = field.value; draft.completed = field.value === "완료"; }
+      if (field.hasAttribute("data-desk-ledger-reason")) draft.unresolvedReason = field.value;
+      if (field.hasAttribute("data-desk-ledger-next")) draft.nextAction = field.value;
+    }
+
     function getDeskTaskLedgerStatus_(item) {
       if (item && item.deleted) return "삭제됨";
       if (item && item.completed) return "완료";
@@ -33958,13 +33981,21 @@
     function loadDeskTaskLedger_(force) {
       if (state.desk.daily.taskLedgerLoading) return;
       if (state.desk.daily.taskLedgerLoaded && !force) return;
+      restoreDeskPendingTasks_();
       state.desk.daily.taskLedgerLoading = true;
       state.desk.daily.taskLedgerError = "";
       renderDeskDailyJournal_();
       runServer("getDeskDailyJournalTaskLedger", {})
         .then(function(res) {
           if (!res || res.success === false) throw new Error(res && res.message ? res.message : "업무 배정 원장을 불러오지 못했습니다.");
-          state.desk.daily.taskLedger = (res.tasks || []).map(normalizeDeskDailyTask_);
+          var ledgerMap = {};
+          (res.tasks || []).map(normalizeDeskDailyTask_).forEach(function(item) { ledgerMap[item.id] = item; });
+          Object.keys(deskDailyPendingTaskMutations_).forEach(function(id) {
+            var entry = deskDailyPendingTaskMutations_[id];
+            var item = entry.task || ledgerMap[id];
+            if (item) ledgerMap[id] = Object.assign({}, item, { deleted: !!entry.deleted, syncState: "error" });
+          });
+          state.desk.daily.taskLedger = Object.keys(ledgerMap).map(function(id) { return ledgerMap[id]; });
           state.desk.daily.taskLedgerSummary = res.summary || null;
           state.desk.daily.taskLedgerLoaded = true;
         })
@@ -33990,23 +34021,33 @@
         return;
       }
       var allTasks = (state.desk.daily.taskLedger || []).slice();
+      var workers = Array.from(new Set(allTasks.map(function(item) { return canonicalizeDeskWorkerName_(item.worker) || "담당자 없음"; }))).sort(function(a,b) { return a.localeCompare(b, "ko"); });
+      var selectedWorker = state.desk.daily.taskLedgerWorker || "전체";
+      var scopedTasks = allTasks.filter(function(item) { return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker || "담당자 없음", selectedWorker); });
+      var workerTabs = '<div class="desk-ledger-workers" role="group" aria-label="업무 배정 원장 근무자">' + ["전체"].concat(workers).map(function(worker) {
+        var assigned = allTasks.filter(function(item) { return worker === "전체" || isSameDeskWorkerName_(item.worker || "담당자 없음", worker); });
+        var pending = assigned.filter(function(item) { return !item.completed && !item.deleted; }).length;
+        return '<button type="button" data-desk-ledger-worker="' + escapeHtml(worker) + '" aria-pressed="' + (worker === selectedWorker) + '">' + (worker === "전체" ? '전체' : renderDeskStaffIdentityHtml_(worker)) + '<small>미완료 ' + pending + ' · 전체 ' + assigned.length + '</small></button>';
+      }).join("") + '</div>';
       var keyword = String(state.desk.daily.taskLedgerKeyword || "").trim().toLowerCase();
       var statusFilter = String(state.desk.daily.taskLedgerStatus || "전체");
-      var visible = allTasks.filter(function(item) {
+      var visible = scopedTasks.filter(function(item) {
         var status = getDeskTaskLedgerStatus_(item);
         if (statusFilter !== "전체" && status !== statusFilter) return false;
         if (!keyword) return true;
         return [item.title, item.note, item.worker, item.createdByName, item.unresolvedReason, item.nextAction]
           .join(" ").toLowerCase().indexOf(keyword) !== -1;
       });
-      var summary = state.desk.daily.taskLedgerSummary || {
-        total: allTasks.length,
-        pending: allTasks.filter(function(item) { return !item.completed && !item.deleted; }).length,
-        completed: allTasks.filter(function(item) { return item.completed && !item.deleted; }).length,
-        deleted: allTasks.filter(function(item) { return item.deleted; }).length,
-        needsFollowup: allTasks.filter(function(item) { return !item.completed && !item.deleted && (item.unresolvedReason || item.nextAction || getDeskTaskLedgerStatus_(item) === "확인 필요"); }).length
+      var summary = {
+        total: scopedTasks.length,
+        pending: scopedTasks.filter(function(item) { return !item.completed && !item.deleted; }).length,
+        completed: scopedTasks.filter(function(item) { return item.completed && !item.deleted; }).length,
+        deleted: scopedTasks.filter(function(item) { return item.deleted; }).length,
+        needsFollowup: scopedTasks.filter(function(item) { return !item.completed && !item.deleted && (item.unresolvedReason || item.nextAction || getDeskTaskLedgerStatus_(item) === "확인 필요"); }).length
       };
       var rowsHtml = visible.length ? visible.map(function(item) {
+        var draft = (state.desk.daily.ledgerDrafts || {})[item.id];
+        if (draft) item = Object.assign({}, item, draft);
         var status = getDeskTaskLedgerStatus_(item);
         var creator = item.createdByName || "기록 없음";
         var assignedAt = formatDeskJournalDateTime_(item.createdAt || item.dateKey || "") || item.dateKey || "-";
@@ -34057,6 +34098,9 @@
             '</select>' +
           '</div>' +
         '</div>' +
+        workerTabs +
+        (Object.keys(deskDailyPendingTaskMutations_).length ? '<div class="desk-ledger-warning" role="alert">서버 저장 대기 업무 ' + Object.keys(deskDailyPendingTaskMutations_).length + '건 · 이 브라우저에 보관 중입니다. <button type="button" data-desk-task-retry="1">저장 다시 시도</button></div>' : '') +
+        (state.desk.daily.taskLedgerError ? '<div class="desk-ledger-warning" role="alert">최신 조회 실패 · 이전 조회 결과입니다. <button type="button" data-desk-ledger-reload="1">다시 불러오기</button></div>' : '') +
         '<div class="desk-task-ledger-summary">' +
           '<div class="desk-task-ledger-stat"><span>전체 배정</span><strong>' + escapeHtml(String(summary.total || 0)) + '</strong></div>' +
           '<div class="desk-task-ledger-stat"><span>미완료</span><strong>' + escapeHtml(String(summary.pending || 0)) + '</strong></div>' +
@@ -34830,6 +34874,22 @@
     var deskDailyPendingMemoFlushInProgress_ = false;
     var deskDailyPendingTaskMutations_ = {};
 
+    var deskPendingTaskOwner_ = "";
+    function restoreDeskPendingTasks_() {
+      var owner = String(state.cloudIdentity && state.cloudIdentity.uid || "");
+      if (!owner || owner === deskPendingTaskOwner_) return;
+      deskPendingTaskOwner_ = owner;
+      try {
+        var saved = JSON.parse(localStorage.getItem("desk-journal-pending-tasks:" + owner) || "{}");
+        deskDailyPendingTaskMutations_ = saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (err) { deskDailyPendingTaskMutations_ = {}; }
+    }
+    function persistDeskPendingTasks_() {
+      if (!deskPendingTaskOwner_) return;
+      try { localStorage.setItem("desk-journal-pending-tasks:" + deskPendingTaskOwner_, JSON.stringify(deskDailyPendingTaskMutations_)); }
+      catch (err) { showDeskMemoSaveStatus_("브라우저 보관 실패 · 서버 저장이 끝날 때까지 이 화면을 닫지 마세요.", "error"); }
+    }
+
     function delay_(ms) {
       return new Promise(function(resolve) {
         setTimeout(resolve, Math.max(0, Number(ms) || 0));
@@ -34882,11 +34942,12 @@
       var now = Date.now();
       Object.keys(deskDailyPendingTaskMutations_).forEach(function(id) {
         var entry = deskDailyPendingTaskMutations_[id];
-        if (!entry || Number(entry.expiresAt || 0) <= now) delete deskDailyPendingTaskMutations_[id];
+        if (!entry) delete deskDailyPendingTaskMutations_[id];
       });
     }
 
     function rememberDeskDailyPendingTaskMutation_(task) {
+      restoreDeskPendingTasks_();
       var item = normalizeDeskDailyTask_(task);
       if (!item.id || !item.dateKey) return item;
       var now = Date.now();
@@ -34897,10 +34958,12 @@
         deleted: false,
         expiresAt: now + DESK_DAILY_PENDING_TASK_MUTATION_MS
       };
+      persistDeskPendingTasks_();
       return item;
     }
 
     function rememberDeskDailyPendingTaskDelete_(dateKey, taskId) {
+      restoreDeskPendingTasks_();
       var id = String(taskId || "").trim();
       var safeDateKey = String(dateKey || "").trim();
       if (!id || !safeDateKey) return;
@@ -34911,15 +34974,23 @@
         deleted: true,
         expiresAt: now + DESK_DAILY_PENDING_TASK_MUTATION_MS
       };
+      persistDeskPendingTasks_();
     }
 
-    function forgetDeskDailyPendingTaskMutation_(taskId) {
+    function forgetDeskDailyPendingTaskMutation_(taskId, expected) {
       var id = String(taskId || "").trim();
       if (!id) return;
+      var current = deskDailyPendingTaskMutations_[id];
+      if (expected && current) {
+        if (expected.deleted === true) { if (!current.deleted) return; }
+        else if (current.deleted || JSON.stringify(Object.assign({}, current.task, { syncState: "" })) !== JSON.stringify(Object.assign({}, expected, { syncState: "" }))) return;
+      }
       delete deskDailyPendingTaskMutations_[id];
+      persistDeskPendingTasks_();
     }
 
     function mergeDeskDailyPendingTasksForDate_(dateKey, tasks) {
+      restoreDeskPendingTasks_();
       var safeDateKey = String(dateKey || "").trim();
       var byId = {};
       (tasks || []).forEach(function(item) {
@@ -35371,7 +35442,7 @@
       deskJournalMemoSaveStatusEl.className = "desk-memo-save-status" + (tone ? (" " + tone) : "");
       setDeskMemoSavingState_(tone === "saving");
       if (deskMemoSaveStatusTimer_) clearTimeout(deskMemoSaveStatusTimer_);
-      if (text && tone !== "saving") {
+      if (text && tone !== "saving" && tone !== "error") {
         deskMemoSaveStatusTimer_ = setTimeout(function() {
           if (!deskJournalMemoSaveStatusEl) return;
           deskJournalMemoSaveStatusEl.textContent = "";
@@ -35682,8 +35753,9 @@
           }
           if (ledgerItem) ledgerItem.syncState = "";
           setDeskDailySyncStatus_("idle");
+          forgetDeskDailyPendingTaskMutation_(item.id, item);
+          setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(item.dateKey).then(function() {
-            forgetDeskDailyPendingTaskMutation_(item.id);
             if (state.desk.daily.taskLedgerLoaded) loadDeskTaskLedger_(true);
           });
         });
@@ -35720,8 +35792,9 @@
           }
           if (ledgerTask) ledgerTask.syncState = "";
           setDeskDailySyncStatus_("idle");
+          forgetDeskDailyPendingTaskMutation_(taskId, { deleted: true });
+          setDeskDailySyncStatus_("idle");
           return syncDeskDailyJournalAfterMutation_(dateKey).then(function() {
-            forgetDeskDailyPendingTaskMutation_(taskId);
             if (state.desk.daily.taskLedgerLoaded) loadDeskTaskLedger_(true);
           });
         });
@@ -37315,6 +37388,7 @@
       }
       if (deskJournalTaskBoardEl) {
         deskJournalTaskBoardEl.addEventListener("change", function(event) {
+          rememberDeskLedgerDraft_(event.target);
           var ledgerFilter = event.target.closest("[data-desk-ledger-filter]");
           if (ledgerFilter) {
             state.desk.daily.taskLedgerStatus = ledgerFilter.value || "전체";
@@ -37335,6 +37409,20 @@
           }));
         });
         deskJournalTaskBoardEl.addEventListener("click", function(event) {
+          if (event.target.closest("[data-desk-task-retry]")) {
+            Object.keys(deskDailyPendingTaskMutations_).forEach(function(id) {
+              var entry = deskDailyPendingTaskMutations_[id];
+              if (entry.deleted) deleteDeskDailyTask_(id, entry.dateKey);
+              else if (entry.task) upsertDeskDailyTask_(entry.task);
+            });
+            return;
+          }
+          var ledgerWorkerBtn = event.target.closest("[data-desk-ledger-worker]");
+          if (ledgerWorkerBtn) {
+            state.desk.daily.taskLedgerWorker = ledgerWorkerBtn.getAttribute("data-desk-ledger-worker");
+            renderDeskTaskLedger_();
+            return;
+          }
           var ledgerReloadBtn = event.target.closest("[data-desk-ledger-reload]");
           if (ledgerReloadBtn) {
             state.desk.daily.taskLedgerError = "";
@@ -37358,6 +37446,7 @@
               if (ledgerNextEl) ledgerNextEl.focus();
               return;
             }
+            delete (state.desk.daily.ledgerDrafts || {})[ledgerId];
             upsertDeskDailyTask_(Object.assign({}, ledgerTask, {
               completed: ledgerStatus === "완료",
               progressStatus: ledgerStatus,
@@ -37500,6 +37589,7 @@
           }));
         });
         deskJournalTaskBoardEl.addEventListener("input", function(event) {
+          rememberDeskLedgerDraft_(event.target);
           var ledgerKeyword = event.target.closest("[data-desk-ledger-keyword]");
           if (!ledgerKeyword) return;
           var cursor = ledgerKeyword.selectionStart;

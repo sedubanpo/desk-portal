@@ -216,7 +216,7 @@ test('journal task write updates the day record and pending index together', asy
 
   await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { ...saved.task, completed: true } }, { uid: 'manager-1', name: '관리자' });
   assert.equal(store.dump().desk_portal.daily_pending_tasks?.['task-1'], undefined);
-  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].createdByName, '관리자');
+  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].createdByName, '');
 });
 
 test('pending task read returns every assignee when the worker filter is empty', async () => {
@@ -583,4 +583,55 @@ test('staff publishes shared notices but cannot edit assignments or delete', asy
  assert.equal((await save({...assigned.task,completed:true})).success,false);
  assert.equal((await handlers.deleteDeskDailyJournalTask({dateKey:'2026-09-14',id:'assigned'},staff)).success,false);
  assert.equal((await handlers.deleteDeskDailyJournalTask({dateKey:'2026-09-14',id:'assigned'},admin)).success,true);
+});
+
+
+test('pending journal reconciles old unindexed tasks and ignores stale completed/deleted index entries', async () => {
+  const base = { worker: '안종성', title: '확인 업무', dateKey: '2026-04-01' };
+  const store = memoryStore({ desk_portal: {
+    daily_journal: { '2026-04-01': { tasks: {
+      old: { ...base, id: 'old' }, done: { ...base, id: 'done', completed: true }, gone: { ...base, id: 'gone', deleted: true }
+    } } },
+    daily_pending_tasks: { done: { ...base, id: 'done' }, gone: { ...base, id: 'gone' } }
+  } });
+  const api = createDeskHandlers({ store });
+  const result = await api.getDeskDailyJournalPendingTasks({ beforeDateKey: '2026-09-16' });
+  assert.deepEqual(result.tasks.map(x => x.id), ['old']);
+  const ledger = await api.getDeskDailyJournalTaskLedger();
+  assert.equal(ledger.tasks.find(x => x.id === 'old').createdAt, '');
+  const restored = await api.saveDeskDailyJournalTask({ dateKey: '2026-04-01', task: { ...base, id: 'gone' } }, { role: 'ADMIN' });
+  assert.equal(restored.success, false);
+  assert.equal(store.dump().desk_portal.daily_journal['2026-04-01'].tasks.gone.deleted, true);
+});
+
+test('new assignments use server attribution while legacy edits preserve unknown creators', async () => {
+  const store = memoryStore({ desk_portal: { daily_journal: { '2026-04-01': { tasks: { old: { id: 'old', worker: '안종성', title: '기존 업무' } } } } } });
+  const api = createDeskHandlers({ store, now: () => '2026-09-16T02:00:00.000Z' });
+  const actor = { role: 'ADMIN', uid: 'a', name: '에스에듀' };
+  const old = await api.saveDeskDailyJournalTask({ dateKey: '2026-04-01', task: { id: 'old', completed: true } }, actor);
+  assert.equal(old.task.createdAt, '');
+  assert.equal(old.task.createdByName, '');
+  assert.equal(old.task.updatedByName, '에스에듀');
+  const fresh = await api.saveDeskDailyJournalTask({ dateKey: '2026-04-01', task: { id: 'new', worker: '안종성', title: '새 업무', createdByName: 'spoof', createdAt: '2020-01-01' } }, actor);
+  assert.equal(fresh.task.createdAt, '2026-09-16T02:00:00.000Z');
+  assert.equal(fresh.task.createdByName, '에스에듀');
+});
+
+
+test('independent clients see memo create, retry, edit, delete and shared notice acknowledgements', async () => {
+  const store = memoryStore();
+  const a = createDeskHandlers({ store });
+  const b = createDeskHandlers({ store });
+  const dateKey = '2026-09-16';
+  const memo = { id: 'memo-proof', worker: '안종성', text: '현장 기록', createdAt: '2026-09-16T02:00:00Z' };
+  await a.saveDeskDailyJournalMemo({ dateKey, memo });
+  await a.saveDeskDailyJournalMemo({ dateKey, memo });
+  assert.equal((await b.getDeskDailyJournalData({ dateKey })).memos.length, 1);
+  await a.saveDeskDailyJournalMemo({ dateKey, memo: { ...memo, text: '수정한 현장 기록' } });
+  assert.equal((await b.getDeskDailyJournalData({ dateKey })).memos[0].text, '수정한 현장 기록');
+  await a.deleteDeskDailyJournalMemo({ dateKey, id: memo.id });
+  assert.equal((await b.getDeskDailyJournalData({ dateKey })).memos.length, 0);
+  const notice = await a.saveDeskDailyJournalTask({ dateKey, task: { id: 'notice-proof', worker: '공동업무', category: '__shared__::공지', title: '공동 업무 확인' } }, { role: 'ADMIN', name: '에스에듀' });
+  await b.saveDeskDailyJournalTask({ dateKey, task: { ...notice.task, ackWorkers: ['안종성'] } }, { role: 'STAFF', name: '안종성' });
+  assert.deepEqual((await a.getDeskDailyJournalData({ dateKey })).tasks[0].ackWorkers, ['안종성']);
 });

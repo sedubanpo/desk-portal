@@ -308,7 +308,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const key = dateKey(payload.dateKey);
       if (!key) return failure('dateKey가 올바르지 않습니다.');
       const stored = await store.get(`${PATHS.journal}/${key}`) || {};
-      const tasks = Object.entries(stored.tasks || {}).map(([id, item]) => dailyTask(item, id, key, now())).filter(item => !item.deleted).sort(compareDailyTasks);
+      const tasks = Object.entries(stored.tasks || {}).map(([id, item]) => dailyTask(item, id, key, "")).filter(item => !item.deleted).sort(compareDailyTasks);
       const memos = Object.entries(stored.memos || {}).map(([id, item]) => dailyMemo(item, id, key, now())).sort(compareDailyMemos);
       return { success: true, dateKey: key, tasks, memos };
     },
@@ -320,18 +320,24 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const seen = new Set();
       const tasks = [];
       const add = (raw, id, fallbackDate) => {
-        const task = dailyTask(raw, id, fallbackDate, now());
+        const task = dailyTask(raw, id, fallbackDate, "");
         if (!task.id || seen.has(task.id) || !task.dateKey || task.dateKey >= before || task.completed || task.deleted) return;
         if (!isSharedTask(task) && workers.size && !workers.has(workerKey(task.worker))) return;
         seen.add(task.id);
         tasks.push(task);
       };
-      const indexed = await store.get(PATHS.pending) || {};
-      for (const [id, item] of Object.entries(indexed)) if (item && typeof item === 'object') add(item, id, item.dateKey);
-      const days = Math.min(14, Math.max(0, Number(payload.legacyScanDays || 7)));
-      const dates = Array.from({ length: days }, (_, index) => shiftDate(before, -(index + 1)));
-      const legacyDays = await Promise.all(dates.map(key => store.get(`${PATHS.journal}/${key}/tasks`)));
-      legacyDays.forEach((day, index) => Object.entries(day || {}).forEach(([id, item]) => add(item, id, dates[index])));
+      // Canonical journal wins over the acceleration index, including completed/deleted records.
+      const [journal, indexed] = await Promise.all([store.get(PATHS.journal), store.get(PATHS.pending)]);
+      const canonicalIds = new Set();
+      for (const [storedDate, day] of Object.entries(journal || {})) {
+        for (const [id, item] of Object.entries(day?.tasks || {})) {
+          canonicalIds.add(id);
+          add(item, id, storedDate);
+        }
+      }
+      for (const [id, item] of Object.entries(indexed || {})) {
+        if (!canonicalIds.has(id) && item && typeof item === 'object') add(item, id, item.dateKey);
+      }
       tasks.sort(compareDailyTasks);
       return { success: true, beforeDateKey: before, includeSharedCarryover: true, tasks };
     },
@@ -343,7 +349,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const tasks = [];
       for (const [storedDate, day] of Object.entries(stored)) {
         for (const [id, raw] of Object.entries(day?.tasks || {})) {
-          const task = dailyTask(raw, id, storedDate, now());
+          const task = dailyTask(raw, id, storedDate, "");
           if (!includeShared && isSharedTask(task)) continue;
           if (!includeRoutine && (task.dateKey === '2099-12-31' || workerKey(task.worker) === workerKey('루틴업무'))) continue;
           tasks.push(task);
@@ -374,6 +380,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const requestedId = payload.task?.id ? rtdbKey(payload.task.id) : '';
       if (payload.task?.id && !requestedId) return failure('업무 ID가 올바르지 않습니다.');
       const existing = requestedId ? await store.get(`${PATHS.journal}/${key}/tasks/${requestedId}`) : null;
+      if (existing?.deleted) return failure('삭제된 업무입니다. 새로고침 후 확인해 주세요.');
       const task = dailyTask({ ...(existing || {}), ...(payload.task || {}) }, payload.task?.id, key, stamp);
       if (identity.role && identity.role !== 'ADMIN') {
         if (existing) {
@@ -401,9 +408,9 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       if (!rtdbKey(task.id)) return failure('업무 ID가 올바르지 않습니다.');
       if (!task.worker) return failure('업무 대상 근무자가 필요합니다.');
       if (!task.title) return failure('업무 제목을 입력해 주세요.');
-      task.createdAt = String(existing?.createdAt || task.createdAt || stamp);
-      task.createdByUid = String(existing?.createdByUid || task.createdByUid || identity.uid || '');
-      task.createdByName = String(existing?.createdByName || task.createdByName || identity.name || '');
+      task.createdAt = String(existing ? existing.createdAt || '' : stamp);
+      task.createdByUid = String(existing ? existing.createdByUid || '' : identity.uid || task.createdByUid || '');
+      task.createdByName = String(existing ? existing.createdByName || '' : identity.name || task.createdByName || '');
       task.updatedAt = stamp;
       task.updatedByUid = String(identity.uid || task.updatedByUid || '');
       task.updatedByName = String(identity.name || task.updatedByName || '');
