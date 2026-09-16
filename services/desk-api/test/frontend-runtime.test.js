@@ -861,3 +861,17 @@ test('pending journal tasks survive reload and remain isolated by signed-in acco
   vm.runInContext('restoreDeskPendingTasks_();', context);
   assert.ok(context.deskDailyPendingTaskMutations_.t);
 });
+
+test('journal retirement follows account status and permits reinstatement', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const context = vm.createContext({deskStaffStatusByName_: {}, canonicalizeDeskWorkerName_: value => String(value || '').trim(), isDeskRetiredWorker_: name => ['인유빈', '유지연', '이창연'].includes(name)});
+  vm.runInContext(extractFunction(source, 'isDeskJournalInactiveWorker_'), context);
+  assert.equal(context.isDeskJournalInactiveWorker_('원지영'), true);
+  assert.equal(context.isDeskJournalInactiveWorker_('김유민'), true);
+  assert.equal(context.isDeskJournalInactiveWorker_('안종성'), false);
+  context.deskStaffStatusByName_ = { '김유민': 'ACTIVE', '안종성': 'INACTIVE' };
+  assert.equal(context.isDeskJournalInactiveWorker_('김유민'), false);
+  assert.equal(context.isDeskJournalInactiveWorker_('안종성'), true);
+  context.deskStaffStatusByName_ = { '안종성': 'ACTIVE' };
+  assert.equal(context.isDeskJournalInactiveWorker_('안종성'), false);
+});

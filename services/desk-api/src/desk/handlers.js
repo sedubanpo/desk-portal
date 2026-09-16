@@ -77,8 +77,9 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const staff = (await loadStaffDirectory()).map(item => ({
         uid: String(item?.uid || '').trim(),
         name: String(item?.name || '').trim(),
-        staffPosition: String(item?.staffPosition || '').trim()
-      })).filter(item => item.name && item.staffPosition)
+        staffPosition: String(item?.staffPosition || '').trim(),
+        status: String(item?.status || 'ACTIVE').trim().toUpperCase()
+      })).filter(item => item.name)
         .sort((left, right) => left.name.localeCompare(right.name, 'ko'));
       return { success: true, staff };
     },

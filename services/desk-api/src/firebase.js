@@ -71,7 +71,7 @@ async function loadStaffDirectory(firestore) {
       name: user.name || profile.displayName || '',
       staffPosition: user.staffPosition || profile.staffPosition || ''
     };
-  }).filter(item => item.role === 'STAFF' && !['DISABLED', 'INACTIVE', 'STOPPED', 'SUSPENDED'].includes(item.status));
+  }).filter(item => item.role === 'STAFF');
 }
 
 function legacyFirebaseApp(databaseURL) {

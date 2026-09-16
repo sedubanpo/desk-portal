@@ -25,12 +25,12 @@ function memoryStore(seed = {}) {
   };
 }
 
-test('staff icon directory exposes only the name and position linkage', async () => {
+test('staff directory includes inactive and positionless accounts without private fields', async () => {
   const handlers = createDeskHandlers({
     store: memoryStore(),
     loadStaffDirectory: async () => [
       { uid: 'staff-2', name: '안종성', staffPosition: '대리', loginId: '01086262428', phone: '01086262428' },
-      { uid: 'staff-1', name: '김유민', staffPosition: '주임', email: 'staff@example.com' },
+      { uid: 'staff-1', name: '김유민', staffPosition: '주임', status: 'INACTIVE', email: 'staff@example.com' },
       { uid: 'missing-position', name: '직급없음', staffPosition: '' }
     ]
   });
@@ -40,8 +40,9 @@ test('staff icon directory exposes only the name and position linkage', async ()
   assert.deepEqual(result, {
     success: true,
     staff: [
-      { uid: 'staff-1', name: '김유민', staffPosition: '주임' },
-      { uid: 'staff-2', name: '안종성', staffPosition: '대리' }
+      { uid: 'staff-1', name: '김유민', staffPosition: '주임', status: 'INACTIVE' },
+      { uid: 'staff-2', name: '안종성', staffPosition: '대리', status: 'ACTIVE' },
+      { uid: 'missing-position', name: '직급없음', staffPosition: '', status: 'ACTIVE' }
     ]
   });
 });

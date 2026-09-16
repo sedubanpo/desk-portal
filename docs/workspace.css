@@ -634,3 +634,7 @@ body.desk-daily-journal-mode .desk-ledger-workers small { font-size:10px; font-w
  body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-task { grid-column:1/-1; }
  body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-updated { grid-column:1/-1; border:0; padding:0; }
 }
+
+/* Keep the notice count centered alongside its heading. */
+body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-head { align-items:stretch; }
+body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-count { display:flex; align-items:center; justify-content:center; align-self:stretch; margin:0; padding:0 12px; min-width:52px; white-space:nowrap; background:#f1f6e7; }
