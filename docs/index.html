@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>데스크 관리</title>
+  <title>데스크 포털</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="shortcut icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="apple-touch-icon" href="./favicon.svg">
@@ -17683,7 +17683,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260916-payroll">
+  <link rel="stylesheet" href="./workspace.css?v=20260916-journal-layout">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -19661,6 +19661,7 @@
                 <span class="hidden" id="deskJournalCompletionSummary">0%</span>
               </section>
 
+              <div class="journal-context-grid">
               <section class="desk-journal-shared-strip" aria-labelledby="deskSharedNoticeTitle">
                 <div class="desk-shared-summary-head">
                   <div class="desk-shared-summary-heading">
@@ -19675,9 +19676,14 @@
                 </div>
               </section>
 
+              <section class="journal-worker-picker" aria-labelledby="journalWorkerPickerTitle">
+                <h3 id="journalWorkerPickerTitle">근무자 선택</h3>
+                <p>근무자별 기록과 미해결 업무를 확인하세요.</p>
+                <section class="desk-journal-worker-tabs" id="deskJournalWorkerTabs" aria-label="근무자 선택"></section>
+              </section>
+              </div>
               <div class="journal-workspace">
                 <div class="journal-writing-column">
-              <section class="desk-journal-worker-tabs" id="deskJournalWorkerTabs"></section>
 
               <article class="desk-journal-composer" id="deskJournalMemoEditorCard">
                 <div class="desk-journal-composer-head">
@@ -33790,10 +33796,11 @@
 
     function renderDeskDailyWorkerTabs_(workers) {
       if (!deskJournalWorkerTabsEl) return;
+      workers = (workers || []).filter(function(name) { return !isDeskRetiredWorker_(name); });
       var dateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var memos = getDeskDailyJournalMemos_(dateKey);
       var tasks = mergeDeskDailyCarryoverTasks_(dateKey, getDeskDailyJournalTasks_(dateKey), workers || []);
-      var pending = tasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item); });
+      var pending = tasks.filter(function(item) { return !item.completed && !isDeskSharedTask_(item) && !isDeskRetiredWorker_(item.worker); });
       var sharedCount = tasks.filter(isDeskSharedTask_).length;
       var carryoverLoading = isDeskDailyCarryoverLoading_(dateKey) && state.desk.daily.carryoverDateKey !== dateKey;
       var tabs = ["전체", DESK_ROUTINE_TAB_KEY].concat(isDeskStaffAccount_() ? scopeDeskWorkersForIdentity_(workers) : (workers || []));
@@ -33801,7 +33808,7 @@
         var label = name === DESK_ROUTINE_TAB_KEY ? "업무 관리자" : name;
         var style = getDeskWorkerTabStyle_(name);
         var memoCount = name === "전체"
-          ? tasks.filter(function(item) { return !isDeskSharedTask_(item); }).length
+          ? tasks.filter(function(item) { return !isDeskSharedTask_(item) && !isDeskRetiredWorker_(item.worker); }).length
           : (name === DESK_ROUTINE_TAB_KEY ? sharedCount : memos.filter(function(item) { return isSameDeskWorkerName_(item.worker, name); }).length);
         var pendingCount = name === "전체"
           ? pending.length
@@ -34020,9 +34027,10 @@
           '<div style="margin-top:10px;"><button class="modal-action ghost" type="button" data-desk-ledger-reload="1">다시 불러오기</button></div></div>';
         return;
       }
-      var allTasks = (state.desk.daily.taskLedger || []).slice();
+      var allTasks = (state.desk.daily.taskLedger || []).filter(function(item) { return !isDeskRetiredWorker_(item.worker); });
       var workers = Array.from(new Set(allTasks.map(function(item) { return canonicalizeDeskWorkerName_(item.worker) || "담당자 없음"; }))).sort(function(a,b) { return a.localeCompare(b, "ko"); });
       var selectedWorker = state.desk.daily.taskLedgerWorker || "전체";
+      if (isDeskRetiredWorker_(selectedWorker)) selectedWorker = state.desk.daily.taskLedgerWorker = "전체";
       var scopedTasks = allTasks.filter(function(item) { return selectedWorker === "전체" || isSameDeskWorkerName_(item.worker || "담당자 없음", selectedWorker); });
       var workerTabs = '<div class="desk-ledger-workers" role="group" aria-label="업무 배정 원장 근무자">' + ["전체"].concat(workers).map(function(worker) {
         var assigned = allTasks.filter(function(item) { return worker === "전체" || isSameDeskWorkerName_(item.worker || "담당자 없음", worker); });

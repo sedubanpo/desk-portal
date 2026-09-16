@@ -609,3 +609,28 @@ body #moduleTeacher .student-identity > .student-gender-icon {width:1.65em;heigh
 .payroll-teacher-label.payroll-subject-science {color:#23884b;background:#effcf3;border-color:#c7efd4;}
 .payroll-teacher-label.payroll-subject-social {color:#a25d16;background:#fff7e9;border-color:#f3dcad;}
 .payroll-pending {color:#96540c;white-space:nowrap;}
+
+/* Journal context: notices and worker selection share one row on desktop. */
+body.desk-daily-journal-mode .journal-context-grid { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr); gap:16px; align-items:start; min-width:0; }
+body.desk-daily-journal-mode .journal-context-grid > * { min-width:0; margin:0; }
+body.desk-daily-journal-mode .journal-worker-picker { padding:16px; border:1px solid #dce5cc; border-radius:12px; background:#fff; }
+body.desk-daily-journal-mode .journal-worker-picker h3 { margin:0; font-size:14px; color:#3c5229; font-weight:800; }
+body.desk-daily-journal-mode .journal-worker-picker > p { margin:5px 0 12px; font-size:11px; color:#68745e; }
+body.desk-daily-journal-mode .journal-worker-picker .desk-journal-worker-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:0; margin:0; border:0; background:transparent; overflow:visible; max-width:none; }
+body.desk-daily-journal-mode .journal-worker-picker .desk-journal-worker-tabs::before { display:none; }
+body.desk-daily-journal-mode .journal-worker-picker .desk-worker-tab { min-width:0; min-height:36px; padding:6px 8px; font-size:12px; font-weight:800; }
+body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-heading { padding:12px; flex-wrap:wrap; gap:4px 12px; }
+body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-heading p { font-size:11px; }
+body.desk-daily-journal-mode .journal-context-grid :is(.desk-shared-summary-columns,.desk-shared-summary-trigger) { grid-template-columns:minmax(0,1fr) 86px 68px 92px; padding-inline:10px; }
+body.desk-daily-journal-mode .journal-context-grid :is(.desk-shared-summary-owner,.desk-shared-summary-progress,.desk-shared-summary-updated) { padding-left:6px; }
+body.desk-daily-journal-mode .desk-ledger-workers { gap:5px; padding:8px 10px; }
+body.desk-daily-journal-mode .desk-ledger-workers button { min-height:32px; padding:4px 8px; gap:5px; font-size:12px; font-weight:800; }
+body.desk-daily-journal-mode .desk-ledger-workers .desk-staff-identity-name { font-weight:800; }
+body.desk-daily-journal-mode .desk-ledger-workers small { font-size:10px; font-weight:700; }
+@media(max-width:1100px) { body.desk-daily-journal-mode .journal-context-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) {
+ body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-columns { display:none; }
+ body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-trigger { grid-template-columns:minmax(0,1fr) 70px; gap:6px; padding:10px; }
+ body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-task { grid-column:1/-1; }
+ body.desk-daily-journal-mode .journal-context-grid .desk-shared-summary-updated { grid-column:1/-1; border:0; padding:0; }
+}
