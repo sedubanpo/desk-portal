@@ -17683,7 +17683,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260920-journal-filters">
+  <link rel="stylesheet" href="./workspace.css?v=20260920-status-polish">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -34058,6 +34058,10 @@
       return ["대기", "진행 중", "확인 필요"].indexOf(status) !== -1 ? status : ((item && item.unresolvedReason) ? "확인 필요" : "대기");
     }
 
+    function getDeskLedgerStatusIcon_(status) {
+      return { "대기": "clock", "진행 중": "loader", "확인 필요": "message-circle-warning", "완료": "circle-check", "삭제됨": "archive" }[status] || "clock";
+    }
+
     function getDeskTaskLedgerStatusClass_(status) {
       if (status === "완료") return "is-done";
       if (status === "삭제됨") return "is-deleted";
@@ -34142,24 +34146,24 @@
         var assignedAt = formatDeskJournalDateTime_(item.createdAt || item.dateKey || "") || item.dateKey || "-";
         var updatedAt = formatDeskJournalDateTime_(item.updatedAt || "") || "-";
         var deletedMeta = item.deleted
-          ? '<div class="desk-task-ledger-meta">삭제 ' + escapeHtml(formatDeskJournalDateTime_(item.deletedAt || "") || "-") + ' · ' + escapeHtml(item.deletedByName || "기록 없음") + '</div>'
+          ? '<div class="desk-ledger-deletion-meta"><span>' + escapeHtml(formatDeskJournalDateTime_(item.deletedAt || "") || "일시 기록 없음") + '</span><span>처리자 · ' + escapeHtml(item.deletedByName || "기록 없음") + '</span></div>'
           : '';
         var syncMeta = item.syncState === "error"
           ? '<div class="desk-task-ledger-meta" style="color:#b91c1c;">서버 저장 확인 필요</div>'
           : (item.syncState === "saving" ? '<div class="desk-task-ledger-meta" style="color:#1d4ed8;">서버 저장 중</div>' : '');
-        var statusControl = !isDeskAdminAccount_()
-          ? '<span class="desk-task-ledger-status">' + escapeHtml(status) + '</span>'
-          : item.deleted
-          ? '<span class="desk-task-ledger-status is-deleted">삭제됨</span>'
-          : '<select data-desk-ledger-status="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.title) + ' 진행 상태">' +
+        var statusTone = getDeskTaskLedgerStatusClass_(status) || "is-waiting";
+        var statusIcon = getDeskLedgerStatusIcon_(status);
+        var statusControl = !isDeskAdminAccount_() || item.deleted
+          ? '<span class="desk-ledger-status-badge ' + statusTone + '"><i data-lucide="' + statusIcon + '" aria-hidden="true"></i><span>' + escapeHtml(status) + '</span></span>'
+          : '<div class="desk-ledger-status-select ' + statusTone + '"><span class="desk-ledger-status-icon" aria-hidden="true"><i data-lucide="' + statusIcon + '"></i></span><select data-desk-ledger-status="' + escapeHtml(item.id) + '" aria-label="' + escapeHtml(item.title) + ' 진행 상태">' +
               ["대기", "진행 중", "확인 필요", "완료"].map(function(value) {
                 return '<option value="' + value + '"' + (value === status ? ' selected' : '') + '>' + value + '</option>';
               }).join("") +
-            '</select>';
+            '</select></div>';
         var followupControl = !isDeskAdminAccount_()
           ? '<div>' + escapeHtml(item.unresolvedReason || "—") + '</div><div class="desk-task-ledger-meta">' + escapeHtml(item.nextAction || "—") + '</div>'
           : item.deleted
-          ? '<div class="desk-task-ledger-meta">' + escapeHtml(item.unresolvedReason || item.nextAction || "삭제된 업무") + '</div>'
+          ? '<div class="desk-task-ledger-meta">' + escapeHtml(item.unresolvedReason || item.nextAction || "삭제 이력에 보관됨") + '</div>'
           : '<div class="desk-task-ledger-followup">' +
               '<input type="text" data-desk-ledger-reason="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.unresolvedReason || "") + '" placeholder="미해결 사유">' +
               '<input type="text" data-desk-ledger-next="' + escapeHtml(item.id) + '" value="' + escapeHtml(item.nextAction || "") + '" placeholder="후속 단계">' +
@@ -34170,7 +34174,7 @@
           '<td class="desk-ledger-person-cell" style="' + escapeHtml(getDeskWorkerBadgeStyle_(creator)) + '">' + renderDeskStaffIdentityHtml_(creator) + '</td>' +
           '<td class="desk-ledger-person-cell" style="' + escapeHtml(getDeskWorkerBadgeStyle_(item.worker || '-')) + '">' + renderDeskStaffIdentityHtml_(item.worker || "-") + '</td>' +
           '<td><div>' + escapeHtml(assignedAt) + '</div><div class="desk-task-ledger-meta">업무일 ' + escapeHtml(item.dateKey || "-") + '</div></td>' +
-          '<td>' + statusControl + '<div class="desk-task-ledger-meta">수정 ' + escapeHtml(updatedAt) + '</div></td>' +
+          '<td>' + statusControl + (item.deleted ? '' : '<div class="desk-task-ledger-meta">수정 ' + escapeHtml(updatedAt) + '</div>') + '</td>' +
           '<td>' + followupControl + deletedMeta + '</td>' +
           '<td>' + (item.deleted || !isDeskAdminAccount_() ? '' : '<div class="desk-ledger-actions"><button class="desk-task-ledger-save" type="button" data-desk-ledger-save="' + escapeHtml(item.id) + '" title="상태와 후속 단계 저장" aria-label="상태와 후속 단계 저장"><i data-lucide="save"></i></button><button class="desk-task-ledger-delete" type="button" data-desk-ledger-delete="' + escapeHtml(item.id) + '" title="업무 삭제" aria-label="' + escapeHtml(item.title || '업무') + ' 삭제"><i data-lucide="trash-2"></i></button></div>') + '</td>' +
         '</tr>';
@@ -37483,6 +37487,15 @@
       if (deskJournalTaskBoardEl) {
         deskJournalTaskBoardEl.addEventListener("change", function(event) {
           rememberDeskLedgerDraft_(event.target);
+          var statusSelect = event.target.closest("[data-desk-ledger-status]");
+          if (statusSelect) {
+            var statusWrap = statusSelect.closest(".desk-ledger-status-select");
+            if (statusWrap) {
+              statusWrap.className = "desk-ledger-status-select " + (getDeskTaskLedgerStatusClass_(statusSelect.value) || "is-waiting");
+              statusWrap.querySelector(".desk-ledger-status-icon").innerHTML = '<i data-lucide="' + getDeskLedgerStatusIcon_(statusSelect.value) + '"></i>';
+              refreshLucideIcons_();
+            }
+          }
           var ledgerFilter = event.target.closest("[data-desk-ledger-filter]");
           if (ledgerFilter) {
             state.desk.daily.taskLedgerStatus = ledgerFilter.value || "전체";

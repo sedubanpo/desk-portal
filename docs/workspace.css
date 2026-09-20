@@ -646,7 +646,7 @@ body.desk-daily-journal-mode button.desk-task-ledger-stat { border:0; border-rig
 body.desk-daily-journal-mode button.desk-task-ledger-stat span { display:flex; align-items:center; gap:6px; color:inherit; }
 body.desk-daily-journal-mode button.desk-task-ledger-stat svg { width:16px; height:16px; flex-shrink:0; }
 body.desk-daily-journal-mode button.desk-task-ledger-stat strong { color:inherit; }
-body.desk-daily-journal-mode button.desk-task-ledger-stat.is-pending { background:#f4c542; color:#513c00; }
+body.desk-daily-journal-mode button.desk-task-ledger-stat.is-pending { background:#fff3cd; color:#665018; }
 body.desk-daily-journal-mode button.desk-task-ledger-stat.is-completed { background:#e5f2d4; color:#34511d; }
 body.desk-daily-journal-mode button.desk-task-ledger-stat.is-needsFollowup { background:#fde5e5; color:#8b2929; }
 body.desk-daily-journal-mode button.desk-task-ledger-stat.is-deleted { background:#eef0f2; color:#47515d; }
@@ -660,3 +660,17 @@ body.desk-daily-journal-mode .desk-task-ledger-delete:hover { background:#fde5e5
 body.desk-daily-journal-mode .desk-worker-tab.is-working-today:not(.active) { background:#f0f6e4 !important; border-color:#c6d897 !important; }
 body.desk-daily-journal-mode .desk-worker-today-label { color:#435a20; font-size:10px; white-space:nowrap; }
 body.desk-daily-journal-mode .desk-worker-tab { flex-wrap:wrap; }
+
+/* Status controls share the ledger filter palette. */
+body.desk-daily-journal-mode :is(.desk-ledger-status-select,.desk-ledger-status-badge) { --status-bg:#fff3cd; --status-fg:#665018; --status-border:#eadcb0; color:var(--status-fg); }
+body.desk-daily-journal-mode :is(.desk-ledger-status-select,.desk-ledger-status-badge).is-progress { --status-bg:#eaf2ff; --status-fg:#294f85; --status-border:#cbdcf3; }
+body.desk-daily-journal-mode :is(.desk-ledger-status-select,.desk-ledger-status-badge).is-done { --status-bg:#e5f2d4; --status-fg:#34511d; --status-border:#cedfbb; }
+body.desk-daily-journal-mode :is(.desk-ledger-status-select,.desk-ledger-status-badge).is-attention { --status-bg:#fde5e5; --status-fg:#8b2929; --status-border:#edcaca; }
+body.desk-daily-journal-mode .desk-ledger-status-badge.is-deleted { --status-bg:#eef0f2; --status-fg:#47515d; --status-border:#dce0e5; }
+body.desk-daily-journal-mode .desk-ledger-status-select { position:relative; min-width:0; }
+body.desk-daily-journal-mode .desk-task-ledger-table .desk-ledger-status-select select { width:100%; padding-left:31px; background-color:var(--status-bg); color:var(--status-fg); border-color:var(--status-border); font-weight:700; }
+body.desk-daily-journal-mode .desk-ledger-status-select option { background:#fff; color:#293449; }
+body.desk-daily-journal-mode .desk-ledger-status-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); display:flex; pointer-events:none; }
+body.desk-daily-journal-mode :is(.desk-ledger-status-icon,.desk-ledger-status-badge) svg { width:14px; height:14px; flex-shrink:0; }
+body.desk-daily-journal-mode .desk-ledger-status-badge { display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:4px 9px; border:1px solid var(--status-border); border-radius:7px; background:var(--status-bg); font-size:12px; font-weight:700; white-space:nowrap; }
+body.desk-daily-journal-mode .desk-ledger-deletion-meta { display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:5px; font-size:11px; line-height:1.5; color:#5b6470; }
