@@ -30958,6 +30958,23 @@
       });
     }
 
+    function compareDeskAssignmentNewest_(a, b) {
+      function stamp(item) {
+        var value = String(item && item.createdAt || "").trim();
+        function parse(text) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(text)) text += "T00:00:00+09:00";
+          else if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(text)) text = text.replace(" ", "T") + "+09:00";
+          return Date.parse(text);
+        }
+        var result = parse(value);
+        if (!Number.isFinite(result)) result = parse(String(item && item.dateKey || ""));
+        return Number.isFinite(result) ? result : -Infinity;
+      }
+      var left = stamp(a), right = stamp(b);
+      if (left !== right) return left < right ? 1 : -1;
+      return String(a && a.id || "").localeCompare(String(b && b.id || ""));
+    }
+
     function compareDeskDailyTask_(a, b) {
       if (isDeskSharedTask_(a) !== isDeskSharedTask_(b)) return isDeskSharedTask_(a) ? -1 : 1;
       if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
@@ -34112,7 +34129,7 @@
           '<div style="margin-top:10px;"><button class="modal-action ghost" type="button" data-desk-ledger-reload="1">다시 불러오기</button></div></div>';
         return;
       }
-      var allTasks = (state.desk.daily.taskLedger || []).filter(function(item) { return !isDeskJournalInactiveWorker_(item.worker); });
+      var allTasks = (state.desk.daily.taskLedger || []).filter(function(item) { return !isDeskJournalInactiveWorker_(item.worker); }).sort(compareDeskAssignmentNewest_);
       var workers = Array.from(new Set(allTasks.map(function(item) { return canonicalizeDeskWorkerName_(item.worker) || "담당자 없음"; }))).sort(function(a,b) { return a.localeCompare(b, "ko"); });
       var selectedWorker = state.desk.daily.taskLedgerWorker || "전체";
       if (isDeskJournalInactiveWorker_(selectedWorker)) selectedWorker = state.desk.daily.taskLedgerWorker = "전체";
@@ -34262,6 +34279,8 @@
         btn.classList.toggle("active", btn.getAttribute("data-desk-task-filter") === activeFilter);
       });
       if (deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = allVisibleTasks.length + "건";
+      visible.sort(compareDeskAssignmentNewest_);
+      completedItems.sort(compareDeskAssignmentNewest_);
       var managerSummaryHtml = isManagerTab ? buildDeskManagerQueueSummaryHtml_(tasks) : "";
       if (!visible.length) {
         var loadingCarryover = state.desk.daily.carryoverLoadingDateKey &&
@@ -34420,9 +34439,7 @@
       var currentDateKey = state.desk.daily.dateKey || getDeskDateKey_(new Date());
       var recent = (tasks || []).filter(function(item) {
         return !isDeskSharedTask_(item) && item.dateKey === currentDateKey;
-      }).sort(function(a, b) {
-        return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
-      }).slice(0, 8);
+      }).sort(compareDeskAssignmentNewest_).slice(0, 8);
       targetEl.innerHTML = '<div class="desk-manager-board-head"><div><strong>최근 배정</strong><span>오늘 저장된 업무</span></div><span>' + escapeHtml(String(recent.length)) + '건</span></div>' +
         (recent.length ? '<div class="desk-manager-recent-list">' + recent.map(function(item) {
           return '<div class="desk-manager-recent-row">' +

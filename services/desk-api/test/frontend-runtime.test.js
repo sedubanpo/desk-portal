@@ -918,3 +918,20 @@ test('ledger deletion preserves source date and honors cancellation and permissi
   assert.deepEqual(calls,[['old','2026-04-03']]);
   assert.equal(state.desk.daily.ledgerDrafts.old,undefined);
 });
+
+test('assignments sort newest first by assignment time, independent of edits and worker filters', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const compare = loadFunction(source, 'compareDeskAssignmentNewest_', {});
+  const tasks = [
+    {id:'old-edited',worker:'A',createdAt:'2026-04-08T14:36:00+09:00',updatedAt:'2026-09-20T19:00:00+09:00'},
+    {id:'new',worker:'A',createdAt:'2026-09-19T11:13:00+09:00'},
+    {id:'earlier',worker:'A',createdAt:'2026-09-16T19:31:00'},
+    {id:'later',worker:'B',createdAt:'2026-09-16T12:15:00Z'},
+    {id:'fallback',worker:'A',createdAt:'invalid',dateKey:'2026-09-18'},
+    {id:'unknown',worker:'A'}
+  ];
+  const sorted=tasks.slice().sort(compare);
+  assert.deepEqual(sorted.map(t=>t.id),['new','fallback','later','earlier','old-edited','unknown']);
+  assert.deepEqual(sorted.filter(t=>t.worker==='A').map(t=>t.id),['new','fallback','earlier','old-edited','unknown']);
+  assert.equal(compare({id:'a'},{id:'b'}),-1);
+});
