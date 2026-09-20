@@ -875,3 +875,46 @@ test('journal retirement follows account status and permits reinstatement', asyn
   context.deskStaffStatusByName_ = { '안종성': 'ACTIVE' };
   assert.equal(context.isDeskJournalInactiveWorker_('안종성'), false);
 });
+
+test('active journal roster includes off-duty workers and immediately reflects retirement', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const statuses = { 가휴무: 'ACTIVE', 나근무: 'ACTIVE', 김유민: 'INACTIVE', 정보면: 'INACTIVE' };
+  const roster = loadFunction(source, 'getDeskActiveJournalWorkers_', {
+    deskStaffStatusByName_: statuses, getDeskDateKey_: () => '2026-09-20',
+    getDeskShiftWorkersForDate_: () => [{ worker: '나근무' }], canonicalizeDeskWorkerName_: n => n,
+    normalizeDeskWorkerNameArray_: names => [...new Set(names)], isDeskJournalInactiveWorker_: n => statuses[n] !== 'ACTIVE'
+  });
+  assert.deepEqual(Array.from(roster(['원지영'])), ['나근무', '가휴무']);
+  statuses.나근무 = 'INACTIVE';
+  assert.deepEqual(Array.from(roster([])), ['가휴무']);
+  statuses.정보면 = 'ACTIVE';
+  assert.deepEqual(Array.from(roster([])), ['가휴무', '정보면']);
+});
+
+test('ledger filters exclude deleted and completed tasks from pending and follow-up', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const matches = loadFunction(source, 'matchesDeskLedgerFilter_', { getDeskTaskLedgerStatus_: loadFunction(source, 'getDeskTaskLedgerStatus_', {}) });
+  const tasks = [{id:1}, {id:2,nextAction:'연락'}, {id:3,progressStatus:'확인 필요'}, {id:4,completed:true,nextAction:'기록'}, {id:5,deleted:true,completed:true}, {id:6,deleted:true}];
+  const ids = filter => tasks.filter(t => matches(t, filter)).map(t => t.id);
+  assert.deepEqual(ids('전체'), [1,2,3,4,5,6]);
+  assert.deepEqual(ids('미완료'), [1,2,3]);
+  assert.deepEqual(ids('완료'), [4]);
+  assert.deepEqual(ids('후속 확인'), [2,3]);
+  assert.deepEqual(ids('삭제됨'), [5,6]);
+});
+
+test('ledger deletion preserves source date and honors cancellation and permissions', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  let admin = true, confirmed = false;
+  const calls = [];
+  const state = { desk: { daily: { dateKey:'2026-09-20', taskLedger:[{id:'old',title:'업무',dateKey:'2026-04-03'}], ledgerDrafts:{old:{nextAction:'draft'}} } } };
+  const remove = loadFunction(source, 'deleteDeskLedgerTask_', { state, isDeskAdminAccount_:()=>admin, confirm:()=>confirmed, deleteDeskDailyTask_:(...args)=>calls.push(args) });
+  remove('old');
+  assert.equal(calls.length,0);
+  assert.ok(state.desk.daily.ledgerDrafts.old);
+  confirmed=true; admin=false; remove('old');
+  assert.equal(calls.length,0);
+  admin=true; remove('old');
+  assert.deepEqual(calls,[['old','2026-04-03']]);
+  assert.equal(state.desk.daily.ledgerDrafts.old,undefined);
+});
