@@ -17683,7 +17683,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260921-response-center">
+  <link rel="stylesheet" href="./workspace.css?v=20260921-response-admin">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -19424,13 +19424,13 @@
                 <button type="button" data-desk-response-situation="강사 상담 자료 요청"><i data-lucide="clipboard-list"></i>강사 상담 자료 요청<i data-lucide="chevron-right"></i></button>
               </section>
 
-              <section class="desk-response-admin-dashboard hidden" id="deskResponseAdminDashboard">
+              <dialog class="desk-response-admin-dashboard" id="deskResponseAdminDashboard" aria-labelledby="deskResponseAdminTitle">
                 <div class="desk-response-admin-head">
                   <div>
-                    <h3>질문 학습 대시보드</h3>
+                    <h3 id="deskResponseAdminTitle">질문 학습 대시보드</h3>
                     <p>근무자가 응대 센터에 입력한 질문을 모아 보고, 반복 질문을 바로 상황 가이드로 저장합니다.</p>
                   </div>
-                  <button class="desk-response-admin-action primary" id="deskResponseCreateCurrentGuideBtn" type="button"><i data-lucide="plus"></i>현재 입력으로 가이드</button>
+                  <button type="button" id="deskResponseAdminCloseBtn" class="desk-response-admin-close" aria-label="질문 학습 대시보드 닫기">닫기 ×</button><button class="desk-response-admin-action primary" id="deskResponseCreateCurrentGuideBtn" type="button"><i data-lucide="plus"></i>현재 입력으로 가이드</button>
                 </div>
                 <div class="desk-response-admin-kpis">
                   <article class="desk-response-admin-kpi"><span>누적 질문</span><strong id="deskResponseLogTotal">0건</strong></article>
@@ -19479,7 +19479,7 @@
                 </div>
                   </section>
                 </div>
-              </section>
+              </dialog>
             </div>
           </section>
 
@@ -26696,6 +26696,8 @@
         confidence: confidence,
         status: status,
         createdAt: String(item.createdAt || new Date().toISOString()).trim(),
+        createdByName: String(item.createdByName || "").trim(),
+        createdByUid: String(item.createdByUid || "").trim(),
         source: String(item.source || "응대 센터").trim()
       };
     }
@@ -26831,6 +26833,8 @@
       var guide = match && match.guide;
       var log = normalizeDeskResponseLog_({
         text: query,
+        createdByName: String((state.cloudIdentity || {}).name || ""),
+        createdByUid: String((state.cloudIdentity || {}).uid || ""),
         matchedGuideId: guide && guide.id,
         matchedTitle: guide && guide.title,
         confidence: match && match.confidence,
@@ -26952,6 +26956,31 @@
       return [["copy", "문구 복사"], ["memo", "메모에 추가"]];
     }
 
+    function formatDeskResponseLogDate_(value) {
+      var date = new Date(value);
+      if (!Number.isFinite(date.getTime())) return "일시 기록 없음";
+      return date.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    }
+
+    function personalizeDeskResponseMessage_(body, query) {
+      var names = { student: [], parent: [], mother: [], father: [], teacher: [] };
+      var excluded = ["우리", "해당", "담당", "신규", "기존", "다른", "어떤", "모든", "오늘", "내일", "학부모", "학생", "선생님", "강사", "이번", "저희", "수학", "영어", "국어", "과학", "갑자기", "초등", "중등", "고등", "대학", "신입", "재원", "남자", "여자", "외국인", "한국인"];
+      var pattern = /(?:^|[\s,.(])([가-힣]{2,4})\s*(학생|어머님|아버님|학부모|선생님|강사)(?=$|[\s,.)]|님|이|가|은|는|께|을|를|의|와|과|랑|도)/g;
+      var match;
+      while ((match = pattern.exec(String(query || "")))) {
+        if (excluded.indexOf(match[1]) >= 0) continue;
+        var kind = match[2] === "학생" ? "student" : (/선생님|강사/.test(match[2]) ? "teacher" : "parent");
+        if (names[kind].indexOf(match[1]) < 0) names[kind].push(match[1]);
+        var parentRole = match[2] === "어머님" ? "mother" : (match[2] === "아버님" ? "father" : "");
+        if (parentRole && names[parentRole].indexOf(match[1]) < 0) names[parentRole].push(match[1]);
+      }
+      var tokens = { "학생명": "student", "학부모명": "parent", "어머님성함": "mother", "아버님성함": "father", "강사명": "teacher", "선생님명": "teacher", "담당강사명": "teacher" };
+      return String(body || "").replace(/\{(학생명|학부모명|어머님성함|아버님성함|강사명|선생님명|담당강사명)\}/g, function(token, key) {
+        var candidates = names[tokens[key]];
+        return candidates.length === 1 ? candidates[0] : token;
+      });
+    }
+
     function buildDeskResponseCardsForGuide_(guide) {
       ensureDeskMessageTemplatesLoaded_();
       var templates = (state.desk.messageTemplates.templates || []).filter(function(template) {
@@ -26964,7 +26993,7 @@
           icon: getDeskResponseTargetIcon_(card.target),
           target: card.target,
           title: template ? template.title : card.title,
-          body: template ? template.message : card.body,
+          body: personalizeDeskResponseMessage_(template ? template.message : card.body, state.desk.responseCenter.situationText),
           actions: getDeskResponseActionsForTarget_(card.target)
         };
       });
@@ -27157,7 +27186,10 @@
       ensureDeskResponseLogsLoaded_();
       var logs = state.desk.responseCenter.logs || [];
       var isOpen = !!state.desk.responseCenter.adminOpen;
-      if (deskResponseAdminDashboardEl) deskResponseAdminDashboardEl.classList.toggle("hidden", !isOpen);
+      if (deskResponseAdminDashboardEl) {
+        if (isOpen && !deskResponseAdminDashboardEl.open) deskResponseAdminDashboardEl.showModal();
+        if (!isOpen && deskResponseAdminDashboardEl.open) deskResponseAdminDashboardEl.close();
+      }
       if (deskResponseAdminToggleBtnEl) {
         deskResponseAdminToggleBtnEl.classList.toggle("active", isOpen);
         deskResponseAdminToggleBtnEl.innerHTML = '<i data-lucide="' + (isOpen ? 'x' : 'layout-dashboard') + '"></i>' + (isOpen ? '관리 닫기' : '질문 관리');
@@ -27242,7 +27274,8 @@
                 '<span class="' + (needsGuide ? 'warn' : '') + '">매칭 ' + escapeHtml(String(confidence)) + '%</span>' +
                 '<span class="status ' + escapeHtml(statusClass) + '">' + escapeHtml(status) + '</span>' +
                 '<span>' + escapeHtml(item.matchedTitle || "가이드 없음") + '</span>' +
-                '<span>' + escapeHtml(formatDeskJournalDateTime_(item.createdAt)) + '</span>' +
+                '<span>' + escapeHtml(formatDeskResponseLogDate_(item.createdAt)) + '</span>' +
+                '<span>입력자 · ' + escapeHtml(item.createdByName || '기록 없음') + '</span>' +
               '</div>' +
               '<div class="desk-response-log-actions">' +
                 '<button class="primary" type="button" data-desk-response-log-guide="' + escapeHtml(item.id) + '">가이드 만들기</button>' +
@@ -36141,6 +36174,14 @@
         deskResponseFindBtnEl.addEventListener("click", function() {
           runDeskResponseSearch_();
         });
+      }
+      if (deskResponseAdminDashboardEl) {
+        deskResponseAdminDashboardEl.addEventListener("close", function() {
+          state.desk.responseCenter.adminOpen = false;
+          renderDeskResponseAdminDashboard_();
+          if (deskResponseAdminToggleBtnEl) deskResponseAdminToggleBtnEl.focus();
+        });
+        document.getElementById("deskResponseAdminCloseBtn").addEventListener("click", function() { deskResponseAdminDashboardEl.close(); });
       }
       if (deskResponseAdminToggleBtnEl) {
         deskResponseAdminToggleBtnEl.addEventListener("click", function() {

@@ -935,3 +935,30 @@ test('assignments sort newest first by assignment time, independent of edits and
   assert.deepEqual(sorted.filter(t=>t.worker==='A').map(t=>t.id),['new','fallback','earlier','old-edited','unknown']);
   assert.equal(compare({id:'a'},{id:'b'}),-1);
 });
+
+test('response messages use unambiguous names for the matching role only', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const context = vm.createContext({});
+  vm.runInContext(extractFunction(source, 'personalizeDeskResponseMessage_'), context);
+  const fill = context.personalizeDeskResponseMessage_;
+  assert.equal(fill('{학생명} 학생', '김영호 학생이 시간표에 없는데 왔습니다.'), '김영호 학생');
+  assert.equal(fill('{학생명}', '김연진학생 지각했어요'), '김연진');
+  assert.equal(fill('{학부모명} / {학생명}', '박민수 어머님이 문의하셨어요'), '박민수 / {학생명}');
+  assert.equal(fill('{강사명} / {학생명}', '이서준 선생님과 김영호 학생이 왔어요'), '이서준 / 김영호');
+  assert.equal(fill('{강사명}', '이서준 강사가 연락했어요'), '이서준');
+  assert.equal(fill('{학부모명}', '박민수 아버님이 왔어요'), '박민수');
+  assert.equal(fill('{학생명}', '김영호 학생과 박민수 학생이 왔어요'), '{학생명}');
+  assert.equal(fill('{학생명} / {강사명}', '해당 학생과 담당 강사'), '{학생명} / {강사명}');
+  assert.equal(fill('{학생명}', '이름 없는 질문'), '{학생명}');
+  assert.equal(fill('{학생명}', '고등학생이 왔어요'), '{학생명}');
+  assert.equal(fill('{어머님성함} / {아버님성함}', '박민수 아버님이 왔어요'), '{어머님성함} / 박민수');
+});
+
+test('response log normalization preserves author metadata without inventing legacy authors', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const context = vm.createContext({ normalizeDeskResponseLogStatus_: x => x || '미처리' });
+  vm.runInContext(extractFunction(source, 'normalizeDeskResponseLog_'), context);
+  const normalize = context.normalizeDeskResponseLog_;
+  assert.equal(normalize({ id:'a', text:'질문', createdByName:'입력자', createdByUid:'u1' }).createdByName, '입력자');
+  assert.equal(normalize({ id:'a', text:'질문' }).createdByName, '');
+});

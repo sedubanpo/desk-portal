@@ -731,3 +731,38 @@ body.desk-daily-journal-mode .desk-ledger-deletion-meta { display:flex; flex-wra
 [data-desk-panel="responseCenter"] .desk-response-search-btn { min-width:122px; height:42px; padding:0 16px; font-size:14px; }
 [data-desk-panel="responseCenter"] .desk-response-reset { font-size:12px; font-weight:600; }
 [data-desk-panel="responseCenter"] .desk-response-steps { overflow:visible; }
+
+/* Learning workspace opens in the browser's modal top layer. */
+#deskResponseAdminDashboard:not([open]) { display:none; }
+#deskResponseAdminDashboard[open] { display:block; position:fixed; inset:0; width:min(1440px,94vw); max-width:none; height:90vh; max-height:90dvh; margin:auto; padding:28px; overflow:auto; border:1px solid #d9e2ca; border-radius:22px; background:#f7f9f2; color:#34412b; box-shadow:0 24px 90px #202b2833; overscroll-behavior:contain; }
+#deskResponseAdminDashboard::backdrop { background:#26312670; backdrop-filter:blur(4px); }
+#deskResponseAdminDashboard .desk-response-admin-head { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:0 0 22px; border-bottom:1px solid #dfe6d5; }
+#deskResponseAdminDashboard .desk-response-admin-head>div { flex:1; min-width:240px; }
+#deskResponseAdminDashboard .desk-response-admin-head h3 { font-size:25px; color:#344724; letter-spacing:-.8px; }
+#deskResponseAdminDashboard .desk-response-admin-head p { font-size:13px; line-height:1.7; color:#728066; }
+#deskResponseAdminDashboard .desk-response-admin-close { order:3; min-height:40px; padding:8px 16px; background:white; border:1px solid #d5dfc7; border-radius:9px; color:#4a5c36; cursor:pointer; }
+#deskResponseAdminDashboard .desk-response-admin-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:22px 0; }
+#deskResponseAdminDashboard .desk-response-admin-kpi { padding:18px 22px; background:#edf4de; border:1px solid #dde8c8; border-radius:12px; box-shadow:none; }
+#deskResponseAdminDashboard .desk-response-admin-kpi span { color:#6a7957; font-size:12px; }
+#deskResponseAdminDashboard .desk-response-admin-kpi strong { font-size:29px; color:#40572b; font-variant-numeric:tabular-nums; }
+#deskResponseAdminDashboard .desk-response-admin-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); align-items:start; gap:22px; }
+#deskResponseAdminDashboard :is(.desk-response-admin-card,.desk-guide-manager) { min-width:0; padding:20px; border:1px solid #e1e7d7; border-radius:14px; background:#fff; box-shadow:none; }
+#deskResponseAdminDashboard .desk-guide-manager { display:flex; flex-direction:column; gap:20px; }
+#deskResponseAdminDashboard :is(.desk-guide-list-panel,.desk-guide-editor-panel) { min-width:0; width:100%; padding:0; border:0; background:none; }
+#deskResponseAdminDashboard :is(.desk-guide-list,.desk-response-log-list) { max-height:480px; overflow:auto; scrollbar-gutter:stable; }
+#deskResponseAdminDashboard .desk-response-log-row { padding:18px 2px; background:#fff; border:0; border-bottom:1px solid #e8eddf; border-radius:0; }
+#deskResponseAdminDashboard .desk-response-log-row>strong { display:block; font-size:15px; line-height:1.7; font-weight:650; color:#303c27; overflow-wrap:anywhere; }
+#deskResponseAdminDashboard .desk-response-log-meta { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0 14px; }
+#deskResponseAdminDashboard .desk-response-log-meta span { font-size:11px; line-height:1.7; font-weight:500; background:#f2f5ed; color:#667459; border-radius:5px; padding:3px 7px; }
+#deskResponseAdminDashboard .desk-response-log-meta .warn { background:#fff2d7; color:#865b14; }
+#deskResponseAdminDashboard .desk-response-log-meta .done { background:#e7f1d7; color:#506d30; }
+#deskResponseAdminDashboard .desk-response-log-meta .reviewing { background:#eaf0fb; color:#486080; }
+#deskResponseAdminDashboard :is(button.primary,#deskResponseSaveGuideBtn,.desk-response-log-filter button.active) { background:#dcecba; color:#3d5525; border:1px solid #c5dca0; box-shadow:none; }
+#deskResponseAdminDashboard :is(.desk-response-log-actions button,.desk-response-log-filter button) { min-height:32px; padding:6px 10px; border-radius:7px; font-size:11px; }
+#deskResponseAdminDashboard .desk-response-group-card { background:#f6f8ee; border:1px solid #e2e9d2; border-radius:10px; padding:14px; }
+#deskResponseAdminDashboard .desk-guide-list-item { background:#fff; border:1px solid #e4e9dc; padding:12px; border-radius:8px; }
+#deskResponseAdminDashboard .desk-guide-list-item.active { background:#eef5df; border-color:#bacf95; color:#3f5828; }
+#deskResponseAdminDashboard :is(input,textarea,select) { background:#fafbf7; border:1px solid #dbe3cf; border-radius:8px; color:#34412b; padding:10px; line-height:1.6; }
+#deskResponseAdminDashboard :is(button,input,textarea,select):focus-visible { outline:2px solid #78984c; outline-offset:2px; }
+@media(max-width:950px) { #deskResponseAdminDashboard .desk-response-admin-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { #deskResponseAdminDashboard[open] { width:100%; height:100dvh; max-height:100dvh; border-radius:0; padding:16px; box-sizing:border-box; } #deskResponseAdminDashboard .desk-response-admin-kpis { gap:8px; } #deskResponseAdminDashboard .desk-response-admin-kpi { padding:12px; } #deskResponseAdminDashboard .desk-response-admin-kpi strong { font-size:23px; } }
