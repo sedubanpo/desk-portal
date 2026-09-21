@@ -17683,7 +17683,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260920-status-polish">
+  <link rel="stylesheet" href="./workspace.css?v=20260921-response-center">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -19382,17 +19382,8 @@
                   </div>
                 </div>
                 <div class="desk-response-bubble">
-                  <svg class="desk-response-bubble-shape" viewBox="0 0 1000 190" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <defs>
-                      <linearGradient id="deskResponseBubbleStroke" x1="0" y1="0" x2="1000" y2="0" gradientUnits="userSpaceOnUse">
-                        <stop offset="0" stop-color="#21bf7c"/>
-                        <stop offset="0.5" stop-color="#43a9e8"/>
-                        <stop offset="1" stop-color="#8b5cf6"/>
-                      </linearGradient>
-                    </defs>
-                    <path d="M126 7 H970 Q993 7 993 31 V159 Q993 183 970 183 H126 Q101 183 101 158 V115 L37 95 L101 75 V31 Q101 7 126 7 Z" fill="#fff" stroke="url(#deskResponseBubbleStroke)" stroke-width="5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-                  </svg>
-                  <textarea id="deskResponseSituationInput" class="desk-response-input" placeholder="상황을 짧게 적어주세요"></textarea>
+                  <label class="desk-response-input-label" for="deskResponseSituationInput">지금 어떤 도움이 필요한가요?</label>
+                  <textarea id="deskResponseSituationInput" class="desk-response-input" placeholder="예: 지원자가 면접 시간을 다시 조율하고 싶어 합니다." aria-describedby="deskResponseBubbleHint"></textarea>
                   <div class="desk-response-actions">
                     <span id="deskResponseBubbleHint">예시를 참고해 짧게 입력해 주세요. 필요한 절차와 안내 문구를 찾아드릴게요!</span>
                     <div>
@@ -27309,17 +27300,9 @@
 
     function setDeskResponseInputDisplay_(forceExample) {
       if (!deskResponseSituationInputEl) return;
-      var text = String(state.desk.responseCenter.situationText || "").trim();
-      var shouldShowExample = forceExample || (!text && document.activeElement !== deskResponseSituationInputEl);
-      if (shouldShowExample) {
-        deskResponseSituationInputEl.value = "예시: " + DESK_RESPONSE_EXAMPLE_TEXT;
-        deskResponseSituationInputEl.classList.add("is-example");
-        deskResponseSituationInputEl.setAttribute("aria-label", "상황 입력 예시");
-        return;
-      }
       deskResponseSituationInputEl.classList.remove("is-example");
       deskResponseSituationInputEl.setAttribute("aria-label", "상황 입력");
-      deskResponseSituationInputEl.value = text;
+      deskResponseSituationInputEl.value = forceExample ? "" : String(state.desk.responseCenter.situationText || "");
     }
 
     function clearDeskResponseExampleInput_() {
@@ -27632,7 +27615,7 @@
       ensureDeskResponseLogsLoaded_();
       ensureDeskResponseLogsRemoteLoaded_();
       if (deskResponseSavedCountEl) deskResponseSavedCountEl.textContent = (state.desk.messageTemplates.templates || []).length + "개";
-      if (deskResponseBubbleHintEl) deskResponseBubbleHintEl.textContent = "예: " + DESK_RESPONSE_EXAMPLE_TEXT + " 짧게 적어도 필요한 절차와 안내 문구를 찾아드릴게요!";
+      if (deskResponseBubbleHintEl) deskResponseBubbleHintEl.textContent = "Enter로 찾기 · 줄바꿈은 Shift + Enter";
       setDeskResponseInputDisplay_(false);
       var situationText = state.desk.responseCenter.situationText || "";
       var match = matchDeskResponseGuide_(situationText);
@@ -27659,7 +27642,7 @@
         } else {
           deskResponseStepsEl.className = "desk-response-steps";
           deskResponseStepsEl.innerHTML = steps.map(function(text, index) {
-            return '<div class="desk-response-step"><strong>' + (index + 1) + '</strong><span>' + escapeHtml(text) + '</span></div>';
+            return '<div class="desk-response-step"><strong>' + String(index + 1).padStart(2, "0") + '</strong><span>' + escapeHtml(text) + '</span></div>';
           }).join("");
         }
       }
@@ -36143,7 +36126,7 @@
           state.desk.responseCenter.situationText = String(deskResponseSituationInputEl.value || "");
         });
         deskResponseSituationInputEl.addEventListener("keydown", function(event) {
-          if (event.key !== "Enter" || event.shiftKey) return;
+          if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
           event.preventDefault();
           runDeskResponseSearch_();
         });
