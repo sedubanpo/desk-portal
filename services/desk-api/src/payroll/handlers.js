@@ -128,6 +128,8 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
             pureTeachingHours: Number(kpi.pureTeachingHours) || 0,
             recognizedLessons: Number(kpi.recognizedLessons) || 0,
             canceledAmount: Math.round(Number(kpi.canceledAmount) || 0),
+            absenceEstimatedAmount: kpi.absenceEstimatedAmount ?? null,
+            absenceUnknownCount: Number(kpi.absenceUnknownCount) || 0,
             teacherCount
           } };
         } catch (error) {

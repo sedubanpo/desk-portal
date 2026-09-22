@@ -154,7 +154,7 @@ test('monthly analysis loads each month without screen filters and returns teach
     monthName: '26-06', monthLabel: '2026년 6월', grossSales: 200000, discount: 20000,
     netSales: 180000, estimatedPay: 80000, balanceAfterTeacherPay: 100000,
     teacherPayRate: 44.4, recognizedHours: 2, pureTeachingHours: 2,
-    recognizedLessons: 1, canceledAmount: 0, teacherCount: 1
+    recognizedLessons: 1, canceledAmount: 0, absenceEstimatedAmount: 0, absenceUnknownCount: 0, teacherCount: 1
   });
   assert.equal(response.rows[1].netSales, 400000);
   assert.equal(response.rows[1].estimatedPay, 240000);

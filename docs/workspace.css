@@ -766,3 +766,15 @@ body.desk-daily-journal-mode .desk-ledger-deletion-meta { display:flex; flex-wra
 #deskResponseAdminDashboard :is(button,input,textarea,select):focus-visible { outline:2px solid #78984c; outline-offset:2px; }
 @media(max-width:950px) { #deskResponseAdminDashboard .desk-response-admin-grid { grid-template-columns:minmax(0,1fr); } }
 @media(max-width:600px) { #deskResponseAdminDashboard[open] { width:100%; height:100dvh; max-height:100dvh; border-radius:0; padding:16px; box-sizing:border-box; } #deskResponseAdminDashboard .desk-response-admin-kpis { gap:8px; } #deskResponseAdminDashboard .desk-response-admin-kpi { padding:12px; } #deskResponseAdminDashboard .desk-response-admin-kpi strong { font-size:23px; } }
+#kpiGrossDiscount strong { font-weight:800; }
+#kpiGrossDiscount .payroll-sales-red { color:#c52525; }
+#kpiGrossDiscount .payroll-discount-purple { color:#8044a7; }
+#kpiGrossDiscount .payroll-cancel-red { color:#bf6262; }
+#kpiGrossDiscount .payroll-absence-gray { color:#666d76; }
+.payroll-recovery-line { display:flex; flex-direction:column; gap:4px; padding:7px 0; font-size:12px; line-height:1.6; }
+.payroll-recovery-line+ .payroll-recovery-line { border-top:1px solid #e6eadf; }
+.payroll-recovery-line span { font-size:11px; color:#667085; }
+.payroll-analysis-series { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding:12px 0; }
+.payroll-analysis-series label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer; }
+.payroll-analysis-series input { accent-color:#789344; }
+.payroll-analysis-series>span { color:#6b7280; font-size:11px; }

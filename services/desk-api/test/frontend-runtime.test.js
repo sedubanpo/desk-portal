@@ -962,3 +962,35 @@ test('response log normalization preserves author metadata without inventing leg
   assert.equal(normalize({ id:'a', text:'질문', createdByName:'입력자', createdByUid:'u1' }).createdByName, '입력자');
   assert.equal(normalize({ id:'a', text:'질문' }).createdByName, '');
 });
+
+test('recovery KPI matching isolates students and teachers and consumes each makeup once',async()=>{
+ const source=await readFile(frontendPath,'utf8');
+ const context=vm.createContext({toNumber:(v,d=0)=>Number(v)||d,formatStudentName:v=>v,roundToTwo:v=>Math.round(v*100)/100,formatHours:String});
+ for(const name of ['normalizeTrackText','extractMonthDayKey','isRecoveryTypeCompatible','isRecoveryRelationLikely','getRecoveryScore','buildRecoveryTracker']) vm.runInContext(extractFunction(source,name),context);
+ const base={name:'학생',studentId:'s1',teacher:'강사',subject:'수학',classType:'개별',className:'수학-개별-2h',hours:2,amount:60000,classDateLabel:'9/1',classDateKey:'2026-09-01',rowNumber:1};
+ const absent={...base,rowKey:'a',attendanceCode:'결석예고',amount:0,absenceEstimatedAmount:60000};
+ const makeup={...base,rowKey:'b',attendanceCode:'결석보강',classDateLabel:'9/2',classDateKey:'2026-09-02'};
+ assert.equal(context.buildRecoveryTracker([absent,makeup]).done,1);
+ assert.equal(context.buildRecoveryTracker([absent,{...makeup,studentId:'s2'}]).done,0);
+ assert.equal(context.buildRecoveryTracker([absent,{...makeup,teacher:'다른강사'}]).done,0);
+ assert.equal(context.buildRecoveryTracker([absent,{...absent,rowKey:'a2'},makeup]).done,1);
+ assert.equal(context.buildRecoveryTracker([absent,{...makeup,hours:1}]).partial,1);
+ assert.equal(context.buildRecoveryTracker([absent]).items[0].estimatedSourceAmount,60000);
+ const cancel={...base,rowKey:'c',attendanceCode:'당일취소'};
+ assert.equal(context.buildRecoveryTracker([cancel,{...makeup,attendanceCode:'보강',note:'9/1 당취 보충'}]).done,1);
+});
+
+test('monthly chart filters expose cancellation and estimated absence without treating missing estimates as zero',async()=>{
+ const source=await readFile(frontendPath,'utf8');
+ const controls={payrollMonthlyAnalysisChart:{getContext:()=>({})},payrollShowCanceled:{checked:true},payrollShowAbsence:{checked:false}};
+ let config;
+ const context=vm.createContext({state:{payroll:{monthlyAnalysis:{}}},document:{getElementById:id=>controls[id]},Chart:class{constructor(_,c){config=c;}},formatWon:String});
+ vm.runInContext(extractFunction(source,'renderPayrollMonthlyAnalysisChart_'),context);
+ context.renderPayrollMonthlyAnalysisChart_([{monthLabel:'9월',canceledAmount:50000,absenceEstimatedAmount:80000,absenceUnknownCount:2},{monthLabel:'8월'}]);
+ assert.equal(config.data.datasets[2].hidden,false);
+ assert.equal(config.data.datasets[3].hidden,true);
+ assert.equal(config.data.datasets[2].data[0],50000);
+ assert.equal(config.data.datasets[3].data[0],80000);
+ assert.equal(config.data.datasets[3].data[1],null);
+ assert.equal(config.options.plugins.tooltip.callbacks.afterLabel({datasetIndex:3,dataIndex:0}),'추정 불가 2건 제외');
+});

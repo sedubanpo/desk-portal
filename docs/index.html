@@ -17683,7 +17683,7 @@
     #tuitionPaymentModal .amount-negative { color:#b91c1c; }
     #tuitionPaymentModal .amount-positive { color:#1d4ed8; }
   </style>
-  <link rel="stylesheet" href="./workspace.css?v=20260921-response-admin">
+  <link rel="stylesheet" href="./workspace.css?v=20260922-payroll-recovery">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
@@ -17876,7 +17876,7 @@
         <article class="card payroll-kpi">
           <div class="label">인정 시수</div>
           <div class="value" id="kpiHours">0h</div>
-          <div class="meta" id="kpiWorkingDays">근무일 0일</div>
+          <div class="meta" id="kpiWorkingDays">근무일 0일</div><div class="meta"><strong id="kpiLessons">인정 수업 0건</strong> · <span id="kpiLessonsSub">전체 0건</span></div>
         </article>
         <article class="card payroll-kpi">
           <div class="label">인정 순매출</div>
@@ -17889,9 +17889,7 @@
           <div class="meta" id="kpiPaySub">비율제 기준</div>
         </article>
         <article class="card payroll-kpi">
-          <div class="label">인정 수업 건수</div>
-          <div class="value" id="kpiLessons">0건</div>
-          <div class="meta" id="kpiLessonsSub">전체 0건</div>
+          <div class="label">취소·결석 및 보충 현황</div><div id="kpiRecovery"></div><div class="meta">선택 월 내 연결 추정 · 완료는 원수업 시간 충족 기준</div>
         </article>
         <article class="card payroll-kpi">
           <div class="label">시급제 기준 순수시수</div>
@@ -20408,7 +20406,11 @@
             <span id="payrollAnalysisChartScope">전체 기간</span>
           </div>
         </div>
-        <div class="payroll-analysis-chart-wrap"><canvas id="payrollMonthlyAnalysisChart"></canvas></div>
+        <div class="payroll-analysis-series" aria-label="월별 금액 차트 표시 항목">
+          <label><input type="checkbox" id="payrollShowCanceled"> 당일취소</label>
+          <label><input type="checkbox" id="payrollShowAbsence"> 결석예고(추정)</label>
+          <span>선택하면 차트에 표시됩니다. 금액은 인정 순매출에 합산되지 않습니다.</span>
+        </div><div class="payroll-analysis-chart-wrap"><canvas id="payrollMonthlyAnalysisChart"></canvas></div>
       </div>
       <div class="payroll-analysis-table-wrap">
         <table class="payroll-analysis-table">
@@ -38210,6 +38212,12 @@
           loadPayrollMonthlyAnalysis_(true);
         });
       }
+      ["payrollShowCanceled", "payrollShowAbsence"].forEach(function(id, index) {
+        document.getElementById(id).addEventListener("change", function(event) {
+          var chart = state.payroll.monthlyAnalysis.chart;
+          if (chart) { chart.setDatasetVisibility(index + 2, event.target.checked); chart.update(); }
+        });
+      });
       if (payrollAnalysisYearSelectEl) {
         payrollAnalysisYearSelectEl.addEventListener("change", function() {
           state.payroll.monthlyAnalysis.year = payrollAnalysisYearSelectEl.value || "";
@@ -43874,13 +43882,22 @@ window.SeduHubAdapter={
           datasets: [
             { type: "bar", label: "인정 순매출", data: rows.map(function(row) { return row.netSales || 0; }), backgroundColor: "rgba(13, 104, 77, 0.22)", borderColor: "#0d684d", borderWidth: 1, borderRadius: 4 },
             { type: "bar", label: "예상 강사비", data: rows.map(function(row) { return row.estimatedPay || 0; }), backgroundColor: "rgba(194, 65, 12, 0.18)", borderColor: "#c2410c", borderWidth: 1, borderRadius: 4 },
+            { type: "bar", label: "당일취소", hidden: !document.getElementById("payrollShowCanceled").checked, data: rows.map(function(row) { return row.canceledAmount ?? null; }), backgroundColor: "#efaaaa", borderColor: "#b65a5a", borderWidth: 1 },
+            { type: "bar", label: "결석예고(추정)", hidden: !document.getElementById("payrollShowAbsence").checked, data: rows.map(function(row) { return row.absenceEstimatedAmount ?? null; }), backgroundColor: "#a5a9b0", borderColor: "#626973", borderWidth: 1 },
             { type: "line", label: "강사비 차감 잔여액", data: rows.map(function(row) { return row.balanceAfterTeacherPay || 0; }), borderColor: "#2563eb", backgroundColor: "rgba(37, 99, 235, 0.08)", pointBackgroundColor: "#2563eb", pointRadius: 3, pointHoverRadius: 4, tension: 0.28, fill: false }
           ]
         },
         options: {
           maintainAspectRatio: false,
           interaction: { mode: "index", intersect: false },
-          plugins: { legend: { position: "top", labels: { boxWidth: 11, usePointStyle: true, font: { size: 11, weight: "700" } } } },
+          plugins: { legend: { position: "top", onClick: function(event, item, legend) {
+            var chart = legend.chart; var visible = !chart.isDatasetVisible(item.datasetIndex);
+            chart.setDatasetVisibility(item.datasetIndex, visible); chart.update();
+            if (item.datasetIndex === 2) document.getElementById("payrollShowCanceled").checked = visible;
+            if (item.datasetIndex === 3) document.getElementById("payrollShowAbsence").checked = visible;
+          }, labels: { boxWidth: 11, usePointStyle: true, font: { size: 11, weight: "700" } } }, tooltip: { callbacks: { afterLabel: function(context) {
+            return context.datasetIndex === 3 && rows[context.dataIndex].absenceUnknownCount ? '추정 불가 ' + rows[context.dataIndex].absenceUnknownCount + '건 제외' : '';
+          } } } },
           scales: {
             x: { grid: { display: false }, ticks: { maxRotation: 0, font: { size: 10 } } },
             y: { beginAtZero: true, grid: { color: "rgba(148, 163, 184, 0.16)" }, ticks: { callback: function(value) { return formatWon(value); }, font: { size: 10 } } }
@@ -43896,11 +43913,14 @@ window.SeduHubAdapter={
       document.getElementById("kpiHours").textContent = formatHours(kpi.recognizedHours || 0) + "h";
       document.getElementById("kpiWorkingDays").textContent = "근무일 " + (kpi.workingDays || 0) + "일";
       document.getElementById("kpiNetSales").textContent = formatWon(kpi.netSales || 0);
-      document.getElementById("kpiGrossDiscount").textContent =
-        "매출 " + formatWon(kpi.grossSales || 0) + " / 할인 " + formatWon(kpi.discount || 0) + " / 당취 " + formatWon(kpi.canceledAmount || 0) +
-        (kpi.absenceEstimatedAmount != null ? " / 결석예고(추정) " + formatWon(kpi.absenceEstimatedAmount) +
-          " · 순매출 대비 " + (kpi.absenceEstimatedRatio == null ? "—" : kpi.absenceEstimatedRatio + "%") +
-          (kpi.absenceUnknownCount ? " · 추정 불가 " + kpi.absenceUnknownCount + "건" : "") : "");
+      document.getElementById("kpiGrossDiscount").innerHTML =
+        '<strong class="payroll-sales-red">매출 ' + formatWon(kpi.grossSales || 0) + '</strong> / ' +
+        '<strong class="payroll-discount-purple">할인 ' + formatWon(kpi.discount || 0) + '</strong> / ' +
+        '<strong class="payroll-cancel-red">당취 ' + formatWon(kpi.canceledAmount || 0) + '</strong> / ' +
+        '<strong class="payroll-absence-gray">결석예고(추정) ' + (kpi.absenceEstimatedAmount == null ? '확인 필요' : formatWon(kpi.absenceEstimatedAmount)) +
+        ' · 순매출 대비 ' + (kpi.absenceEstimatedRatio == null ? '—' : Number(kpi.absenceEstimatedRatio) + '%') +
+        (kpi.absenceUnknownCount ? ' · 추정 불가 ' + Number(kpi.absenceUnknownCount) + '건' : '') + '</strong>';
+      renderPayrollRecoveryKpi_(data.rows || []);
       document.getElementById("kpiGrossDiscount").title = "결석예고 추정액: 원래 단가 × 수업 시간(회당 단가는 1회 금액), 할인 반영. 단가가 없으면 동일 월·학생·강사·수업의 일치하는 금액으로 추정합니다. 인정 순매출·지급액에는 합산하지 않습니다. 비율은 추정액 ÷ 인정 순매출이며, 순매출 0원은 비율을 표시하지 않습니다.";
       document.getElementById("kpiPay").textContent = formatWon(kpi.estimatedPay || 0);
       var oneToOneGuide = "";
@@ -43915,7 +43935,7 @@ window.SeduHubAdapter={
         : (state.salaryMode === "ratio"
           ? "비율제 " + toNumber(state.ratioPercent, 50) + "% 적용"
           : "시급제: 일자별 순수수업시간 x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide);
-      document.getElementById("kpiLessons").textContent = (kpi.recognizedLessons || 0) + "건";
+      document.getElementById("kpiLessons").textContent = "인정 수업 " + (kpi.recognizedLessons || 0) + "건";
       document.getElementById("kpiLessonsSub").textContent = "전체 " + (kpi.totalLessons || 0) + "건";
       document.getElementById("kpiPureHours").textContent = formatHours(kpi.pureTeachingHours || 0) + "h";
       document.getElementById("kpiOverride").textContent = "수동 인정/제외 " + countOverrides(data.rows || []) + "건";
@@ -44559,6 +44579,21 @@ window.SeduHubAdapter={
       typesEl.textContent = topTypes.length ? topTypes.join(", ") : "-";
     }
 
+    function renderPayrollRecoveryKpi_(rows) {
+      var items = buildRecoveryTracker(rows).items;
+      document.getElementById("kpiRecovery").innerHTML = ["당일취소", "결석예고"].map(function(kind) {
+        var group = items.filter(function(item) { return item.kind === kind; });
+        var complete = group.filter(function(item) { return item.status === "완료"; });
+        var partial = group.filter(function(item) { return item.status === "부분"; }).length;
+        var sum = function(list) { return list.reduce(function(total, item) { return total + (Number(item.estimatedSourceAmount) || 0); }, 0); };
+        var unknown = group.filter(function(item) { return item.estimatedSourceAmount == null; }).length;
+        return '<div class="payroll-recovery-line"><strong>' + kind + ' ' + group.length + '건 · ' + formatWon(sum(group)) +
+          (kind === "결석예고" ? ' (추정)' : '') + '</strong><span>' + (kind === "당일취소" ? '보충' : '결석보강') +
+          ' 완료 ' + complete.length + '건 · 원수업 환산 ' + formatWon(sum(complete)) +
+          (partial ? ' · 부분 ' + partial + '건' : '') + (unknown ? ' · 금액 미상 ' + unknown + '건' : '') + '</span></div>';
+      }).join('');
+    }
+
     function renderRecoveryTracker(rows) {
       var tracked = buildRecoveryTracker(rows || []);
       var summaryEl = document.getElementById("trackerSummary");
@@ -44645,7 +44680,10 @@ window.SeduHubAdapter={
 
         var candidates = recoveries.filter(function(recovery) {
           if (usedRecovery[recovery.rowKey]) return false;
-          if (formatStudentName(recovery.name) !== formatStudentName(source.name)) return false;
+          if (source.studentId && recovery.studentId ? source.studentId !== recovery.studentId : formatStudentName(recovery.name) !== formatStudentName(source.name)) return false;
+          if (!source.teacher || recovery.teacher !== source.teacher) return false;
+          if (!source.subject || recovery.subject !== source.subject || recovery.classType !== source.classType) return false;
+          if (String(source.className || "").replace(/\s+/g, "").replace(/-?\d+(?:\.\d+)?h$/i, "") !== String(recovery.className || "").replace(/\s+/g, "").replace(/-?\d+(?:\.\d+)?h$/i, "")) return false;
           if (String(recovery.classDateKey || "") < String(source.classDateKey || "")) return false;
           if (!isRecoveryTypeCompatible(source, recovery)) return false;
           return isRecoveryRelationLikely(source, recovery, sourceMd);
@@ -44676,6 +44714,7 @@ window.SeduHubAdapter={
           className: source.className,
           sourceHours: targetHours,
           sourceAmount: toNumber(source.amount, 0),
+          estimatedSourceAmount: source.attendanceCode === "결석예고" ? source.absenceEstimatedAmount : toNumber(source.amount, 0),
           matchedHours: roundToTwo(matchedHours),
           status: status,
           matchedText: matched.slice(0, 2).map(function(r) { return r.classDateLabel + " " + r.attendanceCode + " " + formatHours(r.hours) + "h"; }).join(" / "),
