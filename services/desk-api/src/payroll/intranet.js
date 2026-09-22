@@ -36,7 +36,7 @@ export function intranetRows(lessons, students, meta) {
     const day=Number(l.date.slice(8));
     const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,0]]};
     const row=parsePayrollRows(source,meta)[0];
-    return {...row,rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:amount??0};
+    return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:amount??0};
   });
 }
 
@@ -57,7 +57,9 @@ export function createIntranetPayrollReader(db) {
       const saved=fees.find(p=>p.studentId===id)||{};
       const period=inheritFees({...saved,assignments:[...(saved.assignments||[])]},baselines.find(p=>p._documentId===id),month);
       period.assignments.push(...recoverIssueFees(issues.filter(i=>i.studentId===id).map(i=>({...i,id:i._documentId})),month,period));
-      lessons=applyFees({lessons},id,month,period.assignments,period.merges||[]).lessons;
+      const hypothetical=applyFees({lessons:lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l)},id,month,period.assignments,period.merges||[]).lessons;
+      const absentRates=new Map(hypothetical.filter(l=>l.studentId===id).map(l=>[l.id,l]));
+      lessons=applyFees({lessons},id,month,period.assignments,period.merges||[]).lessons.map(l=>l.studentId===id && l.kind==='absence'?{...l,absenceRate:absentRates.get(l.id)?.rate,absenceRateUnit:absentRates.get(l.id)?.rateUnit}:l);
     }
     const rows=intranetRows(lessons,new Map(roster.map(s=>[s._documentId,s])),meta);
     return {rows,version:createHash('sha256').update(JSON.stringify(rows)).digest('hex')};

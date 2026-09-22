@@ -74,3 +74,48 @@ test('successive reads reflect edits, fee changes, new lessons and published del
  data.intranetLessonDrafts=[{month:'2026-09',lesson:{...lesson,id:'new',deletedAt:'today'}}];
  assert.equal((await summarize()).rows.length,0);
 });
+
+test('absence estimates respect source duration, per-class rates and teacher filters without changing settlement',()=>{
+ const input=rows([lesson,{...lesson,id:'abs',kind:'absence',billMinutes:0,payMinutes:0},
+ {...lesson,id:'class',teacher:'다른강사',kind:'absence',billMinutes:0,payMinutes:0,rate:80000,rateUnit:'perClass'}]);
+ const summary=buildPayrollSummary(input,meta,{ratioPercent:50,teacherName:'강사'});
+ assert.equal(summary.kpi.absenceEstimatedAmount,60000);
+ assert.equal(summary.kpi.absenceEstimatedRatio,100);
+ assert.equal(summary.kpi.netSales,60000);
+ assert.equal(summary.kpi.estimatedPay,30000);
+ assert.equal(summary.rows.find(r=>r.lessonId==='abs').amount,0);
+ const other=buildPayrollSummary(input,meta,{teacherName:'다른강사'});
+ assert.equal(other.kpi.absenceEstimatedAmount,80000);
+ assert.equal(other.kpi.absenceEstimatedRatio,null);
+});
+
+test('absence estimate uses matching regular evidence and reports missing or conflicting prices',()=>{
+ const abs={...lesson,id:'abs',kind:'absence',billMinutes:0,payMinutes:0,rate:null};
+ const summary=ls=>buildPayrollSummary(rows(ls),meta,{}).kpi;
+ assert.equal(summary([lesson,abs]).absenceEstimatedAmount,60000);
+ assert.equal(summary([abs]).absenceUnknownCount,1);
+ assert.equal(summary([lesson,{...lesson,id:'other',rate:40000},abs]).absenceUnknownCount,1);
+ assert.equal(summary([{...lesson,studentId:'someone-else'},abs]).absenceUnknownCount,1);
+ assert.equal(summary([{...lesson,teacher:'다른강사'},abs]).absenceUnknownCount,1);
+});
+
+test('absence estimates recover configured fees without billing the absent lesson',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[{...lesson,kind:'absence',rate:0,billMinutes:0,payMinutes:0}]}],intranetStudentFees:[{studentId:'student',month:'2026-09',assignments:[{kind:'lesson',target:'one',amount:85000,rateUnit:'perClass'}]}]};
+ const db={collection(name){return {where(){return this;},limit(){return this;},async get(){const all=data[name]||[];return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const source=await createIntranetPayrollReader(db).readMonth('26-09');
+ const summary=buildPayrollSummary(source.rows,meta,{});
+ assert.equal(summary.kpi.absenceEstimatedAmount,85000);
+ assert.equal(summary.kpi.netSales,0);
+ assert.equal(summary.kpi.estimatedPay,0);
+ assert.equal(source.rows[0].amount,0);
+});
+
+test('legacy absence estimate applies discount and never borrows another month',()=>{
+ const abs={...rows([{...lesson,kind:'absence',billMinutes:0,payMinutes:0}])[0],source:'legacy',discount:10};
+ const summary=buildPayrollSummary([abs],meta,{});
+ assert.equal(summary.kpi.absenceEstimatedAmount,54000);
+ const unknown={...abs,absenceRate:null,rate:0};
+ const previous={...rows([lesson])[0],classDateKey:'2026-08-03'};
+ assert.equal(buildPayrollSummary([unknown,previous],meta,{}).kpi.absenceUnknownCount,1);
+});

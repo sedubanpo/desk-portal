@@ -43897,7 +43897,11 @@ window.SeduHubAdapter={
       document.getElementById("kpiWorkingDays").textContent = "근무일 " + (kpi.workingDays || 0) + "일";
       document.getElementById("kpiNetSales").textContent = formatWon(kpi.netSales || 0);
       document.getElementById("kpiGrossDiscount").textContent =
-        "매출 " + formatWon(kpi.grossSales || 0) + " / 할인 " + formatWon(kpi.discount || 0) + " / 당취 " + formatWon(kpi.canceledAmount || 0);
+        "매출 " + formatWon(kpi.grossSales || 0) + " / 할인 " + formatWon(kpi.discount || 0) + " / 당취 " + formatWon(kpi.canceledAmount || 0) +
+        (kpi.absenceEstimatedAmount != null ? " / 결석예고(추정) " + formatWon(kpi.absenceEstimatedAmount) +
+          " · 순매출 대비 " + (kpi.absenceEstimatedRatio == null ? "—" : kpi.absenceEstimatedRatio + "%") +
+          (kpi.absenceUnknownCount ? " · 추정 불가 " + kpi.absenceUnknownCount + "건" : "") : "");
+      document.getElementById("kpiGrossDiscount").title = "결석예고 추정액: 원래 단가 × 수업 시간(회당 단가는 1회 금액), 할인 반영. 단가가 없으면 동일 월·학생·강사·수업의 일치하는 금액으로 추정합니다. 인정 순매출·지급액에는 합산하지 않습니다. 비율은 추정액 ÷ 인정 순매출이며, 순매출 0원은 비율을 표시하지 않습니다.";
       document.getElementById("kpiPay").textContent = formatWon(kpi.estimatedPay || 0);
       var oneToOneGuide = "";
       if (state.salaryMode === "hourly" && state.selectedTeacher) {
