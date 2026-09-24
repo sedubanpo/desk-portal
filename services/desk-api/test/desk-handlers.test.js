@@ -636,3 +636,31 @@ test('independent clients see memo create, retry, edit, delete and shared notice
   await b.saveDeskDailyJournalTask({ dateKey, task: { ...notice.task, ackWorkers: ['안종성'] } }, { role: 'STAFF', name: '안종성' });
   assert.deepEqual((await a.getDeskDailyJournalData({ dateKey })).tasks[0].ackWorkers, ['안종성']);
 });
+
+test('subscriptions preserve monthly history and isolate records with conflict protection', async () => {
+  const handlers=createDeskHandlers({store:memoryStore(),now:()=> '2026-09-24T10:00:00.000Z'});
+  const value={name:'ChatGPT',active:true,payments:{'2026-09':{date:'2026-09-24',amount:20,currency:'USD',status:'paid',note:'team'}}};
+  const saved=await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/chatgpt',expectedValue:null,value},{name:'테스트 근무자'});
+  assert.equal(saved.success,true);
+  assert.equal(saved.value.payments['2026-09'].updatedBy,'테스트 근무자');
+  await assert.rejects(handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/chatgpt',expectedValue:null,value}), /다른 사용자/);
+  const other=await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/firebase',expectedValue:null,value:{name:'Firebase',active:true,payments:{}}});
+  assert.equal(other.success,true);
+  const next=structuredClone(saved.value);next.payments['2026-10']={date:'',amount:null,currency:'KRW',status:'unknown',note:''};
+  const updated=await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/chatgpt',expectedValue:saved.value,value:next});
+  assert.equal(updated.value.payments['2026-09'].amount,20);
+  assert.equal(updated.value.payments['2026-09'].updatedBy,'테스트 근무자');
+  assert.equal((await handlers.getDeskPortalConfig({scope:'daily',key:'subscriptions'})).value.firebase.name,'Firebase');
+});
+
+test('subscriptions reject invalid amounts, dates, logos and root overwrites', async () => {
+  const handlers=createDeskHandlers({store:memoryStore()});
+  const value={name:'구독',active:true,payments:{'2026-09':{date:'2026-09-24',amount:0,currency:'KRW',status:'paid',note:''}}};
+  for (const patch of [{amount:-1},{amount:0.5},{amount:'20'},{date:'2026-09-31'},{date:'2026-08-01'},{currency:'XXX'}]) {
+    const bad=structuredClone(value);Object.assign(bad.payments['2026-09'],patch);
+    assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value:bad})).success,false);
+  }
+  assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value:{...value,logo:'data:image/svg+xml,<svg/>'}})).success,false);
+  assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions',expectedValue:null,value:{}})).success,false);
+  assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value})).success,true);
+});

@@ -607,12 +607,17 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, scope: payload.scope, key: payload.key, value: await store.get(path) };
     },
 
-    async saveDeskPortalConfig(payload = {}) {
+    async saveDeskPortalConfig(payload = {}, identity = {}) {
       const path = portalConfigPath(payload.scope, payload.key);
       if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
+      if (path === `${PATHS.dailyConfig}/subscriptions`) return failure('구독은 항목별로 저장해 주세요.');
       if (typeof payload.value === 'undefined') return failure('저장할 포털 설정 값이 없습니다.');
       if (!Object.hasOwn(payload, 'expectedValue') || typeof payload.expectedValue === 'undefined') {
         throw portalConfigConflict('포털 설정의 최신 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.');
+      }
+      if (path.startsWith(`${PATHS.dailyConfig}/subscriptions/`)) {
+        const error = validateSubscription(payload.value);
+        if (error) return failure(error);
       }
       let conflict = false;
       const value = await store.transaction(path, current => {
@@ -620,6 +625,16 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         if (canonicalJson(current ?? null) !== canonicalJson(payload.expectedValue)) {
           conflict = true;
           return current;
+        }
+        if (path.startsWith(`${PATHS.dailyConfig}/subscriptions/`)) {
+          const next = structuredClone(payload.value);
+          for (const [month, payment] of Object.entries(next.payments)) {
+            if (canonicalJson(payment) !== canonicalJson(current?.payments?.[month] ?? null)) {
+              payment.updatedAt = now();
+              payment.updatedBy = String(identity.name || '');
+            }
+          }
+          return next;
         }
         return payload.value;
       });
@@ -695,7 +710,7 @@ function validateSchedule(entry, key) {
 function portalConfigPath(scopeValue, keyValue) {
   const scope = String(scopeValue || '').trim();
   const key = String(keyValue || '').trim().replace(/^\/+|\/+$/g, '');
-  const dailyAllowed = /^(memoTemplates|memoTypes|responseGuides|messageTemplates|responseLogs(?:\/[A-Za-z0-9_.:-]{1,160})?)$/;
+  const dailyAllowed = /^(subscriptions(?:\/[A-Za-z0-9_-]{1,100})?|memoTemplates|memoTypes|responseGuides|messageTemplates|responseLogs(?:\/[A-Za-z0-9_.:-]{1,160})?)$/;
   const tuitionAllowed = /^(parentReplyTemplates|carryoverSuppressions\/\d{2}-\d{2}s?)$/;
   if (scope === 'daily' && dailyAllowed.test(key)) return `${PATHS.dailyConfig}/${key}`;
   if (scope === 'tuition' && tuitionAllowed.test(key)) return `${PATHS.tuitionConfig}/${key}`;
@@ -993,4 +1008,22 @@ function buildScheduleSeed(key) {
     });
   }
   return entries;
+}
+
+function validateSubscription(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return '구독 정보가 올바르지 않습니다.';
+  if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 60) return '구독명은 60자 이내로 입력해 주세요.';
+  if (typeof value.active !== 'boolean') return '구독 사용 상태가 올바르지 않습니다.';
+  if (value.plan != null && (typeof value.plan !== 'string' || value.plan.length > 100)) return '요금제는 100자 이내로 입력해 주세요.';
+  if (value.logo && (typeof value.logo !== 'string' || value.logo.length > 90000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value.logo))) return '로고 이미지 형식이 올바르지 않습니다.';
+  if (!value.payments || typeof value.payments !== 'object' || Array.isArray(value.payments)) return '월별 결제 기록이 올바르지 않습니다.';
+  if (Buffer.byteLength(JSON.stringify(value), 'utf8') > 110000) return '구독 기록 용량이 너무 큽니다.';
+  for (const [month, payment] of Object.entries(value.payments)) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '결제 월이 올바르지 않습니다.';
+    if (!['KRW','USD'].includes(payment.currency) || !['unknown','scheduled','paid'].includes(payment.status)) return '통화 또는 결제 상태가 올바르지 않습니다.';
+    if (payment.amount != null && (typeof payment.amount !== 'number' || !Number.isFinite(payment.amount) || payment.amount < 0 || payment.amount > 999999999 || (payment.currency === 'KRW' && !Number.isInteger(payment.amount)) || Math.abs(payment.amount * 100 - Math.round(payment.amount * 100)) > 0.0001)) return '금액이 올바르지 않습니다.';
+    if (typeof payment.note !== 'string' || payment.note.length > 500) return '비고는 500자 이내로 입력해 주세요.';
+    if (payment.date && (!/^\d{4}-\d{2}-\d{2}$/.test(payment.date) || payment.date.slice(0,7) !== month || !Number.isFinite(Date.parse(payment.date)) || new Date(payment.date).toISOString().slice(0,10) !== payment.date)) return '결제일은 선택한 월의 유효한 날짜여야 합니다.';
+  }
+  return '';
 }
