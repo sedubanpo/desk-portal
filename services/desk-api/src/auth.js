@@ -13,7 +13,7 @@ function bearerToken(req) {
   return match ? match[1] : '';
 }
 
-export function createRequireStaff({ verifyIdToken, loadAccount }) {
+export function createRequireStaff({ verifyIdToken, loadAccount, trainingOnly = false }) {
   if (typeof verifyIdToken !== 'function' || typeof loadAccount !== 'function') {
     throw new TypeError('verifyIdToken and loadAccount are required.');
   }
@@ -50,7 +50,7 @@ export function createRequireStaff({ verifyIdToken, loadAccount }) {
     if (!STAFF_ROLES.has(role)) {
       return next(new ApiError(403, 'staff_access_required', '데스크 포털 접근 권한이 없습니다.'));
     }
-    if (!hasDeskPortalAccess(accountBundle.access)) {
+    if (!trainingOnly && !hasDeskPortalAccess(accountBundle.access)) {
       return next(new ApiError(403, 'desk_portal_access_required', '데스크 포털 사용 권한이 없습니다.'));
     }
 

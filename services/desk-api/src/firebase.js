@@ -1,4 +1,5 @@
 import { applicationDefault, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { getStorage } from 'firebase-admin/storage';
 import { getAuth } from 'firebase-admin/auth';
 import { getDatabase } from 'firebase-admin/database';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -32,6 +33,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   });
 
   return {
+    training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),
     loadAccount: async uid => {
       const [accountSnapshot, accessSnapshot] = await Promise.all([

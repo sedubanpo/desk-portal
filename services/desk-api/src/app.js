@@ -1,4 +1,5 @@
 import express from 'express';
+import { createTrainingRouter } from './training.js';
 import { createHash } from 'node:crypto';
 import { createRequireStaff } from './auth.js';
 import { MIGRATION_STATE } from './contracts.js';
@@ -33,7 +34,7 @@ function canonicalJson(value) {
 const SUPPORTED_METHODS = new Set([...DESK_METHODS, ...TUITION_METHODS, ...PAYROLL_METHODS]);
 const WRITE_METHODS = new Set([...DESK_WRITE_METHODS, ...TUITION_WRITE_METHODS, ...PAYROLL_WRITE_METHODS]);
 
-export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess }) {
+export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess, training }) {
   const app = express();
   const requireStaff = createRequireStaff({ verifyIdToken, loadAccount });
   const payrollGate = payrollAccess || createPayrollAccess({
@@ -55,6 +56,7 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
   app.use(requestContext);
   app.use(securityHeaders);
   app.use(createCorsMiddleware(config.allowedOrigins));
+  if (training) app.use('/v1/training', createTrainingRouter({ verifyIdToken, loadAccount, ...training }));
   app.use(express.json({ limit: '256kb' }));
 
   app.get('/health', (_req, res) => {
