@@ -1058,7 +1058,7 @@ function buildScheduleSeed(key) {
 function validateSubscriptionDetails(value) {
   if (value.billingCycle != null && !['unknown','monthly','yearly'].includes(value.billingCycle)) return '결제 주기가 올바르지 않습니다.';
   const card=value.paymentCard;
-  if (card != null && (typeof card !== 'object' || Array.isArray(card) || !['shinhan','kb','samsung','hyundai','lotte','woori','hana','nh','bc','other'].includes(card.issuer) || typeof card.last4 !== 'string' || !/^[0-9]{4}$/.test(card.last4) || Object.keys(card).some(key=>!['issuer','last4'].includes(key)))) return '카드사와 카드번호 끝 4자리를 확인해 주세요.';
+  if (card != null && (typeof card !== 'object' || Array.isArray(card) || !['visa','shinhan','kb','samsung','hyundai','lotte','woori','hana','nh','bc','other'].includes(card.issuer) || typeof card.last4 !== 'string' || !/^[0-9]{4}$/.test(card.last4) || Object.keys(card).some(key=>!['issuer','last4'].includes(key)))) return '카드사와 카드번호 끝 4자리를 확인해 주세요.';
   return '';
 }
 function validateSubscription(value) {

@@ -729,3 +729,9 @@ test('subscription dates span reporting months and card details preserve old mon
   for(const scope of ['service','payment']){const bad=structuredClone(value);Object.assign(scope==='service'?bad:bad.payments['2026-09'],patch);assert.equal((await h.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value:bad})).success,false);}
  }
 });
+test('subscription Visa card saves the suffix without changing annual amount',async()=>{
+ const h=createDeskHandlers({store:memoryStore()});
+ const value={name:'Visa test',active:true,payments:{'2026-09':{date:'2026-01-29',amount:168000,currency:'KRW',status:'paid',note:'annual',billingCycle:'yearly',paymentCard:{issuer:'visa',last4:'0991'}}}};
+ const r=await h.saveDeskPortalConfig({scope:'daily',key:'subscriptions/visa-test',expectedValue:null,value});
+ assert.equal(r.success,true);assert.equal(r.value.payments['2026-09'].amount,168000);assert.equal(r.value.payments['2026-09'].paymentCard.issuer,'visa');
+});

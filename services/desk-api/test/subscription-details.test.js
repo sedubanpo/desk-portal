@@ -21,3 +21,15 @@ test('card suffixes preserve leading zeros and all configured issuer assets exis
  assert.equal(details.cardLabel({issuer:'kb',last4:'0012'}),'KB국민카드 · 0012');
  for(const [,,asset] of details.cards)assert.ok(fs.existsSync(new URL('../../../docs/assets/cards/'+asset,import.meta.url)));
 });
+test('annual amounts are divided before conversion without rounding each service',()=>{
+ assert.equal(details.monthlyAmount({amount:168000,currency:'KRW',billingCycle:'yearly'}),14000);
+ assert.equal(details.monthlyAmount({amount:3990,billingCycle:'monthly'}),3990);
+ assert.equal(details.monthlyAmount({amount:159000,billingCycle:'unknown'}),159000);
+ assert.equal(details.monthlyAmount({amount:null,billingCycle:'yearly'}),null);
+ assert.equal(details.monthlyAmount({amount:0,billingCycle:'yearly'}),0);
+ assert.equal(details.monthlyKRW({amount:120,currency:'USD',billingCycle:'yearly'},{rate:1400}),14000);
+ assert.equal(details.monthlyKRW({amount:120,currency:'USD',billingCycle:'yearly'},null),null);
+ assert.equal(details.monthlyKRW({amount:168000,currency:'KRW',billingCycle:'yearly'},null),14000);
+});
+
+test('zero USD monthly cost does not need an exchange rate',()=>{assert.equal(details.monthlyKRW({amount:0,currency:'USD',billingCycle:'yearly'},null),0);});

@@ -14,3 +14,5 @@ samsung.png: https://static12.samsungcard.com/images/personal/samsungcard-icon-1
 lotte.ico: https://image.lottecard.co.kr/webapp/pc/images/favicon/favicon.ico
 
 nh.png: https://card.nonghyup.com/images/IP/cc/sm_new/nhcard_icon_logo.png
+
+visa.ico: https://corporate.visa.com/content/dam/VCOM/Brand/favicon.ico
