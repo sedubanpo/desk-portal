@@ -4,6 +4,7 @@ import { getDatabase } from 'firebase-admin/database';
 import { getFirestore } from 'firebase-admin/firestore';
 import { createDeskHandlers } from './desk/handlers.js';
 import { createDeskStore } from './desk/store.js';
+import { createSubscriptionBilling } from './desk/subscription-billing.js';
 import { createIdempotencyExecutor } from './idempotency.js';
 import { createTuitionHandlers } from './tuition/handlers.js';
 import { createTuitionStore } from './tuition/store.js';
@@ -17,7 +18,7 @@ function firebaseApp(projectId) {
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
@@ -45,7 +46,8 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
     deskHandlers: {
       ...createDeskHandlers({
         store: createDeskStore(legacyDatabase),
-        loadStaffDirectory: () => loadStaffDirectory(firestore)
+        loadStaffDirectory: () => loadStaffDirectory(firestore),
+        subscriptionBilling: createSubscriptionBilling({ table: subscriptionBillingTable, firebaseProjectIds: subscriptionFirebaseProjectIds })
       }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),

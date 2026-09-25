@@ -48,7 +48,8 @@ export const DESK_READ_METHODS = new Set([
   'getDeskStaffDirectory',
   'getDeskSuppliesData',
   'getDeskRecruitingApplicantsData',
-  'getDeskPortalConfig'
+  'getDeskPortalConfig',
+  'getDeskSubscriptionSyncCapabilities'
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
@@ -58,7 +59,7 @@ export const DESK_WRITE_METHODS = new Set([
   'adjustDeskSupplyConsumable', 'saveDeskSupplyConsumable', 'deleteDeskSupplyConsumable',
   'saveDeskSupplyAsset', 'deleteDeskSupplyAsset', 'saveDeskSupplyPurchaseState', 'saveDeskSuppliesSnapshot',
   'saveDeskRecruitingApplicant', 'addDeskRecruitingApplicantComment', 'deleteDeskRecruitingApplicant',
-  'saveDeskPortalConfig'
+  'saveDeskPortalConfig', 'saveDeskSubscriptionSync'
 ]);
 
 export const DESK_SCHEDULE_WRITE_METHODS = new Set([
@@ -69,7 +70,7 @@ export const DESK_ATTENDANCE_ADMIN_METHODS = new Set(['saveDeskAttendanceCorrect
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
 
-export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [] }) {
+export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [], subscriptionBilling = { capabilities: () => ({}), sync: async () => { throw new Error('구독 청구 연동이 설정되지 않았습니다.'); } } }) {
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
@@ -607,6 +608,48 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       return { success: true, scope: payload.scope, key: payload.key, value: await store.get(path) };
     },
 
+    async getDeskSubscriptionSyncCapabilities() {
+      return { success: true, providers: subscriptionBilling.capabilities() };
+    },
+
+    async saveDeskSubscriptionSync(payload = {}, identity = {}) {
+      const serviceId = String(payload.serviceId || '').trim();
+      const month = String(payload.month || '').trim();
+      if (!/^[A-Za-z0-9_-]{1,100}$/.test(serviceId)) return failure('구독 ID가 올바르지 않습니다.');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return failure('조회 월이 올바르지 않습니다.');
+      if (serviceId === 'baemin' || serviceId.startsWith('custom-')) return failure('이 구독은 수동 입력만 지원합니다.');
+      const path = `${PATHS.dailyConfig}/subscriptions/${serviceId}`;
+      const current = await store.get(path);
+      if (!current) return failure('먼저 구독 설정을 저장해 주세요.');
+      if (!Object.hasOwn(payload, 'expectedValue') || canonicalJson(current) !== canonicalJson(payload.expectedValue)) {
+        throw portalConfigConflict('다른 사용자가 구독 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');
+      }
+      try {
+        const result = await subscriptionBilling.sync({ serviceId, month });
+        let conflict = false;
+        const value = await store.transaction(path, latest => {
+          if (canonicalJson(latest) !== canonicalJson(current)) { conflict = true; return latest; }
+          const next = structuredClone(latest);
+          next.linkedPayments = { ...(next.linkedPayments || {}), [month]: result.payment };
+          next.sync = { ...(next.sync || {}), status: 'success', source: result.source, sourceUrl: result.sourceUrl || '', billingPeriod: month, quality: result.payment.quality || 'estimate', lastAttemptAt: now(), lastSuccessAt: now(), error: '' };
+          return next;
+        });
+        if (conflict) throw portalConfigConflict('동기화 중 다른 사용자가 구독 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');
+        return { success: true, value };
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        let conflict = false;
+        const value = await store.transaction(path, latest => {
+          if (canonicalJson(latest) !== canonicalJson(current)) { conflict = true; return latest; }
+          const next = structuredClone(latest);
+          next.sync = { ...(next.sync || {}), status: 'error', billingPeriod: month, lastAttemptAt: now(), error: String(error.message || error).slice(0, 300) };
+          return next;
+        });
+        if (conflict) throw portalConfigConflict('동기화 중 다른 사용자가 구독 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');
+        return { success: false, message: String(error.message || error), value };
+      }
+    },
+
     async saveDeskPortalConfig(payload = {}, identity = {}) {
       const path = portalConfigPath(payload.scope, payload.key);
       if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
@@ -1017,6 +1060,9 @@ function validateSubscription(value) {
   if (value.plan != null && (typeof value.plan !== 'string' || value.plan.length > 100)) return '요금제는 100자 이내로 입력해 주세요.';
   if (value.logo && (typeof value.logo !== 'string' || value.logo.length > 90000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value.logo))) return '로고 이미지 형식이 올바르지 않습니다.';
   if (!value.payments || typeof value.payments !== 'object' || Array.isArray(value.payments)) return '월별 결제 기록이 올바르지 않습니다.';
+  if (value.integrationMode != null && !['manual','google-cloud-billing-export'].includes(value.integrationMode)) return '구독 연동 방식이 올바르지 않습니다.';
+  if (value.integrationMode === 'google-cloud-billing-export' && value.id && value.id !== 'firebase') return '이 구독은 Google Cloud 결제 내보내기를 사용할 수 없습니다.';
+  if (value.linkedPayments != null && (typeof value.linkedPayments !== 'object' || Array.isArray(value.linkedPayments))) return '연동 결제 기록이 올바르지 않습니다.';
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > 110000) return '구독 기록 용량이 너무 큽니다.';
   for (const [month, payment] of Object.entries(value.payments)) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '결제 월이 올바르지 않습니다.';
@@ -1025,5 +1071,13 @@ function validateSubscription(value) {
     if (typeof payment.note !== 'string' || payment.note.length > 500) return '비고는 500자 이내로 입력해 주세요.';
     if (payment.date && (!/^\d{4}-\d{2}-\d{2}$/.test(payment.date) || payment.date.slice(0,7) !== month || !Number.isFinite(Date.parse(payment.date)) || new Date(payment.date).toISOString().slice(0,10) !== payment.date)) return '결제일은 선택한 월의 유효한 날짜여야 합니다.';
   }
+  for (const [month, payment] of Object.entries(value.linkedPayments || {})) {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '연동 결제 월이 올바르지 않습니다.';
+    if (!['KRW','USD'].includes(payment.currency) || payment.status !== 'unknown' || payment.source !== 'google-cloud-billing-export' || payment.quality !== 'estimate') return '연동 결제 출처가 올바르지 않습니다.';
+    if (typeof payment.amount !== 'number' || !Number.isFinite(payment.amount) || payment.amount < 0 || payment.amount > 999999999 || (payment.currency === 'KRW' && !Number.isInteger(payment.amount)) || Math.abs(payment.amount * 100 - Math.round(payment.amount * 100)) > 0.0001) return '연동 금액이 올바르지 않습니다.';
+    if (typeof payment.note !== 'string' || payment.note.length > 500 || typeof payment.syncedAt !== 'string' || payment.syncedAt.length > 40 || typeof payment.latestExportAt !== 'string' || payment.latestExportAt.length > 80) return '연동 결제 메타데이터가 올바르지 않습니다.';
+    if (payment.billingPeriod !== month) return '연동 결제 기간이 올바르지 않습니다.';
+  }
+  if (value.sync != null && (typeof value.sync !== 'object' || Array.isArray(value.sync) || !['success','error'].includes(value.sync.status) || String(value.sync.error || '').length > 300 || String(value.sync.source || '').length > 80 || String(value.sync.sourceUrl || '').length > 500 || String(value.sync.billingPeriod || '').length > 7 || String(value.sync.lastAttemptAt || '').length > 40 || String(value.sync.lastSuccessAt || '').length > 40)) return '구독 동기화 상태가 올바르지 않습니다.';
   return '';
 }

@@ -24,6 +24,8 @@ export function loadConfig(env = process.env) {
     payrollUnlockTtlSeconds: Number(env.PAYROLL_UNLOCK_TTL_SECONDS) || 1800,
     deskCalendarId: String(env.DESK_CALENDAR_ID || DEFAULT_DESK_CALENDAR_ID).trim(),
     workspaceServiceAccountEmail: String(env.GOOGLE_WORKSPACE_SERVICE_ACCOUNT || '').trim(),
+    subscriptionBillingTable: String(env.SUBSCRIPTIONS_GCP_BILLING_TABLE || '').trim(),
+    subscriptionFirebaseProjectIds: splitCsv(env.SUBSCRIPTIONS_FIREBASE_PROJECT_IDS),
     allowedOrigins: configuredOrigins.length
       ? configuredOrigins
       : production

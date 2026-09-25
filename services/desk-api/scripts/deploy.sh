@@ -11,6 +11,8 @@ RUNTIME_SERVICE_ACCOUNT_NAME="${RUNTIME_SERVICE_ACCOUNT_NAME:-desk-portal-api-ru
 BUILD_SERVICE_ACCOUNT_NAME="${BUILD_SERVICE_ACCOUNT_NAME:-desk-portal-api-build}"
 LEGACY_RTDB_PROJECT_ID="${LEGACY_RTDB_PROJECT_ID:-sedu-portal}"
 LEGACY_RTDB_URL="${LEGACY_RTDB_URL:-https://sedu-portal-default-rtdb.firebaseio.com}"
+SUBSCRIPTIONS_GCP_BILLING_TABLE="${SUBSCRIPTIONS_GCP_BILLING_TABLE:-}"
+SUBSCRIPTIONS_FIREBASE_PROJECT_IDS="${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS:-}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "GOOGLE_CLOUD_PROJECT 또는 첫 번째 인자로 프로젝트 ID를 지정하세요." >&2
@@ -29,6 +31,7 @@ gcloud services enable \
   secretmanager.googleapis.com \
   sheets.googleapis.com \
   calendar-json.googleapis.com \
+  bigquery.googleapis.com \
   --project "${PROJECT_ID}" \
   --quiet
 
@@ -155,6 +158,11 @@ for attempt in {1..6}; do
   sleep 5
 done
 
+DEPLOY_ENV_VARS="NODE_ENV=production|FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}|LEGACY_RTDB_URL=${LEGACY_RTDB_URL}|ALLOWED_ORIGINS=${ALLOWED_ORIGINS}|CHECK_REVOKED_TOKENS=true|PAYROLL_SPREADSHEET_ID=1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E|DESK_CALENDAR_ID=1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com|GOOGLE_WORKSPACE_SERVICE_ACCOUNT=${RUNTIME_SERVICE_ACCOUNT}"
+if [[ -n "${SUBSCRIPTIONS_GCP_BILLING_TABLE}" && -n "${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS}" ]]; then
+  DEPLOY_ENV_VARS="${DEPLOY_ENV_VARS}|SUBSCRIPTIONS_GCP_BILLING_TABLE=${SUBSCRIPTIONS_GCP_BILLING_TABLE}|SUBSCRIPTIONS_FIREBASE_PROJECT_IDS=${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS}"
+fi
+
 gcloud run deploy "${SERVICE}" \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
@@ -170,7 +178,7 @@ gcloud run deploy "${SERVICE}" \
   --min-instances 0 \
   --max-instances 10 \
   --timeout 30s \
-  --set-env-vars "^|^NODE_ENV=production|FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}|LEGACY_RTDB_URL=${LEGACY_RTDB_URL}|ALLOWED_ORIGINS=${ALLOWED_ORIGINS}|CHECK_REVOKED_TOKENS=true|PAYROLL_SPREADSHEET_ID=1RelndJgXn0yMNSg41Pyy1yDV6zjehG2ljMuue5pod1E|DESK_CALENDAR_ID=1c960de1d4c701250e80f19416579958fc3e58d3b04effe3678a6b8643b0acbd@group.calendar.google.com|GOOGLE_WORKSPACE_SERVICE_ACCOUNT=${RUNTIME_SERVICE_ACCOUNT}" \
+  --update-env-vars "^|^${DEPLOY_ENV_VARS}" \
   --set-secrets "PAYROLL_ACCESS_PIN=desk-payroll-access-pin:latest,PAYROLL_UNLOCK_SECRET=desk-payroll-unlock-secret:latest" \
   --quiet
 

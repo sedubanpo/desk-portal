@@ -11,7 +11,7 @@
   ];
   const el = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let records = {}, loaded = false, loading = false, busy = false, editing = '', draftLogo = '', owner = '', logoRequest = 0, logoLoading = false;
+  let records = {}, providers = {}, loaded = false, loading = false, busy = false, editing = '', draftLogo = '', owner = '', logoRequest = 0, logoLoading = false;
   let month = new Intl.DateTimeFormat('sv-SE', {timeZone:'Asia/Seoul',year:'numeric',month:'2-digit'}).format(new Date());
   function services() {
     const base = presets.map(([id,name,description,asset]) => ({id,name,description,asset,active:true,payments:{},...(records[id] || {})}));
@@ -19,31 +19,35 @@
   }
   function logo(s) { return /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s.logo || '') ? s.logo : (s.asset && presets.some(p => p[3] === s.asset) ? './assets/subscriptions/' + s.asset : ''); }
   function logoHTML(s) { const src = logo(s); return src ? '<img class="'+(s.asset==='baemin.png'?'sub-wide-logo':'')+'" src="'+esc(src)+'" alt="" width="40" height="40">' : '<span class="sub-initial" aria-hidden="true">'+esc(s.name.slice(0,1))+'</span>'; }
-  function entry(s) { return s.payments && s.payments[month] || {}; }
-  function included() { return services().filter(s => s.active !== false || s.payments && s.payments[month]); }
+  function manualEntry(s) { return s.payments && s.payments[month] || {}; }
+  function entry(s) { const manual=manualEntry(s),linked=s.linkedPayments && s.linkedPayments[month] || {}; return manual.amount != null ? {...manual,_source:'manual'} : linked.amount != null ? {...linked,note:manual.note || linked.note || '',_source:'linked'} : {...manual,_source:'empty'}; }
+  function included() { return services().filter(s => s.active !== false || s.payments && s.payments[month] || s.linkedPayments && s.linkedPayments[month]); }
   function money(n,c) { return n == null || n === '' ? '미입력' : new Intl.NumberFormat('ko-KR',{style:'currency',currency:c || 'KRW',maximumFractionDigits:c === 'USD' ? 2 : 0}).format(Number(n)); }
   function totals(list) { const result = {}; list.forEach(s => {const p=entry(s); if(p.amount != null && p.amount !== '') result[p.currency || 'KRW']=(result[p.currency || 'KRW'] || 0)+Number(p.amount);}); return result; }
   function status(text,error) { el('subStatus').textContent=text; el('subStatus').classList.toggle('sub-error',!!error); }
+  function sourceHTML(s,p) { if(p._source==='manual') return '<span class="sub-source sub-manual">수동 입력</span>'; if(p._source==='linked') return '<span class="sub-source sub-linked">연동 · 예상</span><small class="sub-source-detail">Google Cloud 결제 내보내기</small>'; const sync=s.sync || {}; return sync.status==='error'?'<span class="sub-source sub-error-source">연동 오류</span>':'<span class="sub-source">미입력</span>'; }
+  function provider(s) { return providers[s.id] || {mode:'manual',label:'수동 입력',reason:s.id && s.id.startsWith('custom-')?'직접 추가한 구독은 수동 입력만 지원합니다.':'공식 청구 연동을 지원하지 않습니다.',officialUrl:'',configured:false}; }
   function render() {
     const list=included(), sum=totals(list), known=list.filter(s => entry(s).amount != null).length;
     el('subMonth').value=month;
     el('subTotal').textContent=Object.keys(sum).length ? Object.keys(sum).map(c=>money(sum[c],c)).join(' / ') : '결제 금액을 입력해 주세요';
     el('subSummary').textContent=month.replace('-','년 ')+'월 · 금액 입력 '+known+'/'+list.length+'개 · 통화별 합계';
-    el('subList').innerHTML=list.map(s=>{const p=entry(s);return '<tr><th scope="row"><div class="sub-brand">'+logoHTML(s)+'<div><strong>'+esc(s.name)+'</strong><small>'+esc(s.plan || s.description || '직접 등록한 구독')+(s.active === false ? ' · 사용 중지' : '')+'</small></div></div></th><td>'+esc(p.date || '미입력')+'</td><td class="sub-amount">'+esc(money(p.amount,p.currency))+'</td><td><span class="sub-state '+(p.status === 'paid'?'sub-paid':'')+'">'+(p.status === 'paid'?'결제 완료':p.status === 'scheduled'?'결제 예정':'미확인')+'</span></td><td class="sub-note">'+esc(p.note || '—')+'</td><td><button type="button" data-sub-edit="'+esc(s.id)+'" aria-label="'+esc(s.name)+' 결제 기록 입력">기록 입력</button></td></tr>';}).join('') || '<tr><td colspan="6">표시할 구독이 없습니다. 구독 설정에서 추가해 주세요.</td></tr>';
+    el('subList').innerHTML=list.map(s=>{const p=entry(s),cap=provider(s),canSync=s.integrationMode==='google-cloud-billing-export'&&cap.configured;return '<tr><th scope="row"><div class="sub-brand">'+logoHTML(s)+'<div><strong>'+esc(s.name)+'</strong><small>'+esc(s.plan || s.description || '직접 등록한 구독')+(s.active === false ? ' · 사용 중지' : '')+'</small></div></div></th><td>'+esc(p.date || '미입력')+'</td><td class="sub-amount">'+esc(money(p.amount,p.currency))+'</td><td><span class="sub-state '+(p.status === 'paid'?'sub-paid':'')+'">'+(p.status === 'paid'?'결제 완료':p.status === 'scheduled'?'결제 예정':'미확인')+'</span></td><td>'+sourceHTML(s,p)+'</td><td class="sub-note">'+esc(p.note || '—')+'</td><td><div class="sub-row-actions"><button type="button" data-sub-edit="'+esc(s.id)+'" aria-label="'+esc(s.name)+' 결제 기록 입력">기록 입력</button>'+(s.integrationMode==='google-cloud-billing-export'?'<button type="button" data-sub-sync="'+esc(s.id)+'" '+(canSync?'':'disabled')+' aria-label="'+esc(s.name)+' 공식 비용 동기화">'+(canSync?'비용 동기화':'연동 설정 필요')+'</button>':'')+'</div></td></tr>';}).join('') || '<tr><td colspan="7">표시할 구독이 없습니다. 구독 설정에서 추가해 주세요.</td></tr>';
     el('subList').querySelectorAll('[data-sub-edit]').forEach(b=>b.onclick=()=>openEditor(b.dataset.subEdit));
+    el('subList').querySelectorAll('[data-sub-sync]').forEach(b=>b.onclick=()=>syncRecord(b.dataset.subSync));
   }
   async function load() {
     if (loading || busy) return;
     loading=true; status('구독 기록을 불러오는 중입니다.');
     el('subReload').disabled=true;
-    try { records=await loadDeskPortalConfig_('daily','subscriptions') || {}; loaded=true; render(); status('월별 기록은 저장한 금액 기준입니다. 실시간 요금 연동 전입니다.'); }
+    try { const result=await Promise.all([loadDeskPortalConfig_('daily','subscriptions'),runServer('getDeskSubscriptionSyncCapabilities',{}).catch(()=>({providers:{}}))]); records=result[0] || {}; providers=result[1] && result[1].providers || {}; loaded=true; render(); status('수동 입력이 우선이며, Firebase 연동 값은 결제 확정액이 아닌 Cloud Billing 예상 비용입니다.'); }
     catch(e) { loaded=false; status('불러오기 실패: '+e.message+' · 새로고침으로 다시 시도하세요.',true); }
     finally { loading=false; el('subReload').disabled=false; }
   }
   function dialog(id) { const d=el(id); if(!d.open) d.showModal(); }
   function openEditor(id) {
     if(!loaded || busy) return;
-    editing=id; const s=services().find(s=>s.id===id),p=entry(s);
+    editing=id; const s=services().find(s=>s.id===id),p=manualEntry(s);
     el('subEditTitle').textContent=s.name+' · '+month+' 결제 기록';
     el('subDate').value=p.date || ''; el('subDate').min=month+'-01';
     el('subDate').max=month+'-'+new Date(Number(month.slice(0,4)),Number(month.slice(5)),0).getDate();
@@ -58,11 +62,17 @@
     try { const saved=await saveDeskPortalConfig_('daily','subscriptions/'+id,value); records[id]=saved; render(); return true; }
     finally { busy=false; document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=false); }
   }
+  async function syncRecord(id) {
+    if(!loaded || busy)return; const s=services().find(x=>x.id===id); busy=true; render(); status(s.name+'의 '+month+' 공식 비용을 확인하는 중입니다.');
+    try{const res=await runServer('saveDeskSubscriptionSync',{serviceId:id,month,expectedValue:records[id] || null});if(res && res.value)records[id]=res.value;render();if(!res || res.success===false)throw new Error(res && res.message || '동기화하지 못했습니다.');status(s.name+'의 '+month+' 예상 비용을 동기화했습니다. 수동 입력 금액이 있으면 그 금액을 우선 표시합니다.');}
+    catch(err){render();status('동기화 실패: '+err.message+' · 기존 금액은 변경하지 않았습니다.',true);}finally{busy=false;render();}
+  }
+  function renderIntegrationInfo(s) { const cap=provider(s),mode=el('subIntegrationMode').value,linked=mode==='google-cloud-billing-export',option=el('subIntegrationMode').querySelector('option[value="google-cloud-billing-export"]'); option.disabled=s.id!=='firebase'; el('subIntegrationInfo').innerHTML='<strong>'+esc(cap.label || '수동 입력')+'</strong><span>'+esc(cap.reason || '')+'</span>'+(cap.officialUrl?'<a href="'+esc(cap.officialUrl)+'" target="_blank" rel="noopener noreferrer">공식 문서</a>':'')+(linked?'<em class="'+(cap.configured?'sub-ready':'sub-not-ready')+'">'+(cap.configured?'서버 연동 설정 완료':'서버 환경 설정 필요')+'</em>':''); }
   function openSettings(id) {
     if(!loaded || busy) return;
     logoRequest++; logoLoading=false; document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=false);
     editing=id || ''; const s=services().find(s=>s.id===id) || {name:'',plan:'',active:true}; draftLogo=s.logo || '';
-    el('subName').value=s.name; el('subPlan').value=s.plan || ''; el('subActive').checked=s.active!==false; el('subLogo').value='';
+    el('subName').value=s.name; el('subPlan').value=s.plan || ''; el('subActive').checked=s.active!==false; el('subLogo').value=''; el('subIntegrationMode').value=s.integrationMode || 'manual'; if(s.id!=='firebase')el('subIntegrationMode').value='manual'; renderIntegrationInfo({...s,id:id || ''});
     el('subLogoPreview').innerHTML=logoHTML(s); el('subSettingsStatus').textContent='PNG, JPG, WebP · 최대 2MB. 보고서에도 함께 표시됩니다.';
     el('subServiceSelect').innerHTML='<option value="">새 구독 추가</option>'+services().map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name)+(x.active===false?' (사용 중지)':'')+'</option>').join('');
     el('subServiceSelect').value=id || ''; dialog('subSettingsDialog');
@@ -112,11 +122,11 @@
       if(el('subCurrency').value==='KRW' && amount!=='' && Number(amount)%1){el('subEditStatus').textContent='원화는 정수로 입력해 주세요.';return;}
       const p={date:el('subDate').value,amount:amount===''?null:Number(amount),currency:el('subCurrency').value,status:el('subPaymentStatus').value,note:el('subNote').value.trim(),updatedAt:new Date().toISOString(),updatedBy:String(state.cloudIdentity && state.cloudIdentity.name || '')};
       try {await saveRecord(editing,{...s,payments:{...(s.payments || {}),[month]:p}});el('subEditDialog').close();status(s.name+'의 '+month+' 결제 기록을 저장했습니다.');}catch(err){el('subEditStatus').textContent=err.message+' · 창을 닫고 새로고침 후 다시 입력해 주세요.';}};
-    el('subServiceSelect').onchange=e=>{if(busy){e.target.value=editing;return;}openSettings(e.target.value);};
+    el('subServiceSelect').onchange=e=>{if(busy){e.target.value=editing;return;}openSettings(e.target.value);}; el('subIntegrationMode').onchange=()=>renderIntegrationInfo(services().find(s=>s.id===editing) || {id:''});
     el('subLogoReset').onclick=()=>{logoRequest++;logoLoading=false;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=false);draftLogo='';el('subLogo').value='';el('subLogoPreview').innerHTML=logoHTML({...services().find(s=>s.id===editing),name:el('subName').value,logo:''});};
     el('subLogo').onchange=async e=>{const f=e.target.files[0];if(!f)return;const request=++logoRequest;logoLoading=true;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=true);try{if(!['image/png','image/jpeg','image/webp'].includes(f.type)||f.size>2*1024*1024)throw new Error('2MB 이하 PNG, JPG, WebP 파일을 선택해 주세요.');const img=await createImageBitmap(f);if(request!==logoRequest){img.close();return;}const c=document.createElement('canvas');const scale=Math.min(1,128/img.width,128/img.height);c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);img.close();draftLogo=c.toDataURL('image/png');el('subLogoPreview').innerHTML=logoHTML({name:el('subName').value,logo:draftLogo});el('subSettingsStatus').textContent='로고가 준비되었습니다. 저장하면 반영됩니다.';}catch(err){if(request===logoRequest)el('subSettingsStatus').textContent=err.message;}finally{if(request===logoRequest){logoLoading=false;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=busy);}}};
     el('subSettingsForm').onsubmit=async e=>{e.preventDefault();if(busy || logoLoading)return;const name=el('subName').value.trim();if(!name)return;const id=editing || 'custom-'+crypto.randomUUID(),s=services().find(s=>s.id===editing) || {id,payments:{}};
-      try{await saveRecord(id,{...s,name,plan:el('subPlan').value.trim(),logo:draftLogo,active:el('subActive').checked});el('subSettingsDialog').close();status('구독 설정을 저장했습니다.');}catch(err){el('subSettingsStatus').textContent=err.message+' · 창을 닫고 새로고침 후 다시 시도하세요.';}};
+      try{await saveRecord(id,{...s,id,name,plan:el('subPlan').value.trim(),logo:draftLogo,active:el('subActive').checked,integrationMode:id==='firebase'?el('subIntegrationMode').value:'manual'});el('subSettingsDialog').close();status('구독 설정을 저장했습니다.');}catch(err){el('subSettingsStatus').textContent=err.message+' · 창을 닫고 새로고침 후 다시 시도하세요.';}};
   }
   init();
 })();

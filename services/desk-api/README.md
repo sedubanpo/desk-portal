@@ -34,6 +34,15 @@ GOOGLE_CLOUD_PROJECT=fir-lms-prod bash scripts/deploy.sh
 
 쓰기 요청은 반드시 `x-idempotency-key`를 포함해야 하며, 동일 사용자·메서드·키의 완료 응답은 Firestore 영수증에서 재사용됩니다. 수강료 입력은 `clientRequestId`도 함께 저장해 브라우저 재시도와 서버 재시작 뒤에도 중복 입력을 막습니다. 결제 원장, 월·일·최근 인덱스, 월별 스냅샷, 삭제 감사기록은 Firestore 트랜잭션으로 함께 변경됩니다. 비품 수량 변경은 Realtime Database 트랜잭션으로 처리합니다.
 
+## Firebase 구독 비용 연동
+
+유료 구독 현황의 Firebase 항목은 Cloud Billing BigQuery 내보내기가 준비된 경우에만 프로젝트별 예상 비용을 조회합니다.
+
+- `SUBSCRIPTIONS_GCP_BILLING_TABLE`: 표준 또는 상세 결제 내보내기 테이블의 전체 이름(`project.dataset.table`)
+- `SUBSCRIPTIONS_FIREBASE_PROJECT_IDS`: Firebase로 집계할 Google Cloud 프로젝트 ID(쉼표 구분)
+
+런타임 서비스 계정에는 쿼리 실행 프로젝트의 BigQuery Job User와 내보내기 데이터 세트의 BigQuery Data Viewer 권한이 필요합니다. 연동 결과는 확정 결제액이 아니라 예상 비용으로 별도 저장되며, 사람이 입력한 결제액을 덮어쓰지 않습니다. 다른 서비스의 공개 가격표나 OpenAI API 비용은 구독 결제액으로 가져오지 않습니다.
+
 ## 구형 인증 경로 폐기
 
 기존 Apps Script 고정 비밀번호와 RTDB 비밀값을 사용하는 이관·비교 스크립트는 실행을 차단했습니다. 현재 운영 API는 이 값들을 사용하지 않습니다. 추가 유지보수는 ADC와 현행 권한 검증을 사용해 별도로 구현해야 합니다.

@@ -17687,7 +17687,7 @@
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
-<link rel="stylesheet" href="./subscriptions.css?v=20260924-tabs">
+<link rel="stylesheet" href="./subscriptions.css?v=20260924-billing">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -18811,11 +18811,11 @@
 <article id="deskSubscriptions" class="sub-ledger" aria-labelledby="subHeading">
   <div class="sub-head"><div><h3 id="subHeading">유료 구독 현황</h3><p>업무에 쓰는 구독, 매월 결제 기록부터 대표님 보고까지.</p></div><button type="button" id="subSettings">구독 설정 · 추가</button></div>
   <div class="sub-toolbar"><label>보고 월 <input id="subMonth" type="month" aria-label="구독 보고 월"></label><div class="sub-total"><strong id="subTotal">결제 기록을 불러오는 중입니다</strong><small id="subSummary">금액 미입력은 0원과 구분합니다.</small></div><div class="sub-actions"><button type="button" id="subReload">새로고침</button><button type="button" id="subDownload">PNG 저장</button><button type="button" id="subCopy" class="sub-primary">보고 이미지 복사</button></div></div>
-  <div class="sub-table-wrap" tabindex="0" aria-label="월별 구독 결제 내역"><table><thead><tr><th>구독 서비스</th><th>결제일</th><th>금액</th><th>결제 상태</th><th>비고 / 설명</th><th>관리</th></tr></thead><tbody id="subList"><tr><td colspan="6">구독 기록을 불러오는 중입니다.</td></tr></tbody></table></div>
+  <div class="sub-table-wrap" tabindex="0" aria-label="월별 구독 결제 내역"><table><thead><tr><th>구독 서비스</th><th>결제일</th><th>금액</th><th>결제 상태</th><th>자료 출처</th><th>비고 / 설명</th><th>관리</th></tr></thead><tbody id="subList"><tr><td colspan="7">구독 기록을 불러오는 중입니다.</td></tr></tbody></table></div>
   <p id="subStatus" class="sub-status" role="status">구독 금액은 직접 입력한 기록으로 집계됩니다.</p>
 </article>
 <dialog id="subEditDialog" class="sub-dialog" aria-labelledby="subEditTitle"><form id="subEditForm"><div class="sub-head"><h3 id="subEditTitle">월별 결제 기록</h3><button type="button" data-sub-close="subEditDialog">닫기</button></div><p>선택한 월의 결제일과 금액을 기록하세요. 다음 달 기록은 별도로 보관됩니다.</p><div class="sub-form-grid"><label>결제일<input type="date" id="subDate"></label><label>결제 상태<select id="subPaymentStatus"><option value="unknown">미확인</option><option value="scheduled">결제 예정</option><option value="paid">결제 완료</option></select></label><label>금액<input type="number" id="subAmount" min="0" max="999999999" step="0.01" placeholder="미입력"></label><label>통화<select id="subCurrency"><option value="KRW">KRW · 원화</option><option value="USD">USD · 미국 달러</option></select></label></div><label>비고 / 설명<textarea id="subNote" rows="4" maxlength="500" placeholder="예: 사용 계정 수, 요금제, 결제 관련 메모"></textarea></label><p class="sub-status" id="subEditStatus" role="status"></p><div class="sub-footer"><button type="submit" data-sub-save class="sub-primary">이번 달 기록 저장</button></div></form></dialog>
-<dialog id="subSettingsDialog" class="sub-dialog" aria-labelledby="subSettingsTitle"><form id="subSettingsForm"><div class="sub-head"><h3 id="subSettingsTitle">구독 설정</h3><button type="button" data-sub-close="subSettingsDialog">닫기</button></div><label>관리할 구독<select id="subServiceSelect"></select></label><div class="sub-form-grid"><label>구독명<input id="subName" maxlength="60" required placeholder="구독 서비스 이름"></label><label>요금제 / 용도<input id="subPlan" maxlength="100" placeholder="예: 팀 공용 계정"></label></div><div class="sub-logo-field"><div id="subLogoPreview"></div><label>서비스 로고<input type="file" id="subLogo" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="subLogoReset">기본 로고</button></div><label class="sub-checkbox"><input id="subActive" type="checkbox" checked> 사용 중인 구독</label><p>사용 중지를 해도 기존 월별 결제 기록은 남습니다.</p><p id="subSettingsStatus" class="sub-status" role="status"></p><div class="sub-footer"><button type="submit" data-sub-save class="sub-primary">구독 설정 저장</button></div></form></dialog>
+<dialog id="subSettingsDialog" class="sub-dialog" aria-labelledby="subSettingsTitle"><form id="subSettingsForm"><div class="sub-head"><h3 id="subSettingsTitle">구독 설정</h3><button type="button" data-sub-close="subSettingsDialog">닫기</button></div><label>관리할 구독<select id="subServiceSelect"></select></label><div class="sub-form-grid"><label>구독명<input id="subName" maxlength="60" required placeholder="구독 서비스 이름"></label><label>요금제 / 용도<input id="subPlan" maxlength="100" placeholder="예: 팀 공용 계정"></label><label>금액 확인 방식<select id="subIntegrationMode"><option value="manual">수동 입력</option><option value="google-cloud-billing-export">Google Cloud 결제 내보내기</option></select></label></div><div id="subIntegrationInfo" class="sub-integration-info" role="note"></div><div class="sub-logo-field"><div id="subLogoPreview"></div><label>서비스 로고<input type="file" id="subLogo" accept="image/png,image/jpeg,image/webp"></label><button type="button" id="subLogoReset">기본 로고</button></div><label class="sub-checkbox"><input id="subActive" type="checkbox" checked> 사용 중인 구독</label><p>사용 중지를 해도 기존 월별 결제 기록은 남습니다. 연동 값은 수동 입력 금액을 덮어쓰지 않습니다.</p><p id="subSettingsStatus" class="sub-status" role="status"></p><div class="sub-footer"><button type="submit" data-sub-save class="sub-primary">구독 설정 저장</button></div></form></dialog>
 
               </section>
 
@@ -20874,7 +20874,7 @@
       getDeskAttendanceMonthData: true, saveDeskAttendancePunch: true, saveDeskAttendanceCorrectionRequest: true, saveDeskAttendanceCorrectionDecision: true,
       getDeskCalendarEvents: true,
       getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, getDeskStaffDirectory: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
-      getDeskPortalConfig: true, saveDeskPortalConfig: true,
+      getDeskPortalConfig: true, saveDeskPortalConfig: true, getDeskSubscriptionSyncCapabilities: true, saveDeskSubscriptionSync: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
@@ -45543,7 +45543,7 @@ window.SeduHubAdapter={
 <script src="./payment-link-parser.js?v=20260915-payments"></script>
 <script src="./payment-link-upload.js?v=20260915-payments"></script>
 <script src="./tuition-redesign.js?v=20260916-metrics"></script>
-<script src="./subscriptions.js?v=20260924"></script>
+<script src="./subscriptions.js?v=20260924-billing"></script>
 <script type="module" src="hub-start.mjs"></script>
 </body>
 </html>

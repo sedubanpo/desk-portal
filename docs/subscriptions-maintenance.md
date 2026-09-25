@@ -20,7 +20,13 @@
 ```
 `updatedAt` / `updatedBy`는 변경된 월에 대해 서버 시각과 로그인 사용자로 기록한다. Firebase가 null/빈 객체를 제거할 수 있으므로 누락된 amount도 미입력이다. 0은 확정된 0원이다. 결제일은 선택한 월 안의 날짜다. 한 구독에 월 1개 합산 결제 기록을 관리하며 복수 청구건은 해당 월 합계와 비고에 기입한다.
 
-실시간 금액 조사/연동은 아직 구현하지 않았다. 후속 연동은 해당 서비스·월만 갱신하고 다른 월, 사용자 비고, 로고를 보존해야 한다. 새 필드를 추가하려면 서버 검증과 보고 집계 의미도 함께 검토한다. 환율 변환 없이 통화별 합계만 표시하며 결제 예정 금액도 입력 합계에 포함한다.
+공식 청구 연동 조사 결과(2026-09-24), Firebase만 Google Cloud Billing BigQuery 내보내기의 프로젝트별 비용을 연결할 수 있다. 이는 확정 결제액이 아닌 예상 비용이며 `SUBSCRIPTIONS_GCP_BILLING_TABLE`(project.dataset.table)과 `SUBSCRIPTIONS_FIREBASE_PROJECT_IDS`(쉼표 구분)를 Cloud Run 환경에 설정해야 활성화된다. 공개 가격표는 실제 결제액으로 사용하지 않는다.
+
+Google Workspace 일반 고객 청구서, ChatGPT 구독, Supabase 월 인보이스 합계, Notion 청구, 배민클럽은 공식 조회 API가 없어 수동 입력을 유지한다. Google Workspace Reseller API는 리셀러의 구독 관리용이며 실제 청구 합계 API가 아니다. OpenAI Usage/Costs API는 OpenAI API 조직 비용이며 ChatGPT 구독료와 섞지 않는다.
+
+연동 결과는 `linkedPayments`에 분리 저장하고 기존 `payments`(수동 입력)가 항상 우선한다. 동기화 실패·권한 없음·데이터 없음은 0원으로 쓰지 않으며 기존 성공 값과 사용자 비고를 보존한다. `sync`에는 출처, 대상 월, 예상/확정 구분, 마지막 시도/성공, 오류를 별도로 기록한다. 환율 변환 없이 통화별 합계만 표시한다.
+
+Firebase가 아닌 Google Cloud 서비스가 추가될 경우 동일 결제 내보내기 행을 중복 합산하지 않도록 프로젝트 범위를 분리해야 한다. 현재 `google` 항목은 Google Workspace 전용이므로 Firebase와 중복되지 않는다.
 
 ## 로고와 보고
 

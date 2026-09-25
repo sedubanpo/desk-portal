@@ -664,3 +664,42 @@ test('subscriptions reject invalid amounts, dates, logos and root overwrites', a
   assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions',expectedValue:null,value:{}})).success,false);
   assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value})).success,true);
 });
+
+test('subscription sync stores estimates separately and preserves manual precedence data', async () => {
+  const store=memoryStore();
+  const calls=[];
+  const subscriptionBilling={
+    capabilities:()=>({firebase:{mode:'google-cloud-billing-export',configured:true}}),
+    sync:async input=>{calls.push(input);return {source:'google-cloud-billing-export',sourceUrl:'https://cloud.google.com/billing/docs/how-to/export-data-bigquery',payment:{date:'',amount:12000,currency:'KRW',status:'unknown',note:'',source:'google-cloud-billing-export',quality:'estimate',billingPeriod:input.month,syncedAt:'2026-09-24T10:00:00.000Z',latestExportAt:''}};}
+  };
+  const handlers=createDeskHandlers({store,subscriptionBilling,now:()=> '2026-09-24T10:00:00.000Z'});
+  const manual={name:'Firebase',id:'firebase',active:true,integrationMode:'google-cloud-billing-export',payments:{'2026-09':{date:'2026-09-20',amount:15000,currency:'KRW',status:'paid',note:'확정 카드 결제'}}};
+  const saved=await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/firebase',expectedValue:null,value:manual},{name:'담당자'});
+  const synced=await handlers.saveDeskSubscriptionSync({serviceId:'firebase',month:'2026-09',expectedValue:saved.value},{name:'담당자'});
+  assert.equal(synced.success,true);
+  assert.equal(synced.value.payments['2026-09'].amount,15000);
+  assert.equal(synced.value.payments['2026-09'].note,'확정 카드 결제');
+  assert.equal(synced.value.linkedPayments['2026-09'].amount,12000);
+  assert.equal(synced.value.sync.quality,'estimate');
+  assert.deepEqual(calls,[{serviceId:'firebase',month:'2026-09'}]);
+});
+
+test('subscription sync excludes manual-only services, detects conflicts, and preserves last success on failure', async () => {
+  const store=memoryStore();
+  let fail=false;
+  let calls=0;
+  const subscriptionBilling={capabilities:()=>({}),sync:async input=>{calls++;if(fail)throw new Error('temporary outage');return {source:'google-cloud-billing-export',payment:{date:'',amount:20,currency:'USD',status:'unknown',note:'',source:'google-cloud-billing-export',quality:'estimate',billingPeriod:input.month,syncedAt:'2026-09-24T10:00:00.000Z',latestExportAt:''}};}};
+  const handlers=createDeskHandlers({store,subscriptionBilling,now:()=> '2026-09-24T10:00:00.000Z'});
+  const firebase=(await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/firebase',expectedValue:null,value:{id:'firebase',name:'Firebase',active:true,integrationMode:'google-cloud-billing-export',payments:{}}})).value;
+  await assert.rejects(handlers.saveDeskSubscriptionSync({serviceId:'firebase',month:'2026-09',expectedValue:{...firebase,name:'stale'}}),/다른 사용자/);
+  const first=await handlers.saveDeskSubscriptionSync({serviceId:'firebase',month:'2026-09',expectedValue:firebase});
+  fail=true;
+  const second=await handlers.saveDeskSubscriptionSync({serviceId:'firebase',month:'2026-10',expectedValue:first.value});
+  assert.equal(second.success,false);
+  assert.equal(second.value.linkedPayments['2026-09'].amount,20);
+  assert.equal(second.value.sync.lastSuccessAt,'2026-09-24T10:00:00.000Z');
+  assert.match(second.value.sync.error,/temporary outage/);
+  const baemin=(await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/baemin',expectedValue:null,value:{id:'baemin',name:'배민클럽',active:true,integrationMode:'manual',payments:{}}})).value;
+  assert.equal((await handlers.saveDeskSubscriptionSync({serviceId:'baemin',month:'2026-09',expectedValue:baemin})).success,false);
+  assert.equal(calls,2);
+});
