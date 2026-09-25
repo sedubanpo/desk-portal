@@ -1060,8 +1060,9 @@ function validateSubscription(value) {
   if (value.plan != null && (typeof value.plan !== 'string' || value.plan.length > 100)) return '요금제는 100자 이내로 입력해 주세요.';
   if (value.logo && (typeof value.logo !== 'string' || value.logo.length > 90000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value.logo))) return '로고 이미지 형식이 올바르지 않습니다.';
   if (!value.payments || typeof value.payments !== 'object' || Array.isArray(value.payments)) return '월별 결제 기록이 올바르지 않습니다.';
-  if (value.integrationMode != null && !['manual','google-cloud-billing-export'].includes(value.integrationMode)) return '구독 연동 방식이 올바르지 않습니다.';
+  if (value.integrationMode != null && !['manual','google-cloud-billing-export','supabase-management-estimate'].includes(value.integrationMode)) return '구독 연동 방식이 올바르지 않습니다.';
   if (value.integrationMode === 'google-cloud-billing-export' && value.id && value.id !== 'firebase') return '이 구독은 Google Cloud 결제 내보내기를 사용할 수 없습니다.';
+  if (value.integrationMode === 'supabase-management-estimate' && value.id && value.id !== 'supabase') return '이 구독은 Supabase 공식 예상 비용 연동을 사용할 수 없습니다.';
   if (value.linkedPayments != null && (typeof value.linkedPayments !== 'object' || Array.isArray(value.linkedPayments))) return '연동 결제 기록이 올바르지 않습니다.';
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > 110000) return '구독 기록 용량이 너무 큽니다.';
   for (const [month, payment] of Object.entries(value.payments)) {
@@ -1073,7 +1074,7 @@ function validateSubscription(value) {
   }
   for (const [month, payment] of Object.entries(value.linkedPayments || {})) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '연동 결제 월이 올바르지 않습니다.';
-    if (!['KRW','USD'].includes(payment.currency) || payment.status !== 'unknown' || payment.source !== 'google-cloud-billing-export' || payment.quality !== 'estimate') return '연동 결제 출처가 올바르지 않습니다.';
+    if (!['KRW','USD'].includes(payment.currency) || payment.status !== 'unknown' || !['google-cloud-billing-export','supabase-management-estimate'].includes(payment.source) || payment.quality !== 'estimate') return '연동 결제 출처가 올바르지 않습니다.';
     if (typeof payment.amount !== 'number' || !Number.isFinite(payment.amount) || payment.amount < 0 || payment.amount > 999999999 || (payment.currency === 'KRW' && !Number.isInteger(payment.amount)) || Math.abs(payment.amount * 100 - Math.round(payment.amount * 100)) > 0.0001) return '연동 금액이 올바르지 않습니다.';
     if (typeof payment.note !== 'string' || payment.note.length > 500 || typeof payment.syncedAt !== 'string' || payment.syncedAt.length > 40 || typeof payment.latestExportAt !== 'string' || payment.latestExportAt.length > 80) return '연동 결제 메타데이터가 올바르지 않습니다.';
     if (payment.billingPeriod !== month) return '연동 결제 기간이 올바르지 않습니다.';

@@ -18,7 +18,7 @@ function firebaseApp(projectId) {
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds, subscriptionSupabaseToken, subscriptionSupabaseOrgSlugs }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
@@ -47,7 +47,12 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       ...createDeskHandlers({
         store: createDeskStore(legacyDatabase),
         loadStaffDirectory: () => loadStaffDirectory(firestore),
-        subscriptionBilling: createSubscriptionBilling({ table: subscriptionBillingTable, firebaseProjectIds: subscriptionFirebaseProjectIds })
+        subscriptionBilling: createSubscriptionBilling({
+          table: subscriptionBillingTable,
+          firebaseProjectIds: subscriptionFirebaseProjectIds,
+          supabaseToken: subscriptionSupabaseToken,
+          supabaseOrgSlugs: subscriptionSupabaseOrgSlugs
+        })
       }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),

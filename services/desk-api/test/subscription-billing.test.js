@@ -29,10 +29,61 @@ test('billing export keeps currencies separate and never turns missing data into
   await assert.rejects(empty.sync({ serviceId: 'firebase', month: '2026-09' }), /0원으로 처리하지 않았습니다/);
 });
 
-test('only Firebase exposes a linked billing mode', async () => {
+test('Firebase and configured Supabase expose linked estimate modes', async () => {
+  const requests = [];
+  const responses = new Map([
+    ['/v1/organizations/example-org', { id: 'org', name: 'Example Org', plan: 'pro' }],
+    ['/v1/organizations/example-org/projects', { projects: [
+      { ref: 'one', name: 'One', status: 'ACTIVE_HEALTHY', databases: [{ infra_compute_size: 'nano' }] },
+      { ref: 'two', name: 'Two', status: 'ACTIVE_HEALTHY', databases: [{ infra_compute_size: 'micro' }] },
+      { ref: 'paused', name: 'Paused', status: 'INACTIVE', databases: [{ infra_compute_size: 'nano' }] }
+    ] }],
+    ['/v1/projects/one/billing/addons', { selected_addons: [] }],
+    ['/v1/projects/two/billing/addons', { selected_addons: [] }]
+  ]);
+  const fetchImpl = async (url, options) => {
+    const path = new URL(url).pathname;
+    requests.push({ path, options });
+    return { ok: responses.has(path), status: responses.has(path) ? 200 : 404, json: async () => responses.get(path) };
+  };
   const billing = createSubscriptionBilling({ table: 'billing-project.data.table', firebaseProjectIds: ['one'], auth: fakeAuth({}) });
   const capabilities = billing.capabilities();
   assert.equal(capabilities.firebase.configured, true);
-  for (const id of ['google', 'chatgpt', 'supabase', 'notion', 'baemin']) assert.equal(capabilities[id].mode, 'manual');
+  assert.equal(capabilities.supabase.configured, false);
+  for (const id of ['google', 'chatgpt', 'notion', 'baemin']) assert.equal(capabilities[id].mode, 'manual');
   await assert.rejects(billing.sync({ serviceId: 'baemin', month: '2026-09' }), /수동 입력/);
+
+  const supabase = createSubscriptionBilling({
+    supabaseToken: 'secret-token',
+    supabaseOrgSlugs: ['example-org'],
+    fetchImpl,
+    now: () => '2026-09-25T00:00:00.000Z'
+  });
+  assert.equal(supabase.capabilities().supabase.configured, true);
+  const result = await supabase.sync({ serviceId: 'supabase', month: '2026-09' });
+  assert.equal(result.payment.amount, 35);
+  assert.equal(result.payment.currency, 'USD');
+  assert.equal(result.payment.source, 'supabase-management-estimate');
+  assert.match(result.payment.note, /Pro \$25.*2개 \$20.*크레딧 \$10/);
+  assert.equal(requests.length, 4);
+  assert.equal(requests[0].options.headers.Authorization, 'Bearer secret-token');
+});
+
+test('Supabase estimate refuses unknown plans, compute sizes, and paid add-ons', async () => {
+  const factory = ({ plan = 'pro', size = 'nano', addons = [] } = {}) => createSubscriptionBilling({
+    supabaseToken: 'token',
+    supabaseOrgSlugs: ['org'],
+    fetchImpl: async url => {
+      const path = new URL(url).pathname;
+      const data = path === '/v1/organizations/org'
+        ? { name: 'Org', plan }
+        : path === '/v1/organizations/org/projects'
+          ? { projects: [{ ref: 'project', name: 'Project', status: 'ACTIVE_HEALTHY', databases: [{ infra_compute_size: size }] }] }
+          : { selected_addons: addons };
+      return { ok: true, status: 200, json: async () => data };
+    }
+  });
+  await assert.rejects(factory({ plan: 'team' }).sync({ serviceId: 'supabase', month: '2026-09' }), /지원하지 않는 Supabase 요금제/);
+  await assert.rejects(factory({ size: 'small' }).sync({ serviceId: 'supabase', month: '2026-09' }), /자동 계산할 수 없습니다/);
+  await assert.rejects(factory({ addons: [{ type: 'ipv4' }] }).sync({ serviceId: 'supabase', month: '2026-09' }), /유료 애드온/);
 });

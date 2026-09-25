@@ -13,6 +13,7 @@ LEGACY_RTDB_PROJECT_ID="${LEGACY_RTDB_PROJECT_ID:-sedu-portal}"
 LEGACY_RTDB_URL="${LEGACY_RTDB_URL:-https://sedu-portal-default-rtdb.firebaseio.com}"
 SUBSCRIPTIONS_GCP_BILLING_TABLE="${SUBSCRIPTIONS_GCP_BILLING_TABLE:-}"
 SUBSCRIPTIONS_FIREBASE_PROJECT_IDS="${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS:-}"
+SUBSCRIPTIONS_SUPABASE_ORG_SLUGS="${SUBSCRIPTIONS_SUPABASE_ORG_SLUGS:-}"
 
 if [[ -z "${PROJECT_ID}" ]]; then
   echo "GOOGLE_CLOUD_PROJECT 또는 첫 번째 인자로 프로젝트 ID를 지정하세요." >&2
@@ -69,7 +70,7 @@ for attempt in {1..12}; do
   sleep 5
 done
 
-for secret in desk-payroll-access-pin desk-payroll-unlock-secret; do
+for secret in desk-payroll-access-pin desk-payroll-unlock-secret desk-supabase-billing-token; do
   if ! gcloud secrets describe "${secret}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
     echo "Secret Manager에 ${secret} 비밀값을 먼저 등록하세요." >&2
     exit 2
@@ -162,6 +163,9 @@ DEPLOY_ENV_VARS="NODE_ENV=production|FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}|
 if [[ -n "${SUBSCRIPTIONS_GCP_BILLING_TABLE}" && -n "${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS}" ]]; then
   DEPLOY_ENV_VARS="${DEPLOY_ENV_VARS}|SUBSCRIPTIONS_GCP_BILLING_TABLE=${SUBSCRIPTIONS_GCP_BILLING_TABLE}|SUBSCRIPTIONS_FIREBASE_PROJECT_IDS=${SUBSCRIPTIONS_FIREBASE_PROJECT_IDS}"
 fi
+if [[ -n "${SUBSCRIPTIONS_SUPABASE_ORG_SLUGS}" ]]; then
+  DEPLOY_ENV_VARS="${DEPLOY_ENV_VARS}|SUBSCRIPTIONS_SUPABASE_ORG_SLUGS=${SUBSCRIPTIONS_SUPABASE_ORG_SLUGS}"
+fi
 
 gcloud run deploy "${SERVICE}" \
   --project "${PROJECT_ID}" \
@@ -179,7 +183,7 @@ gcloud run deploy "${SERVICE}" \
   --max-instances 10 \
   --timeout 30s \
   --update-env-vars "^|^${DEPLOY_ENV_VARS}" \
-  --set-secrets "PAYROLL_ACCESS_PIN=desk-payroll-access-pin:latest,PAYROLL_UNLOCK_SECRET=desk-payroll-unlock-secret:latest" \
+  --set-secrets "PAYROLL_ACCESS_PIN=desk-payroll-access-pin:latest,PAYROLL_UNLOCK_SECRET=desk-payroll-unlock-secret:latest,SUPABASE_MANAGEMENT_TOKEN=desk-supabase-billing-token:latest" \
   --quiet
 
 SERVICE_URL="$(gcloud run services describe "${SERVICE}" \

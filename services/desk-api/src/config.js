@@ -26,6 +26,8 @@ export function loadConfig(env = process.env) {
     workspaceServiceAccountEmail: String(env.GOOGLE_WORKSPACE_SERVICE_ACCOUNT || '').trim(),
     subscriptionBillingTable: String(env.SUBSCRIPTIONS_GCP_BILLING_TABLE || '').trim(),
     subscriptionFirebaseProjectIds: splitCsv(env.SUBSCRIPTIONS_FIREBASE_PROJECT_IDS),
+    subscriptionSupabaseToken: String(env.SUPABASE_MANAGEMENT_TOKEN || '').trim(),
+    subscriptionSupabaseOrgSlugs: splitCsv(env.SUBSCRIPTIONS_SUPABASE_ORG_SLUGS),
     allowedOrigins: configuredOrigins.length
       ? configuredOrigins
       : production
