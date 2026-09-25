@@ -48,3 +48,9 @@ test('rejects executable uploads, mismatched MIME, empty files and oversized fil
 test('anonymous and inactive accounts denied',async()=>{
  const {call,values}=setup();values.set('users/u',{name:'inactive',role:'INSTRUCTOR',status:'INACTIVE'});assert.equal((await call('u').get('/2026')).status,403);assert.equal((await call('unknown').get('/2026')).status,403);
 });
+
+test('worker directory classifies roles and exposes only own profile to employees',async()=>{
+ const {call,values}=setup();values.set('userProfiles/u',{department:'수학',subjects:['수학'],privateNote:'hidden'});values.set('userProfiles/v',{staffPosition:'오후 데스크'});
+ const admin=(await call().get('/2026')).body;const teacher=admin.workers.find(w=>w.uid==='u');assert.equal(teacher.group,'instructors');assert.deepEqual(teacher.subjects,['수학']);assert.equal(teacher.privateNote,undefined);assert.equal(admin.workers.find(w=>w.uid==='v').position,'오후 데스크');
+ const own=(await call('u').get('/2026')).body;assert.equal(own.workers.length,1);assert.equal(own.workers[0].uid,'u');assert.deepEqual(own.workers[0].subjects,['수학']);
+});

@@ -21,6 +21,11 @@ const fail=(message,status=400)=>{throw new ApiError(status,'training_invalid',m
 const str=(v,max=2000)=>String(v??'').trim().slice(0,max);
 const id=v=>/^[a-zA-Z0-9_-]{1,128}$/.test(String(v))?String(v):fail('항목 식별자가 올바르지 않습니다.');
 const date=v=> { if(!v)return ''; const d=new Date(v+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===v?v:fail('날짜를 확인해 주세요.'); };
+export function trainingPerson(uid, account = {}, profile = {}) {
+ const role = String(account.role || '').toUpperCase();
+ const subjects = [...new Set([profile.department, ...(Array.isArray(profile.subjects) ? profile.subjects : []), account.subject].filter(v => typeof v === 'string').flatMap(v => v.split(/[,/·|\s]+/)).filter(Boolean))];
+ return {uid, name:str(account.name || profile.displayName || uid,100), role, group:role==='INSTRUCTOR'?'instructors':'staff', position:str(account.staffPosition || profile.staffPosition || (profile.teacherPosition==='TEAM_LEAD'?'팀장':''),100), subjects:subjects.map(v=>str(v,50)).slice(0,10)};
+}
 export function validateEvidence(file) {
  const name=str(file?.name,180),type=str(file?.type,80);
  if(!['application/pdf','image/jpeg','image/png','image/webp'].includes(type)) fail('PDF, JPG, PNG, WEBP 파일만 제출할 수 있습니다.');
@@ -38,15 +43,16 @@ export function createTrainingRouter({verifyIdToken,loadAccount,firestore,bucket
  const root=req=>firestore.collection('deskTraining').doc(req.trainingYear);
  const manage=req=>{if(!canManageTraining(req.identity))fail('교육 관리 권한이 필요합니다.',403);};
  const allowed=(req,record)=>{if(!canManageTraining(req.identity)&&record.workerUid!==req.identity.uid)fail('본인의 제출 내역만 확인할 수 있습니다.',403);};
- const worker=async (uid,allowInactive=false)=>{const snap=await firestore.collection('users').doc(id(uid)).get();const u=snap.data();if(!snap.exists||!['ADMIN','STAFF','DESK','INSTRUCTOR'].includes(u.role)||(!allowInactive&&u.status!=='ACTIVE'))fail('활성 근무자 계정을 선택해 주세요.');return {uid,name:str(u.name||uid,100)};};
+ const worker=async (uid,allowInactive=false)=>{const snap=await firestore.collection('users').doc(id(uid)).get();const u=snap.data();if(!snap.exists||!['ADMIN','STAFF','DESK','INSTRUCTOR'].includes(u.role)||(!allowInactive&&u.status!=='ACTIVE'))fail('활성 근무자 계정을 선택해 주세요.');const profile=(await firestore.collection('userProfiles').doc(uid).get()).data()||{};return trainingPerson(uid,u,profile);};
  const course=async(req,courseId)=>{const custom=await root(req).collection('courses').doc(id(courseId)).get();return custom.exists?{id:custom.id,...custom.data()}:TRAINING_COURSES.find(c=>c.id===courseId)||fail('교육 과정을 찾지 못했습니다.');};
  const save=async(ref,body,req)=>firestore.runTransaction(async tx=>{const old=await tx.get(ref),v=old.exists?old.data():{};if(Number(body.version||0)!==Number(v.version||0))fail('다른 사용자가 수정했습니다. 새로고침 후 다시 저장해 주세요.',409);const next={...body,version:Number(v.version||0)+1,updatedAt:new Date().toISOString(),updatedBy:req.identity.uid};tx.set(ref,next);return {...next,id:ref.id};});
  router.get('/:year',async(req,res,next)=>{try{
   const admin=canManageTraining(req.identity),r=root(req);
-  const [cs,rs,ss,us]=await Promise.all([r.collection('courses').get(),(admin?r.collection('records'):r.collection('records').where('workerUid','==',req.identity.uid)).get(),admin?r.collection('sessions').get():Promise.resolve({docs:[]}),admin?firestore.collection('users').get():Promise.resolve({docs:[]})]);
+  const [cs,rs,ss,us,ps]=await Promise.all([r.collection('courses').get(),(admin?r.collection('records'):r.collection('records').where('workerUid','==',req.identity.uid)).get(),admin?r.collection('sessions').get():Promise.resolve({docs:[]}),admin?firestore.collection('users').get():Promise.resolve({docs:[]}),admin?firestore.collection('userProfiles').get():firestore.collection('userProfiles').doc(req.identity.uid).get()]);
   const courses=new Map(TRAINING_COURSES.map(c=>[c.id,c]));cs.docs.forEach(d=>courses.set(d.id,{...d.data(),id:d.id}));
-  const archivedWorkers=new Map();rs.docs.forEach(d=>{const r=d.data();archivedWorkers.set(r.workerUid,{uid:r.workerUid,name:r.workerName});});ss.docs.forEach(d=>(d.data().participants||[]).forEach(w=>archivedWorkers.set(w.uid,w)));us.docs.filter(d=>['ADMIN','STAFF','DESK','INSTRUCTOR'].includes(d.data().role)&&d.data().status==='ACTIVE').forEach(d=>archivedWorkers.set(d.id,{uid:d.id,name:d.data().name||d.id}));
-  res.json({user:req.identity,manager:admin,courses:[...courses.values()],records:rs.docs.map(d=>({...d.data(),id:d.id})),sessions:ss.docs.map(d=>({...d.data(),id:d.id})),workers:admin?[...archivedWorkers.values()].sort((a,b)=>a.name.localeCompare(b.name,'ko')): [{uid:req.identity.uid,name:req.identity.name}]});
+  const profiles=new Map(admin?ps.docs.map(d=>[d.id,d.data()]):[[req.identity.uid,ps.data()||{}]]);
+  const archivedWorkers=new Map();rs.docs.forEach(d=>{const r=d.data();archivedWorkers.set(r.workerUid,{uid:r.workerUid,name:r.workerName,role:r.workerRole||'',group:r.workerRole==='INSTRUCTOR'?'instructors':'staff',position:r.workerPosition||'',subjects:r.workerSubjects||[]});});ss.docs.forEach(d=>(d.data().participants||[]).forEach(w=>archivedWorkers.set(w.uid,w)));us.docs.filter(d=>['ADMIN','STAFF','DESK','INSTRUCTOR'].includes(d.data().role)&&(d.data().status==='ACTIVE'||archivedWorkers.has(d.id))).forEach(d=>archivedWorkers.set(d.id,trainingPerson(d.id,d.data(),profiles.get(d.id))));
+  res.json({user:req.identity,manager:admin,courses:[...courses.values()],records:rs.docs.map(d=>({...d.data(),id:d.id})),sessions:ss.docs.map(d=>({...d.data(),id:d.id})),workers:admin?[...archivedWorkers.values()].sort((a,b)=>a.name.localeCompare(b.name,'ko')): [trainingPerson(req.identity.uid,req.identity,profiles.get(req.identity.uid))]});
  }catch(e){next(e);}});
  router.post('/:year/courses',async(req,res,next)=>{try{manage(req);const b=req.body,cid=b.id?id(b.id):randomUUID();if(!str(b.name,150))fail('교육명을 입력해 주세요.');res.json(await save(root(req).collection('courses').doc(cid),{name:str(b.name,150),mode:b.mode==='internal'?'internal':'online',description:str(b.description),dueDate:date(b.dueDate),version:b.version||0},req));}catch(e){next(e);}});
  router.post('/:year/records',async(req,res,next)=>{try{
@@ -59,7 +65,7 @@ export function createTrainingRouter({verifyIdToken,loadAccount,firestore,bucket
   const sessionId=manager?str(b.sessionId,128):old.sessionId||'';
   if(sessionId){const session=(await root(req).collection('sessions').doc(id(sessionId)).get()).data();if(!session||session.courseId!==c.id||!(session.participants||[]).some(p=>p.uid===uid)||!(session.files||[]).length)fail('해당 교육의 참여자이며 증빙 파일이 있는 자체교육을 선택해 주세요.');}
   if(status==='approved'&&!(old.files||[]).length&&!sessionId)fail('수료증 또는 자체교육 증빙을 먼저 등록해 주세요.');
-  res.json(await save(ref,{...old,workerUid:uid,workerName:w.name,courseId:c.id,sessionId,applicability,status,reviewedBy:manager?req.identity.uid:old.reviewedBy||'',completedDate:date(b.completedDate),note:str(b.note),reviewNote:manager?str(b.reviewNote):old.reviewNote||'',version:b.version||0},req));
+  res.json(await save(ref,{...old,workerUid:uid,workerName:w.name,workerRole:w.role,workerPosition:w.position,workerSubjects:w.subjects,courseId:c.id,sessionId,applicability,status,reviewedBy:manager?req.identity.uid:old.reviewedBy||'',completedDate:date(b.completedDate),note:str(b.note),reviewNote:manager?str(b.reviewNote):old.reviewNote||'',version:b.version||0},req));
  }catch(e){next(e);}});
  router.post('/:year/sessions',async(req,res,next)=>{try{
   manage(req);const b=req.body,c=await course(req,b.courseId),sid=b.id?id(b.id):randomUUID(),ref=root(req).collection('sessions').doc(sid),old=(await ref.get()).data()||{};
