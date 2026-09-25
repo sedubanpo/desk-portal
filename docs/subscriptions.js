@@ -9,6 +9,8 @@
     ['notion', '노션', '문서 · 협업', 'notion.svg'],
     ['baemin', '배민클럽', '배달 멤버십', 'baemin.png']
   ];
+  const details = window.SubscriptionDetails;
+  let fx=null, fxLoading=false;
   const el = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let records = {}, providers = {}, loaded = false, loading = false, busy = false, editing = '', draftLogo = '', owner = '', logoRequest = 0, logoLoading = false;
@@ -20,7 +22,19 @@
   function logo(s) { return /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s.logo || '') ? s.logo : (s.asset && presets.some(p => p[3] === s.asset) ? './assets/subscriptions/' + s.asset : ''); }
   function logoHTML(s) { const src = logo(s); return src ? '<img class="'+(s.asset==='baemin.png'?'sub-wide-logo':'')+'" src="'+esc(src)+'" alt="" width="40" height="40">' : '<span class="sub-initial" aria-hidden="true">'+esc(s.name.slice(0,1))+'</span>'; }
   function manualEntry(s) { return s.payments && s.payments[month] || {}; }
-  function entry(s) { const manual=manualEntry(s),linked=s.linkedPayments && s.linkedPayments[month] || {}; return manual.amount != null ? {...manual,_source:'manual'} : linked.amount != null ? {...linked,note:manual.note || linked.note || '',_source:'linked'} : {...manual,_source:'empty'}; }
+  function entry(s) {
+    const manual=manualEntry(s),linked=s.linkedPayments && s.linkedPayments[month] || {};
+    const p=manual.amount != null ? {...manual,_source:'manual'} : linked.amount != null ? {...linked,date:manual.date || linked.date || '',status:manual.status || linked.status,note:manual.note || linked.note || '',_source:'linked'} : {...manual,_source:'empty'};
+    return {...p,billingCycle:manual.billingCycle || 'unknown',paymentCard:manual.paymentCard || null};
+  }
+  function fxText(p) {const n=details.estimate(p,fx);return n==null?'원화 예상액: '+(fxLoading?'환율 조회 중':'환율 조회 불가'):'약 '+money(n,'KRW');}
+  function fxPreview() { const p={currency:el('subCurrency').value,amount:el('subAmount').value};el('subFxPreview').textContent=p.currency==='USD'&&p.amount!==''?fxText(p)+(fx?' · '+fx.date+' 기준 · 수수료 제외':''):''; }
+  async function loadFx() {
+    if(fxLoading)return;fxLoading=true;
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+    try {const response=await fetch('https://api.frankfurter.dev/v2/rate/USD/KRW',{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)throw new Error('rate');const value=await response.json();if(!Number.isFinite(value.rate)||value.rate<=0||!details.validDate(value.date))throw new Error('rate');fx={rate:value.rate,date:value.date};}catch(e){fx=null;}finally{clearTimeout(timer);fxLoading=false;if(loaded)render();fxPreview();}
+  }
+  function cardHTML(card) {const found=card&&details.cards.find(c=>c[0]===card.issuer);return '<span class="sub-card-display">'+(found?'<img src="./assets/cards/'+found[2]+'" width="22" height="22" alt="">':'')+esc(details.cardLabel(card))+'</span>';}
   function included() { return services().filter(s => s.active !== false || s.payments && s.payments[month] || s.linkedPayments && s.linkedPayments[month]); }
   function money(n,c) { return n == null || n === '' ? '미입력' : new Intl.NumberFormat('ko-KR',{style:'currency',currency:c || 'KRW',maximumFractionDigits:c === 'USD' ? 2 : 0}).format(Number(n)); }
   function totals(list) { const result = {}; list.forEach(s => {const p=entry(s); if(p.amount != null && p.amount !== '') result[p.currency || 'KRW']=(result[p.currency || 'KRW'] || 0)+Number(p.amount);}); return result; }
@@ -31,14 +45,14 @@
     const list=included(), sum=totals(list), known=list.filter(s => entry(s).amount != null).length;
     el('subMonth').value=month;
     el('subTotal').textContent=Object.keys(sum).length ? Object.keys(sum).map(c=>money(sum[c],c)).join(' / ') : '결제 금액을 입력해 주세요';
-    el('subSummary').textContent=month.replace('-','년 ')+'월 · 금액 입력 '+known+'/'+list.length+'개 · 통화별 합계';
-    el('subList').innerHTML=list.map(s=>{const p=entry(s),cap=provider(s),linkedMode=['google-cloud-billing-export','supabase-management-estimate'].includes(s.integrationMode),canSync=linkedMode&&cap.configured;return '<tr><th scope="row"><div class="sub-brand">'+logoHTML(s)+'<div><strong>'+esc(s.name)+'</strong><small>'+esc(s.plan || s.description || '직접 등록한 구독')+(s.active === false ? ' · 사용 중지' : '')+'</small></div></div></th><td>'+esc(p.date || '미입력')+'</td><td class="sub-amount">'+esc(money(p.amount,p.currency))+'</td><td><span class="sub-state '+(p.status === 'paid'?'sub-paid':'')+'">'+(p.status === 'paid'?'결제 완료':p.status === 'scheduled'?'결제 예정':'미확인')+'</span></td><td>'+sourceHTML(s,p)+'</td><td class="sub-note">'+esc(p.note || '—')+'</td><td><div class="sub-row-actions"><button type="button" data-sub-edit="'+esc(s.id)+'" aria-label="'+esc(s.name)+' 결제 기록 입력">기록 입력</button>'+(linkedMode?'<button type="button" data-sub-sync="'+esc(s.id)+'" '+(canSync?'':'disabled')+' aria-label="'+esc(s.name)+' 공식 비용 동기화">'+(canSync?'비용 동기화':'연동 설정 필요')+'</button>':'')+'</div></td></tr>';}).join('') || '<tr><td colspan="7">표시할 구독이 없습니다. 구독 설정에서 추가해 주세요.</td></tr>';
+    el('subSummary').textContent=month.replace('-','년 ')+'월 · 금액 입력 '+known+'/'+list.length+'개 · 통화별 합계'+(fx?' · 원화 예상: '+fx.date+' 환율, 수수료 제외':'');
+    el('subList').innerHTML=list.map(s=>{const p=entry(s),cap=provider(s),linkedMode=['google-cloud-billing-export','supabase-management-estimate'].includes(s.integrationMode),canSync=linkedMode&&cap.configured;return '<tr><th scope="row"><div class="sub-brand">'+logoHTML(s)+'<div><strong>'+esc(s.name)+'</strong><small>'+esc(s.plan || s.description || '직접 등록한 구독')+(s.active === false ? ' · 사용 중지' : '')+'</small></div></div></th><td class="sub-date">'+esc(p.date || '미입력')+'<small>'+esc(details.cycleLabel(p.billingCycle))+'</small></td><td class="sub-amount">'+esc(money(p.amount,p.currency))+(p.currency==='USD'&&p.amount!=null?'<small>'+esc(fxText(p))+'</small>':'')+'</td><td><span class="sub-state '+(p.status === 'paid'?'sub-paid':'')+'">'+details.icon(p.status)+(p.status === 'paid'?'결제 완료':p.status === 'scheduled'?'결제 예정':'미확인')+'</span></td><td>'+cardHTML(p.paymentCard)+'</td><td class="sub-note">'+esc(p.note || '—')+'</td><td><div class="sub-row-actions"><button type="button" data-sub-edit="'+esc(s.id)+'" aria-label="'+esc(s.name)+' 결제 기록 입력">기록 입력</button>'+(linkedMode?'<button type="button" data-sub-sync="'+esc(s.id)+'" '+(canSync?'':'disabled')+' aria-label="'+esc(s.name)+' 공식 비용 동기화">'+(canSync?'비용 동기화':'연동 설정 필요')+'</button>':'')+'</div></td></tr>';}).join('') || '<tr><td colspan="7">표시할 구독이 없습니다. 구독 설정에서 추가해 주세요.</td></tr>';
     el('subList').querySelectorAll('[data-sub-edit]').forEach(b=>b.onclick=()=>openEditor(b.dataset.subEdit));
     el('subList').querySelectorAll('[data-sub-sync]').forEach(b=>b.onclick=()=>syncRecord(b.dataset.subSync));
   }
   async function load() {
     if (loading || busy) return;
-    loading=true; status('구독 기록을 불러오는 중입니다.');
+    loadFx(); loading=true; status('구독 기록을 불러오는 중입니다.');
     el('subReload').disabled=true;
     try { const result=await Promise.all([loadDeskPortalConfig_('daily','subscriptions'),runServer('getDeskSubscriptionSyncCapabilities',{}).catch(()=>({providers:{}}))]); records=result[0] || {}; providers=result[1] && result[1].providers || {}; loaded=true; render(); status('수동 입력이 우선이며, Firebase와 Supabase 연동 값은 결제 확정액이 아닌 예상 비용입니다.'); }
     catch(e) { loaded=false; status('불러오기 실패: '+e.message+' · 새로고침으로 다시 시도하세요.',true); }
@@ -49,12 +63,17 @@
     if(!loaded || busy) return;
     editing=id; const s=services().find(s=>s.id===id),p=manualEntry(s);
     el('subEditTitle').textContent=s.name+' · '+month+' 결제 기록';
-    el('subDate').value=p.date || ''; el('subDate').min=month+'-01';
-    el('subDate').max=month+'-'+new Date(Number(month.slice(0,4)),Number(month.slice(5)),0).getDate();
+    el('subDate').value=p.date || ''; el('subDateButton').textContent=p.date || '날짜 선택';
+    el('subCalendar').hidden=true;el('subDateButton').setAttribute('aria-expanded','false');
+    const current=entry(s),newMonth=!(s.payments&&Object.prototype.hasOwnProperty.call(s.payments,month)),card=newMonth?s.paymentCard:current.paymentCard,cycle=newMonth?(s.billingCycle||'unknown'):current.billingCycle;
+    document.querySelectorAll('[name=subBillingCycle]').forEach(r=>r.checked=r.value===cycle);
+    document.querySelectorAll('[name=subCardIssuer]').forEach(r=>r.checked=r.value===(card&&card.issuer||''));
+    el('subCardLast4').value=card&&card.last4||'';
+    el('subEditorSource').innerHTML='<strong>자료 출처</strong>'+sourceHTML(s,current)+(current._source==='linked'?'<span>연동 예상액 '+esc(money(current.amount,current.currency))+' · 수동 금액을 입력하면 우선 적용됩니다.</span>':'');
     el('subAmount').value=p.amount == null?'':p.amount; el('subCurrency').value=p.currency || 'KRW';
     el('subPaymentStatus').value=p.status || 'unknown'; el('subNote').value=p.note || '';
     el('subEditStatus').textContent=p.updatedAt?'마지막 수정 '+new Date(p.updatedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+(p.updatedBy || '기록 없음'):'';
-    dialog('subEditDialog');
+    fxPreview(); dialog('subEditDialog');
   }
   async function saveRecord(id,value) {
     busy=true;
@@ -81,8 +100,8 @@
     const list=included(),sum=totals(list),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     const wrap=(text,width,font)=>{ctx.font=font;const lines=[];let line='';for(const c of String(text)){if(c==='\n'||ctx.measureText(line+c).width>width){lines.push(line);line=c==='\n'?'':c;}else line+=c;}lines.push(line);return lines;};
     if(document.fonts) await document.fonts.ready;
-    const rows=list.map(s=>({s,p:entry(s),notes:wrap(entry(s).note || '—',290,'16px sans-serif'),names:wrap(s.name,s.asset==='baemin.png'?162:200,'bold 19px sans-serif')}));
-    const heights=rows.map(r=>Math.max(90,Math.max(r.notes.length,r.names.length)*24+32));
+    const rows=list.map(s=>({s,p:entry(s),notes:wrap(entry(s).note || '—',290,'bold 16px sans-serif'),names:wrap(s.name,s.asset==='baemin.png'?162:200,'bold 19px sans-serif')}));
+    const heights=rows.map(r=>Math.max(112,Math.max(r.notes.length,r.names.length)*24+32));
     canvas.width=1200;canvas.height=310+heights.reduce((a,b)=>a+b,0)+80;
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle='#eff5da';ctx.fillRect(0,0,1200,210);
@@ -93,8 +112,9 @@
     ['구독 서비스','결제일','금액','상태','비고 / 설명'].forEach((v,i)=>text(v,[48,310,490,705,845][i],260,'bold 16px sans-serif'));
     let y=285;
     for(let i=0;i<rows.length;i++) {const {s,p,notes,names}=rows[i],h=heights[i];ctx.fillStyle=i%2?'#f8faf4':'#ffffff';ctx.fillRect(32,y,1136,h);const src=logo(s);if(src){try {const img=new Image();img.src=src;await img.decode();const scale=Math.min((s.asset==='baemin.png'?64:34)/img.width,34/img.height);ctx.drawImage(img,48,y+24,img.width*scale,img.height*scale);}catch(e){throw new Error(s.name+' 로고를 불러오지 못했습니다. 다시 시도해 주세요.');}}
-      names.forEach((v,n)=>text(v,s.asset==='baemin.png'?132:94,y+34+n*24,'bold 19px sans-serif'));text(p.date || '미입력',310,y+36,'17px sans-serif');text(money(p.amount,p.currency),490,y+36,'bold 19px sans-serif');text(p.status==='paid'?'결제 완료':p.status==='scheduled'?'결제 예정':'미확인',705,y+36,'16px sans-serif');notes.forEach((v,n)=>text(v,845,y+34+n*24,'16px sans-serif'));y+=h;}
-    text('금액 미입력 '+list.filter(s=>entry(s).amount==null).length+'개 · 수동 입력 기준 · 생성 '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}),48,y+42,'14px sans-serif','#526345');
+      names.forEach((v,n)=>text(v,s.asset==='baemin.png'?132:94,y+34+n*24,'bold 19px sans-serif'));text(p.date || '미입력',310,y+36,'bold 17px sans-serif');text(details.cycleLabel(p.billingCycle),310,y+60,'14px sans-serif');text(details.cardLabel(p.paymentCard),310,y+84,'12px sans-serif');text(money(p.amount,p.currency),490,y+36,'bold 19px sans-serif');if(p.currency==='USD'&&p.amount!=null)text(fxText(p),490,y+60,'bold 14px sans-serif');text(p.status==='paid'?'결제 완료':p.status==='scheduled'?'결제 예정':'미확인',705,y+36,'16px sans-serif');notes.forEach((v,n)=>text(v,845,y+34+n*24,'bold 16px sans-serif'));y+=h;}
+    text('금액 미입력 '+list.filter(s=>entry(s).amount==null).length+'개 · 저장 금액 기준 · 생성 '+new Date().toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}),48,y+42,'14px sans-serif','#526345');
+    if(fx)text('원화 예상액: '+fx.date+' 기준 · 1 USD = '+fx.rate+' KRW · Frankfurter · 수수료 제외',48,y+66,'13px sans-serif','#526345');
     return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('이미지를 생성하지 못했습니다.')),'image/png'));
   }
   async function report(copy) {
@@ -112,6 +132,8 @@
   };
   function init() {
     if(!el('deskSubscriptions')) return;
+    details.mount();
+    el('subAmount').addEventListener('input',fxPreview);el('subCurrency').addEventListener('change',fxPreview);
     el('subMonth').value=month;
     el('subMonth').onchange=e=>{if(busy){e.target.value=month;return;}if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)){month=e.target.value;render();}};
     el('subReload').onclick=load; el('subSettings').onclick=()=>openSettings('');
@@ -120,8 +142,11 @@
     ['subEditDialog','subSettingsDialog'].forEach(id=>el(id).addEventListener('cancel',e=>{if(busy)e.preventDefault();}));
     el('subEditForm').onsubmit=async e=>{e.preventDefault();if(busy)return;const s=services().find(s=>s.id===editing),amount=el('subAmount').value;
       if(el('subCurrency').value==='KRW' && amount!=='' && Number(amount)%1){el('subEditStatus').textContent='원화는 정수로 입력해 주세요.';return;}
-      const p={date:el('subDate').value,amount:amount===''?null:Number(amount),currency:el('subCurrency').value,status:el('subPaymentStatus').value,note:el('subNote').value.trim(),updatedAt:new Date().toISOString(),updatedBy:String(state.cloudIdentity && state.cloudIdentity.name || '')};
-      try {await saveRecord(editing,{...s,payments:{...(s.payments || {}),[month]:p}});el('subEditDialog').close();status(s.name+'의 '+month+' 결제 기록을 저장했습니다.');}catch(err){el('subEditStatus').textContent=err.message+' · 창을 닫고 새로고침 후 다시 입력해 주세요.';}};
+      const billingCycle=document.querySelector('[name=subBillingCycle]:checked').value,issuer=document.querySelector('[name=subCardIssuer]:checked').value,last4=el('subCardLast4').value.trim();
+      if((issuer&&!/^[0-9]{4}$/.test(last4))||(!issuer&&last4)){el('subEditStatus').textContent='카드사와 카드번호 끝 4자리를 함께 입력해 주세요.';return;}
+      const paymentCard=issuer?{issuer,last4}:null;
+      const p={billingCycle,paymentCard,date:el('subDate').value,amount:amount===''?null:Number(amount),currency:el('subCurrency').value,status:el('subPaymentStatus').value,note:el('subNote').value.trim(),updatedAt:new Date().toISOString(),updatedBy:String(state.cloudIdentity && state.cloudIdentity.name || '')};
+      try {await saveRecord(editing,{...s,billingCycle,paymentCard,payments:{...(s.payments || {}),[month]:p}});el('subEditDialog').close();status(s.name+'의 '+month+' 결제 기록을 저장했습니다.');}catch(err){el('subEditStatus').textContent=err.message+' · 창을 닫고 새로고침 후 다시 입력해 주세요.';}};
     el('subServiceSelect').onchange=e=>{if(busy){e.target.value=editing;return;}openSettings(e.target.value);}; el('subIntegrationMode').onchange=()=>renderIntegrationInfo(services().find(s=>s.id===editing) || {id:''});
     el('subLogoReset').onclick=()=>{logoRequest++;logoLoading=false;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=false);draftLogo='';el('subLogo').value='';el('subLogoPreview').innerHTML=logoHTML({...services().find(s=>s.id===editing),name:el('subName').value,logo:''});};
     el('subLogo').onchange=async e=>{const f=e.target.files[0];if(!f)return;const request=++logoRequest;logoLoading=true;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=true);try{if(!['image/png','image/jpeg','image/webp'].includes(f.type)||f.size>2*1024*1024)throw new Error('2MB 이하 PNG, JPG, WebP 파일을 선택해 주세요.');const img=await createImageBitmap(f);if(request!==logoRequest){img.close();return;}const c=document.createElement('canvas');const scale=Math.min(1,128/img.width,128/img.height);c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);img.close();draftLogo=c.toDataURL('image/png');el('subLogoPreview').innerHTML=logoHTML({name:el('subName').value,logo:draftLogo});el('subSettingsStatus').textContent='로고가 준비되었습니다. 저장하면 반영됩니다.';}catch(err){if(request===logoRequest)el('subSettingsStatus').textContent=err.message;}finally{if(request===logoRequest){logoLoading=false;document.querySelectorAll('[data-sub-save]').forEach(b=>b.disabled=busy);}}};

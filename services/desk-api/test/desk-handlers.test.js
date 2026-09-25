@@ -656,7 +656,7 @@ test('subscriptions preserve monthly history and isolate records with conflict p
 test('subscriptions reject invalid amounts, dates, logos and root overwrites', async () => {
   const handlers=createDeskHandlers({store:memoryStore()});
   const value={name:'구독',active:true,payments:{'2026-09':{date:'2026-09-24',amount:0,currency:'KRW',status:'paid',note:''}}};
-  for (const patch of [{amount:-1},{amount:0.5},{amount:'20'},{date:'2026-09-31'},{date:'2026-08-01'},{currency:'XXX'}]) {
+  for (const patch of [{amount:-1},{amount:0.5},{amount:'20'},{date:'2026-09-31'},{date:'2025-02-29'},{currency:'XXX'}]) {
     const bad=structuredClone(value);Object.assign(bad.payments['2026-09'],patch);
     assert.equal((await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value:bad})).success,false);
   }
@@ -713,4 +713,19 @@ test('subscription sync excludes manual-only services, detects conflicts, and pr
   const baemin=(await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/baemin',expectedValue:null,value:{id:'baemin',name:'배민클럽',active:true,integrationMode:'manual',payments:{}}})).value;
   assert.equal((await handlers.saveDeskSubscriptionSync({serviceId:'baemin',month:'2026-09',expectedValue:baemin})).success,false);
   assert.equal(calls,2);
+});
+
+
+test('subscription dates span reporting months and card details preserve old monthly records', async () => {
+ const h=createDeskHandlers({store:memoryStore()});
+ const old={date:'2025-12-31',amount:168000,currency:'KRW',status:'paid',note:'annual'};
+ const value={name:'Notion',active:true,billingCycle:'yearly',paymentCard:{issuer:'shinhan',last4:'0012'},payments:{'2026-09':{...old,billingCycle:'yearly',paymentCard:{issuer:'shinhan',last4:'0012'}},'2026-10':{...old,date:'2028-02-29'}}};
+ const result=await h.saveDeskPortalConfig({scope:'daily',key:'subscriptions/notion',expectedValue:null,value});
+ assert.equal(result.success,true);
+ assert.equal(result.value.payments['2026-09'].date,'2025-12-31');
+ assert.equal(result.value.payments['2026-10'].date,'2028-02-29');
+ assert.equal(result.value.paymentCard.last4,'0012');
+ for(const patch of [{billingCycle:'weekly'},{paymentCard:{issuer:'fake',last4:'1234'}},{paymentCard:{issuer:'kb',last4:'1234567812345678'}},{paymentCard:{issuer:'kb',last4:'1234',number:'1234567812345678'}},{paymentCard:{issuer:'kb',last4:1234}}]){
+  for(const scope of ['service','payment']){const bad=structuredClone(value);Object.assign(scope==='service'?bad:bad.payments['2026-09'],patch);assert.equal((await h.saveDeskPortalConfig({scope:'daily',key:'subscriptions/test',expectedValue:null,value:bad})).success,false);}
+ }
 });

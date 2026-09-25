@@ -1055,8 +1055,15 @@ function buildScheduleSeed(key) {
   return entries;
 }
 
+function validateSubscriptionDetails(value) {
+  if (value.billingCycle != null && !['unknown','monthly','yearly'].includes(value.billingCycle)) return '결제 주기가 올바르지 않습니다.';
+  const card=value.paymentCard;
+  if (card != null && (typeof card !== 'object' || Array.isArray(card) || !['shinhan','kb','samsung','hyundai','lotte','woori','hana','nh','bc','other'].includes(card.issuer) || typeof card.last4 !== 'string' || !/^[0-9]{4}$/.test(card.last4) || Object.keys(card).some(key=>!['issuer','last4'].includes(key)))) return '카드사와 카드번호 끝 4자리를 확인해 주세요.';
+  return '';
+}
 function validateSubscription(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return '구독 정보가 올바르지 않습니다.';
+  if (validateSubscriptionDetails(value)) return validateSubscriptionDetails(value);
   if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 60) return '구독명은 60자 이내로 입력해 주세요.';
   if (typeof value.active !== 'boolean') return '구독 사용 상태가 올바르지 않습니다.';
   if (value.plan != null && (typeof value.plan !== 'string' || value.plan.length > 100)) return '요금제는 100자 이내로 입력해 주세요.';
@@ -1069,10 +1076,11 @@ function validateSubscription(value) {
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > 110000) return '구독 기록 용량이 너무 큽니다.';
   for (const [month, payment] of Object.entries(value.payments)) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '결제 월이 올바르지 않습니다.';
+    if (validateSubscriptionDetails(payment)) return validateSubscriptionDetails(payment);
     if (!['KRW','USD'].includes(payment.currency) || !['unknown','scheduled','paid'].includes(payment.status)) return '통화 또는 결제 상태가 올바르지 않습니다.';
     if (payment.amount != null && (typeof payment.amount !== 'number' || !Number.isFinite(payment.amount) || payment.amount < 0 || payment.amount > 999999999 || (payment.currency === 'KRW' && !Number.isInteger(payment.amount)) || Math.abs(payment.amount * 100 - Math.round(payment.amount * 100)) > 0.0001)) return '금액이 올바르지 않습니다.';
     if (typeof payment.note !== 'string' || payment.note.length > 500) return '비고는 500자 이내로 입력해 주세요.';
-    if (payment.date && (!/^\d{4}-\d{2}-\d{2}$/.test(payment.date) || payment.date.slice(0,7) !== month || !Number.isFinite(Date.parse(payment.date)) || new Date(payment.date).toISOString().slice(0,10) !== payment.date)) return '결제일은 선택한 월의 유효한 날짜여야 합니다.';
+    if (payment.date && (!/^\d{4}-\d{2}-\d{2}$/.test(payment.date) || !Number.isFinite(Date.parse(payment.date)) || new Date(payment.date).toISOString().slice(0,10) !== payment.date)) return '결제일은 유효한 날짜여야 합니다.';
   }
   for (const [month, payment] of Object.entries(value.linkedPayments || {})) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !payment || typeof payment !== 'object') return '연동 결제 월이 올바르지 않습니다.';
