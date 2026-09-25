@@ -628,7 +628,8 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         const result = await subscriptionBilling.sync({ serviceId, month });
         let conflict = false;
         const value = await store.transaction(path, latest => {
-          if (canonicalJson(latest) !== canonicalJson(current)) { conflict = true; return latest; }
+          conflict = canonicalJson(latest) !== canonicalJson(current);
+          if (conflict) return latest;
           const next = structuredClone(latest);
           next.linkedPayments = { ...(next.linkedPayments || {}), [month]: result.payment };
           next.sync = { ...(next.sync || {}), status: 'success', source: result.source, sourceUrl: result.sourceUrl || '', billingPeriod: month, quality: result.payment.quality || 'estimate', lastAttemptAt: now(), lastSuccessAt: now(), error: '' };
@@ -640,7 +641,8 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         if (error instanceof ApiError) throw error;
         let conflict = false;
         const value = await store.transaction(path, latest => {
-          if (canonicalJson(latest) !== canonicalJson(current)) { conflict = true; return latest; }
+          conflict = canonicalJson(latest) !== canonicalJson(current);
+          if (conflict) return latest;
           const next = structuredClone(latest);
           next.sync = { ...(next.sync || {}), status: 'error', billingPeriod: month, lastAttemptAt: now(), error: String(error.message || error).slice(0, 300) };
           return next;

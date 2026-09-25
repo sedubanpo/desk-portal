@@ -684,6 +684,17 @@ test('subscription sync stores estimates separately and preserves manual precede
   assert.deepEqual(calls,[{serviceId:'firebase',month:'2026-09'}]);
 });
 
+test('subscription sync tolerates a stale cached transaction callback before the server value', async () => {
+  const base=memoryStore();
+  const store={...base,transaction:async(path,update)=>{update(null);return base.transaction(path,update);}};
+  const subscriptionBilling={capabilities:()=>({supabase:{mode:'supabase-management-estimate',configured:true}}),sync:async input=>({source:'supabase-management-estimate',payment:{date:'',amount:35,currency:'USD',status:'unknown',note:'official estimate',source:'supabase-management-estimate',quality:'estimate',billingPeriod:input.month,syncedAt:'2026-09-25T00:00:00.000Z',latestExportAt:''}})};
+  const handlers=createDeskHandlers({store,subscriptionBilling,now:()=> '2026-09-25T00:00:00.000Z'});
+  const saved=(await handlers.saveDeskPortalConfig({scope:'daily',key:'subscriptions/supabase',expectedValue:null,value:{id:'supabase',name:'Supabase',active:true,integrationMode:'supabase-management-estimate',payments:{}}})).value;
+  const synced=await handlers.saveDeskSubscriptionSync({serviceId:'supabase',month:'2026-09',expectedValue:saved});
+  assert.equal(synced.success,true);
+  assert.equal(synced.value.linkedPayments['2026-09'].amount,35);
+});
+
 test('subscription sync excludes manual-only services, detects conflicts, and preserves last success on failure', async () => {
   const store=memoryStore();
   let fail=false;
