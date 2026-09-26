@@ -14,7 +14,7 @@ export const TRAINING_COURSES = [
  ['privacy','개인정보 보호교육','internal'],
  ['pension','퇴직연금교육','online']
 ].map(([id,name,mode])=>({id,name,mode}));
-const OPEN_COURSES=new Set(['child','disability','harassment']);
+const OPEN_COURSES=new Set(['child','harassment','disability','emergency','abuse']);
 export function canManageTraining(user) {
  return user.role==='ADMIN' || (user.apps?.deskPortal===true && user.permissions?.canManageTraining===true);
 }
@@ -53,9 +53,9 @@ export function createTrainingRouter({verifyIdToken,loadAccount,firestore,bucket
   const courses=new Map(TRAINING_COURSES.map(c=>[c.id,c]));cs.docs.forEach(d=>courses.set(d.id,{...d.data(),id:d.id}));
   const profiles=new Map(admin?ps.docs.map(d=>[d.id,d.data()]):[[req.identity.uid,ps.data()||{}]]);
   const archivedWorkers=new Map();rs.docs.forEach(d=>{const r=d.data();archivedWorkers.set(r.workerUid,{uid:r.workerUid,name:r.workerName,role:r.workerRole||'',group:r.workerRole==='INSTRUCTOR'?'instructors':'staff',position:r.workerPosition||'',subjects:r.workerSubjects||[]});});ss.docs.forEach(d=>(d.data().participants||[]).forEach(w=>archivedWorkers.set(w.uid,w)));us.docs.filter(d=>['ADMIN','STAFF','DESK','INSTRUCTOR'].includes(d.data().role)&&(d.data().status==='ACTIVE'||archivedWorkers.has(d.id))).forEach(d=>archivedWorkers.set(d.id,trainingPerson(d.id,d.data(),profiles.get(d.id))));
-  res.json({icons:icons.docs.map(d=>d.data()).filter(a=>String(a.status||'ACTIVE').toUpperCase()==='ACTIVE'&&String(a.lookupKey||'').startsWith('staff-position:')).map(a=>({lookupKey:a.lookupKey,imageUrl:a.imageUrl||a.downloadURL||''})),user:req.identity,manager:admin,courses:[...courses.values()].filter(c=>OPEN_COURSES.has(c.id)),records:rs.docs.filter(d=>OPEN_COURSES.has(d.data().courseId)).map(d=>({...d.data(),id:d.id})),sessions:ss.docs.filter(d=>OPEN_COURSES.has(d.data().courseId)).map(d=>({...d.data(),id:d.id})),workers:admin?[...archivedWorkers.values()].sort((a,b)=>a.name.localeCompare(b.name,'ko')): [trainingPerson(req.identity.uid,req.identity,profiles.get(req.identity.uid))]});
+  res.json({icons:icons.docs.map(d=>d.data()).filter(a=>String(a.status||'ACTIVE').toUpperCase()==='ACTIVE'&&String(a.lookupKey||'').startsWith('staff-position:')).map(a=>({lookupKey:a.lookupKey,imageUrl:a.imageUrl||a.downloadURL||''})),user:req.identity,manager:admin,courses:[...OPEN_COURSES].map(id=>courses.get(id)),records:rs.docs.filter(d=>OPEN_COURSES.has(d.data().courseId)).map(d=>({...d.data(),id:d.id})),sessions:ss.docs.filter(d=>OPEN_COURSES.has(d.data().courseId)).map(d=>({...d.data(),id:d.id})),workers:admin?[...archivedWorkers.values()].sort((a,b)=>a.name.localeCompare(b.name,'ko')): [trainingPerson(req.identity.uid,req.identity,profiles.get(req.identity.uid))]});
  }catch(e){next(e);}});
- router.post('/:year/courses',async(req,res,next)=>{try{manage(req);const b=req.body,cid=b.id?id(b.id):randomUUID();if(!OPEN_COURSES.has(cid))fail('현재 운영하는 세 과정만 설정할 수 있습니다.');if(!str(b.name,150))fail('교육명을 입력해 주세요.');res.json(await save(root(req).collection('courses').doc(cid),{name:str(b.name,150),mode:b.mode==='internal'?'internal':'online',description:str(b.description),dueDate:date(b.dueDate),version:b.version||0},req));}catch(e){next(e);}});
+ router.post('/:year/courses',async(req,res,next)=>{try{manage(req);const b=req.body,cid=b.id?id(b.id):randomUUID();if(!OPEN_COURSES.has(cid))fail('현재 운영하는 다섯 과정만 설정할 수 있습니다.');if(!str(b.name,150))fail('교육명을 입력해 주세요.');res.json(await save(root(req).collection('courses').doc(cid),{name:str(b.name,150),mode:b.mode==='internal'?'internal':'online',description:str(b.description),dueDate:date(b.dueDate),version:b.version||0},req));}catch(e){next(e);}});
  router.post('/:year/records',async(req,res,next)=>{try{
   const b=req.body,uid=canManageTraining(req.identity)?id(b.workerUid):req.identity.uid,c=await course(req,b.courseId),w=await worker(uid,canManageTraining(req.identity)),ref=root(req).collection('records').doc(uid+'__'+c.id);
   const old=(await ref.get()).data()||{};const manager=canManageTraining(req.identity);

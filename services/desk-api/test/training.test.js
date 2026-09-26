@@ -55,10 +55,12 @@ test('worker directory classifies roles and exposes only own profile to employee
  const own=(await call('u').get('/2026')).body;assert.equal(own.workers.length,1);assert.equal(own.workers[0].uid,'u');assert.deepEqual(own.workers[0].subjects,['수학']);
 });
 
-test('only three courses are visible and accepting evidence; other records remain stored',async()=>{
- const {call,values}=setup();values.set('deskTraining/2026/records/u__emergency',{workerUid:'u',courseId:'emergency',version:1,files:[]});
- const result=await call('u').get('/2026');assert.deepEqual(result.body.courses.map(c=>c.id),['child','disability','harassment']);assert.equal(result.body.records.length,0);
- assert.equal((await call('u').post('/2026/records',{courseId:'emergency'})).status,400);
- assert.equal((await call('u').post('/2026/records/u__emergency/files',pdf)).status,400);
- assert.equal(values.get('deskTraining/2026/records/u__emergency').version,1);
+test('only five courses are visible and accepting evidence; other records remain stored',async()=>{
+ const {call,values}=setup();values.set('deskTraining/2026/records/u__bus',{workerUid:'u',courseId:'bus',version:1,files:[]});
+ const result=await call('u').get('/2026');assert.deepEqual(result.body.courses.map(c=>c.id),['child','harassment','disability','emergency','abuse']);assert.equal(result.body.records.length,0);
+ assert.equal((await call('u').post('/2026/records',{courseId:'bus'})).status,400);
+ assert.equal((await call('u').post('/2026/records/u__bus/files',pdf)).status,400);
+ assert.equal(values.get('deskTraining/2026/records/u__bus').version,1);
 });
+
+test('newly reopened courses accept employee records',async()=>{const {call}=setup();for(const courseId of ['emergency','abuse']){const result=await call('u').post('/2026/records',{courseId});assert.equal(result.status,200);assert.equal(result.body.courseId,courseId);}});
