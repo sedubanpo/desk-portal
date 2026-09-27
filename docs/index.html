@@ -17689,6 +17689,7 @@
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
+<link rel="stylesheet" href="./inquiries.css?v=20260927">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -17726,6 +17727,7 @@
         <p class="workspace-nav-label">데스크 업무</p>
           <section class="desk-subtabs">
             <button class="desk-subtab active" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="inquiries"><i data-lucide="user-round-search" aria-hidden="true"></i><span>신규문의 관리센터</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="supplies"><i data-lucide="package-check" aria-hidden="true"></i><span>물품 관리</span></button>
@@ -19368,6 +19370,7 @@
             </div>
           </section>
 
+          <section class="desk-panel hidden" data-desk-panel="inquiries"></section>
           <section class="desk-panel hidden" data-desk-panel="responseCenter">
             <div class="desk-response-shell">
               <header class="desk-response-topbar">
@@ -22127,7 +22130,7 @@
         }
       };
       var config = configMap[state.activeModule] || configMap.expense;
-      var pageNames = { dailyJournal: "일일 업무일지", responseCenter: "응대 센터", monthlySchedule: "월별 근무표", supplies: "물품 관리", recruiting: "인사 관리", messageTemplates: "메시지 템플릿" };
+      var pageNames = { inquiries: "신규문의 관리센터", dailyJournal: "일일 업무일지", responseCenter: "응대 센터", monthlySchedule: "월별 근무표", supplies: "물품 관리", recruiting: "인사 관리", messageTemplates: "메시지 템플릿" };
       var currentPage = document.getElementById("workspaceCurrentPage");
       if (currentPage) currentPage.textContent = state.activeModule === "expense" ? (pageNames[state.desk.activeTab] || config.title) : config.title;
       Array.prototype.forEach.call(deskTabEls, function(btn) {
@@ -27990,6 +27993,7 @@
       if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
       if (state.desk.activeTab === "recruiting") renderDeskRecruiting_();
+      if (state.desk.activeTab === "inquiries" && window.renderDeskInquiries_) window.renderDeskInquiries_();
       if (state.desk.activeTab === "responseCenter") renderDeskResponseCenter_();
       if (state.desk.activeTab === "messageTemplates") renderDeskMessageTemplates_();
       renderDeskLiveFeed_();
@@ -45549,5 +45553,6 @@ window.SeduHubAdapter={
 <script type="module" src="hub-start.mjs"></script>
 <script src="./training.js?v=20260926-five"></script>
 <script src="./training-hr.js?v=20260925"></script>
+<script src="./inquiries.js?v=20260927"></script>
 </body>
 </html>

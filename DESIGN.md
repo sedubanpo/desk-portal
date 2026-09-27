@@ -125,3 +125,7 @@ The existing workspace CSS remains authoritative. Calendar dates lead with 15px 
 ## Payroll comfort refinement (2026-09-09)
 
 Calendar workdays use #f6f7f9 with slate selection; revenue bars use neutral gray and the net line uses slate. Net revenue is red and expected pay is blue. Payroll and settings use Segoe UI, Pretendard, Malgun Gothic and Apple SD Gothic Neo with lining tabular numerals. Settings use neutral table groups, quiet tabs, consistent inputs and a sticky footer. Shared SVG teacher and subject labels appear in settings and attendance. Attendance hours retain a numeric label and use one dot per hour with fractional fill; visual dots cap at 24 while the exact numeric value remains. Financial calculations and save handlers are unchanged.
+
+
+## 신규문의 관리센터 — 2026-09-27
+Below the daily journal, the inquiry workspace reuses the light lime command color and neutral surfaces. Four compact follow-up counters filter the work list; three small doughnut charts summarize school, grade and requested subjects with visible legends and counts. Period filters apply only to charts. The desktop list carries identity, subjects/owner, recent contact and next action; on narrow screens each row becomes a compact two-column block. A wide detail dialog separates editable inquiry fields from chronological contact history. Contact recording uses a smaller focused dialog and explicit result buttons. Loading, failed sync, stale updates, empty results, trash and restore are visible states.

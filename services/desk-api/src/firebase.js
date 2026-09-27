@@ -19,7 +19,7 @@ function firebaseApp(projectId) {
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds, subscriptionSupabaseToken, subscriptionSupabaseOrgSlugs }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds, subscriptionSupabaseToken, subscriptionSupabaseOrgSlugs, notionInquiryToken, notionInquirySourceId, notionInquiryHistoryId, notionInquirySyncKey }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
@@ -33,6 +33,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   });
 
   return {
+    inquiries: { firestore, token: notionInquiryToken, sourceId: notionInquirySourceId, historySourceId: notionInquiryHistoryId, syncKey: notionInquirySyncKey },
     training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),
     loadAccount: async uid => {

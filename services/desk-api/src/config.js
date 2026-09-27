@@ -33,6 +33,10 @@ export function loadConfig(env = process.env) {
       : production
         ? DEFAULT_PRODUCTION_ORIGINS
         : [...DEFAULT_PRODUCTION_ORIGINS, 'http://localhost:3000', 'http://localhost:8080'],
+    notionInquiryToken: String(env.NOTION_INQUIRY_TOKEN || '').trim(),
+    notionInquirySourceId: String(env.NOTION_INQUIRY_SOURCE_ID || '5a9e0b14-58d8-4163-812b-48e4df51dcbc').trim(),
+    notionInquiryHistoryId: String(env.NOTION_INQUIRY_HISTORY_ID || '').trim(),
+    notionInquirySyncKey: String(env.NOTION_INQUIRY_SYNC_KEY || '').trim(),
     checkRevokedTokens: env.CHECK_REVOKED_TOKENS !== 'false'
   };
 }
