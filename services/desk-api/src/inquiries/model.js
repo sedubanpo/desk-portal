@@ -30,6 +30,7 @@ export const textValue = p => {
  if (p.type === 'number') return v == null ? '' : String(v);
  return typeof v === 'string' ? v : '';
 };
+export const pageVersion = page => createHash('sha256').update(JSON.stringify([page.last_edited_time,page.properties,!!page.in_trash])).digest('hex');
 export function normalize(page) {
  const result = Object.fromEntries(Object.entries(FIELDS).map(([key, name]) => [key, textValue(page.properties?.[name])]));
  const subjectProp = page.properties?.[FIELDS.subjects];
@@ -39,7 +40,7 @@ export function normalize(page) {
  result.nextDate=result.nextDate.slice(0,10);
  result.followup ||= result.legacyStatus === '연락금지' ? '연락금지' : '재연락 필요';
  return { ...result, extras:Object.entries(page.properties || {}).filter(([name])=>!Object.values(FIELDS).includes(name)).map(([name,p])=>({name,value:textValue(p) || (['button','relation','rollup','files'].includes(p.type)?'노션 원본에서 확인':''),type:p.type})), id: cleanId(page.id), url: `https://www.notion.so/${cleanId(page.id)}`, createdAt: page.created_time,
- version: createHash('sha256').update(JSON.stringify([page.last_edited_time, page.properties, !!page.in_trash])).digest('hex'),
+ version: pageVersion(page),
  trashed: !!(page.in_trash || page.archived), editedAt: page.last_edited_time };
 }
 export function validatePatch(input) {

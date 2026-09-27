@@ -26,3 +26,8 @@ Unit/integration tests use fake Notion and Firestore; verify auth, wrong-source 
 
 ## Idempotent setup
 After sharing the original DB and its parent 신규문의 등록 page with sedu catch, run `python3 services/desk-api/scripts/setup-inquiries.py --output /private/tmp/inquiry-history-config.json` using the authorized operator's gcloud account. Only missing properties are added; the existing named direct-child history DB is reused. Output contains IDs, never secrets. Set NOTION_INQUIRY_HISTORY_ID to the returned sourceId and deploy before directing traffic to the new revision. Configure a five-minute scheduler to POST /v1/inquiries/sync-job with the secret header x-inquiry-sync-key; do not put the secret into source control.
+
+## Production configuration (2026-09-27)
+History database `19cbe931-3579-4398-a8fb-0f251cc9ea95`; history source `f1dd3c9c-c0b3-4ef6-b337-c2cd01f0c283`. The source and parent page are shared with sedu catch. Notion date properties retain minute precision in verified behavior: contact display timestamps are normalized to a minute; 기록 시각 원본 preserves the exact ISO timestamp for ordering. History versions hash properties, not only last_edited_time. Mirror reads track their request start time to prevent same-minute older reads from replacing later writes.
+
+Live Notion isolated QA passed edit, contact creation, request replay, history correction/cancellation, trash and restore. Test content was created in a separate temporary page with separate databases, then moved to trash. No real prospect record was edited. Original inquiry mirror initially contained 628 records.

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { ApiError } from '../http.js';
-import { cleanId, sameId, normalize, validatePatch, notionProperties, richText, RESULTS, FIELDS } from './model.js';
+import { cleanId, sameId, normalize, validatePatch, notionProperties, richText, RESULTS, textValue, pageVersion } from './model.js';
 
 export function createInquiryService({ notion, firestore, sourceId, historySourceId, now = () => new Date() }) {
  const equivalent=(k,a,b)=>JSON.stringify(k==='subjects'?[...(a||[])].sort():a)===JSON.stringify(k==='subjects'?[...(b||[])].sort():b);
@@ -13,15 +13,16 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
  const schema = () => notion(`/data_sources/${sourceId}`);
  async function queryAll(id, body = {}) {
   const rows = []; let cursor;
-  do { const result = await notion(`/data_sources/${id}/query`, 'POST', { ...body, page_size:100, ...(cursor ? {start_cursor:cursor} : {}) }); rows.push(...result.results); cursor = result.has_more ? result.next_cursor : null; } while (cursor);
+  do { const readStartedAt=now().getTime();const result = await notion(`/data_sources/${id}/query`, 'POST', { ...body, page_size:100, ...(cursor ? {start_cursor:cursor} : {}) }); rows.push(...result.results.map(p=>({...p,_mirrorReadStartedAt:readStartedAt}))); cursor = result.has_more ? result.next_cursor : null; } while (cursor);
   return rows;
  }
  async function sourcePage(id) {
-  const page = await notion(`/pages/${cleanId(id)}`);
+  const readStartedAt=now().getTime();
+  const page = await notion(`/pages/${cleanId(id)}`);page._mirrorReadStartedAt=readStartedAt;
   if (!sameId(page.parent?.data_source_id,sourceId)) throw new ApiError(403,'wrong_source','신규문의 DB의 자료만 관리할 수 있습니다.');
   return page;
  }
- async function cache(page) { const row=normalize(page); await firestore.runTransaction(async tx=>{const ref=items.doc(row.id),old=(await tx.get(ref)).data();if(!old?.editedAt || old.editedAt<=row.editedAt)tx.set(ref,row);}); return row; }
+ async function cache(page) { const row={...normalize(page),observedAt:page._mirrorReadStartedAt || now().getTime()}; await firestore.runTransaction(async tx=>{const ref=items.doc(row.id),old=(await tx.get(ref)).data();if(!old?.editedAt || old.editedAt<row.editedAt || (old.editedAt===row.editedAt && (old.observedAt||0)<=row.observedAt))tx.set(ref,row);}); return row; }
  async function sync(force = false) {
   configured();
   const owner = randomUUID(), start = now().toISOString();
@@ -58,8 +59,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
   configured(); const page=await sourcePage(id), row=await cache(page);
   const entries=historySourceId ? await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]}) : [];
   // Keep normalization of historical properties explicit to avoid sending raw Notion objects.
-  const {textValue}=await import('./model.js');
-  return {item:row,history:entries.map(p=>({id:cleanId(p.id),version:p.last_edited_time,...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
+  return {item:row,history:entries.sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각']))).map(p=>({id:cleanId(p.id),version:pageVersion(p),...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
  }
  async function change(id, body, actor){
   configured();id=cleanId(id);
@@ -77,7 +77,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
    if(old?.fingerprint && old.fingerprint!==fingerprint)throw new ApiError(409,'request_reused','다른 저장에는 새 요청 번호가 필요합니다.');
    if(old?.response)return old;
    if(held?.until>now().getTime())throw new ApiError(409,'save_in_progress','다른 저장이 진행 중입니다. 잠시 후 다시 시도해 주세요.');
-   const value=old || {fingerprint,actor:{uid:actor.uid,name:actor.name},at:now().toISOString(),action:body.action,id,request:body};
+   const value=old || {fingerprint,actor:{uid:actor.uid,name:actor.name},at:new Date(Math.floor(now().getTime()/60000)*60000).toISOString(),exactAt:now().toISOString(),action:body.action,id,request:body};
    tx.set(lock,{attempt,until:now().getTime()+300000});tx.set(ref,value);return value;
   });
   if(op.response)return op.response;
@@ -94,16 +94,14 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
     const entry=await notion(`/pages/${cleanId(body.historyId)}`);
     if(!sameId(entry.parent?.data_source_id,historySourceId) || !entry.properties['문의']?.relation?.some(r=>sameId(r.id,id)))throw new ApiError(403,'wrong_history','이 문의의 연락 기록만 수정할 수 있습니다.');
     if(!op.historyWritten){
-     const {textValue}=await import('./model.js');
-     const already=textValue(entry.properties['메모'])===body.note && textValue(entry.properties['기록 상태'])===body.historyState;
-     if(entry.last_edited_time!==body.historyVersion && !(op.historyAttempted && already))throw new ApiError(409,'stale_history','연락 기록이 변경되었습니다. 다시 열어 주세요.');
+        const already=textValue(entry.properties['메모'])===body.note && textValue(entry.properties['기록 상태'])===body.historyState;
+     if(pageVersion(entry)!==body.historyVersion && !(op.historyAttempted && already))throw new ApiError(409,'stale_history','연락 기록이 변경되었습니다. 다시 열어 주세요.');
      await ref.set({historyAttempted:true,historyBefore:entry.properties},{merge:true});
      if(!already)await notion(`/pages/${entry.id}`,'PATCH',{properties:{'메모':{rich_text:richText(body.note)},'기록 상태':{select:{name:body.historyState}},'수정자':{rich_text:richText(actor.name)},'수정 시각':{date:{start:now().toISOString()}}}});
      await ref.set({historyWritten:true},{merge:true});
     }
-    const {textValue}=await import('./model.js');
-    const all=await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]});
-    const valid=all.filter(p=>textValue(p.properties['기록 상태'])!=='취소').sort((a,b)=>textValue(b.properties['연락 시각']).localeCompare(textValue(a.properties['연락 시각'])));
+      const all=await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]});
+    const valid=all.filter(p=>textValue(p.properties['기록 상태'])!=='취소').sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각'])));
     const latest=valid[0];
     const summary={lastContact:latest?textValue(latest.properties['연락 시각']):'',lastResult:latest?textValue(latest.properties['연락 결과']):''};
     await notion(`/pages/${id}`,'PATCH',{properties:notionProperties(summary,await schema())});
@@ -124,7 +122,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
       await notion('/pages','POST',{parent:{type:'data_source_id',data_source_id:historySourceId},properties:{
        '이름':{title:richText(`${op.before.name} · ${body.result}`)},'문의':{relation:[{id}]},'요청 ID':{rich_text:richText(key)},
        '연락 결과':{select:{name:body.result}},'메모':{rich_text:richText(body.note)},'기록자':{rich_text:richText(actor.name)},
-       '연락 시각':{date:{start:op.at}},'기록 상태':{select:{name:'유효'}}
+       '연락 시각':{date:{start:op.at}},'기록 시각 원본':{rich_text:richText(op.exactAt || op.at)},'기록 상태':{select:{name:'유효'}}
       }});
      }
     }

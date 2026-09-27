@@ -29,7 +29,10 @@ while True:
 existing=[c for c in children if c.get('type')=='child_database' and c.get('child_database',{}).get('title')=='신규문의 연락 이력']
 if existing:d=api('/databases/'+existing[0]['id'])
 else:
- props={'이름':{'title':{}},'문의':{'relation':{'data_source_id':source,'single_property':{}}},'요청 ID':{'rich_text':{}},'연락 결과':select(['통화 완료','부재','문자 보냄','답변 받음']),'메모':{'rich_text':{}},'기록자':{'rich_text':{}},'연락 시각':{'date':{}},'기록 상태':select(['유효','취소']),'수정자':{'rich_text':{}},'수정 시각':{'date':{}}}
+ props={'이름':{'title':{}},'문의':{'relation':{'data_source_id':source,'single_property':{}}},'요청 ID':{'rich_text':{}},'연락 결과':select(['통화 완료','부재','문자 보냄','답변 받음']),'메모':{'rich_text':{}},'기록자':{'rich_text':{}},'연락 시각':{'date':{}},'기록 시각 원본':{'rich_text':{}},'기록 상태':select(['유효','취소']),'수정자':{'rich_text':{}},'수정 시각':{'date':{}}}
  d=api('/databases','POST',{'parent':{'type':'page_id','page_id':parent},'title':[{'type':'text','text':{'content':'신규문의 연락 이력'}}],'is_inline':False,'initial_data_source':{'properties':props}})
+history_source=d['data_sources'][0]['id']
+history_schema=api('/data_sources/'+history_source)
+if '기록 시각 원본' not in history_schema['properties']:api('/data_sources/'+history_source,'PATCH',{'properties':{'기록 시각 원본':{'rich_text':{}}}})
 print('History database:',d['id']);print('History sources:',d.get('data_sources'))
 pathlib.Path(args.output).write_text(json.dumps({'databaseId':d['id'],'sourceId':d['data_sources'][0]['id']}))
