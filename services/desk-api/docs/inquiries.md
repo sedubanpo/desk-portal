@@ -23,3 +23,6 @@ Blank new stage derives conservatively from explicit legacy values: 신규등원
 
 ## Verification
 Unit/integration tests use fake Notion and Firestore; verify auth, wrong-source ID, input, real upstream mutations, stale edits, idempotency, contact history, trash/restore and error semantics. Browser QA uses synthetic data only. Do not create or delete real prospect records for QA.
+
+## Idempotent setup
+After sharing the original DB and its parent 신규문의 등록 page with sedu catch, run `python3 services/desk-api/scripts/setup-inquiries.py --output /private/tmp/inquiry-history-config.json` using the authorized operator's gcloud account. Only missing properties are added; the existing named direct-child history DB is reused. Output contains IDs, never secrets. Set NOTION_INQUIRY_HISTORY_ID to the returned sourceId and deploy before directing traffic to the new revision. Configure a five-minute scheduler to POST /v1/inquiries/sync-job with the secret header x-inquiry-sync-key; do not put the secret into source control.
