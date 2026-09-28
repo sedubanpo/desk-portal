@@ -4,13 +4,14 @@ export const FIELDS = {
  name: '이름', school: '학교', grade: '학년', phone: '학부모 전화번호', subjects: '수강 희망 과목',
  consultation: '대표님 상담내용', notes: '특이사항', legacyFollowup: '재연락 기록', legacyStatus: '상태',
  owner: '문의 담당자', stage: '문의 진행상태', followup: '재연락 관리', nextDate: '다음 연락일', nextAction: '다음 할 일',
- lastContact: '최근 연락일', lastResult: '최근 연락 결과'
+ lastContact: '최근 연락일', lastResult: '최근 연락 결과', stageNote: '진행상황 비고'
 };
-export const STAGES = ['신규', '상담 중', '상담 예약', '등록 완료', '종료'];
+export const STAGES = ['상담 중', '연락두절', '타원 등록', '연락 보류', '재연락 대상', '신규', '상담 예약', '등록 완료', '종료'];
 export const FOLLOWUPS = ['재연락 필요', '재연락 안 함', '연락금지'];
-export const RESULTS = ['통화 완료', '부재', '문자 보냄', '답변 받음'];
+export const METHODS = ['전화','카톡','문자'];
+export const RESULTS = ['통화 완료', '부재', '문자 보냄', '답변 받음', '카톡 보냄'];
 export const EXTRA_SCHEMA = {
- '문의 담당자': { rich_text: {} }, '문의 진행상태': { select: { options: STAGES.map(name => ({ name })) } },
+ '진행상황 비고': { rich_text: {} }, '문의 담당자': { rich_text: {} }, '문의 진행상태': { select: { options: STAGES.map(name => ({ name })) } },
  '재연락 관리': { select: { options: FOLLOWUPS.map(name => ({ name })) } },
  '다음 연락일': { date: {} }, '다음 할 일': { rich_text: {} }, '최근 연락일': { date: {} },
  '최근 연락 결과': { select: { options: RESULTS.map(name => ({ name })) } }
@@ -35,17 +36,17 @@ export function normalize(page) {
  const result = Object.fromEntries(Object.entries(FIELDS).map(([key, name]) => [key, textValue(page.properties?.[name])]));
  const subjectProp = page.properties?.[FIELDS.subjects];
  result.subjects = subjectProp?.type === 'multi_select' ? subjectProp.multi_select.map(s => s.name) : result.subjects.split(/[,，]/).map(s => s.trim()).filter(Boolean);
- result.stage ||= ['신규등원','압구정관 등록'].includes(result.legacyStatus) ? '등록 완료' : ['타원등록'].includes(result.legacyStatus) ? '종료' : ['등원예정','상담예정'].includes(result.legacyStatus) ? '상담 예약' : /완료|연락|상담/.test(result.legacyStatus) ? '상담 중' : '신규';
+ result.stage ||= ['신규등원','압구정관 등록'].includes(result.legacyStatus) ? '등록 완료' : ['타원등록'].includes(result.legacyStatus) ? '타원 등록' : ['등원예정','상담예정'].includes(result.legacyStatus) ? '상담 예약' : /완료|연락|상담/.test(result.legacyStatus) ? '상담 중' : '신규';
  if(result.lastContact) result.lastContact=new Date(result.lastContact).toISOString();
  result.nextDate=result.nextDate.slice(0,10);
  result.followup ||= result.legacyStatus === '연락금지' ? '연락금지' : '재연락 필요';
- return { ...result, extras:Object.entries(page.properties || {}).filter(([name])=>!Object.values(FIELDS).includes(name)).map(([name,p])=>({name,value:textValue(p) || (['button','relation','rollup','files'].includes(p.type)?'노션 원본에서 확인':''),type:p.type})), id: cleanId(page.id), url: `https://www.notion.so/${cleanId(page.id)}`, createdAt: page.created_time,
+ return { ...result, extras:Object.entries(page.properties || {}).filter(([name])=>!Object.values(FIELDS).includes(name)).map(([name,p])=>({name,value:textValue(p) || (['button','relation','rollup','files'].includes(p.type)?'노션 원본에서 확인':''),type:p.type})), id: cleanId(page.id), url: `https://www.notion.so/${cleanId(page.id)}`, createdAt: page.created_time, firstContact: textValue(page.properties?.['입력 시간']) || page.created_time,
  version: pageVersion(page),
  trashed: !!(page.in_trash || page.archived), editedAt: page.last_edited_time };
 }
 export function validatePatch(input) {
  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new ApiError(400, 'invalid_input', '입력 내용을 확인해 주세요.');
- const allowed = ['name','school','grade','phone','subjects','consultation','notes','owner','stage','followup','nextDate','nextAction'];
+ const allowed = ['name','school','grade','phone','subjects','consultation','notes','owner','stage','followup','nextDate','nextAction','stageNote'];
  const out = {};
  for (const [key, value] of Object.entries(input)) {
   if (!allowed.includes(key)) throw new ApiError(400, 'invalid_field', '수정할 수 없는 항목입니다.');
@@ -53,7 +54,7 @@ export function validatePatch(input) {
    if (!Array.isArray(value) || value.length > 20 || value.some(v => typeof v !== 'string' || !v.trim() || v.length > 100)) throw new ApiError(400, 'invalid_subjects', '희망 과목을 확인해 주세요.');
    out[key] = [...new Set(value.map(v => v.trim()))]; continue;
   }
-  if (typeof value !== 'string' || value.length > (['consultation','notes'].includes(key) ? 20000 : 500)) throw new ApiError(400,'invalid_text','입력 길이를 확인해 주세요.');
+  if (typeof value !== 'string' || value.length > (['consultation','notes','stageNote'].includes(key) ? 20000 : 500)) throw new ApiError(400,'invalid_text','입력 길이를 확인해 주세요.');
   out[key] = value.trim();
  }
  for (const [key, options] of [['stage',STAGES],['followup',FOLLOWUPS]]) if (key in out && !options.includes(out[key])) throw new ApiError(400,'invalid_choice','상태를 확인해 주세요.');

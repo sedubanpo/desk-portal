@@ -12,3 +12,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## Review
 Synthetic Chromium desktop/mobile browser pass: search, three charts, contact, edit, delete and restore; no console errors or page-wide overflow. Reviewed desktop detail and mobile captures. Existing page inline script parsed after integration. No raster assets ship. DESIGN.md records the extension. Backend auth, conflict, pagination and idempotency covered by tests. Production Notion contact writes are not tested on real prospects. The separate contact-history DB is connected. Live Notion CRUD and contact-history verification passed in an isolated temporary workspace; temporary data was moved to trash.
+
+## 2026-09-28 contact workflow
+Preserve calm lime/white operational layout. First contact (Notion input time, Seoul timezone) follows name. S-LMS subject palettes and outline icons label subjects. Phone/Kakao/SMS buttons pair glyphs with counts and accessible names; completed actions only, no external sending. Status dialog offers five new states and notes; legacy enrolled/closed values are retained. Recent actor/date and timeline reduce detail navigation. Compact date presets open a custom range calendar; phone layout stacks two columns without page overflow.

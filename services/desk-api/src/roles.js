@@ -35,6 +35,7 @@ export function publicIdentity(decodedToken, account, access) {
     email: decodedToken.email || account.email || '',
     loginId: account.loginId || '',
     name: account.name || decodedToken.name || '',
+    nickname: account.nickname || account.nickName || account.name || decodedToken.name || '',
     role,
     status: account.status,
     staffPosition: account.staffPosition || '',

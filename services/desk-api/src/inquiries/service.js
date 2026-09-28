@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { ApiError } from '../http.js';
-import { cleanId, sameId, normalize, validatePatch, notionProperties, richText, RESULTS, textValue, pageVersion } from './model.js';
+import { cleanId, sameId, normalize, validatePatch, notionProperties, richText, RESULTS, METHODS, textValue, pageVersion } from './model.js';
 
 export function createInquiryService({ notion, firestore, sourceId, historySourceId, now = () => new Date() }) {
  const equivalent=(k,a,b)=>JSON.stringify(k==='subjects'?[...(a||[])].sort():a)===JSON.stringify(k==='subjects'?[...(b||[])].sort():b);
@@ -8,6 +8,15 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
  const items = root.doc('main').collection('items');
  const meta = root.doc('main');
  const operations = root.doc('main').collection('operations');
+ const summaries = root.doc('main').collection('contactSummaries');
+ const methodOf=p=>textValue(p.properties['연락 방법']) || ({'통화 완료':'전화','부재':'전화','문자 보냄':'문자','카톡 보냄':'카톡'}[textValue(p.properties['연락 결과'])] || '');
+ const timeOf=p=>textValue(p.properties['기록 시각 원본'])||textValue(p.properties['연락 시각']);
+ async function summarize(id,entries,observedAt){
+  const valid=entries.filter(p=>!p.in_trash&&!p.archived&&textValue(p.properties['기록 상태'])!=='취소').sort((a,b)=>timeOf(b).localeCompare(timeOf(a)));
+  const counts=Object.fromEntries(METHODS.map(m=>[m,valid.filter(p=>methodOf(p)===m).length]));
+  const value={contactCounts:counts,lastActor:valid[0]?textValue(valid[0].properties['기록자']):'',historyLastContact:valid[0]?timeOf(valid[0]):'',observedAt};
+  await firestore.runTransaction(async tx=>{const ref=summaries.doc(cleanId(id)),old=(await tx.get(ref)).data();if(!old || old.observedAt<=observedAt)tx.set(ref,value);});return value;
+ }
  const locks = root.doc('main').collection('locks');
  const configured = () => { if (!sourceId) throw new ApiError(503,'notion_not_configured','신규문의 노션 DB 연결 설정이 필요합니다.'); };
  const schema = () => notion(`/data_sources/${sourceId}`);
@@ -45,28 +54,44 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
      catch(e){ if(e.code==='notion_access_required' || e.code==='wrong_source') await doc.ref.set({unavailable:true},{merge:true}); else throw e; }
     }
    }
+   if(historySourceId){
+    const observedAt=now().getTime(), logs=await queryAll(historySourceId), grouped=new Map();
+    for(const entry of logs) for(const rel of entry.properties['문의']?.relation||[]){const key=cleanId(rel.id);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(entry);}
+    const previous=await summaries.get();for(const doc of previous.docs)if(!grouped.has(doc.id))grouped.set(doc.id,[]);
+    for(const [id,entries] of grouped)await summarize(id,entries,observedAt);
+   }
    await meta.set({syncedAt:start,...(full?{fullSyncedAt:start}:{}),syncError:''},{merge:true});
   }catch(e){await meta.set({syncError:e.message},{merge:true});throw e;}
   finally{await firestore.runTransaction(async tx=>{const d=(await tx.get(meta)).data();if(d?.syncOwner===owner)tx.set(meta,{syncLeaseUntil:0},{merge:true});});}
  }
  async function list(force=false){
   let warning='';try{await sync(force);}catch(e){warning=e.message;}
-  const [data,status]=await Promise.all([items.get(),meta.get()]);
-  const rows=data.docs.map(d=>d.data()).filter(r=>!r.unavailable);
+  const [data,status,summaryDocs]=await Promise.all([items.get(),meta.get(),summaries.get()]);
+  const byId=new Map(summaryDocs.docs.map(d=>[d.id,d.data()]));
+  const rows=data.docs.map(d=>({...d.data(),...byId.get(d.id)})).filter(r=>!r.unavailable);
   return {items:rows,syncedAt:status.data()?.syncedAt || null,warning:warning || status.data()?.syncError || '', syncing:(status.data()?.syncLeaseUntil || 0)>now().getTime()};
  }
  async function detail(id){
   configured(); const page=await sourcePage(id), row=await cache(page);
+  const observedAt=now().getTime();
   const entries=historySourceId ? await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]}) : [];
   // Keep normalization of historical properties explicit to avoid sending raw Notion objects.
-  return {item:row,history:entries.sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각']))).map(p=>({id:cleanId(p.id),version:pageVersion(p),...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
+  const contactSummary=await summarize(id,entries,observedAt);
+  return {item:{...row,...contactSummary},history:entries.sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각']))).map(p=>({id:cleanId(p.id),version:pageVersion(p),method:methodOf(p),...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
  }
  async function change(id, body, actor){
   configured();id=cleanId(id);
   if(!/^[a-zA-Z0-9-]{16,100}$/.test(body.requestId || '')) throw new ApiError(400,'request_id_required','저장 요청 번호가 필요합니다.');
   if(!['edit','contact','delete','restore','history'].includes(body.action))throw new ApiError(400,'invalid_action','지원하지 않는 동작입니다.');
   let patch=validatePatch(body.patch || {});
+  const actorName=actor.nickname || actor.name || actor.loginId || actor.uid;
+  if(body.action==='contact' && body.method!==undefined && !METHODS.includes(body.method))throw new ApiError(400,'invalid_method','연락 방법을 확인해 주세요.');
+  if(patch.stage && patch.followup===undefined){
+   if(['타원 등록','연락 보류'].includes(patch.stage))patch.followup='재연락 안 함';
+   else if(['상담 중','재연락 대상','연락두절'].includes(patch.stage))patch.followup='재연락 필요';
+  }
   if(body.action==='contact' && (!RESULTS.includes(body.result) || typeof body.note!=='string' || body.note.length>10000))throw new ApiError(400,'invalid_contact','연락 결과와 메모를 확인해 주세요.');
+  if(body.action==='contact' && body.method && !({'전화':['통화 완료','부재'],'카톡':['카톡 보냄','답변 받음'],'문자':['문자 보냄','답변 받음']}[body.method]||[]).includes(body.result))throw new ApiError(400,'invalid_contact_result','연락 방법에 맞는 결과를 선택해 주세요.');
   if(body.action==='contact' && !historySourceId)throw new ApiError(503,'history_required','연락 이력 DB 연결이 필요합니다.');
   if(body.action==='history' && (!historySourceId || !['유효','취소'].includes(body.historyState) || typeof body.note!=='string' || body.note.length>10000))throw new ApiError(400,'invalid_history','연락 이력 수정 내용을 확인해 주세요.');
   const key=createHash('sha256').update(actor.uid+':'+body.requestId).digest('hex');
@@ -77,7 +102,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
    if(old?.fingerprint && old.fingerprint!==fingerprint)throw new ApiError(409,'request_reused','다른 저장에는 새 요청 번호가 필요합니다.');
    if(old?.response)return old;
    if(held?.until>now().getTime())throw new ApiError(409,'save_in_progress','다른 저장이 진행 중입니다. 잠시 후 다시 시도해 주세요.');
-   const value=old || {fingerprint,actor:{uid:actor.uid,name:actor.name},at:new Date(Math.floor(now().getTime()/60000)*60000).toISOString(),exactAt:now().toISOString(),action:body.action,id,request:body};
+   const value=old || {fingerprint,actor:{uid:actor.uid,name:actorName},at:new Date(Math.floor(now().getTime()/60000)*60000).toISOString(),exactAt:now().toISOString(),action:body.action,id,request:body};
    tx.set(lock,{attempt,until:now().getTime()+300000});tx.set(ref,value);return value;
   });
   if(op.response)return op.response;
@@ -97,7 +122,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
         const already=textValue(entry.properties['메모'])===body.note && textValue(entry.properties['기록 상태'])===body.historyState;
      if(pageVersion(entry)!==body.historyVersion && !(op.historyAttempted && already))throw new ApiError(409,'stale_history','연락 기록이 변경되었습니다. 다시 열어 주세요.');
      await ref.set({historyAttempted:true,historyBefore:entry.properties},{merge:true});
-     if(!already)await notion(`/pages/${entry.id}`,'PATCH',{properties:{'메모':{rich_text:richText(body.note)},'기록 상태':{select:{name:body.historyState}},'수정자':{rich_text:richText(actor.name)},'수정 시각':{date:{start:now().toISOString()}}}});
+     if(!already)await notion(`/pages/${entry.id}`,'PATCH',{properties:{'메모':{rich_text:richText(body.note)},'기록 상태':{select:{name:body.historyState}},'수정자':{rich_text:richText(actorName)},'수정 시각':{date:{start:now().toISOString()}}}});
      await ref.set({historyWritten:true},{merge:true});
     }
       const all=await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]});
@@ -121,13 +146,15 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
       await ref.set({historyAttempted:true},{merge:true});
       await notion('/pages','POST',{parent:{type:'data_source_id',data_source_id:historySourceId},properties:{
        '이름':{title:richText(`${op.before.name} · ${body.result}`)},'문의':{relation:[{id}]},'요청 ID':{rich_text:richText(key)},
-       '연락 결과':{select:{name:body.result}},'메모':{rich_text:richText(body.note)},'기록자':{rich_text:richText(actor.name)},
+       ...(body.method?{'연락 방법':{select:{name:body.method}}}:{}),'연락 결과':{select:{name:body.result}},'메모':{rich_text:richText(body.note)},'기록자':{rich_text:richText(actorName)},
        '연락 시각':{date:{start:op.at}},'기록 시각 원본':{rich_text:richText(op.exactAt || op.at)},'기록 상태':{select:{name:'유효'}}
       }});
      }
     }
    }
-   page=await sourcePage(id);const row=await cache(page);
+   page=await sourcePage(id);let row=await cache(page);
+   if(['contact','history'].includes(body.action))row=(await detail(id)).item;
+   else row={...row,...(await summaries.doc(id).get()).data()};
    if(body.action!=='history'){
     const expectedTrash=body.action==='delete'?true:body.action==='restore'?false:row.trashed;
     if(row.trashed!==expectedTrash || !Object.entries(op.patch).every(([k,v])=>equivalent(k,row[k],v)))throw new ApiError(409,'verification_conflict','저장 중 노션 내용이 변경되었습니다. 새로고침 후 확인해 주세요.');

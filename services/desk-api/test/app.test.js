@@ -74,6 +74,7 @@ test('me returns the normalized staff identity', async () => {
     email: 'staff@example.com',
     loginId: '01012345678',
     name: '테스트 근무자',
+    nickname: '테스트 근무자',
     role: 'STAFF',
     status: 'ACTIVE',
     staffPosition: '대리',
