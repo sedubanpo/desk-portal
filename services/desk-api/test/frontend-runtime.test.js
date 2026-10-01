@@ -994,3 +994,43 @@ test('monthly chart filters expose cancellation and estimated absence without tr
  assert.equal(config.data.datasets[3].data[1],null);
  assert.equal(config.options.plugins.tooltip.callbacks.afterLabel({datasetIndex:3,dataIndex:0}),'추정 불가 2건 제외');
 });
+
+test('personal queue trusts saved progress rather than task arrival date', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const getStatus = loadFunction(source, 'getDeskTaskLedgerStatus_', {});
+  assert.equal(getStatus({ dateKey: '2026-10-01', progressStatus: '대기' }), '대기');
+  assert.equal(getStatus({ dateKey: '2026-09-01', progressStatus: '진행 중' }), '진행 중');
+  assert.equal(getStatus({ completed: true, progressStatus: '대기' }), '완료');
+});
+
+test('failed queue writes restore confirmed task and preserve compatibility versions for editor forms', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const old = {id:'task',dateKey:'2026-10-01',worker:'나',title:'업무',progressStatus:'진행 중',version:3};
+  const state = {cloudIdentity:{uid:'me'},desk:{daily:{dateKey:old.dateKey,taskLedger:[old],carryoverTasks:[],loadedDates:{}}}};
+  let tasks = [old], sent;
+  const save = loadFunction(source, 'upsertDeskDailyTask_', {
+    state,DESK_ROUTINE_TEMPLATE_KEY:'2099-12-31',normalizeDeskDailyTask_:x=>({...x}),findDeskDailyTaskById_:()=>old,
+    getDeskDateKey_:()=>old.dateKey,buildDeskCurrentDateTimeForKey_:()=> 'now',
+    getDeskDailyJournalTasks_:()=>tasks,getDeskDailyJournalMemos_:()=>[],
+    mergeDeskDailyJournalData_:(_date,next)=>{tasks=next;},rememberDeskDailyPendingTaskMutation_:()=>{},
+    refreshDeskDailyJournalSnapshotForDate_:()=>{},renderDeskDailyJournal_:()=>{},forgetDeskDailyPendingTaskMutation_:()=>{},
+    enqueueDeskDailyMutation_:async fn=>{sent=await fn();return null;},saveDeskDailyTaskRemote_:async item=>item
+  });
+  await save({id:old.id,dateKey:old.dateKey,worker:'나',title:'업무',progressStatus:'완료',completed:true});
+  assert.equal(sent.version,3,'editor forms that omit version use the known server baseline');
+  assert.equal(tasks[0].progressStatus,'진행 중');
+  assert.equal(tasks[0].syncState,'error');
+  assert.equal(state.desk.daily.taskLedger[0].version,3);
+});
+
+test('history response from signed-out account cannot repopulate another account UI', async () => {
+  const source = await readFile(frontendPath, 'utf8'), pending = deferred();
+  const state={cloudIdentity:{uid:'old'},desk:{daily:{taskLedger:[]}}};
+  const load=loadFunction(source,'loadDeskTaskHistory_',{
+    state,findDeskDailyTaskById_:()=>({id:'x',dateKey:'2026-10-01'}),canEditDeskPersonalTask_:()=>true,
+    renderDeskDailyJournal_:()=>{},runServer:()=>pending.promise
+  });
+  load('x');state.cloudIdentity.uid='new';state.desk.daily.taskHistories={};
+  pending.resolve({success:true,history:[{version:1}]});await nextTurn();
+  assert.deepEqual(state.desk.daily.taskHistories,{});
+});

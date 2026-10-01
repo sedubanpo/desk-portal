@@ -309,3 +309,11 @@ test('payment-link imports require staff authentication and enter write idempote
   assert.equal(contexts[0].method,'importTuitionPaymentLink');
   assert.equal(contexts[0].key,'import:qa');
 });
+
+test('personal task history uses authenticated desk route and server identity', async () => {
+  let actor;
+  const app=testApp({deskHandlers:{getDeskDailyJournalTaskHistory:async(_payload,identity)=>{actor=identity;return {success:true,history:[]};}}});
+  await request(app).post('/v1/desk/getDeskDailyJournalTaskHistory').send({payload:{}}).expect(401);
+  const res=await request(app).post('/v1/desk/getDeskDailyJournalTaskHistory').set('authorization','Bearer valid-token').send({payload:{uid:'forged',role:'ADMIN'}}).expect(200);
+  assert.equal(res.body.success,true);assert.equal(actor.uid,'staff-1');assert.equal(actor.role,'STAFF');
+});

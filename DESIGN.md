@@ -107,7 +107,7 @@ User correction: Desk Portal brand is light lime green. `docs/workspace.css` sup
 
 ## Daily workbench columns
 
-At desktop width, equal left/right columns: staff selector (four buttons per row; seven staff/utility buttons span two rows) and composer on the left; unresolved queue, records, and collapsible live widget on the right. Under 1000px stack columns. Today roster is visible beneath sidebar navigation, separate from help disclosure. Task statuses and carryover dates are plain metadata, not pills. Brand logo uses a green tint.
+At desktop width, equal left/right columns: staff selector (four buttons per row; seven staff/utility buttons span two rows) and composer on the left; unresolved queue, records, and collapsible live widget on the right. Under 1000px stack columns. Today roster is visible beneath sidebar navigation, separate from help disclosure. Carryover dates remain plain metadata. Personal queue statuses use compact, text-labelled semantic badges and the explicitly saved progress value. Brand logo uses a green tint.
 
 Daily details: roster gauges represent scheduled hours/10 (cap100%, resident excluded); live feed opens by default. Attendance actions follow date navigation, status and errors remain beneath heading. Type buttons use icons and distinct readable hues. Queue identity, carryover date and bold title share a wrapping horizontal line.
 
@@ -137,3 +137,12 @@ Below the daily journal, the inquiry workspace retains the portal's lime/olive o
 **The Current-State Rule.** The chart's contact and registration series classify each arrival cohort by its current state, rather than measuring events on contact or registration dates. Registration ratios describe current status; contact-record coverage does not measure replies. Channel totals are accumulated valid known-method records on the selected inquiries, rather than contacts made during the selected dates. Preserve these definitions beside the analysis. Existing detail, contact, progress, history, trash and restore flows remain available; 상담 예약 and 등록 완료 are selectable. The aggregate CSV carries these definitions and excludes personal identity/contact fields.
 
 Inquiry contact identity refinement: last-contact timestamps use bold weight (700). Staff labels reuse the shared staff-position icon when the directory resolves a position, then the existing staff asset; unknown identities use a neutral person icon. Missing names retain plain placeholder text. The follow-up owner and latest contact actor share this compact treatment.
+
+
+## Personal unresolved work — 2026-10-01
+
+The named-worker queue offers a native disclosure, “내 업무 추가”, only on the signed-in worker's own tab. Keep the existing lime/olive commands and white working surfaces. A task title leads each row; staff identity, registration/carryover date and “직접 추가” are supporting metadata. Status reflects the saved choice, never an inference from the task date. Expanded rows group progress, memo and next action before save/history actions. Completed work keeps history and offers “다시 진행”. On mobile the checkbox, title and expansion control share a compact grid, with status under the title and stacked progress fields.
+
+Creation and progress drafts survive failed saves; saving disables the relevant controls. A failed status write restores the previously confirmed task and exposes “서버 상태 확인” before retry. History shows actor, server timestamp, previous/new status, memo and next action, with explicit absence of pre-existing history. Historical events are retained, served in pages of 30 and never backfilled from guesses. Preserve administrator assignment controls and shared notice acknowledgement rules.
+
+Personal queue polish: place its live count beside the heading as restrained tabular text, keep 40px inline-flex action buttons with centred 16px icons and labels, and group fields/actions with explicit 12px spacing. Empty error elements do not occupy layout space.

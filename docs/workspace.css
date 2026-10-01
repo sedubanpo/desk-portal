@@ -778,3 +778,71 @@ body.desk-daily-journal-mode .desk-ledger-deletion-meta { display:flex; flex-wra
 .payroll-analysis-series label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; cursor:pointer; }
 .payroll-analysis-series input { accent-color:#789344; }
 .payroll-analysis-series>span { color:#6b7280; font-size:11px; }
+/* Personal work queue: explicit progress, inline creation, durable history. */
+body.desk-daily-journal-mode .desk-self-task-composer{margin:14px 0 18px;background:#f7f9f1;border:1px solid #e2e9d5;border-radius:10px;overflow:hidden}
+body.desk-daily-journal-mode .desk-self-task-composer[hidden]{display:none}
+.desk-self-task-composer summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;min-height:44px;cursor:pointer;color:#405d28;font-size:13px;font-weight:700;list-style:none}
+.desk-self-task-composer summary::-webkit-details-marker{display:none}
+.desk-self-task-composer summary>span:first-child{display:flex;align-items:center;gap:7px}
+.desk-self-task-composer summary>span:last-child{font-size:11px;font-weight:400;color:#5b6a4b}
+.desk-self-task-composer form{padding:0 14px 14px}
+.desk-self-task-composer label,.desk-task-progress-fields label{display:flex;flex-direction:column;gap:6px;margin:10px 0;color:#465737;font-size:12px;font-weight:650}
+.desk-self-task-composer :is(input,textarea,select),.desk-task-progress-fields :is(input,select){width:100%;box-sizing:border-box;min-width:0;min-height:40px;font:inherit;resize:vertical}
+.desk-self-task-date{margin:0 0 12px;font-size:11px;color:#5b6a4b}
+.desk-self-task-fields{display:grid;grid-template-columns:minmax(100px,.8fr) minmax(0,2fr);gap:12px}
+.desk-self-task-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.desk-self-task-actions>span{font-size:11px;color:#5b6a4b}
+.desk-task-inline-error{font-size:12px;color:#a43528;line-height:1.6}
+body.desk-daily-journal-mode .desk-queue-summary{display:block;min-width:0}
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-title{margin-bottom:6px;font-size:15px;line-height:1.55}
+body.desk-daily-journal-mode .desk-queue-summary .desk-task-meta{display:flex;flex-wrap:wrap;font-size:11px;font-weight:450;gap:8px}
+body.desk-daily-journal-mode .desk-queue-top{align-items:flex-start;padding:16px 0;gap:10px}
+body.desk-daily-journal-mode .desk-task-status{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin-top:3px;padding:4px 7px;border-radius:5px;font-size:11px;font-weight:650;background:#f2f4ee;color:#536347}
+body.desk-daily-journal-mode .desk-task-status.is-progress{background:#edf5ff;color:#316591}
+body.desk-daily-journal-mode .desk-task-status.is-attention{background:#fff4de;color:#886018}
+body.desk-daily-journal-mode .desk-task-status.is-done{background:#eaf6ed;color:#326c43}
+body.desk-daily-journal-mode .desk-queue-expand-btn{width:40px;height:40px;flex-shrink:0}
+body.desk-daily-journal-mode .desk-queue-check-wrap{min-width:30px;min-height:40px;display:flex;align-items:center;justify-content:center}
+body.desk-daily-journal-mode .desk-queue-detail{padding:16px;background:#f7f9f3}
+.desk-task-progress-fields{display:grid;grid-template-columns:minmax(105px,.7fr) minmax(0,1.3fr);column-gap:12px}
+.desk-task-progress-fields>label:last-child{grid-column:1/-1}
+.desk-task-save-indicator{font-size:11px;color:#5b6a4b;margin-left:auto}
+.desk-self-task-source{font-size:11px;font-weight:600;color:#567239}
+.desk-task-history{margin-top:16px;padding-top:16px;border-top:1px solid #dfe6d3}
+.desk-task-history h4{font-size:13px;margin:0 0 12px;color:#374d29}
+.desk-task-history ol{list-style:none;padding:0;margin:0}
+.desk-task-history li{padding:12px 0;border-bottom:1px solid #e1e8d8}
+.desk-task-history li>div:first-child{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px}
+.desk-task-history time{font-size:11px;color:#5b6a4b}
+.desk-history-actor{margin-top:6px;font-size:11px}
+.desk-task-history p{margin:6px 0 0;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.desk-task-history-loading{margin-top:16px;font-size:12px;color:#5b6a4b}
+@media(max-width:600px){.desk-self-task-fields,.desk-task-progress-fields{grid-template-columns:1fr}.desk-task-progress-fields>label:last-child{grid-column:auto}.desk-self-task-actions{align-items:flex-start;flex-direction:column}.desk-self-task-actions>button{width:100%}.desk-self-task-composer summary>span:last-child{display:none}.desk-task-save-indicator{width:100%;margin-left:0}}
+
+@media(max-width:600px){
+  body.desk-daily-journal-mode .desk-queue-top{display:grid;grid-template-columns:28px minmax(0,1fr) 40px;column-gap:8px;row-gap:5px;padding:14px 0}
+  body.desk-daily-journal-mode .desk-queue-check-wrap{grid-column:1;grid-row:1;min-width:28px}
+  body.desk-daily-journal-mode .desk-queue-summary{grid-column:2;grid-row:1}
+  body.desk-daily-journal-mode .desk-task-status{grid-column:2;grid-row:2;justify-self:start;width:auto;margin:0}
+  body.desk-daily-journal-mode .desk-queue-expand-btn{grid-column:3;grid-row:1}
+  body.desk-daily-journal-mode .desk-queue-detail{padding:12px}
+}
+.desk-self-task-composer summary:focus-visible{outline:2px solid #688532;outline-offset:-3px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-heading{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-queue-count{color:#667456;font-size:13px;font-weight:600;line-height:1.5;font-variant-numeric:tabular-nums;white-space:nowrap}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-card-title-row{margin-bottom:12px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-self-task-composer{margin:12px 0}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-journal-task-board{margin-top:0}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-card{margin-top:0;padding:0}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-queue-top{padding:12px 0}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-queue-detail{display:block;padding:14px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-queue-note{margin:0 0 12px;padding:0;background:transparent;line-height:1.6}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-progress-fields{row-gap:12px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-progress-fields label{margin:0}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-inline-error{margin-top:8px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-inline-error:empty{display:none}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-actions{align-items:center;justify-content:flex-start;gap:8px;margin-top:12px;flex-wrap:wrap}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-actions .modal-action{display:inline-flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;height:40px;min-height:40px;padding:0 12px;font-size:12px;line-height:1;white-space:nowrap}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-actions .modal-action :is(svg,i){display:block;width:16px;height:16px;flex:0 0 16px}
+body.desk-daily-journal-mode .desk-task-queue-card .desk-task-actions .modal-action span{display:block;line-height:1}
+@media(max-width:600px){body.desk-daily-journal-mode .desk-task-queue-card .desk-queue-detail{padding:12px}body.desk-daily-journal-mode .desk-task-queue-card .desk-task-save-indicator{margin-top:2px}}

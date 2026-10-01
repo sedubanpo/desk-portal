@@ -85,6 +85,8 @@ export function dailyTask(item = {}, fallbackId = '', fallbackDateKey = '', now 
     note: String(item.note || '').trim(),
     completed,
     deleted,
+    selfCreated: Boolean(item.selfCreated),
+    version: Number.isSafeInteger(item.version) && item.version >= 0 ? item.version : 0,
     progressStatus,
     unresolvedReason: String(item.unresolvedReason || '').trim(),
     nextAction: String(item.nextAction || '').trim(),

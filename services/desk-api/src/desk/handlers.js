@@ -1,3 +1,4 @@
+import { createJournalTaskMethods } from './task-service.js';
 import {
   compareApplicants,
   compareDailyMemos,
@@ -45,6 +46,7 @@ export const DESK_READ_METHODS = new Set([
   'getDeskDailyJournalData',
   'getDeskDailyJournalPendingTasks',
   'getDeskDailyJournalTaskLedger',
+  'getDeskDailyJournalTaskHistory',
   'getDeskStaffDirectory',
   'getDeskSuppliesData',
   'getDeskRecruitingApplicantsData',
@@ -375,79 +377,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       };
     },
 
-    async saveDeskDailyJournalTask(payload = {}, identity = {}) {
-      const key = dateKey(payload.dateKey || payload.task?.dateKey);
-      if (!key) return failure('dateKey가 올바르지 않습니다.');
-      const stamp = now();
-      const requestedId = payload.task?.id ? rtdbKey(payload.task.id) : '';
-      if (payload.task?.id && !requestedId) return failure('업무 ID가 올바르지 않습니다.');
-      const existing = requestedId ? await store.get(`${PATHS.journal}/${key}/tasks/${requestedId}`) : null;
-      if (existing?.deleted) return failure('삭제된 업무입니다. 새로고침 후 확인해 주세요.');
-      const task = dailyTask({ ...(existing || {}), ...(payload.task || {}) }, payload.task?.id, key, stamp);
-      if (identity.role && identity.role !== 'ADMIN') {
-        if (existing) {
-          if (existing.deleted) return failure('삭제된 업무는 관리자만 변경할 수 있습니다.');
-          const before = dailyTask(existing, requestedId, key, stamp);
-          if (isSharedTask(before)) {
-            const protectedFields = ['worker','title','note','category','completed','progressStatus','unresolvedReason','nextAction','targetWorkers','hiddenFromWorkerBand','sortOrder'];
-            if (protectedFields.some(field => JSON.stringify(before[field]) !== JSON.stringify(task[field]))) return failure('공지 수정은 관리자만 할 수 있습니다.');
-            const own = workerKey(identity.name);
-            const others = list => (list || []).filter(name => workerKey(name) !== own).map(workerKey).sort();
-            if (JSON.stringify(others(before.ackWorkers)) !== JSON.stringify(others(task.ackWorkers))) return failure('본인의 확인 상태만 변경할 수 있습니다.');
-          } else {
-            if (workerKey(before.worker) !== workerKey(identity.name)) return failure('다른 근무자의 배정은 변경할 수 없습니다.');
-            const protectedFields = ['worker','title','note','category','targetWorkers','hiddenFromWorkerBand','sortOrder'];
-            if (protectedFields.some(field => JSON.stringify(before[field]) !== JSON.stringify(task[field]))) return failure('업무 배정 수정은 관리자만 할 수 있습니다.');
-          }
-        } else {
-          if (!isSharedTask(task)) return failure('업무 배정은 관리자만 할 수 있습니다.');
-          task.ackWorkers = [];
-          task.completed = false;
-          task.createdByUid = identity.uid || '';
-          task.createdByName = identity.name || '';
-        }
-      }
-      if (!rtdbKey(task.id)) return failure('업무 ID가 올바르지 않습니다.');
-      if (!task.worker) return failure('업무 대상 근무자가 필요합니다.');
-      if (!task.title) return failure('업무 제목을 입력해 주세요.');
-      task.createdAt = String(existing ? existing.createdAt || '' : stamp);
-      task.createdByUid = String(existing ? existing.createdByUid || '' : identity.uid || task.createdByUid || '');
-      task.createdByName = String(existing ? existing.createdByName || '' : identity.name || task.createdByName || '');
-      task.updatedAt = stamp;
-      task.updatedByUid = String(identity.uid || task.updatedByUid || '');
-      task.updatedByName = String(identity.name || task.updatedByName || '');
-      task.completedAt = task.completed ? String(existing?.completedAt || stamp) : '';
-      task.deleted = false;
-      task.deletedAt = '';
-      task.deletedByUid = '';
-      task.deletedByName = '';
-      const updates = { [`${PATHS.journal}/${key}/tasks/${task.id}`]: task, [`${PATHS.pending}/${task.id}`]: task.completed ? null : task };
-      await store.update('', updates);
-      return { success: true, dateKey: key, task };
-    },
-
-    async deleteDeskDailyJournalTask(payload = {}, identity = {}) {
-      if (identity.role && identity.role !== 'ADMIN') return failure('업무 삭제는 관리자만 할 수 있습니다.');
-      const key = dateKey(payload.dateKey);
-      const id = rtdbKey(payload.id);
-      if (!key) return failure('dateKey가 올바르지 않습니다.');
-      if (!id) return failure('삭제할 업무 ID가 없습니다.');
-      const existing = await store.get(`${PATHS.journal}/${key}/tasks/${id}`);
-      if (!existing) return failure('삭제할 업무를 찾을 수 없습니다.');
-      const stamp = now();
-      const task = dailyTask({
-        ...existing,
-        deleted: true,
-        deletedAt: stamp,
-        deletedByUid: String(identity.uid || ''),
-        deletedByName: String(identity.name || ''),
-        updatedAt: stamp,
-        updatedByUid: String(identity.uid || ''),
-        updatedByName: String(identity.name || '')
-      }, id, key, stamp);
-      await store.update('', { [`${PATHS.journal}/${key}/tasks/${id}`]: task, [`${PATHS.pending}/${id}`]: null });
-      return { success: true, dateKey: key, id, task };
-    },
+    ...createJournalTaskMethods({ store, now, journalPath: PATHS.journal, pendingPath: PATHS.pending }),
 
     async saveDeskDailyJournalMemo(payload = {}) {
       const key = dateKey(payload.dateKey || payload.memo?.dateKey);
@@ -1015,7 +945,7 @@ function errorPrefix(name) {
   const labels = {
     getDeskScheduleMonthData: '근무표 조회 오류', getDeskScheduleDayHistory: '근무표 버전 이력 조회 오류', saveDeskScheduleEntry: '근무표 저장 오류', deleteDeskScheduleEntry: '근무표 삭제 오류', batchUpdateDeskScheduleEntries: '근무표 일괄 업데이트 오류',
     getDeskAttendanceMonthData: '근태 현황 조회 오류', saveDeskAttendancePunch: '출퇴근 기록 오류', saveDeskAttendanceCorrectionRequest: '출퇴근 정정 요청 오류', saveDeskAttendanceCorrectionDecision: '출퇴근 정정 처리 오류',
-    getDeskStaffDirectory: '실무자 아이콘 연결 정보 조회 오류', getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
+    getDeskStaffDirectory: '실무자 아이콘 연결 정보 조회 오류', getDeskDailyJournalData: '일일 업무일지 조회 오류', getDeskDailyJournalPendingTasks: '미해결 이월 업무 조회 오류', getDeskDailyJournalTaskLedger: '업무 배정 원장 조회 오류', getDeskDailyJournalTaskHistory: '업무 변경 이력 조회 오류', saveDeskDailyJournalTask: '일일 업무 저장 오류', deleteDeskDailyJournalTask: '일일 업무 삭제 오류', saveDeskDailyJournalMemo: '근무 기록 저장 오류', deleteDeskDailyJournalMemo: '근무 기록 삭제 오류',
     getDeskSuppliesData: '소모품 데이터 조회 오류', adjustDeskSupplyConsumable: '소모품 수량 조정 오류', saveDeskSupplyConsumable: '소모품 저장 오류', deleteDeskSupplyConsumable: '소모품 삭제 오류', saveDeskSupplyAsset: '물품 저장 오류', deleteDeskSupplyAsset: '물품 삭제 오류', saveDeskSupplyPurchaseState: '구매 요청 상태 저장 오류',
     getDeskRecruitingApplicantsData: '인사 관리 조회 오류', saveDeskRecruitingApplicant: '지원자 저장 오류', addDeskRecruitingApplicantComment: '지원자 코멘트 저장 오류', deleteDeskRecruitingApplicant: '지원자 삭제 오류'
   };

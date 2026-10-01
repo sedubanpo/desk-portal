@@ -135,7 +135,7 @@ test('schedule batch writes one version for each affected date', async () => {
     monthKey: '2026-08',
     deleteIds: ['first', 'second'],
     entries: []
-  }, { uid: 'manager-1', name: '관리자' });
+  }, { role:'ADMIN', uid: 'manager-1', name: '관리자' });
   assert.deepEqual(Object.keys(result.latestVersions).sort(), ['2026-08-01', '2026-08-02']);
   assert.equal((await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-01' })).versions[0].entries.length, 0);
   assert.equal((await handlers.getDeskScheduleDayHistory({ dateKey: '2026-08-02' })).versions[0].summary, '이민현 일정 삭제');
@@ -210,14 +210,14 @@ test('self-punches cannot create past or future attendance records', async () =>
 test('journal task write updates the day record and pending index together', async () => {
   const store = memoryStore();
   const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });
-  const saved = await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { id: 'task-1', worker: '안종성', title: '마감 점검' } });
+  const saved = await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { id: 'task-1', worker: '안종성', title: '마감 점검' } }, {role:'ADMIN',uid:'manager-1',name:'관리자'});
   assert.equal(saved.success, true);
   assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].title, '마감 점검');
   assert.equal(store.dump().desk_portal.daily_pending_tasks['task-1'].title, '마감 점검');
 
-  await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { ...saved.task, completed: true } }, { uid: 'manager-1', name: '관리자' });
+  await handlers.saveDeskDailyJournalTask({ dateKey: '2026-07-15', task: { ...saved.task, completed: true } }, { role:'ADMIN', uid: 'manager-1', name: '관리자' });
   assert.equal(store.dump().desk_portal.daily_pending_tasks?.['task-1'], undefined);
-  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].createdByName, '');
+  assert.equal(store.dump().desk_portal.daily_journal['2026-07-15'].tasks['task-1'].createdByName, '관리자');
 });
 
 test('pending task read returns every assignee when the worker filter is empty', async () => {
@@ -241,7 +241,7 @@ test('task ledger includes completed and soft-deleted assignment history', async
   } } });
   const handlers = createDeskHandlers({ store, now: () => '2026-07-15T03:00:00.000Z' });
 
-  await handlers.deleteDeskDailyJournalTask({ dateKey: '2026-07-15', id: 'pending' }, { uid: 'admin-1', name: '관리자' });
+  await handlers.deleteDeskDailyJournalTask({ dateKey: '2026-07-15', id: 'pending' }, { role:'ADMIN', uid: 'admin-1', name: '관리자' });
   const ledger = await handlers.getDeskDailyJournalTaskLedger();
 
   assert.equal(ledger.summary.total, 2);
