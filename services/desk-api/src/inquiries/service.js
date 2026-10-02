@@ -9,6 +9,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
  const meta = root.doc('main');
  const operations = root.doc('main').collection('operations');
  const summaries = root.doc('main').collection('contactSummaries');
+ const visibility = meta.collection('queueVisibility');
  const methodOf=p=>textValue(p.properties['연락 방법']) || ({'통화 완료':'전화','부재':'전화','문자 보냄':'문자','카톡 보냄':'카톡'}[textValue(p.properties['연락 결과'])] || '');
  const timeOf=p=>textValue(p.properties['기록 시각 원본'])||textValue(p.properties['연락 시각']);
  async function summarize(id,entries,observedAt){
@@ -37,12 +38,12 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
   const owner = randomUUID(), start = now().toISOString();
   const state = await firestore.runTransaction(async tx => {
    const old=(await tx.get(meta)).data() || {};
-   if (old.syncLeaseUntil > now().getTime() || (!force && old.syncedAt && now().getTime()-Date.parse(old.syncedAt)<45000)) return null;
+   if (old.syncLeaseUntil > now().getTime() || (!force && old.projectionVersion===2 && old.syncedAt && now().getTime()-Date.parse(old.syncedAt)<45000)) return null;
    tx.set(meta,{syncOwner:owner,syncLeaseUntil:now().getTime()+300000},{merge:true});return old;
   });
   if (!state) return;
   try {
-   const full=force || !state.fullSyncedAt || now().getTime()-Date.parse(state.fullSyncedAt)>600000;
+   const full=force || state.projectionVersion!==2 || !state.fullSyncedAt || now().getTime()-Date.parse(state.fullSyncedAt)>600000;
    const query=full ? {} : {filter:{timestamp:'last_edited_time',last_edited_time:{on_or_after:new Date(Date.parse(state.syncedAt)-60000).toISOString()}}};
    const pages=await queryAll(sourceId,query);
    for(const page of pages) await cache(page);
@@ -60,15 +61,16 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
     const previous=await summaries.get();for(const doc of previous.docs)if(!grouped.has(doc.id))grouped.set(doc.id,[]);
     for(const [id,entries] of grouped)await summarize(id,entries,observedAt);
    }
-   await meta.set({syncedAt:start,...(full?{fullSyncedAt:start}:{}),syncError:''},{merge:true});
+   await meta.set({projectionVersion:2,syncedAt:start,...(full?{fullSyncedAt:start}:{}),syncError:''},{merge:true});
   }catch(e){await meta.set({syncError:e.message},{merge:true});throw e;}
   finally{await firestore.runTransaction(async tx=>{const d=(await tx.get(meta)).data();if(d?.syncOwner===owner)tx.set(meta,{syncLeaseUntil:0},{merge:true});});}
  }
  async function list(force=false){
   let warning='';try{await sync(force);}catch(e){warning=e.message;}
-  const [data,status,summaryDocs]=await Promise.all([items.get(),meta.get(),summaries.get()]);
+  const [data,status,summaryDocs,visibilityDocs]=await Promise.all([items.get(),meta.get(),summaries.get(),visibility.get()]);
+  const hiddenById=new Map(visibilityDocs.docs.map(d=>[d.id,d.data()]));
   const byId=new Map(summaryDocs.docs.map(d=>[d.id,d.data()]));
-  const rows=data.docs.map(d=>({...d.data(),...byId.get(d.id)})).filter(r=>!r.unavailable);
+  const rows=data.docs.map(d=>({...d.data(),...byId.get(d.id),...hiddenById.get(d.id)})).filter(r=>!r.unavailable);
   return {items:rows,syncedAt:status.data()?.syncedAt || null,warning:warning || status.data()?.syncError || '', syncing:(status.data()?.syncLeaseUntil || 0)>now().getTime()};
  }
  async function detail(id){
@@ -77,7 +79,7 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
   const entries=historySourceId ? await queryAll(historySourceId,{filter:{property:'문의',relation:{contains:page.id}},sorts:[{property:'연락 시각',direction:'descending'}]}) : [];
   // Keep normalization of historical properties explicit to avoid sending raw Notion objects.
   const contactSummary=await summarize(id,entries,observedAt);
-  return {item:{...row,...contactSummary},history:entries.sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각']))).map(p=>({id:cleanId(p.id),version:pageVersion(p),method:methodOf(p),...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
+  return {item:{...row,...contactSummary,...(await visibility.doc(cleanId(id)).get()).data()},history:entries.sort((a,b)=>(textValue(b.properties['기록 시각 원본'])||textValue(b.properties['연락 시각'])).localeCompare(textValue(a.properties['기록 시각 원본'])||textValue(a.properties['연락 시각']))).map(p=>({id:cleanId(p.id),version:pageVersion(p),method:methodOf(p),...Object.fromEntries(Object.entries({result:'연락 결과',note:'메모',actor:'기록자',at:'연락 시각',state:'기록 상태'}).map(([k,n])=>[k,textValue(p.properties[n])]))}))};
  }
  async function change(id, body, actor){
   configured();id=cleanId(id);
@@ -159,8 +161,26 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
     const expectedTrash=body.action==='delete'?true:body.action==='restore'?false:row.trashed;
     if(row.trashed!==expectedTrash || !Object.entries(op.patch).every(([k,v])=>equivalent(k,row[k],v)))throw new ApiError(409,'verification_conflict','저장 중 노션 내용이 변경되었습니다. 새로고침 후 확인해 주세요.');
    }
-   const response={item:row,ok:true};await ref.set({response,completedAt:now().toISOString()},{merge:true});return response;
+   const response={item:{...row,...(await visibility.doc(cleanId(id)).get()).data()},ok:true};await ref.set({response,completedAt:now().toISOString()},{merge:true});return response;
   }finally{await firestore.runTransaction(async tx=>{const held=(await tx.get(lock)).data();if(held?.attempt===attempt)tx.set(lock,{until:0},{merge:true});});}
  }
- return {list,detail,change,sync,sourcePage,cache};
+ async function setVisibility(id,body,actor){
+  id=cleanId(id);
+  if(typeof body?.hidden!=='boolean'||typeof body?.expectedHidden!=='boolean')throw new ApiError(400,'invalid_visibility','숨김 상태를 확인해 주세요.');
+  await sourcePage(id);
+  const ref=visibility.doc(id);
+  const value=await firestore.runTransaction(async tx=>{
+   const old=(await tx.get(ref)).data()||{};
+   if(Boolean(old.queueHidden)!==body.expectedHidden && Boolean(old.queueHidden)!==body.hidden)throw new ApiError(409,'visibility_conflict','다른 근무자가 상태를 변경했습니다. 새로고침 후 다시 확인해 주세요.');
+   if(Boolean(old.queueHidden)===body.hidden)return old;
+   const next={queueHidden:body.hidden,queueVisibilityAt:now().toISOString(),queueVisibilityActorUid:actor.uid,queueVisibilityActor:actor.nickname||actor.name||actor.loginId||actor.uid};
+   tx.set(ref,next);return next;
+  });
+  return {id,...value,queueHidden:Boolean(value.queueHidden)};
+ }
+ async function schoolIcons(){
+  const snapshot=await firestore.collection('sharedIconAssets').get();
+  return {icons:snapshot.docs.map(d=>({...d.data(),category:String(d.data().category||'').toUpperCase(),imageUrl:d.data().imageUrl||d.data().downloadURL||''})).filter(d=>d.category==='SCHOOL'&&(d.status||'ACTIVE')==='ACTIVE'&&/^https:\/\//i.test(d.imageUrl||'')).map(d=>({displayName:String(d.displayName||''),lookupKey:String(d.lookupKey||''),aliases:Array.isArray(d.aliases)?d.aliases.filter(a=>typeof a==='string'):[],imageUrl:d.imageUrl}))};
+ }
+ return {list,detail,change,sync,sourcePage,cache,setVisibility,schoolIcons};
 }

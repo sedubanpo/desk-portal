@@ -14,6 +14,8 @@ export function createInquiryRouter({ verifyIdToken, loadAccount, firestore, tok
  router.use((req,res,next)=>{if(!['ADMIN','STAFF','DESK'].includes(req.identity.role))return next(new ApiError(403,'staff_only','신규문의는 실무자만 관리할 수 있습니다.'));next();});
  router.get('/',async(req,res,next)=>{try{res.json(await manager.list());}catch(e){next(e);}});
  router.post('/sync',async(req,res,next)=>{try{res.json(await manager.list(true));}catch(e){next(e);}});
+ router.get('/school-icons',async(req,res,next)=>{try{res.json(await manager.schoolIcons());}catch(e){next(e);}});
+ router.post('/:id/visibility',async(req,res,next)=>{try{res.json(await manager.setVisibility(req.params.id,req.body,req.identity));}catch(e){next(e);}});
  router.get('/:id',async(req,res,next)=>{try{res.json(await manager.detail(req.params.id));}catch(e){next(e);}});
  router.post('/:id',async(req,res,next)=>{try{res.json(await manager.change(req.params.id,req.body,req.identity));}catch(e){next(e);}});
  return router;

@@ -61,3 +61,12 @@ test('channel counts use selected-cohort valid summaries and omit other dates an
  assert.deepEqual(m.channels,[{method:'전화',count:2},{method:'카톡',count:1},{method:'문자',count:0}]);
  assert.match(A.report(m,span),/기간 내 연락 횟수 아님/);
 });
+
+test('hidden followups remain in inquiry, school and acquisition statistics but leave the active queue',()=>{
+ const rows=[row('a',{school:'가학교',acquisitionSource:' 지인 소개 ',queueHidden:true}),row('b',{school:'나학교',acquisitionSource:'검색'}),row('c',{school:'가학교',acquisitionSource:'지인 소개'})];
+ const m=A.summarize(rows,span);assert.equal(m.cohort.length,3);assert.equal(m.queue.length,2);assert.equal(m.hiddenQueue.length,1);
+ assert.deepEqual(A.breakdown(m.cohort,'school').map(x=>[x.name,x.count]),[['가학교',2],['나학교',1]]);
+ assert.deepEqual(A.breakdown(m.cohort,'acquisitionSource').map(x=>[x.name,x.count]),[['지인 소개',2],['검색',1]]);
+ assert.equal(A.summarize(rows.map(r=>({...r,queueHidden:false})),span).queue.length,3);
+ assert.equal(A.breakdown([row('d',{acquisitionSource:'  '})],'acquisitionSource')[0].name,'미입력');
+});

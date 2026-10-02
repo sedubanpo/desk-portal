@@ -55,3 +55,37 @@ test('unknown legacy reply method is not guessed, invalid methods never mutate',
 test('progress note persists with explicit followup semantics and legacy notes remain intact',async()=>{const f=fixture();let row=(await f.service.detail(id)).item;row=(await f.service.change(id,command(row,'edit',{patch:{stage:'연락 보류',stageNote:'10월에 다시 확인'}}),actor)).item;assert.equal(row.followup,'재연락 안 함');assert.equal(row.stageNote,'10월에 다시 확인');assert.equal(row.notes,'');row=(await f.service.change(id,command(row,'edit',{patch:{stage:'재연락 대상'}}),actor)).item;assert.equal(row.followup,'재연락 필요');});
 
 test('unreachable incomplete leads remain followup candidates; method/result conflicts are rejected',async()=>{const f=fixture();let row=(await f.service.detail(id)).item;row=(await f.service.change(id,command(row,'edit',{patch:{stage:'연락두절'}}),actor)).item;assert.equal(row.followup,'재연락 필요');await assert.rejects(f.service.change(id,command(row,'contact',{method:'전화',result:'카톡 보냄',note:'',patch:{}}),actor),e=>e.code==='invalid_contact_result');});
+
+test('acquisition source preserves the Notion text and excludes it from arbitrary writes',()=>{
+ const f=fixture();const page=f.pages.get(id);page.properties[FIELDS.acquisitionSource]={type:'rich_text',rich_text:[{plain_text:'주변 지인 소개, '},{text:{content:'등록 중인 상태는 아님.'}}]};
+ assert.equal(normalize(page).acquisitionSource,'주변 지인 소개, 등록 중인 상태는 아님.');
+ assert.throws(()=>validatePatch({acquisitionSource:'임의 변경'}));
+});
+test('queue visibility survives sync, detail and edits without altering Notion or inquiry status',async()=>{
+ const f=fixture();await f.service.list(true);
+ const before=structuredClone(f.pages.get(id));
+ await f.service.setVisibility(id,{hidden:true,expectedHidden:false},actor);
+ assert.deepEqual(f.pages.get(id),before);
+ assert.equal((await f.service.list(true)).items[0].queueHidden,true);
+ let row=(await f.service.detail(id)).item;
+ assert.equal(row.queueVisibilityActor,actor.name);assert.equal(row.queueVisibilityAt,'2026-09-27T00:00:00.000Z');
+ assert.equal((await f.service.change(id,command(row,'edit',{patch:{school:'새학교'}}),actor)).item.queueHidden,true);
+ await f.service.setVisibility(id,{hidden:false,expectedHidden:true},actor);
+ assert.equal((await f.service.detail(id)).item.queueHidden,false);
+ await assert.rejects(f.service.setVisibility(id,{hidden:'yes',expectedHidden:false},actor),e=>e.status===400||e.code==='invalid_visibility');
+});
+test('school icons expose only active school assets and safe image URLs',async()=>{
+ const f=fixture();for(const [key,value] of Object.entries({a:{category:'SCHOOL',displayName:'학교',lookupKey:'school:학교',aliases:['학교고'],imageUrl:'https://example.org/logo.svg'},b:{category:'STAFF',imageUrl:'https://example.org/a'},c:{category:'SCHOOL',status:'DELETED',imageUrl:'https://example.org/a'},d:{category:'SCHOOL',imageUrl:'javascript:alert(1)'}}))f.data.set('sharedIconAssets/'+key,value);
+ const result=await f.service.schoolIcons();assert.equal(result.icons.length,1);assert.deepEqual(result.icons[0].aliases,['학교고']);
+});
+
+test('inquiry school and visibility routes require staff and use the trusted actor',async()=>{
+ const f=fixture();const app=express();app.use('/i',createInquiryRouter({service:f.service,verifyIdToken:async token=>({uid:token}),loadAccount:async uid=>({account:{name:'실제 근무자',role:uid==='teacher'?'INSTRUCTOR':'STAFF',status:'ACTIVE'},access:{apps:{deskPortal:true}}})}));app.use(errorHandler);
+ assert.equal((await request(app).get('/i/school-icons')).status,401);
+ assert.equal((await request(app).post('/i/'+id+'/visibility').set('Authorization','Bearer teacher').send({hidden:true,expectedHidden:false})).status,403);
+ assert.equal((await request(app).get('/i/school-icons').set('Authorization','Bearer worker')).status,200);
+ const result=await request(app).post('/i/'+id+'/visibility').set('Authorization','Bearer worker').send({hidden:true,expectedHidden:false,actor:'위조 실행자'});
+ assert.equal(result.status,200);assert.equal(result.body.queueVisibilityActorUid,'worker');assert.notEqual(result.body.queueVisibilityActor,'위조 실행자');
+ f.data.set('sharedIconAssets/legacy',{category:'school',lookupKey:'school:옛학교',downloadURL:'https://example.org/legacy.svg'});
+ assert.equal((await f.service.schoolIcons()).icons[0].imageUrl,'https://example.org/legacy.svg');
+});

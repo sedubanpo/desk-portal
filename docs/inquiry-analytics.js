@@ -50,12 +50,13 @@
     }));
     for (const row of cohort) { const bucket=buckets[Math.floor(distance(span.from, firstDate(row)) / step)]; bucket.count++; if(contacted(row))bucket.contacted++; if(row.stage==='등록 완료')bucket.registered++; }
     for (const row of previous) buckets[Math.floor(distance(span.previousFrom, firstDate(row)) / step)].previous++;
-    const queue = active.filter(needs).sort((a, b) => {
+    const hiddenQueue = active.filter(row=>needs(row)&&row.queueHidden);
+    const queue = active.filter(row=>needs(row)&&!row.queueHidden).sort((a, b) => {
       const rank = { overdue: 0, today: 1, unscheduled: 2, planned: 3 };
       return rank[category(a, today)] - rank[category(b, today)] || (a.nextDate || '9999').localeCompare(b.nextDate || '9999') || (firstDate(a) || '9999').localeCompare(firstDate(b) || '9999') || String(a.id).localeCompare(String(b.id));
     });
     const channels=['전화','카톡','문자'].map(method=>({method,count:cohort.reduce((sum,row)=>sum+Math.max(0,Number(row.contactCounts?.[method])||0),0)}));
-    return { active, cohort, previous, registered, contactCount, consulting, statuses, buckets, step, queue, channels,
+    return { active, cohort, previous, registered, contactCount, consulting, statuses, buckets, step, queue, hiddenQueue, channels,
       missingDates: active.filter(row => !firstDate(row)).length,
       missingOwners: queue.filter(row => !row.owner).length,
       overdue: queue.filter(row => category(row, today) === 'overdue').length,
@@ -71,7 +72,7 @@
   function breakdown(rows, key) {
     const groups = new Map();
     rows.forEach(row => {
-      const values = key === 'subjects' ? [...new Set(row.subjects?.length ? row.subjects : ['미입력'])] : [row[key] || '미입력'];
+      const values = key === 'subjects' ? [...new Set(row.subjects?.length ? row.subjects : ['미입력'])] : [String(row[key] || '').trim() || '미입력'];
       values.forEach(value => {
         const name = String(value), group = groups.get(name) || { name, count: 0, registered: 0 };
         group.count++; if (row.stage === '등록 완료') group.registered++; groups.set(name, group);
@@ -95,7 +96,7 @@
       ['현재 진행상태', '문의 수'], ...model.statuses.map(s => [s.label, s.count]), [],
       ['연락 채널', '선택 문의에 누적된 유효 연락 횟수(기간 내 연락 횟수 아님)'], ...model.channels.map(g=>[g.method,g.count])
     ];
-    [['subjects', '희망 과목(복수 선택)'], ['school', '학교'], ['grade', '학년']].forEach(([key, title]) => entries.push([], [title, '문의 수', '현재 등록 완료 수'], ...breakdown(model.cohort, key).map(g => [g.name, g.count, g.registered])));
+    [['subjects', '희망 과목(복수 선택)'], ['school', '학교'], ['grade', '학년'], ['acquisitionSource', '학원을 알게 된 경로(원문)']].forEach(([key, title]) => entries.push([], [title, '문의 수', '현재 등록 완료 수'], ...breakdown(model.cohort, key).map(g => [g.name, g.count, g.registered])));
     return '\uFEFF' + entries.map(row => row.map(csvCell).join(',')).join('\r\n');
   }
   const api = { isTemplate, dateKey, shift, distance, firstDate, lastContact, contacted, needs, category, stageGroups, stageKey, range, inRange, summarize, series, breakdown, report };

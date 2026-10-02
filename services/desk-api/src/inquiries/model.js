@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { ApiError } from '../http.js';
 export const FIELDS = {
- name: '이름', school: '학교', grade: '학년', phone: '학부모 전화번호', subjects: '수강 희망 과목',
+ acquisitionSource: '에스학원 알게 된 경로는?', name: '이름', school: '학교', grade: '학년', phone: '학부모 전화번호', subjects: '수강 희망 과목',
  consultation: '대표님 상담내용', notes: '특이사항', legacyFollowup: '재연락 기록', legacyStatus: '상태',
  owner: '문의 담당자', stage: '문의 진행상태', followup: '재연락 관리', nextDate: '다음 연락일', nextAction: '다음 할 일',
  lastContact: '최근 연락일', lastResult: '최근 연락 결과', stageNote: '진행상황 비고'

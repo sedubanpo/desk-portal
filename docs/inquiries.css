@@ -151,3 +151,39 @@ body .desk-panel[data-desk-panel="inquiries"], [data-desk-panel="inquiries"] {
 .iq-staff-avatar>.iq-icon{width:16px;height:16px}
 .iq-staff-avatar>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#f3f7eb}
 .iq-staff-empty{color:#647084;font-size:11px;font-weight:400}
+
+/* Inquiry acquisition and school analysis share the same drill-down behavior. */
+.iq-secondary-grid {grid-template-columns:repeat(4,minmax(0,1fr))}
+.iq-extra-ranks {height:190px;overflow:auto;scrollbar-color:#b6bfaa #f6f8f2}
+.iq-extra-row {display:flex;align-items:center;gap:10px;width:100%;min-height:48px!important;padding:8px 0!important;border:0!important;background:transparent!important;text-align:left}
+.iq-extra-row:hover {background:#f4f7ed!important}
+.iq-school-mark {width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;color:#687653}
+.iq-school-mark img {width:28px;height:28px;object-fit:contain}
+.iq-extra-label {display:grid;gap:8px;flex:1;min-width:0;font-size:12px;font-weight:700}
+.iq-extra-label>span:first-child {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iq-extra-number {display:grid;gap:3px;text-align:right;font-size:12px;flex-shrink:0;font-variant-numeric:tabular-nums}
+.iq-extra-number small {color:#596474;font-size:10px}
+.iq-source-card {min-width:0;display:flex;flex-direction:column;border:1px solid var(--iq-line,#e5e9e0);border-radius:12px;background:white;overflow:hidden}
+.iq-source-card>.iq-analytics-panel {border:0;border-radius:0;flex:1}
+.iq-source-tabs {display:flex;gap:4px;padding:10px 12px 0}
+.iq-source-tabs button {flex:1;min-height:34px!important;background:#f6f7f2!important;font-size:11px!important;border:0!important}
+.iq-source-tabs button[aria-pressed=true] {background:#deedb3!important;color:#34471f!important;font-weight:750}
+.iq-source-card .iq-extra-ranks {height:148px}
+.iq-channel-list button.iq-channel-row {width:100%;text-align:left;background:transparent;border:0;padding:8px 0}
+.iq-breakdown {width:min(850px,calc(100vw - 32px));max-height:85vh;overflow:auto;padding:24px;box-sizing:border-box;color:#273449}
+.iq-breakdown>header {display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.iq-breakdown h3 {margin:0;overflow-wrap:anywhere;font-size:20px}
+.iq-breakdown p {font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.iq-detail-groups {display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-bottom:20px;border-bottom:1px solid #e5e9e0}
+.iq-detail-groups h4 {margin:16px 0 10px}
+.iq-detail-distribution {display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px}
+.iq-detail-distribution b {color:#4b622d;margin-left:4px}
+.iq-detail-records article {padding:16px 0;border-bottom:1px solid #e5e9e0;display:grid;gap:6px}
+.iq-detail-records article>button {justify-self:start;font-weight:750}
+.iq-detail-records article>span,.iq-detail-records small {font-size:12px;color:#546174}
+.iq-detail-records p {margin:0}
+@container inquiry (max-width:1300px) {.iq-secondary-grid {grid-template-columns:repeat(2,minmax(0,1fr))}.iq-secondary-grid .iq-demand {grid-column:auto}.iq-secondary-grid .iq-demand .iq-rank-list {display:block;height:190px}}
+@container inquiry (max-width:600px) {.iq-secondary-grid {grid-template-columns:minmax(0,1fr)}.iq-extra-label {font-size:13px}.iq-queue-bottom>div {flex-wrap:wrap}}
+@media(max-width:600px) {.iq-breakdown {padding:16px}.iq-detail-groups {grid-template-columns:1fr;gap:0}}
+
+.iq-acquisition-detail {padding:12px 0;border-block:1px solid #dfe6de;margin-bottom:16px}.iq-acquisition-detail h3 {font-size:14px;margin:0 0 8px}.iq-acquisition-detail p {white-space:pre-wrap;overflow-wrap:anywhere;margin:0 0 8px}.iq-acquisition-detail small {color:#596b70}
