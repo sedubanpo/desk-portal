@@ -1,0 +1,151 @@
+/* Four working surfaces share the portal's lime, neutral text and compact controls. */
+.iq-shell :is(p,span,small,label,td,th,button,input,select), .iq-dashboard :is(p,span,small,button), .iq-workspace :is(p,span,small,button) { font-weight:650; }
+.iq-shell :is(h2,h3,strong), .iq-dashboard :is(h2,h3,strong) { font-weight:750; }
+[data-desk-panel="inquiryCenter"] { color:var(--ds-fg,#293449); font-weight:650; }
+/* Calendar */
+[data-desk-panel="monthlySchedule"] .desk-panel-head { padding-bottom:20px; border-bottom:1px solid var(--ds-border); }
+[data-desk-panel="monthlySchedule"] :is(.desk-toolbar,.desk-calendar-wrap) { box-shadow:none; }
+.desk-calendar-week { border:1px solid var(--ds-border); border-radius:10px; overflow:visible; margin-bottom:12px; }
+.desk-calendar-week-head { background:var(--ds-bg-subtle,#f5f7f1); padding:12px 14px; border-radius:10px 10px 0 0; }
+.desk-calendar-week-head-title { font-size:14px; font-weight:750; }
+.desk-calendar-week-head-sub { font-size:12px; font-weight:600; color:var(--ds-muted); }
+.desk-calendar-week-head-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+body :is(.desk-week-delete-btn,.desk-manager-toggle,.desk-week-collapse-btn,.desk-week-summary-trigger) { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:34px; padding:7px 10px; border:1px solid var(--ds-border); border-radius:7px; background:#fff; color:var(--ds-fg); font-family:inherit; font-weight:650; font-size:12px; line-height:1.3; box-shadow:none; }
+body .desk-week-delete-btn { color:var(--ds-danger,#b91c1c); background:#fff; border-color:#eacccc; }
+body .desk-manager-toggle[aria-pressed="true"] { color:#3d5525; background:#edf5dc; border-color:#b9cd92; }
+body :is(.desk-week-delete-btn,.desk-manager-toggle,.desk-week-collapse-btn):hover { background:var(--ds-bg-subtle); }
+body :is(.desk-week-delete-btn,.desk-manager-toggle,.desk-day-copy) svg { width:16px; height:16px; flex:none; }
+.desk-calendar-week-row { gap:0; align-items:stretch; }
+.desk-calendar-day { min-width:0; padding:10px; border:0; border-right:1px solid var(--ds-border-soft); border-radius:0; background:#fff; }
+.desk-calendar-day:last-child { border-right:0; }
+.desk-calendar-day.outside { background:#f8faf6; opacity:1; }
+.desk-calendar-day.selected { outline:2px solid #829c52; outline-offset:-2px; }
+.desk-day-head { gap:4px; margin-bottom:10px; }
+.desk-day-num { font-size:13px; font-weight:750; }
+.desk-day-head-tools { display:flex; align-items:center; gap:5px; }
+body .desk-day-copy { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; border:1px solid var(--ds-border); border-radius:6px; background:#fff; color:#435438; cursor:pointer; }
+.desk-day-copy:hover { background:#eaf2da; }
+.desk-day-count { background:transparent; color:var(--ds-muted); font-size:12px; font-weight:700; white-space:nowrap; }
+body .desk-calendar-day .desk-shift-chip { border-radius:7px; padding:10px; box-shadow:none; }
+.desk-day-shifts { gap:7px; }
+/* Questions: work queue at left, focused answer editor at right. */
+#deskResponseAdminDashboard { width:min(1280px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); background:#f7f9f3; }
+#deskResponseAdminDashboard .desk-response-admin-head { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+#deskResponseAdminDashboard .desk-response-admin-head>div { flex:1 1 360px; }
+#deskResponseAdminDashboard .desk-response-admin-head h3 { font-size:23px; font-weight:750; }
+#deskResponseAdminDashboard .desk-response-admin-kpis { display:flex; border-bottom:1px solid var(--ds-border); gap:0; padding:0 0 16px; }
+#deskResponseAdminDashboard .desk-response-admin-kpi { flex:1; background:transparent; border:0; border-right:1px solid var(--ds-border); border-radius:0; }
+#deskResponseAdminDashboard .desk-response-admin-kpi:last-child { border-right:0; }
+#deskResponseAdminDashboard .desk-response-admin-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:20px; }
+.desk-question-detail-column { min-width:0; position:sticky; top:0; display:grid; gap:16px; }
+#deskResponseAdminDashboard .desk-question-editor { padding:20px; background:white; border:1px solid var(--ds-border); border-radius:10px; }
+.desk-question-editor-head { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.desk-question-editor-head h4 { font-size:17px; margin:0; }
+.desk-question-editor-head>span { font-size:12px; font-weight:650; color:#506435; }
+.desk-question-author,.desk-question-answer-meta { font-size:12px; line-height:1.6; font-weight:600; color:#53614b; margin:10px 0 16px; }
+.desk-question-editor label { display:grid; gap:8px; font-size:13px; font-weight:700; margin:0 0 16px; }
+#deskResponseAdminDashboard .desk-question-editor textarea { width:100%; min-height:90px; resize:vertical; font-family:inherit; font-weight:600; font-size:14px; line-height:1.65; background:#fff; box-sizing:border-box; }
+#deskResponseAdminDashboard .desk-question-editor textarea[readonly] { background:#f6f8f2; }
+.desk-question-editor-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.desk-question-editor-actions button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:8px 14px; border:1px solid var(--ds-border); border-radius:7px; font-size:13px; font-weight:700; background:#fff; }
+.desk-question-editor-actions svg { width:16px; height:16px; }
+.desk-question-save-status { font-size:13px; font-weight:650; color:#664e1d; overflow-wrap:anywhere; }
+.desk-question-groups>summary,.desk-question-guides>summary { cursor:pointer; padding:12px 0; font-size:13px; font-weight:700; color:#53614b; }
+.desk-question-guides { border-top:1px solid var(--ds-border); }
+.desk-question-guides .desk-guide-manager { padding-top:12px; }
+#deskResponseAdminDashboard .desk-response-log-list { max-height:65vh; }
+#deskResponseAdminDashboard .desk-response-log-meta span { font-size:12px; font-weight:650; color:#485841; }
+.desk-question-answered { align-self:center; font-size:12px; font-weight:650; color:#48632d; }
+#deskResponseAdminDashboard button:disabled { opacity:.5; cursor:not-allowed; }
+/* Templates: compact library, readable list, visible editor. */
+[data-desk-panel="messageTemplates"] .desk-template-shell { padding:0; background:transparent; }
+.desk-template-topbar { align-items:center; padding:0 0 20px; }
+.desk-template-title { font-size:24px; font-weight:750; }
+.desk-template-sub { font-size:13px; color:var(--ds-muted); font-weight:600; }
+.desk-template-badges { gap:14px; flex-wrap:wrap; }
+.desk-template-badges>span { border:0; box-shadow:none; background:none; padding:0; font-size:12px; }
+.desk-template-toolbar { background:#fff; padding:12px; border-radius:10px; display:flex; flex-wrap:wrap; gap:10px; border:1px solid var(--ds-border); }
+.desk-template-search { flex:1 1 280px; min-width:180px; }
+.desk-template-search input { font-size:14px; }
+body .desk-template-layout { display:grid; grid-template-columns:240px minmax(280px,1fr) minmax(310px,.8fr); gap:16px; align-items:start; margin-top:16px; }
+.desk-template-layout>.desk-template-card { padding:16px; border:1px solid var(--ds-border); border-radius:10px; box-shadow:none; min-width:0; }
+.desk-template-card-head { align-items:start; gap:10px; padding-bottom:14px; }
+.desk-template-card-head h3 { font-size:16px; font-weight:750; }
+.desk-template-list-actions { flex-wrap:wrap; justify-content:flex-end; gap:5px; }
+.desk-template-tag-list { max-height:66vh; overflow-y:auto; scrollbar-gutter:stable; }
+body .desk-template-tag-item { grid-template-columns:24px minmax(0,1fr) auto; gap:7px; padding:10px 5px; border:0; border-bottom:1px solid var(--ds-border-soft); border-radius:0; background:#fff; box-shadow:none; }
+body .desk-template-tag-item.active { background:#edf4dc; color:#34482a; border-radius:7px; }
+body .desk-template-tag-item .desk-template-tag-main { display:block; padding:0; border:0; background:none; text-align:left; min-width:0; width:100%; height:auto; color:inherit; }
+.desk-template-tag-main strong { display:block; font-size:13px; line-height:1.5; }
+.desk-template-tag-main small { font-size:11px; color:inherit; }
+.desk-template-tag-icon { width:24px; height:24px; background:none; }
+.desk-template-tag-count { font-size:11px; font-weight:650; color:inherit; }
+.desk-template-tag-item>button:not(.desk-template-tag-main) { grid-row:2; justify-self:end; }
+.desk-template-tag-item>button[data-desk-template-edit-tag] { grid-column:2; }
+.desk-template-tag-item>button[data-desk-template-delete-tag] { grid-column:3; }
+.desk-template-message-list { max-height:66vh; overflow-y:auto; scrollbar-gutter:stable; }
+body .desk-template-message-item { grid-template-columns:20px minmax(0,1fr); padding:16px 10px; border:0; border-bottom:1px solid var(--ds-border); border-radius:0; background:#fff; box-shadow:none; gap:9px; }
+body .desk-template-message-item.selected { background:#f1f6e8; }
+.desk-template-message-side { grid-column:2; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.desk-template-message-copy p { font-size:13px; font-weight:550; line-height:1.7; color:#495642; margin:8px 0; overflow-wrap:anywhere; }
+.desk-template-open-message { padding:0; text-align:left; border:0; background:none; color:var(--ds-fg); font-size:14px; font-weight:750; line-height:1.5; }
+.desk-template-message-meta { flex-wrap:wrap; }
+.desk-template-message-meta time { font-size:11px; white-space:normal; }
+body .desk-template-editor { position:sticky; top:12px; }
+.desk-template-editor-grid { gap:14px 10px; }
+.desk-template-field>span { font-size:12px; font-weight:700; }
+.desk-template-field :is(input,select,textarea) { background:#fff; border-radius:7px; min-height:38px; font-size:13px; line-height:1.6; }
+#deskTemplateMessageInput { min-height:180px; resize:vertical; }
+.desk-template-preview { padding:14px; min-height:0; background:#f4f7ee; border:0; border-radius:8px; }
+.desk-template-preview:before,.desk-template-preview:after { display:none; }
+#deskTemplatePreview { font-size:13px; line-height:1.7; white-space:pre-wrap; overflow-wrap:anywhere; }
+.desk-template-editor-actions { display:flex; flex-wrap:wrap; gap:7px; padding-top:16px; }
+.desk-template-editor-actions button { min-height:38px; display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:7px; padding:8px 10px; }
+.desk-template-editor-actions svg { width:16px; height:16px; }
+.desk-template-history { padding-top:20px; border-top:1px solid var(--ds-border); margin-top:24px; }
+.desk-template-selected-info { font-size:12px; }
+body :is(.desk-day-copy,.desk-manager-toggle,.desk-template-open-message,.desk-template-tag-main):focus-visible { outline:2px solid #6e893f; outline-offset:2px; }
+@media(max-width:1200px) { body .desk-template-layout { grid-template-columns:210px minmax(0,1fr); } body .desk-template-editor { grid-column:1/-1; position:static; } .desk-template-editor-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:950px) { #deskResponseAdminDashboard .desk-response-admin-grid { grid-template-columns:1fr; } .desk-question-detail-column { position:static; } .desk-calendar-week-row { grid-template-columns:repeat(2,minmax(0,1fr)); } .desk-calendar-week-head { align-items:start; gap:12px; flex-wrap:wrap; } }
+@media(max-width:600px) { body .desk-template-layout { grid-template-columns:minmax(0,1fr); } .desk-template-tag-list { max-height:230px; } .desk-template-message-list { max-height:400px; } .desk-template-editor-grid { grid-template-columns:1fr; } .desk-template-toolbar>* { max-width:100%; } .desk-template-target-filter { flex-wrap:wrap; } .desk-calendar-week-row { grid-template-columns:1fr; } .desk-calendar-day { border-bottom:1px solid var(--ds-border); } #deskResponseAdminDashboard { padding:16px; } }
+
+[data-desk-panel="inquiries"] :is(p,span,small,label,td,th,button,input,select,a,summary) { font-weight:650; }
+[data-desk-panel="inquiries"] :is(h2,h3,strong) { font-weight:750; }
+[data-desk-panel="inquiries"] { --iq-muted:#4a5b60; }
+
+/* Let every grid child shrink within the embedded portal viewport. */
+body .desk-template-shell, body .desk-calendar-side { min-width:0; }
+body .desk-template-topbar { flex-wrap:wrap; min-width:0; }
+body .desk-template-toolbar { display:flex; min-width:0; flex-wrap:wrap; }
+body .desk-template-card-head { padding:0 0 14px; flex-wrap:wrap; }
+body :is(.desk-template-tag-list,.desk-template-message-list,.desk-template-editor-grid) { padding-left:0; padding-right:0; }
+body .desk-template-tag-item.active :is(.desk-template-tag-count,small) { color:#34482a; background:transparent; }
+body .desk-template-tag-item:not(.active)>button:not(.desk-template-tag-main) { display:none; }
+body #deskTemplateLatestStamp { padding:0; border:0; box-shadow:none; background:none; }
+body #deskTemplatePreview svg { display:none; }
+body .desk-calendar-side>.desk-side-card { min-width:0; }
+body .desk-side-card-head { flex-wrap:wrap; }
+body .desk-kpi-visual { display:none; }
+body [data-desk-panel="monthlySchedule"] .desk-kpi-card { box-shadow:none; border-radius:8px; }
+@media(max-width:950px) {
+ body .desk-calendar-side { grid-template-columns:minmax(0,1fr); }
+ body .desk-calendar-week-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ body .desk-day-report-actions { flex-wrap:wrap; }
+ body .desk-template-badges { gap:10px; min-width:0; flex-wrap:wrap; }
+}
+@media(max-width:600px) {
+ body .desk-calendar-week-row { grid-template-columns:minmax(0,1fr); }
+ body .desk-template-history { grid-template-columns:minmax(0,1fr); }
+ body .desk-template-search { min-width:0; }
+ body .desk-template-target-filter { flex-wrap:wrap; }
+ body .desk-template-editor-grid { grid-template-columns:minmax(0,1fr); }
+ body .desk-template-field :is(input,select,textarea) { min-width:0; width:100%; box-sizing:border-box; }
+ body .desk-day-report-actions { width:auto; }
+}
+
+body .desk-template-shell { grid-template-columns:minmax(0,1fr); }
+body .desk-template-history { grid-template-columns:repeat(2,minmax(0,1fr)); }
+body .desk-template-history>article { min-width:0; }
+body .desk-template-history-row { grid-template-columns:20px minmax(0,1fr) auto; }
+body .desk-template-history-row em { grid-column:2/-1; white-space:normal; overflow-wrap:anywhere; }
+@media(max-width:950px) { body .desk-template-history { grid-template-columns:minmax(0,1fr); } }

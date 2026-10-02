@@ -13,7 +13,8 @@
   const firstDate = row => dateKey(row.firstContact) || dateKey(row.createdAt);
   const lastContact = row => row.historyLastContact !== undefined ? row.historyLastContact : row.lastContact;
   const contacted = row => Boolean(lastContact(row)) || Object.values(row.contactCounts || {}).some(n => n > 0);
-  const needs = row => !row.trashed && !row.unavailable && row.followup === '재연락 필요' && !['등록 완료', '종료', '타원 등록', '연락 보류'].includes(row.stage);
+  const isTemplate = row => String(row.name || '').replace(/\s+/g, '') === '신규문의템플릿';
+  const needs = row => !isTemplate(row) && !row.trashed && !row.unavailable && row.followup === '재연락 필요' && !['등록 완료', '종료', '타원 등록', '연락 보류'].includes(row.stage);
   const category = (row, today = dateKey(new Date())) => !needs(row) ? 'closed' : !row.nextDate ? 'unscheduled' : row.nextDate < today ? 'overdue' : row.nextDate === today ? 'today' : 'planned';
   const stageGroups = [
     { key: 'new', label: '신규', stages: ['신규'], color: '#8a62df' },
@@ -36,7 +37,7 @@
   }
   const inRange = (row, from, to) => { const key = firstDate(row); return Boolean(key) && key >= from && key <= to; };
   function summarize(rows, span, today = dateKey(new Date())) {
-    const active = rows.filter(row => !row.trashed && !row.unavailable);
+    const active = rows.filter(row => !isTemplate(row) && !row.trashed && !row.unavailable);
     const cohort = active.filter(row => inRange(row, span.from, span.to));
     const previous = active.filter(row => inRange(row, span.previousFrom, span.previousTo));
     const registered = cohort.filter(row => row.stage === '등록 완료').length;
@@ -97,7 +98,7 @@
     [['subjects', '희망 과목(복수 선택)'], ['school', '학교'], ['grade', '학년']].forEach(([key, title]) => entries.push([], [title, '문의 수', '현재 등록 완료 수'], ...breakdown(model.cohort, key).map(g => [g.name, g.count, g.registered])));
     return '\uFEFF' + entries.map(row => row.map(csvCell).join(',')).join('\r\n');
   }
-  const api = { dateKey, shift, distance, firstDate, lastContact, contacted, needs, category, stageGroups, stageKey, range, inRange, summarize, series, breakdown, report };
+  const api = { isTemplate, dateKey, shift, distance, firstDate, lastContact, contacted, needs, category, stageGroups, stageKey, range, inRange, summarize, series, breakdown, report };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.DeskInquiryAnalytics = api;
 })(globalThis);

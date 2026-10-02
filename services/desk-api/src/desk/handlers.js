@@ -1,3 +1,4 @@
+import { prepareResponseLog } from './response-log.js';
 import { createJournalTaskMethods } from './task-service.js';
 import {
   compareApplicants,
@@ -586,6 +587,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       const path = portalConfigPath(payload.scope, payload.key);
       if (!path) return failure('허용되지 않은 포털 설정 경로입니다.');
       if (path === `${PATHS.dailyConfig}/subscriptions`) return failure('구독은 항목별로 저장해 주세요.');
+      if (path === `${PATHS.dailyConfig}/responseLogs`) return failure('질문은 항목별로 저장해 주세요.');
       if (typeof payload.value === 'undefined') return failure('저장할 포털 설정 값이 없습니다.');
       if (!Object.hasOwn(payload, 'expectedValue') || typeof payload.expectedValue === 'undefined') {
         throw portalConfigConflict('포털 설정의 최신 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.');
@@ -611,6 +613,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
           }
           return next;
         }
+        if (path.startsWith(`${PATHS.dailyConfig}/responseLogs/`)) return prepareResponseLog(payload.value, current, identity, now, String(payload.key).split('/').at(-1));
         return payload.value;
       });
       if (conflict) throw portalConfigConflict('다른 사용자가 포털 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');
