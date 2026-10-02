@@ -130,6 +130,8 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
             canceledAmount: Math.round(Number(kpi.canceledAmount) || 0),
             absenceEstimatedAmount: kpi.absenceEstimatedAmount ?? null,
             absenceUnknownCount: Number(kpi.absenceUnknownCount) || 0,
+            sourcePendingCount: parsedRows.filter(row=>row.sourcePending).length,
+            source: source.sourceName,
             teacherCount
           } };
         } catch (error) {

@@ -44069,8 +44069,10 @@ window.SeduHubAdapter={
       var generated = analysis.generatedAt ? new Date(analysis.generatedAt) : null;
       if (statusEl) {
         statusEl.classList.remove("is-error");
+        var pendingMonths = rows.filter(function(row) { return row.sourcePendingCount > 0; });
+        var pendingLabel = pendingMonths.length ? " · 미확인 수업 제외: " + pendingMonths.map(function(row) { return row.monthLabel + " " + row.sourcePendingCount + "건"; }).join(", ") : "";
         var failedLabel = analysis.failedMonths.length ? " · 일부 " + analysis.failedMonths.length + "개월 제외" : "";
-        statusEl.textContent = rows.length + "개월 · 최근 " + latest.monthLabel + failedLabel + (generated && !isNaN(generated.getTime()) ? " · 갱신 " + generated.toLocaleString("ko-KR") : "");
+        statusEl.textContent = rows.length + "개월 · 최근 " + latest.monthLabel + failedLabel + pendingLabel + (generated && !isNaN(generated.getTime()) ? " · 갱신 " + generated.toLocaleString("ko-KR") : "");
       }
       if (scopeEl) scopeEl.textContent = analysis.year ? analysis.year + "년" : rows[0].monthLabel + " ~ " + latest.monthLabel;
       var hasRate = latest.teacherPayRate !== null && latest.teacherPayRate !== undefined;
@@ -44083,7 +44085,7 @@ window.SeduHubAdapter={
         '<article class="payroll-analysis-kpi"><div class="payroll-analysis-kpi-label">예상 강사비 비중</div><div class="payroll-analysis-kpi-value">' + (hasRate ? rate.toFixed(1) + '%' : '-') + '</div><div class="payroll-analysis-kpi-meta">' + (hasRate ? '예상 강사비 ÷ 인정 순매출' : '인정 순매출 0원') + '</div></article>';
       bodyEl.innerHTML = rows.slice().reverse().map(function(row) {
         return '<tr>' +
-          '<td>' + escapeHtml(row.monthLabel || row.monthName) + '</td>' +
+          '<td>' + escapeHtml(row.monthLabel || row.monthName) + (row.sourcePendingCount ? '<br><small>미확인 ' + row.sourcePendingCount + '건 제외</small>' : '') + '</td>' +
           '<td>' + formatWon(row.grossSales || 0) + '</td>' +
           '<td>' + formatWon(row.discount || 0) + '</td>' +
           '<td>' + formatWon(row.netSales || 0) + '</td>' +

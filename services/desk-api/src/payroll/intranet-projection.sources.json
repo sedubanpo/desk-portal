@@ -1,14 +1,26 @@
 {
-  "generatedAt": "2026-09-16T00:14:20.833Z",
+  "generatedAt": "2026-10-02T06:45:01.622Z",
   "sourceHashes": {
-    "functions/contracts.js": "a76d9a2c79a4f3df825ee84aa05a4d6b6a99c66cf7a94e46071277e07d0b55d1",
+    "functions/carriedFees.js": "8a86568b3108e2818ad336c5e07af246104cd24707f0e08dcb3cfd50c5af2db2",
+    "functions/contracts.js": "7dee32cb28d554c02d477ed5799f227a7d593bb805f27c0aa608fb4935ed20f3",
     "functions/feeHistory.js": "d3801f88df2dd612bc2cff879f97b69bd21879dfd0e4c3aa1cdec2ec30938cfb",
-    "functions/feeMerge.js": "279ca51f8c98854f8223a202b189d228f2823e0ddd52aaf8087ab4df05715cd6",
-    "functions/historicalFeeAssignment.js": "dad87ac4d53920593eda5b26bbf35bfeca75aa0428e223d1406c98b345a8ffdf",
+    "functions/feeMerge.js": "4f257048b2ecb04e1858aeca3a67c23152fdad87e732c0ae653307b3651ee2d8",
+    "functions/historicalFeeAssignment.js": "42405a21d0ff1378a0a779c21327edff6c2815c2f3d21b04fff9b5fdc7593a66",
+    "functions/lateBillingRecovery.js": "a19d3421afccb7a7c052bba10bd2d00cbf7f3168b30cbc0612c2b1ab087740ea",
     "functions/lateFeeRecovery.js": "481e0a5c412e75525f009331f1404b911baa49151beabb73eed6bae76a357c9f",
-    "functions/portalChanges.js": "f5c3d57c38a63a5e54e4897293e1f690457f54c87c6e76c2d12122f8f59be9fb",
-    "src/domain.ts": "5495db339c86ec1b91dfbaaafc0011ca87452a62753e6966949169e8a1b09909",
-    "src/fees.ts": "ba088bda473dbf1d5027968d8ed1119aeb29a83692ee8fe0d1fb409a42344ae1",
-    "src/presentation.ts": "b64fe4e1c4346e6f0d4316df0c93b3dc7f8a885d6214085b5a485776f8dab61c"
+    "functions/lessonTime.js": "8c17c8361456e933c5cde64857ecb05a0b9ad246291293e1ea525845307431fb",
+    "functions/portalChanges.js": "675acb2c93ca906c894629123e1aac6a40275dd076396287d977cf03517e52db",
+    "functions/singleIndividual.js": "5212a8410425379d4a27d5458cb33648a229e3f4aa40bd995743b560c90aca9f",
+    "functions/studentDiscounts.js": "8482ef2aa489dd5a4e530156f9fdb023198ecc8504e153de193446ae34b0cce8",
+    "src/attendanceNames.ts": "c7b43b3ddd659f64db2d3a939c1b8e8e3398419a7d5dbe35ac2842828ed8536a",
+    "src/automaticCourseFees.ts": "891cc6259d73b9fb3a926e93955ab753fa693c3b2e3dd5930f7263f46a30010b",
+    "src/billingTime.ts": "1c4db5ad918692e03c992893203789d6fb9f31c218be8b304f7ffad1d5236805",
+    "src/continuousLessons.ts": "b4e1e40f970c7e6188d518d2d60405103e20bdd5d7a26c675b7d272186aa9d6a",
+    "src/domain.ts": "6bff05444033a5f119837358877e7ef0c0fbfc7ef65dfc50797b6aecfa3ab7f7",
+    "src/feeReview.ts": "ccd0d6c6fdc6d37905320b607cfcf81b4711c76ebae5346aa6436c5efef7af4d",
+    "src/fees.ts": "eb9ffafae6cbf8ddebd60241f15fa61d7465b22232c2cd27242b187100b465b1",
+    "src/presentation.ts": "b64fe4e1c4346e6f0d4316df0c93b3dc7f8a885d6214085b5a485776f8dab61c",
+    "src/sessionFees.ts": "4abec5c071cdaa09f068e0b5c678d477d73b64cef1bdef3ce097e830fbd7862a",
+    "src/studentDiscounts.ts": "ad612e256889ad8d738d945f72a11ad12fdbbff31cc8da40d1635288ec753b5e"
   }
 }

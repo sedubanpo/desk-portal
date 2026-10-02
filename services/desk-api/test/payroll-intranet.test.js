@@ -119,3 +119,35 @@ test('legacy absence estimate applies discount and never borrows another month',
  const previous={...rows([lesson])[0],classDateKey:'2026-08-03'};
  assert.equal(buildPayrollSummary([unknown,previous],meta,{}).kpi.absenceUnknownCount,1);
 });
+
+
+test('intranet discounts retain exact net rounding, including one percent and fractional percent',()=>{
+ for(const percent of [0.5,1,10,50,100]) {
+  const base=333, amount=Math.round(base*(1-percent/100));
+  const input=rows([{...lesson,rate:base,rateUnit:'perClass',studentDiscount:{base,amount,percent}}]);
+  const summary=buildPayrollSummary(input,meta,{ratioPercent:50});
+  assert.equal(summary.kpi.grossSales,base);
+  assert.equal(summary.kpi.netSales,amount);
+  assert.equal(summary.kpi.discount,base-amount);
+ }
+});
+
+test('current intranet projections include inherited class fees, automatic billing and saved student discounts',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const data={students:[{_id:'student',name:'학생'}],intranetStudentPeriods:[{studentId:'student',month:'2026-09',lessons:[{...lesson,rate:null,billMinutes:null,warnings:['특이사항 확인'],note:'학생 등원 확인'}]}],
+ intranetStudentFees:[{studentId:'student',month:'2026-08',assignments:[{kind:'class',target:lesson.className,amount:30000,rateUnit:'perHour'}]}],
+ intranetStudentDiscounts:[{_id:'student',policies:[{month:'2026-09',percent:10,specialHourly:null,courses:[],reason:'할인'},{month:'2026-10',percent:50,specialHourly:null,courses:[],reason:'다음 달'}]}]};
+ const db={collection(name){return {where(_field,_op,month){return {...this,month};},limit(){return this;},async get(){const all=(data[name]||[]).filter(r=>!this.month||r.month===this.month);return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const source=await createIntranetPayrollReader(db).readMonth('26-09');
+ const summary=buildPayrollSummary(source.rows,meta,{ratioPercent:50});
+ assert.equal(source.rows[0].sourcePending,false);
+ assert.equal(summary.kpi.grossSales,60000);assert.equal(summary.kpi.discount,6000);
+ assert.equal(summary.kpi.netSales,54000);assert.equal(summary.kpi.estimatedPay,27000);
+});
+
+test('reviewed single-individual booked time is payable but unvalidated overtime stays pending',()=>{
+ const approved={...lesson,className:'수학-개별-강사T-2h',singleIndividual:{bookedMinutes:180},billMinutes:180,payMinutes:180,rateUnit:'perHour'};
+ assert.equal(rows([approved])[0].sourcePending,false);
+ assert.equal(rows([approved])[0].payHours,3);
+ assert.equal(rows([{...approved,singleIndividual:{bookedMinutes:240}}])[0].sourcePending,true);
+});

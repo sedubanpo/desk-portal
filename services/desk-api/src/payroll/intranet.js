@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { parsePayrollRows, parsePayrollMonthName } from './normalizers.js';
-import { applyFees, estimatedCharge, inheritFees, recoverIssueFees, changed } from './intranet-projection.js';
+import { validSingleIndividual, projectedFeeRows, carryMonthlyFees, discountPolicyFor, estimatedCharge, inheritFees, recoverIssueFees, changed } from './intranet-projection.js';
 
 export const isIntranetMonth = name => { const m = parsePayrollMonthName(name); return m && m.year * 100 + m.month >= 202609; };
 export function payrollMonths(legacy, now = new Date()) {
@@ -30,11 +30,12 @@ export function intranetRows(lessons, students, meta) {
   const month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
   return lessons.filter(l=>l.date?.startsWith(month+'-') && l.kind!=='study').map((l,index)=>{
     const student=students.get(l.studentId) || {};
-    const amount=estimatedCharge(l), payValid=Number.isInteger(l.payMinutes)&&l.payMinutes>=0&&l.payMinutes<=l.sourceMinutes;
+    const net=estimatedCharge(l), amount=net === null ? null : (l.studentDiscount?.base ?? net), payValid=Number.isInteger(l.payMinutes)&&l.payMinutes>=0&&(l.payMinutes<=l.sourceMinutes||validSingleIndividual(l));
     const pending=amount===null || !payValid;
+    const discount=l.studentDiscount?.percent ?? 0;
     const code={regular:'출석',late:'지각',cancel:'당일취소',absence:'결석예고',absenceMakeup:'결석보강',cancelMakeup:'보강',lateMakeup:'보강',free:'프리'}[l.kind] || l.status;
     const day=Number(l.date.slice(8));
-    const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,0]]};
+    const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,discount/100]]};
     const row=parsePayrollRows(source,meta)[0];
     return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:amount??0};
   });
@@ -49,18 +50,24 @@ export function createIntranetPayrollReader(db) {
   };
   return {async readMonth(name) {
     const meta=parsePayrollMonthName(name), month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
-    const [current,past,drafts,fees,baselines,issues,roster]=await Promise.all([
-      read('intranetStudentPeriods',month),read('intranetLegacyPeriods',month),read('intranetLessonDrafts',month),read('intranetStudentFees',month),read('intranetFeeBaselines'),read('intranetIssues'),read('students')
+    const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs]=await Promise.all([
+      read('intranetStudentPeriods',month),read('intranetLegacyPeriods',month),read('intranetLessonDrafts',month),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null)
     ]);
     let lessons=combineLessons(current,past,drafts);
-    for(const id of new Set(lessons.map(l=>l.studentId))) {
-      const saved=fees.find(p=>p.studentId===id)||{};
-      const period=inheritFees({...saved,assignments:[...(saved.assignments||[])]},baselines.find(p=>p._documentId===id),month);
+    const periods={};
+    const canonicalId=id=>{const student=roster.find(s=>s._documentId===id||s.canonicalId===id);return student?.canonicalId||student?._documentId||id;};
+    for(const id of new Set(lessons.map(l=>canonicalId(l.studentId)))) {
+      const saved=fees.find(p=>p.studentId===id&&p.month===month)||{};
+      const period=inheritFees(carryMonthlyFees({...saved,assignments:[...(saved.assignments||[])]},fees.filter(p=>p.studentId===id),month),baselines.find(p=>p._documentId===id),month);
       period.assignments.push(...recoverIssueFees(issues.filter(i=>i.studentId===id).map(i=>({...i,id:i._documentId})),month,period));
-      const hypothetical=applyFees({lessons:lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l)},id,month,period.assignments,period.merges||[]).lessons;
-      const absentRates=new Map(hypothetical.filter(l=>l.studentId===id).map(l=>[l.id,l]));
-      lessons=applyFees({lessons},id,month,period.assignments,period.merges||[]).lessons.map(l=>l.studentId===id && l.kind==='absence'?{...l,absenceRate:absentRates.get(l.id)?.rate,absenceRateUnit:absentRates.get(l.id)?.rateUnit}:l);
+      periods[id]={...period,discountPolicy:discountPolicyFor(discounts.find(p=>p._documentId===id),month)};
     }
+    const students=roster.map(s=>({...s,id:s._documentId}));
+    const decisions=Object.fromEntries((sessionDocs.find(s=>s._documentId===month)?.records||[]).map(r=>[r.key,r.decision]));
+    const project=rows=>projectedFeeRows(rows,students,{periods},month,decisions).map(r=>r.lesson);
+    const hypothetical=project(lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l));
+    const absentRates=new Map(hypothetical.map(l=>[`${l.studentId}|${l.id}`,l]));
+    lessons=project(lessons).map(l=>l.kind==='absence'?{...l,absenceRate:absentRates.get(`${l.studentId}|${l.id}`)?.rate,absenceRateUnit:absentRates.get(`${l.studentId}|${l.id}`)?.rateUnit}:l);
     const rows=intranetRows(lessons,new Map(roster.map(s=>[s._documentId,s])),meta);
     return {rows,version:createHash('sha256').update(JSON.stringify(rows)).digest('hex')};
   }};
