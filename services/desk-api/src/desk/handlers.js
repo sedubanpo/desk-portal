@@ -1,3 +1,4 @@
+import { prepareMessageTemplates } from './message-templates.js';
 import { prepareResponseLog } from './response-log.js';
 import { buildHubNotifications } from './hub-notifications.js';
 import { createJournalTaskMethods } from './task-service.js';
@@ -626,6 +627,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
           return next;
         }
         if (path.startsWith(`${PATHS.dailyConfig}/responseLogs/`)) return prepareResponseLog(payload.value, current, identity, now, String(payload.key).split('/').at(-1));
+        if (path === `${PATHS.dailyConfig}/messageTemplates`) return prepareMessageTemplates(payload.value, current, identity, now);
         return payload.value;
       });
       if (conflict) throw portalConfigConflict('다른 사용자가 포털 설정을 변경했습니다. 새로고침 후 다시 시도해 주세요.');

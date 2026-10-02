@@ -146,3 +146,12 @@ The named-worker queue offers a native disclosure, “내 업무 추가”, only
 Creation and progress drafts survive failed saves; saving disables the relevant controls. A failed status write restores the previously confirmed task and exposes “서버 상태 확인” before retry. History shows actor, server timestamp, previous/new status, memo and next action, with explicit absence of pre-existing history. Historical events are retained, served in pages of 30 and never backfilled from guesses. Preserve administrator assignment controls and shared notice acknowledgement rules.
 
 Personal queue polish: place its live count beside the heading as restrained tabular text, keep 40px inline-flex action buttons with centred 16px icons and labels, and group fields/actions with explicit 12px spacing. Empty error elements do not occupy layout space.
+
+
+## Message Templates — 2026-10-02
+
+The message-template workspace extends the established bright lime/neutral portal; `docs/workspace.css` remains the global presentation authority and `docs/message-templates.css` owns this surface's composition. Use pale lime copy/save actions with dark readable text, white or quiet neutral supporting controls, and visible focus outlines. Do not introduce dark-green button fills. Student, teacher and applicant name fields follow search, using restrained green, blue and purple surfaces with translucent decorative line symbols; labels remain the identifiers. No raster assets are introduced.
+
+The desktop workspace places categories, the message library and readable output in three columns. The output keeps preserved line breaks, generous line height and a full-width copy action; source editing remains in a closed native disclosure until requested. At 900px the output moves below the category/library pair; at 600px the workspace and name fields stack, categories scroll horizontally, and history becomes one column. Border-led surfaces and restrained selection colors preserve the portal's operational density.
+
+Personalization affects the preview and copied text, not the stored source. Missing substitution values remain visible and require confirmation before copying. Recent changes and expandable audit entries show recorded actor/time and before/after text; missing legacy history is stated explicitly rather than supplied with inferred timestamps. See `docs/message-templates.impeccable.md` for scoped behavior and verification.

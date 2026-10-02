@@ -17691,6 +17691,7 @@
 <link rel="stylesheet" href="./training.css?v=20260926-five">
 <link rel="stylesheet" href="./inquiries.css?v=20260928-analytics-v3">
   <link rel="stylesheet" href="./desk-refinements.css">
+<link rel="stylesheet" href="./message-templates.css?v=20261003">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -19521,8 +19522,17 @@
               <section class="desk-template-toolbar">
                 <label class="desk-template-search" for="deskTemplateSearchInput">
                   <i data-lucide="search"></i>
-                  <input id="deskTemplateSearchInput" type="search" placeholder="태그명, 대상, 문구 내용 검색">
+                  <input id="deskTemplateSearchInput" aria-label="메시지 템플릿 검색" type="search" placeholder="태그명, 대상, 문구 내용 검색">
                 </label>
+              </section>
+
+              <section class="template-personalization" aria-label="메시지에 넣을 이름">
+                <label><span>학생명</span><input id="templateStudentName" autocomplete="off" maxlength="80" placeholder="학생 이름 입력"><i data-lucide="graduation-cap" aria-hidden="true"></i></label>
+                <label><span>강사명</span><input id="templateTeacherName" autocomplete="off" maxlength="80" placeholder="강사 이름 입력"><i data-lucide="presentation" aria-hidden="true"></i></label>
+                <label><span>지원자명</span><input id="templateApplicantName" autocomplete="off" maxlength="80" placeholder="지원자 이름 입력"><i data-lucide="contact-round" aria-hidden="true"></i></label>
+              </section>
+              <p class="template-names-hint">문구의 {학생명} · {강사명} · {지원자명}에 자동 반영됩니다. 이름은 이번 화면에서만 사용됩니다.</p>
+              <section class="desk-template-toolbar template-library-tools" aria-label="문구 목록 도구">
                 <div class="desk-template-filter-group" id="deskTemplateTargetFilter" aria-label="대상 필터">
                   <button class="active" type="button" data-desk-template-target="전체">전체</button>
                   <button type="button" data-desk-template-target="강사">강사</button>
@@ -19541,7 +19551,7 @@
                 <button class="desk-template-primary-btn" id="deskTemplateAddTagBtn" type="button"><i data-lucide="plus"></i>유형 태그 추가</button>
                 <button class="desk-template-secondary-btn" id="deskTemplateAddMessageBtn" type="button"><i data-lucide="file-plus-2"></i>메시지 추가</button>
               </section>
-
+              <div id="templateSyncStatus" role="status" aria-live="polite"></div>
               <section class="desk-template-layout">
                 <aside class="desk-template-card">
                   <div class="desk-template-card-head">
@@ -19569,11 +19579,14 @@
                   <button class="desk-template-dashed-btn" id="deskTemplateAddMessageToTagBtn" type="button"><i data-lucide="plus"></i>이 태그에 메시지 추가</button>
                 </main>
 
-                <aside class="desk-template-card desk-template-editor">
-                  <div class="desk-template-card-head">
-                    <h3>메시지 편집</h3>
-                    <span id="deskTemplateEditorStatus">선택 문구</span>
-                  </div>
+                <aside class="desk-template-card template-output-panel">
+                  <div class="desk-template-card-head"><h3>완성된 메시지</h3><span id="templateOutputTarget"></span></div>
+                  <h4 id="templateOutputTitle">문구를 선택하세요</h4>
+                  <div id="deskTemplatePreview" role="region" aria-label="완성된 메시지" aria-live="polite"></div>
+                  <p id="templateMissingNames" role="status"></p>
+                  <button id="deskTemplateCopyBtn" class="template-copy-primary" type="button"><i data-lucide="copy"></i>완성된 메시지 복사</button>
+                  <details id="templateEditDetails" class="desk-template-editor">
+                    <summary><i data-lucide="square-pen"></i>템플릿 원문 편집 <span id="deskTemplateEditorStatus">저장된 문구</span></summary>
                   <div class="desk-template-editor-grid">
                     <label class="desk-template-field all">
                       <span>문구 제목</span>
@@ -19605,7 +19618,8 @@
                       <span>변수</span>
                       <div class="desk-template-variable-row" id="deskTemplateVariableRow">
                         <button type="button" data-desk-template-variable="{학생명}">{학생명}</button>
-                        <button type="button" data-desk-template-variable="{담당강사}">{담당강사}</button>
+                        <button type="button" data-desk-template-variable="{강사명}">{강사명}</button>
+                        <button type="button" data-desk-template-variable="{지원자명}">{지원자명}</button>
                         <button type="button" data-desk-template-variable="{수업일}">{수업일}</button>
                         <button type="button" data-desk-template-variable="{상담번호}">{상담번호}</button>
                       </div>
@@ -19614,27 +19628,25 @@
                       <span>메시지 내용</span>
                       <textarea id="deskTemplateMessageInput"></textarea>
                     </label>
-                    <div class="desk-template-preview all">
-                      <span>미리보기</span>
-                      <div id="deskTemplatePreview"></div>
-                    </div>
+
                   </div>
                   <div class="desk-template-editor-actions">
                     <button class="primary" id="deskTemplateSaveBtn" type="button"><i data-lucide="save"></i>저장</button>
-                    <button id="deskTemplateCopyBtn" type="button"><i data-lucide="copy"></i>문구 복사</button>
+
                     <button id="deskTemplateDuplicateBtn" type="button"><i data-lucide="copy-plus"></i>복제</button>
                     <button class="danger" id="deskTemplateDeleteBtn" type="button"><i data-lucide="trash-2"></i>삭제</button>
                   </div>
+                  </details>
                 </aside>
               </section>
 
               <section class="desk-template-history">
                 <article>
-                  <div class="desk-template-history-head">최근 수정된 문구 <button type="button">더보기 <i data-lucide="chevron-right"></i></button></div>
+                  <div class="desk-template-history-head">최근 저장된 문구</div>
                   <div id="deskTemplateRecentList"></div>
                 </article>
                 <article>
-                  <div class="desk-template-history-head">관리 이력 <button type="button">더보기 <i data-lucide="chevron-right"></i></button></div>
+                  <div class="desk-template-history-head">변경 이력 <button id="templateHistoryMore" type="button">이전 이력 더보기</button></div>
                   <div id="deskTemplateAuditList"></div>
                 </article>
               </section>
@@ -27496,7 +27508,7 @@
     }
 
     function ensureDeskMessageTemplatesLoaded_() {
-      if ((state.desk.messageTemplates.tags || []).length && (state.desk.messageTemplates.templates || []).length) {
+      if (state.desk.messageTemplates.remoteLoaded || state.desk.messageTemplates.dataInitialized || ((state.desk.messageTemplates.tags || []).length && (state.desk.messageTemplates.templates || []).length)) {
         if (!findDeskMessageTag_(state.desk.messageTemplates.selectedTagId)) {
           state.desk.messageTemplates.selectedTagId = (state.desk.messageTemplates.tags[0] || {}).id || "";
         }
@@ -27524,6 +27536,7 @@
         state.desk.messageTemplates.tags = getDefaultDeskMessageTags_().map(normalizeDeskMessageTag_);
         state.desk.messageTemplates.templates = getDefaultDeskMessageTemplates_().map(normalizeDeskMessageTemplate_);
       }
+      state.desk.messageTemplates.dataInitialized = true;
       if (!findDeskMessageTag_(state.desk.messageTemplates.selectedTagId)) {
         state.desk.messageTemplates.selectedTagId = (state.desk.messageTemplates.tags[0] || {}).id || "";
       }
@@ -27535,15 +27548,6 @@
       }
     }
 
-    function saveDeskMessageTemplatesLocal_() {
-      try {
-        localStorage.setItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY, JSON.stringify({
-          tags: state.desk.messageTemplates.tags || [],
-          templates: state.desk.messageTemplates.templates || []
-        }));
-      } catch (err) {}
-      saveDeskMessageTemplatesRemote_();
-    }
 
     function ensureDeskMessageTemplatesRemoteLoaded_() {
       if (shouldDeferPortalDataLoad_()) return;
@@ -27551,9 +27555,10 @@
       state.desk.messageTemplates.remoteLoading = true;
       loadDeskPortalConfig_("daily", "messageTemplates")
         .then(function(snapshot) {
-          if (snapshot && Array.isArray(snapshot.tags) && Array.isArray(snapshot.templates) && snapshot.tags.length) {
-            state.desk.messageTemplates.tags = snapshot.tags.map(normalizeDeskMessageTag_);
-            state.desk.messageTemplates.templates = snapshot.templates.map(normalizeDeskMessageTemplate_);
+          if (snapshot && (snapshot.tags == null || Array.isArray(snapshot.tags)) && (snapshot.templates == null || Array.isArray(snapshot.templates))) {
+            state.desk.messageTemplates.history = snapshot.history || {};
+            state.desk.messageTemplates.tags = (snapshot.tags || []).map(normalizeDeskMessageTag_);
+            state.desk.messageTemplates.templates = (snapshot.templates || []).map(normalizeDeskMessageTemplate_);
             try {
               localStorage.setItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY, JSON.stringify({
                 tags: state.desk.messageTemplates.tags || [],
@@ -27573,23 +27578,6 @@
         });
     }
 
-    function saveDeskMessageTemplatesRemote_() {
-      if (shouldDeferPortalDataLoad_()) return;
-      state.desk.messageTemplates.remoteSaving = true;
-      saveDeskPortalConfig_("daily", "messageTemplates", {
-        tags: state.desk.messageTemplates.tags || [],
-        templates: state.desk.messageTemplates.templates || []
-      })
-        .then(function() {
-          state.desk.messageTemplates.remoteLoaded = true;
-        })
-        .catch(function(err) {
-          console.warn("desk message templates remote save failed", err);
-        })
-        .finally(function() {
-          state.desk.messageTemplates.remoteSaving = false;
-        });
-    }
 
     function findDeskMessageTag_(id) {
       return (state.desk.messageTemplates.tags || []).find(function(item) { return item.id === id; }) || null;
@@ -27807,7 +27795,7 @@
       }
       if (deskTemplateListTitleEl) deskTemplateListTitleEl.textContent = current.searchKeyword ? '전체 태그 검색 결과' : (selectedTag ? selectedTag.label : "메시지") + " 문구";
       if (deskTemplateListSubEl) deskTemplateListSubEl.textContent = (selectedTag ? selectedTag.target : "전체") + " 대상 · " + filtered.length + "개 문구";
-      if (deskTemplateTagSelectEl) {
+      if (deskTemplateTagSelectEl && !current.editorDirty) {
         deskTemplateTagSelectEl.innerHTML = tags.map(function(tag) {
           return '<option value="' + escapeHtml(tag.id) + '">' + escapeHtml(tag.label) + '</option>';
         }).join("");
@@ -27833,9 +27821,9 @@
       deskTemplateMessageListEl.innerHTML = visibleItems.map(function(item) {
         return '<article class="desk-template-message-item ' + (item.id === state.desk.messageTemplates.selectedTemplateId ? "selected" : "") + '" data-desk-template-message="' + escapeHtml(item.id) + '">' +
           '<button class="desk-template-check" type="button" aria-label="문구 선택" data-desk-template-check="' + escapeHtml(item.id) + '"><i data-lucide="check"></i></button>' +
-          '<div class="desk-template-message-copy"><button type="button" class="desk-template-open-message" data-desk-template-edit-message="' + escapeHtml(item.id) + '">' + escapeHtml(item.title) + '</button><p>' + escapeHtml(item.message).replace(/\n/g, "<br>") + '</p></div>' +
+          '<div class="desk-template-message-copy"><button type="button" class="desk-template-open-message" data-desk-template-open-message="' + escapeHtml(item.id) + '">' + escapeHtml(item.title) + '</button><p>' + escapeHtml(item.message).replace(/\n/g, "<br>") + '</p></div>' +
           '<div class="desk-template-message-side">' +
-            '<div class="desk-template-message-meta"><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><span>' + escapeHtml(item.tone) + '</span><time>' + escapeHtml(Number.isFinite(Date.parse(item.updatedAt)) ? formatDeskResponseLogDate_(item.updatedAt) : (item.updatedAt || '시각 기록 없음')) + '</time></div>' +
+            '<div class="desk-template-message-meta"><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><span>' + escapeHtml(item.tone) + '</span><time>' + escapeHtml(templateTimestamp_(item.updatedAt)) + '</time></div>' +
             '<div class="desk-template-message-actions">' +
               '<button type="button" aria-label="문구 복사" title="문구 복사" data-desk-template-copy-message="' + escapeHtml(item.id) + '"><i data-lucide="copy"></i></button>' +
               '<button type="button" aria-label="문구 편집" title="문구 편집" data-desk-template-edit-message="' + escapeHtml(item.id) + '"><i data-lucide="pencil"></i></button>' +
@@ -27870,149 +27858,23 @@
       updateDeskMessageTemplatePreview_();
     }
 
-    function updateDeskMessageTemplatePreview_() {
-      if (!deskTemplatePreviewEl) return;
-      var text = deskTemplateMessageInputEl ? String(deskTemplateMessageInputEl.value || "") : "";
-      var replacements = {
-        "{학생명}": "김도윤",
-        "{담당강사}": "송경석",
-        "{수업일}": "5/14",
-        "{상담번호}": "S-042"
-      };
-      Object.keys(replacements).forEach(function(key) {
-        text = text.split(key).join(replacements[key]);
-      });
-      deskTemplatePreviewEl.innerHTML = escapeHtml(text || "문구 내용을 입력하면 미리보기가 표시됩니다.").replace(/\n/g, "<br>") + '<i data-lucide="send"></i>';
-      refreshLucideIcons_();
-    }
+    // updateDeskMessageTemplatePreview_ is implemented in message-templates.js.
 
-    function renderDeskMessageTemplateHistory_() {
-      var templates = (state.desk.messageTemplates.templates || []).slice(0, 4);
-      if (deskTemplateRecentListEl) {
-        deskTemplateRecentListEl.innerHTML = templates.map(function(item) {
-          return '<div class="desk-template-history-row"><i data-lucide="file-text"></i><strong>' + escapeHtml(item.title) + '</strong><span class="' + getDeskMessageTargetClass_(item.target) + '">' + escapeHtml(item.target) + '</span><em>' + escapeHtml(item.updatedBy || "데스크") + ' · ' + escapeHtml(item.updatedAt || "방금 전") + '</em></div>';
-        }).join("");
-      }
-      if (deskTemplateAuditListEl) {
-        deskTemplateAuditListEl.innerHTML = templates.map(function(item) {
-          return '<div class="desk-template-history-row"><span class="dot"></span><strong>' + escapeHtml(item.updatedBy || "데스크") + '</strong><span>' + escapeHtml(item.title) + ' 수정</span><em>' + escapeHtml(item.updatedAt || "방금 전") + '</em></div>';
-        }).join("");
-      }
-    }
+    // renderDeskMessageTemplateHistory_ is implemented in message-templates.js.
 
-    async function saveDeskMessageTemplateFromEditor_() {
-      var current = state.desk.messageTemplates;
-      var item = findDeskMessageTemplate_(current.selectedTemplateId);
-      if (!item || current.editorSaving) return;
-      var next = Object.assign({}, item, { title: deskTemplateTitleInputEl.value.trim(), target: deskTemplateTargetSelectEl.value, tagId: deskTemplateTagSelectEl.value, tone: current.selectedTone || item.tone, message: deskTemplateMessageInputEl.value.trim(), updatedBy: (state.cloudIdentity || {}).name || '기록 없음', updatedAt: new Date().toISOString() });
-      if (!next.title || !next.message) { showClientMessage('문구 제목과 내용을 입력해 주세요.'); return; }
-      current.editorSaving = true;
-      document.querySelector('.desk-template-editor').querySelectorAll('input,textarea,select,button').forEach(function(el) { el.disabled = true; });
-      deskTemplateSaveBtnEl.disabled = true;
-      deskTemplateEditorStatusEl.textContent = '저장 중';
-      try {
-        var templates = current.templates.map(function(row) { return row.id === item.id ? next : row; });
-        await saveDeskPortalConfig_('daily', 'messageTemplates', {tags: current.tags, templates: templates});
-        current.templates = templates; current.selectedTagId = next.tagId; current.editorDirty = false;
-        try { localStorage.setItem(DESK_MESSAGE_TEMPLATES_STORAGE_KEY, JSON.stringify({tags: current.tags, templates: templates})); } catch (e) {}
-        renderDeskMessageTemplates_(); showClientMessage('메시지를 저장했습니다.');
-      } catch (e) { deskTemplateEditorStatusEl.textContent = '저장 실패 · 입력 내용 유지'; }
-      finally { current.editorSaving = false; document.querySelector('.desk-template-editor').querySelectorAll('input,textarea,select,button').forEach(function(el) { el.disabled = false; }); }
-    }
+    // saveDeskMessageTemplateFromEditor_ is implemented in message-templates.js.
 
-    function addDeskMessageTag_() {
-      var label = window.prompt("추가할 유형 태그명을 입력해 주세요.", "새 응대 유형");
-      if (label === null) return;
-      label = String(label || "").trim();
-      if (!label) return;
-      var target = window.prompt("대상을 입력해 주세요. 예: 학부모, 학생, 강사, 지원자", "학부모");
-      target = String(target || "학부모").trim();
-      var tag = normalizeDeskMessageTag_({
-        id: buildDeskShiftId_("messageTag", Date.now(), Math.random().toString(36).slice(2)),
-        label: label,
-        target: target,
-        icon: "tag",
-        description: "관리자가 추가한 상황 태그",
-        procedure: "새 절차"
-      });
-      state.desk.messageTemplates.tags.push(tag);
-      state.desk.messageTemplates.selectedTagId = tag.id;
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // addDeskMessageTag_ is implemented in message-templates.js.
 
-    function editDeskMessageTag_(id) {
-      var tag = findDeskMessageTag_(id);
-      if (!tag) return;
-      var label = window.prompt("유형 태그명을 수정해 주세요.", tag.label);
-      if (label === null) return;
-      label = String(label || "").trim();
-      if (!label) return;
-      var target = window.prompt("대상을 수정해 주세요.", tag.target);
-      tag.label = label;
-      tag.target = String(target || tag.target || "학부모").trim();
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // editDeskMessageTag_ is implemented in message-templates.js.
 
-    function deleteDeskMessageTag_(id) {
-      var tag = findDeskMessageTag_(id);
-      if (!tag) return;
-      if (!confirm("'" + tag.label + "' 태그를 삭제할까요? 연결된 문구는 첫 번째 태그로 이동합니다.")) return;
-      var fallback = (state.desk.messageTemplates.tags || []).find(function(item) { return item.id !== id; });
-      state.desk.messageTemplates.tags = (state.desk.messageTemplates.tags || []).filter(function(item) { return item.id !== id; });
-      (state.desk.messageTemplates.templates || []).forEach(function(item) {
-        if (item.tagId === id) item.tagId = fallback ? fallback.id : "";
-      });
-      state.desk.messageTemplates.selectedTagId = fallback ? fallback.id : "";
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // deleteDeskMessageTag_ is implemented in message-templates.js.
 
-    function addDeskMessageTemplate_() {
-      ensureDeskMessageTemplatesLoaded_();
-      var tag = findDeskMessageTag_(state.desk.messageTemplates.selectedTagId) || state.desk.messageTemplates.tags[0];
-      var template = normalizeDeskMessageTemplate_({
-        id: buildDeskShiftId_("messageTemplate", Date.now(), Math.random().toString(36).slice(2)),
-        tagId: tag ? tag.id : "",
-        target: tag ? tag.target : "학부모",
-        title: "새 메시지 문구",
-        tone: "부드럽게",
-        message: "{학생명} 학생 관련 안내드립니다.",
-        updatedBy: "데스크",
-        updatedAt: "방금 전"
-      });
-      state.desk.messageTemplates.templates.unshift(template);
-      state.desk.messageTemplates.selectedTemplateId = template.id;
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // addDeskMessageTemplate_ is implemented in message-templates.js.
 
-    function duplicateDeskMessageTemplate_(id) {
-      var item = findDeskMessageTemplate_(id);
-      if (!item) return;
-      var copy = normalizeDeskMessageTemplate_(Object.assign({}, item, {
-        id: buildDeskShiftId_("messageTemplate", Date.now(), Math.random().toString(36).slice(2)),
-        title: item.title + " 복사본",
-        updatedBy: "데스크",
-        updatedAt: "방금 전"
-      }));
-      state.desk.messageTemplates.templates.unshift(copy);
-      state.desk.messageTemplates.selectedTemplateId = copy.id;
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // duplicateDeskMessageTemplate_ is implemented in message-templates.js.
 
-    function deleteDeskMessageTemplate_(id) {
-      var item = findDeskMessageTemplate_(id);
-      if (!item) return;
-      if (!confirm("'" + item.title + "' 문구를 삭제할까요?")) return;
-      state.desk.messageTemplates.templates = (state.desk.messageTemplates.templates || []).filter(function(template) { return template.id !== id; });
-      var next = getFilteredDeskMessageTemplates_()[0] || state.desk.messageTemplates.templates[0];
-      state.desk.messageTemplates.selectedTemplateId = next ? next.id : "";
-      saveDeskMessageTemplatesLocal_();
-      renderDeskMessageTemplates_();
-    }
+    // deleteDeskMessageTemplate_ is implemented in message-templates.js.
 
     function renderDeskLayout_() {
       renderSidebarLayout_();
@@ -36558,7 +36420,7 @@
           var copyBtn = event.target.closest("[data-desk-template-copy-message]");
           if (copyBtn) {
             var copyItem = findDeskMessageTemplate_(copyBtn.getAttribute("data-desk-template-copy-message") || "");
-            if (copyItem) copyDeskPlainText_(copyItem.message);
+            if (copyItem) copyCompletedTemplate_(copyItem.message);
             return;
           }
           var editBtn = event.target.closest("[data-desk-template-edit-message]");
@@ -36588,7 +36450,7 @@
           var text = getFilteredDeskMessageTemplates_().map(function(item) {
             return "[" + item.target + "] " + item.title + "\n" + item.message;
           }).join("\n\n");
-          copyDeskPlainText_(text);
+          copyCompletedTemplate_(text);
         });
       }
       if (deskTemplateReorderBtnEl) {
@@ -36605,7 +36467,7 @@
       if (deskTemplateCopyBtnEl) {
         deskTemplateCopyBtnEl.addEventListener("click", function() {
           var item = findDeskMessageTemplate_(state.desk.messageTemplates.selectedTemplateId);
-          copyDeskPlainText_(deskTemplateMessageInputEl ? deskTemplateMessageInputEl.value : (item && item.message));
+          copyCompletedTemplate_(deskTemplateMessageInputEl ? deskTemplateMessageInputEl.value : (item && item.message));
         });
       }
       if (deskTemplateDuplicateBtnEl) {
@@ -45757,6 +45619,7 @@ window.SeduHubAdapter={
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./subscriptions.js?v=20260925-chart"></script>
 <script src="./desk-refinements.js?v=20261002"></script>
+<script src="./message-templates.js?v=20261003"></script>
 <script type="module" src="hub-start.mjs"></script>
 <script src="./training.js?v=20260926-five"></script>
 <script src="./training-hr.js?v=20260925"></script>
