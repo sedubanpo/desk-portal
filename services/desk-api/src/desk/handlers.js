@@ -1,4 +1,5 @@
 import { prepareResponseLog } from './response-log.js';
+import { buildHubNotifications } from './hub-notifications.js';
 import { createJournalTaskMethods } from './task-service.js';
 import {
   compareApplicants,
@@ -40,6 +41,7 @@ const PATHS = Object.freeze({
 });
 
 export const DESK_READ_METHODS = new Set([
+  'getHubNotifications',
   'getDeskScheduleMonthData',
   'getDeskScheduleDayHistory',
   'getDeskAttendanceMonthData',
@@ -77,6 +79,16 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
+    async getHubNotifications(_payload = {}, identity = {}) {
+      // Fixed window and verified identity; the browser cannot choose a recipient.
+      const today=seoulDateKey(now());
+      const dates=Array.from({length:8},(_,i)=>new Date(Date.parse(today+'T12:00:00+09:00')-i*86400000).toISOString().slice(0,10));
+      const [journals,attendance]=await Promise.all([
+        Promise.all(dates.map(day=>handlers.getDeskDailyJournalData({dateKey:day}))),
+        handlers.getDeskAttendanceMonthData({monthKey:today.slice(0,7)},identity)
+      ]);
+      return buildHubNotifications(identity,journals.flatMap(day=>day.tasks),attendance,now());
+    },
     async getDeskStaffDirectory() {
       const staff = (await loadStaffDirectory()).map(item => ({
         uid: String(item?.uid || '').trim(),
