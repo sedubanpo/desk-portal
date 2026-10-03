@@ -735,3 +735,35 @@ test('subscription Visa card saves the suffix without changing annual amount',as
  const r=await h.saveDeskPortalConfig({scope:'daily',key:'subscriptions/visa-test',expectedValue:null,value});
  assert.equal(r.success,true);assert.equal(r.value.payments['2026-09'].amount,168000);assert.equal(r.value.payments['2026-09'].paymentCard.issuer,'visa');
 });
+
+test('toner adjustment retries a cached-null miss and commits exactly one branch history entry', async () => {
+  const base=memoryStore({desk_portal:{supplies:{consumables:[{id:'custom-toner',itemName:'토너',productName:'검증용 토너',unit:'개',branchStocks:{'본관':{qty:4,maxQty:10,safetyQty:1},'2관':{qty:2,maxQty:10,safetyQty:1}}}],assets:[],purchaseRequestNote:'유지할 메모'}}});
+  const original=base.transaction;
+  base.transaction=async(path,update)=>{
+    const first=update(null);
+    assert.equal(first,null,'a cold-cache miss must not abort the Firebase transaction');
+    update(clone((await base.get(path)))); // Simulate a further conflicting attempt.
+    return original(path,update);
+  };
+  const handlers=createDeskHandlers({store:base});
+  const result=await handlers.adjustDeskSupplyConsumable({id:'custom-toner',branch:'2관',delta:-1},{uid:'worker',name:'검증 근무자'});
+  assert.equal(result.success,true);
+  const item=result.data.consumables[0];
+  assert.equal(item.branchStocks['본관'].qty,4);
+  assert.equal(item.branchStocks['2관'].qty,1);
+  assert.equal(item.changeHistory.length,1);
+  assert.equal(item.changeHistory[0].beforeQty,2);
+  assert.equal(item.changeHistory[0].afterQty,1);
+  assert.equal(item.changeHistory[0].changedByUid,'worker');
+  assert.equal(result.data.purchaseRequestNote,'유지할 메모');
+});
+
+test('a genuinely missing supply remains an error without changing stored inventory', async () => {
+  const base=memoryStore({desk_portal:{supplies:{consumables:[{id:'other',itemName:'종이',productName:'A4',qty:3}],assets:[],purchaseRequestNote:'보존'}}});
+  const before=clone(base.dump());const original=base.transaction;
+  base.transaction=async(path,update)=>{assert.equal(update(null),null);return original(path,update);};
+  const result=await createDeskHandlers({store:base}).adjustDeskSupplyConsumable({id:'removed-toner',branch:'본관',delta:1});
+  assert.equal(result.success,false);
+  assert.match(result.message,/조정할 품목/);
+  assert.deepEqual(base.dump(),before);
+});

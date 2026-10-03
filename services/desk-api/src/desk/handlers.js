@@ -431,13 +431,20 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       if (!delta) return failure('조정 수량이 없습니다.');
       let missing = false;
       const stored = await store.transaction(PATHS.supplies, current => {
+        // Firebase may first invoke this callback with a stale local cache.
+        // Keep the last attempt's outcome, not an earlier cache miss.
+        missing = false;
         const data = suppliesData(current);
         const target = data.consumables.find(item => item.id === id) || data.consumables.find(item => (
           itemName && productName && unit &&
           item.itemName === itemName && item.productName === productName && item.unit === unit
         ));
         const stock = target?.branchStocks?.[branch];
-        if (!target || !stock) { missing = true; return; }
+        if (!target || !stock) {
+          missing = true;
+          // Returning undefined aborts before Firebase can retry with server data.
+          return current ?? null;
+        }
         const beforeQty = Number(stock.qty || 0);
         const afterQty = Math.max(0, Math.min(stock.maxQty, beforeQty + delta));
         const appliedDelta = afterQty - beforeQty;
