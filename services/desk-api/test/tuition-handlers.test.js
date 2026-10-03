@@ -842,3 +842,18 @@ test('identity links require administrator, reject aliases and retain audit with
  assert.equal((await h.saveTuitionIdentityLink({studentName:'정승현',studentId:''},{role:'ADMIN'})).success,true);
  assert.equal((await h.getTuitionIdentityLinks()).links[0].studentId,'');
 });
+
+test('monthly notice dates use earliest actual notice in that month, not latest contact or another month', async () => {
+  const seed = tuitionSeed();
+  const log = (monthName, contactAt, guideAmount = 100000, unpaidStatus = '안내완료') => ({ monthName, studentName: '김재희', contactAt, guideAmount, unpaidStatus });
+  seed.documents['tuitionContactLogs/old'] = log('26-06s', '2026-06-01T00:00:00Z');
+  seed.documents['tuitionContactLogs/zero'] = log(seed.month, '2026-07-01T00:00:00Z', 0);
+  seed.documents['tuitionContactLogs/before'] = log(seed.month, '2026-07-02T00:00:00Z', 100000, '안내이전');
+  seed.documents['tuitionContactLogs/first'] = log(seed.month, '2026-07-03T23:00:00Z');
+  seed.documents['tuitionContactLogs/latest'] = log(seed.month, '2026-07-10T00:00:00Z');
+  const handlers = createTuitionHandlers({ store: memoryStore(seed.documents) });
+  const result = await handlers.getTuitionMonthSummary({ monthName: seed.month, includeNoticeDates: true });
+  assert.equal(result.success, true);
+  assert.equal(result.rows.find(row => row.studentName === '김재희').firstGuideAt, '2026-07-03T23:00:00Z');
+  assert.equal(result.noticeDatesTruncated, false);
+});

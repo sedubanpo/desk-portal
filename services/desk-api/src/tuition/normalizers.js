@@ -59,6 +59,7 @@ export function followup(source = {}) {
     studentName: student,
     guideAmount: Math.max(0, Math.round(number(source.guideAmount))),
     unpaidStatus: unpaidStatus(source.unpaidStatus),
+    firstGuideAt: text(source.firstGuideAt),
     lastContactAt: text(source.lastContactAt),
     lastContactMemo: text(source.lastContactMemo, 1200),
     contactChannel: contactChannel(source.contactChannel),

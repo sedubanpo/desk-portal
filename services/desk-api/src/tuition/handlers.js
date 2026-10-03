@@ -565,6 +565,16 @@ async function buildMonthSummary(store, payload) {
   if (!snapshot?.success || !Array.isArray(snapshot.rows)) {
     return pendingSummary(month, months, 'summary-snapshot-missing', monthContext);
   }
+  const noticeLogs = payload.includeNoticeDates
+    ? await store.listWhere(COLLECTIONS.contactLogs, 'monthName', '==', month, 5000) : [];
+  const firstNoticeDates = {};
+  noticeLogs.forEach(log => {
+    if (number(log.guideAmount) <= 0 || unpaidStatus(log.unpaidStatus) === '안내이전') return;
+    const at = text(log.contactAt);
+    if (!at || !Number.isFinite(Date.parse(at))) return;
+    const name = studentName(log.studentName);
+    if (!firstNoticeDates[name] || Date.parse(at) < Date.parse(firstNoticeDates[name])) firstNoticeDates[name] = at;
+  });
   const previousMonth = previousMonthName(month);
   const [memoDocuments, studentDocuments, recent, monthPayments, previousMonthPayments, followups, charges] = await Promise.all([
     store.list(COLLECTIONS.studentMemos, 500),
@@ -589,6 +599,9 @@ async function buildMonthSummary(store, payload) {
     return [row.studentName, row.school, row.grade].join('').toLowerCase().replace(/\s+/g, '').includes(keyword);
   }).map(row => ({
     ...row,
+    firstGuideAt: [row.firstGuideAt, firstNoticeDates[studentName(row.studentName)]]
+      .filter(value => value && Number.isFinite(Date.parse(value)))
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] || '',
     previousPaymentMethod: previousPayments.methods[studentName(row.studentName)] || '',
     previousPaymentDate: previousPayments.earliestDates[studentName(row.studentName)] || '',
     tuitionMemoWarning: warnings[studentName(row.studentName)] || memoWarning([])
@@ -615,6 +628,7 @@ async function buildMonthSummary(store, payload) {
     briefingRows: monthContext.briefingRows,
     briefingPayments: monthContext.briefingPayments,
     tuitionMemoWarnings: warnings,
+    noticeDatesTruncated: noticeLogs.length === 5000,
     cache,
     indexStatus: buildIndexStatus(month, cache, recent, monthPayments, followups, charges)
   };
@@ -647,6 +661,7 @@ async function saveFollowupMutation({ store, payload, identity, nowIso, incremen
         : (Object.prototype.hasOwnProperty.call(payload, 'hiddenFromTuition')
             ? Boolean(payload.hiddenFromTuition)
             : Boolean(current.hiddenFromTuition)),
+      firstGuideAt: current.firstGuideAt || (incrementContact && guideAmount > 0 && status !== '안내이전' ? timestamp : ''),
       lastContactAt: incrementContact ? timestamp : current.lastContactAt,
       lastContactMemo: incrementContact ? text(payload.memo, 1200) : current.lastContactMemo,
       contactChannel: incrementContact ? contactChannel(payload.contactChannel) : current.contactChannel,
@@ -1060,6 +1075,7 @@ function updateSnapshotFollowup(source, student, next, timestamp) {
     ...row,
     guideAmount: next.guideAmount,
     unpaidStatus: next.unpaidStatus,
+    firstGuideAt: next.firstGuideAt || row.firstGuideAt || '',
     lastContactAt: next.lastContactAt,
     lastContactMemo: next.lastContactMemo,
     contactChannel: next.contactChannel,

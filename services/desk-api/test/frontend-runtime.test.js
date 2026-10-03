@@ -1053,3 +1053,27 @@ test('disabled supply branches stay out of replenishment filters and purchase en
   state.desk.supplies.stockFilter = '전체';
   assert.equal(context.getDeskVisibleSupplyItems_().map(entry => entry.id).join(','), 'active,disabled');
 });
+
+test('group report classifies school suffixes and splits payments without double-counting partial payments', async () => {
+  const source = await readFile(new URL('../../../docs/tuition-groups.js', import.meta.url), 'utf8');
+  const context = vm.createContext({});
+  ['tuitionSchoolGroup_', 'tuitionGroupStatus_', 'tuitionNoticeAgeHtml_'].forEach(name => vm.runInContext(extractFunction(source, name), context));
+  assert.equal(context.tuitionSchoolGroup_({school:'중경고',grade:'3학년'}).level, '고등');
+  assert.equal(context.tuitionSchoolGroup_({school:'신반포중학교',grade:'2'}).level, '중등');
+  assert.equal(context.tuitionSchoolGroup_({school:'재수',grade:'1'}).level, '');
+  assert.equal(context.tuitionGroupStatus_({guideAmount:100, collectedAmount:40, unpaidStatus:'안내완료'}).payment, 'partial');
+  assert.equal(context.tuitionGroupStatus_({guideAmount:100, collectedAmount:100}).payment, 'paid');
+  assert.equal(context.tuitionGroupStatus_({guideAmount:0, collectedAmount:0}).payment, 'unpaid');
+  assert.equal(context.tuitionGroupStatus_({guideAmount:100, collectedAmount:0, contactCount:1, unpaidStatus:'안내이전'}).informed, false);
+  assert.match(context.tuitionNoticeAgeHtml_(''), /안내일 기록 없음/);
+});
+
+test('notice elapsed days follow Seoul midnight, not elapsed 24-hour periods', async () => {
+  const source = await readFile(new URL('../../../docs/tuition-groups.js', import.meta.url), 'utf8');
+  class FixedDate extends Date { static now() { return Date.parse('2026-10-03T15:01:00Z'); } }
+  const context = vm.createContext({ Date: FixedDate });
+  vm.runInContext(extractFunction(source, 'tuitionNoticeAgeHtml_'), context);
+  assert.match(context.tuitionNoticeAgeHtml_('2026-10-03T14:59:00Z'), /D\+1/);
+  assert.match(context.tuitionNoticeAgeHtml_('2026-10-03T15:00:00Z'), /D\+0/);
+  assert.match(context.tuitionNoticeAgeHtml_('2026-10-05T00:00:00Z'), /안내일 확인 필요/);
+});

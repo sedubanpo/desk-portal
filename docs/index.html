@@ -17699,6 +17699,7 @@
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
+<link rel="stylesheet" href="./tuition-groups.css?v=20261003">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
 <link rel="stylesheet" href="./inquiries.css?v=20261003-inquiry-insights">
@@ -40032,7 +40033,8 @@
       return runServer("getTuitionMonthSummary", {
         monthName: month,
         statusFilter: "",
-        keyword: ""
+        keyword: "",
+        includeNoticeDates: true
       })
         .then(function(res) {
           if (state.tuition.unpaidRequestVersion !== requestVersion) return;
@@ -40052,14 +40054,18 @@
               unpaidStatus: row.unpaidStatus || "안내이전",
               guideAmount: guide,
               collectedAmount: collected,
-              outstandingAmount: outstanding
+              outstandingAmount: outstanding,
+              firstGuideAt: row.firstGuideAt || ""
             };
           }).sort(function(a, b) {
-            if (b.outstandingAmount !== a.outstandingAmount) return b.outstandingAmount - a.outstandingAmount;
+            var aDate = Date.parse(a.firstGuideAt), bDate = Date.parse(b.firstGuideAt);
+            if (isFinite(aDate) !== isFinite(bDate)) return isFinite(aDate) ? -1 : 1;
+            if (isFinite(aDate) && aDate !== bDate) return aDate - bDate;
             return String(a.studentName || "").localeCompare(String(b.studentName || ""), "ko");
           });
           var payload = { rows: unpaidRows };
           renderTuitionUnpaidMonth_(month, payload);
+          if (res.noticeDatesTruncated) tuitionUnpaidSummaryEl.textContent += " · 안내 기록 일부만 조회됨";
         })
         .catch(function(err) {
           if (state.tuition.unpaidRequestVersion !== requestVersion) return;
@@ -40073,7 +40079,7 @@
       var totalOutstanding = rows.reduce(function(acc, row) {
         return acc + Math.max(0, toNumber(row.outstandingAmount, 0));
       }, 0);
-      tuitionUnpaidSummaryEl.textContent = formatTuitionMonthLabel_(monthName) + " · 미납 " + rows.length + "명 · " + formatWon(totalOutstanding);
+      tuitionUnpaidSummaryEl.textContent = formatTuitionMonthLabel_(monthName) + " · 미납 " + rows.length + "명 · " + formatWon(totalOutstanding) + " · 최초 안내일 오래된 순";
       if (!rows.length) {
         tuitionUnpaidListEl.innerHTML = '<div class="tuition-cal-empty">미납 학생이 없습니다.</div>';
         return;
@@ -40086,6 +40092,7 @@
             '<div class="meta">' + buildTuitionStatusBadge(row.unpaidStatus) + '<span class="tr-unpaid-breakdown">안내 ' + '<span class="tr-money-in">+' + formatWon(Math.abs(row.guideAmount||0)) + '</span>' + ' · 수납 ' + tuitionMoneyHtml_(-Math.abs(row.collectedAmount)) + '</span>' + '</div>' +
           '</div>' +
           '<div>' +
+            '<div class="tr-notice-age">' + tuitionNoticeAgeHtml_(row.firstGuideAt) + '</div>' +
             '<div class="amt"><small>미납액</small><span class="tr-money-in">+' + formatWon(Math.abs(row.outstandingAmount)) + '</span>' + '</div>' +
           '</div>' +
         '</article>';
@@ -41250,9 +41257,11 @@
       var month = toNumber(state.tuition.calendarViewMonth, fallback.month);
       tuitionCalendarMonthTextEl.textContent = year + ". " + pad2(month);
       var dayMap = {};
+      var query = String(state.tuition.calendarSearch || "").replace(/\s/g, "").toLowerCase();
       var totalCount = 0;
       var totalAmount = 0;
       (state.tuition.allPayments || []).forEach(function(row) {
+        if (query && String(row.studentName || "").replace(/\s/g, "").toLowerCase().indexOf(query) === -1) return;
         var key = parseTuitionPaidDateKey_(row.paidAt, selectedMonthName);
         if (!key) return;
         var m = key.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -41292,13 +41301,12 @@
         if (weekday === 6) cls += " sat";
         if (list.length) cls += " has-pay";
         if (active) cls += " active";
-        var totalDay = 0;
-        list.forEach(function(row) { totalDay += (0 - toNumber(row.amount, 0)); });
-        var lines = list.slice(0, 2).map(function(row) {
-          return '<div class="tuition-cal-day-line"><span class="n">' + tuitionMethodVisual_(row.paymentType) + renderStudentIdentityHtml_(row.studentName) + '</span><span>' + tuitionMoneyHtml_(row.amount) + "</span></div>";
+        var names = Array.from(new Set(list.map(function(row) { return row.studentName || "이름 없음"; }))).sort(function(a,b) { return a.localeCompare(b,"ko"); });
+        var lines = names.slice(0, 3).map(function(name) {
+          return '<div class="tuition-cal-day-line"><span class="n">' + escapeHtml(name) + '</span></div>';
         }).join("");
-        if (list.length > 2) lines += '<div class="tuition-cal-day-more">+' + (list.length - 2) + "건</div>";
-        var totalHtml = list.length ? '<div class="tuition-cal-day-total">합계 ' + tuitionMoneyHtml_(-totalDay) + "</div>" : "";
+        if (names.length > 3) lines += '<div class="tuition-cal-day-more">+' + (names.length - 3) + "명</div>";
+        var totalHtml = names.length ? '<div class="tuition-cal-day-total">' + names.length + '명 · ' + list.length + '건</div>' : "";
         html += '<button type="button" class="' + cls + '" data-tuition-cal-day="' + i + '">' +
           '<div class="tuition-cal-day-num">' + dDay + "</div>" +
           '<div class="tuition-cal-day-body">' + lines + totalHtml + "</div>" +
@@ -45669,6 +45677,7 @@ window.SeduHubAdapter={
 <script src="./payment-link-parser.js?v=20260915-payments"></script>
 <script src="./payment-link-upload.js?v=20260915-payments"></script>
 <script src="./tuition-redesign.js?v=20260916-metrics"></script>
+<script src="./tuition-groups.js?v=20261003"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./subscriptions.js?v=20260925-chart"></script>
 <script src="./desk-refinements.js?v=20261002"></script>
