@@ -184,12 +184,12 @@ const DEFAULT_ASSETS = [
 export function supplyStock(item = {}, fallback = {}) {
   const source = item && typeof item === 'object' ? item : {};
   const base = fallback && typeof fallback === 'object' ? fallback : {};
-  const fallbackMax = Math.max(1, supplyNumber(base.maxQty, 1));
-  const maxQty = Math.max(1, supplyNumber(source.maxQty, fallbackMax));
+  const fallbackMax = Math.max(0, supplyNumber(base.maxQty, 1));
+  const maxQty = Math.max(0, supplyNumber(source.maxQty, fallbackMax));
   return {
-    qty: clampNumber(supplyNumber(source.qty, supplyNumber(base.qty, 0)), 0, maxQty),
+    qty: clampNumber(supplyNumber(source.qty, supplyNumber(base.qty, 0)), 0, maxQty === 0 ? Infinity : maxQty),
     maxQty,
-    safetyQty: clampNumber(supplyNumber(source.safetyQty, supplyNumber(base.safetyQty, 0)), 0, maxQty)
+    safetyQty: clampNumber(supplyNumber(source.safetyQty, supplyNumber(base.safetyQty, 0)), 0, maxQty === 0 ? Infinity : maxQty)
   };
 }
 
@@ -283,7 +283,7 @@ export function supplySelections(input, consumables) {
       : (source[item.id] && typeof source[item.id] === 'object' ? source[item.id] : {});
     const recommended = Math.max(1, stock.maxQty - stock.qty);
     return [key, {
-      selected: typeof current.selected === 'boolean' ? current.selected : stock.qty <= stock.safetyQty,
+      selected: stock.maxQty > 0 && (typeof current.selected === 'boolean' ? current.selected : stock.qty <= stock.safetyQty),
       requestQty: Math.max(1, supplyNumber(current.requestQty, recommended))
     }];
   })));

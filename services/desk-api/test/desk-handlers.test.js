@@ -767,3 +767,20 @@ test('a genuinely missing supply remains an error without changing stored invent
   assert.match(result.message,/조정할 품목/);
   assert.deepEqual(base.dump(),before);
 });
+
+test('zero maximum disables only that branch, preserves stock and excludes its purchase selection', async()=>{
+ const store=memoryStore({desk_portal:{supplies:{consumables:[{id:'toner',itemName:'토너',productName:'RICOH',unit:'개',branchStocks:{'본관':{qty:3,maxQty:0,safetyQty:2},'2관':{qty:0,maxQty:5,safetyQty:1},'3관':{qty:1,maxQty:0,safetyQty:1}}}],purchaseSelections:{'toner:본관':{selected:true,requestQty:5}}}}});
+ const handlers=createDeskHandlers({store});
+ const data=(await handlers.getDeskSuppliesData()).data;
+ assert.equal(data.consumables[0].branchStocks['본관'].maxQty,0);
+ assert.equal(data.consumables[0].branchStocks['본관'].qty,3);
+ assert.equal(data.purchaseSelections['toner:본관'].selected,false);
+ assert.equal(data.purchaseSelections['toner:2관'].selected,true);
+ const before=store.dump();
+ const result=await handlers.adjustDeskSupplyConsumable({id:'toner',branch:'본관',delta:1});
+ assert.equal(result.success,false);assert.match(result.message,/비활성화/);assert.deepEqual(store.dump(),before);
+ const enabled=await handlers.adjustDeskSupplyConsumable({id:'toner',branch:'2관',delta:1});assert.equal(enabled.success,true);assert.equal(enabled.data.consumables[0].branchStocks['2관'].qty,1);
+ const item=enabled.data.consumables[0];item.branchStocks['본관'].maxQty=5;
+ const saved=await handlers.saveDeskSupplyConsumable({item});assert.equal(saved.success,true);
+ const resumed=await handlers.adjustDeskSupplyConsumable({id:'toner',branch:'본관',delta:1});assert.equal(resumed.success,true);assert.equal(resumed.data.consumables[0].branchStocks['본관'].qty,4);
+});

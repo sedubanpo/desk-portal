@@ -1034,3 +1034,22 @@ test('history response from signed-out account cannot repopulate another account
   pending.resolve({success:true,history:[{version:1}]});await nextTurn();
   assert.deepEqual(state.desk.daily.taskHistories,{});
 });
+
+
+test('disabled supply branches stay out of replenishment filters and purchase entries', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const branches = ['본관', '2관', '3관'];
+  const item = (id, maxima) => ({ id, itemName: id, branchStocks: Object.fromEntries(branches.map((branch, i) => [branch, { qty: 0, maxQty: maxima[i], safetyQty: 1 }])) });
+  const disabled = item('disabled', [0, 0, 0]);
+  const active = item('active', [0, 5, 0]);
+  const state = { desk: { supplies: { consumables: [disabled, active], stockFilter: 'attention' } } };
+  const context = vm.createContext({ state, getDeskSupplyBranches_: () => branches,
+    getDeskSupplyStock_: (entry, branch) => entry.branchStocks[branch],
+    deskSupplyStockKey_: (id, branch) => id + ':' + branch,
+    normalizeDeskSearchValue_: value => String(value || ''), formatDeskTagList_: () => '' });
+  for (const name of ['getDeskSupplyStockEntries_', 'getDeskSupplyStatus_', 'getDeskSupplyItemStatus_', 'getDeskVisibleSupplyItems_']) vm.runInContext(extractFunction(source, name), context);
+  assert.equal(context.getDeskVisibleSupplyItems_().map(entry => entry.id).join(','), 'active');
+  assert.equal(context.getDeskSupplyStockEntries_([disabled, active]).map(entry => entry.branch).join(','), '2관');
+  state.desk.supplies.stockFilter = '전체';
+  assert.equal(context.getDeskVisibleSupplyItems_().map(entry => entry.id).join(','), 'active,disabled');
+});

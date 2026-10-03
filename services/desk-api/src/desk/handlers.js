@@ -430,10 +430,12 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       if (!SUPPLY_BRANCHES.includes(branch)) return failure('조정할 관 정보가 올바르지 않습니다.');
       if (!delta) return failure('조정 수량이 없습니다.');
       let missing = false;
+      let disabled = false;
       const stored = await store.transaction(PATHS.supplies, current => {
         // Firebase may first invoke this callback with a stale local cache.
         // Keep the last attempt's outcome, not an earlier cache miss.
         missing = false;
+        disabled = false;
         const data = suppliesData(current);
         const target = data.consumables.find(item => item.id === id) || data.consumables.find(item => (
           itemName && productName && unit &&
@@ -445,6 +447,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
           // Returning undefined aborts before Firebase can retry with server data.
           return current ?? null;
         }
+        if (stock.maxQty === 0) { disabled = true; return current ?? null; }
         const beforeQty = Number(stock.qty || 0);
         const afterQty = Math.max(0, Math.min(stock.maxQty, beforeQty + delta));
         const appliedDelta = afterQty - beforeQty;
@@ -467,6 +470,7 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         return data;
       });
       if (missing) return failure('조정할 품목을 찾을 수 없습니다.');
+      if (disabled) return failure('해당 관에서 비활성화된 품목입니다. 최대 수량을 1 이상으로 설정해 주세요.');
       return { success: true, data: suppliesData(stored) };
     },
 
