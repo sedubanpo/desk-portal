@@ -18036,11 +18036,12 @@
                 <th data-col="teacher">강사(TR)</th>
                 <th data-col="timeRange">시작-종료</th>
                 <th data-col="hours">시간</th>
-                <th data-col="rate">시간당</th>
+                <th data-col="rate">시간당 금액</th>
                 <th data-col="settlementPercent">정산%</th>
-                <th data-col="amount">금액</th>
+                <th data-col="amount">할인 전 금액</th>
                 <th data-col="discount">할인</th>
-                <th data-col="netAmount">순금액</th>
+                <th data-col="netAmount">할인 후 금액</th>
+                <th data-col="settlementAmount">정산액</th>
                 <th data-col="suspect">의심</th>
                 <th data-col="note">참고</th>
               </tr>
@@ -21378,11 +21379,12 @@
         teacher: true,
         timeRange: true,
         hours: true,
-        rate: false,
+        rate: true,
         settlementPercent: true,
         amount: true,
-        discount: false,
+        discount: true,
         netAmount: true,
+        settlementAmount: true,
         suspect: true,
         note: false
       },
@@ -44219,11 +44221,12 @@ window.SeduHubAdapter={
         teacher: "강사",
         timeRange: "시간대",
         hours: "시간",
-        rate: "시간당",
+        rate: "시간당 금액",
         settlementPercent: "정산%",
-        amount: "금액",
+        amount: "할인 전 금액",
         discount: "할인",
-        netAmount: "순금액",
+        netAmount: "할인 후 금액",
+        settlementAmount: "정산액",
         suspect: "의심",
         note: "참고"
       };
@@ -44968,11 +44971,12 @@ window.SeduHubAdapter={
     function buildPayrollDiscountCell(row) {
       var percent = toNumber(row.discountPercent, 0);
       var amount = toNumber(row.discount, 0);
-      if (percent <= 0 && amount <= 0) return "0%";
+      if (percent <= 0 && amount <= 0) return row.studentSpecialRate ? '<span class="discount-percent">학생 특별 단가</span>' : "—";
       if (percent > 0) {
         return '<span class="discount-cell" title="' + escapeHtml(formatWon(amount)) + ' 차감">' +
-          '<span class="discount-percent">' + escapeHtml(formatPayrollPercent(percent)) + '%</span>' +
-          '<span class="discount-amount">' + escapeHtml(formatWon(amount)) + '</span>' +
+          '<span class="discount-percent">' + escapeHtml(formatPayrollPercent(percent)) + '% 할인</span>' +
+          '<span class="discount-amount">' + escapeHtml(formatWon(amount)) + ' 차감</span>' +
+          (row.discountReason ? '<span class="note">' + escapeHtml(row.discountReason) + '</span>' : '') +
         '</span>';
       }
       return formatWon(amount);
@@ -44987,6 +44991,15 @@ window.SeduHubAdapter={
         '<span>%</span>' +
         badge +
       '</span>';
+    }
+
+    function buildPayrollSettlementCell(row) {
+      if (row.sourcePending) return "확인 필요";
+      if (!row.recognized) return '<span class="note">정산 제외</span>';
+      if (row.effectiveSalaryMode === "hourly" && !row.oneToOneRatioRuleApplied && !row.settlementPercentOverridden) return '<span class="note">시급제 · 중복 시간 제외 합산</span>';
+      var percent = toNumber(row.settlementPercentApplied, 0);
+      var net = toNumber(row.netAmount, 0);
+      return '<strong>' + formatWon(Math.round(net * percent / 100)) + '</strong><br><span class="note">' + formatWon(net) + ' × ' + formatPayrollPercent(percent) + '%</span>';
     }
 
     function buildPayrollAmountCell(row) {
@@ -45046,7 +45059,7 @@ window.SeduHubAdapter={
         var discountCell = buildPayrollDiscountCell(row);
         var settlementPercentCell = buildSettlementPercentCell(row);
         var amountCell = buildPayrollAmountCell(row);
-        var rateCell = formatWon(row.rate);
+        var rateCell = row.rateUnit === "perClass" ? "회당 단가" : (row.sourcePending && !row.rate ? "확인 필요" : formatWon(row.rate) + "/h");
         if (row.autoRepriceEligible) {
           var inputVal = state.rateAdjustments[row.rowKey] || row.rate || row.suggestedRate || "";
           var badge = row.rateManuallyAdjusted
@@ -45078,6 +45091,7 @@ window.SeduHubAdapter={
             '<td data-col="amount">' + amountCell + "</td>" +
             '<td data-col="discount">' + discountCell + "</td>" +
             '<td data-col="netAmount">' + (row.sourcePending ? '확인 필요' : row.attendanceCode === "당일취소" ? ('<span class="cancel-line">' + formatWon(row.netAmount) + "</span>") : formatWon(row.netAmount)) + "</td>" +
+            '<td data-col="settlementAmount">' + buildPayrollSettlementCell(row) + '</td>' +
             '<td data-col="suspect">' + suspectLabel + "</td>" +
             '<td data-col="note"><span class="note">' + escapeHtml(row.note || "") + "</span></td>" +
           "</tr>";

@@ -1077,3 +1077,16 @@ test('notice elapsed days follow Seoul midnight, not elapsed 24-hour periods', a
   assert.match(context.tuitionNoticeAgeHtml_('2026-10-03T15:00:00Z'), /D\+0/);
   assert.match(context.tuitionNoticeAgeHtml_('2026-10-05T00:00:00Z'), /안내일 확인 필요/);
 });
+
+test('payroll row settlement uses discounted net and keeps excluded/hourly rows explicit', async () => {
+ const source=await readFile(frontendPath,'utf8');
+ const context=vm.createContext({toNumber:(v,d=0)=>Number.isFinite(Number(v))?Number(v):d,formatWon:v=>v.toLocaleString('ko-KR')+'원',formatPayrollPercent:String});
+ vm.runInContext(extractFunction(source,'buildPayrollSettlementCell'),context);
+ const row={recognized:true,netAmount:54000,settlementPercentApplied:50,effectiveSalaryMode:'ratio'};
+ assert.match(context.buildPayrollSettlementCell(row),/27,000원/);
+ assert.match(context.buildPayrollSettlementCell(row),/54,000원 × 50%/);
+ assert.match(context.buildPayrollSettlementCell({...row,recognized:false}),/정산 제외/);
+ assert.equal(context.buildPayrollSettlementCell({...row,sourcePending:true}),'확인 필요');
+ assert.match(context.buildPayrollSettlementCell({...row,effectiveSalaryMode:'hourly'}),/중복 시간 제외/);
+ assert.match(context.buildPayrollSettlementCell({...row,effectiveSalaryMode:'hourly',settlementPercentOverridden:true}),/27,000원/);
+});

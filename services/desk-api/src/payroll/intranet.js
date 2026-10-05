@@ -37,7 +37,7 @@ export function intranetRows(lessons, students, meta) {
     const day=Number(l.date.slice(8));
     const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,discount/100]]};
     const row=parsePayrollRows(source,meta)[0];
-    return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:amount??0};
+    return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',discountReason:l.studentDiscount?.reason || '',studentSpecialRate:!!l.studentDiscount?.special,studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:amount??0};
   });
 }
 

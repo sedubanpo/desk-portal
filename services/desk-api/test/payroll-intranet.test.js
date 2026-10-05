@@ -129,6 +129,7 @@ test('intranet discounts retain exact net rounding, including one percent and fr
   assert.equal(summary.kpi.grossSales,base);
   assert.equal(summary.kpi.netSales,amount);
   assert.equal(summary.kpi.discount,base-amount);
+  assert.equal(summary.kpi.estimatedPay,Math.round(amount*0.5));
  }
 });
 
@@ -141,6 +142,7 @@ test('current intranet projections include inherited class fees, automatic billi
  const source=await createIntranetPayrollReader(db).readMonth('26-09');
  const summary=buildPayrollSummary(source.rows,meta,{ratioPercent:50});
  assert.equal(source.rows[0].sourcePending,false);
+ assert.equal(summary.rows[0].discountReason,"할인");
  assert.equal(summary.kpi.grossSales,60000);assert.equal(summary.kpi.discount,6000);
  assert.equal(summary.kpi.netSales,54000);assert.equal(summary.kpi.estimatedPay,27000);
 });
