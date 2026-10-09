@@ -48,6 +48,14 @@ export function staffWorkRows({month, name, uid, schedule, attendance, correctio
     return {date,start,end,breakMinutes,paidMinutes:issue?null:paidMinutes,source,issue,reason:override?.reason||''};
   });
 }
+export function eligiblePayrollWorkers(directory, schedule) {
+  const normalize = name => typeof name === 'string' ? name.trim() : '';
+  // Account status takes precedence over names retained in historical schedules.
+  const inactive = new Set(directory.filter(person => String(person.status || '').trim().toUpperCase() !== 'ACTIVE').map(person => normalize(person.name)));
+  const candidates = [...directory.map(person => person.name), ...Object.values(schedule?.entries || schedule || {}).map(entry => entry.worker)];
+  return [...new Set(candidates.map(normalize).filter(name => name && !inactive.has(name) && !STAFF_PAYROLL_EXCLUDED.has(name)))]
+    .sort((a, b) => a.localeCompare(b, 'ko')).map(name => ({name}));
+}
 export function createWorkforceHandlers({firestore, deskStore, loadStaffDirectory, now=()=>new Date()}) {
   const ref=(kind,id)=>firestore.collection(kind).doc(id);
   const key=(month,name)=>`${month}_${digest(name).slice(0,32)}`;
@@ -55,8 +63,8 @@ export function createWorkforceHandlers({firestore, deskStore, loadStaffDirector
   async function load(payload,identity) {
     const month=staffMonth(payload.monthName);
     const [schedule,attendance,directory]=await Promise.all([deskStore.get(`desk_portal/monthly_schedule/${month}`),deskStore.get(`desk_portal/staff_attendance/${month}`),loadStaffDirectory()]);
-    const names=new Set([...directory.map(p=>p.name),...Object.values(schedule?.entries||schedule||{}).map(p=>p.worker)].filter(n=>typeof n==='string' && n.trim() && !STAFF_PAYROLL_EXCLUDED.has(n.trim())).map(n=>n.trim()));
-    const workers=[...names].sort((a,b)=>a.localeCompare(b,'ko')).map(name=>({name}));
+    const workers=eligiblePayrollWorkers(directory,schedule);
+    const names=new Set(workers.map(worker=>worker.name));
     if(!payload.workerName)return {success:true,month,workers,canEdit:identity.role==='ADMIN'};
     const name=String(payload.workerName);
     if(!names.has(name))fail('사무보조(파트타임) 대상 근무자가 아닙니다.');

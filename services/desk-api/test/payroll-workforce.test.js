@@ -1,14 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {paidWorkMinutes,staffWorkRows,createWorkforceHandlers,STAFF_PAYROLL_EXCLUDED} from '../src/payroll/workforce.js';
+import {paidWorkMinutes,staffWorkRows,createWorkforceHandlers,eligiblePayrollWorkers,STAFF_PAYROLL_EXCLUDED} from '../src/payroll/workforce.js';
 function fixture(){
  const docs=new Map(),snapshot=k=>({id:k.split('/').at(-1),exists:docs.has(k),data:()=>structuredClone(docs.get(k))});
  function collection(path){return {doc:id=>reference(path+'/'+id),orderBy(){return this},limit(){return this},async get(){return{docs:[...docs.keys()].filter(k=>k.startsWith(path+'/')&&!k.slice(path.length+1).includes('/')).map(snapshot)}}};}
  function reference(path){return {path,get:async()=>snapshot(path),collection:name=>collection(path+'/'+name)};}
  const firestore={collection,async runTransaction(fn){const pending=[];const tx={getAll:async(...refs)=>refs.map(r=>snapshot(r.path)),get:async r=>snapshot(r.path),set:(r,v)=>pending.push([r.path,v]),create:(r,v)=>{assert.equal(docs.has(r.path),false);pending.push([r.path,v]);}};const result=await fn(tx);pending.forEach(([k,v])=>docs.set(k,structuredClone(v)));return result;}};
  const source={schedule:{entries:{a:{date:'2026-09-03',worker:'보조직원',role:'마감 담당',start:'14:00',end:'22:30'},b:{date:'2026-09-03',worker:'안종성',start:'14:00',end:'22:30'}}},attendance:{}};
- const handlers=createWorkforceHandlers({firestore,deskStore:{get:async path=>path.includes('monthly_schedule')?source.schedule:source.attendance},loadStaffDirectory:async()=>[{name:'보조직원',uid:'staff'},{name:'안종성',uid:'excluded'}],now:()=>new Date('2026-10-09T03:00:00Z')});
- return{docs,source,handlers};
+ const directory=[{name:'보조직원',uid:'staff',status:'ACTIVE'},{name:'안종성',uid:'excluded',status:'ACTIVE'}];
+ const handlers=createWorkforceHandlers({firestore,deskStore:{get:async path=>path.includes('monthly_schedule')?source.schedule:source.attendance},loadStaffDirectory:async()=>directory,now:()=>new Date('2026-10-09T03:00:00Z')});
+ return{docs,source,handlers,directory};
 }
 const admin={uid:'admin',role:'ADMIN',name:'관리자'},payload={monthName:'26-09',workerName:'보조직원'};
 test('paid time subtracts configurable breaks and rejects invalid or overnight ranges',()=>{
@@ -46,4 +47,22 @@ test('incomplete attendance and empty months cannot finalize',async()=>{
  const {handlers,source}=fixture();source.attendance={'2026-09-03':{staff:{uid:'staff',clockIn:'2026-09-03T05:00:00Z'}}};let r=await handlers.getPayrollStaffMonth(payload,admin);assert.equal(r.unresolved,1);
  assert.equal((await handlers.savePayrollStaffFinalization({...payload,expectedVersion:r.version,clientRequestId:'finalize-123'},admin)).success,false);
  source.schedule={};source.attendance={};r=await handlers.getPayrollStaffMonth(payload,admin);assert.equal(r.rows.length,0);assert.equal((await handlers.savePayrollStaffFinalization({...payload,expectedVersion:r.version,clientRequestId:'finalize-456'},admin)).success,false);
+});
+
+test('inactive accounts cannot return through schedule names; active and schedule-only staff remain',()=>{
+ const directory=[{name:'김유민',status:'DISABLED'},{name:' 정보면 ',status:'disabled'},{name:'재직직원',status:'ACTIVE'},{name:'미확인직원'},{name:'중복직원',status:'ACTIVE'},{name:'중복직원',status:'DISABLED'}];
+ const schedule={entries:Object.fromEntries(['김유민','정보면','박승빈','재직직원','미확인직원','중복직원','안종성'].map((worker,i)=>[i,{worker}]))};
+ assert.deepEqual(eligiblePayrollWorkers(directory,schedule),[{name:'박승빈'},{name:'재직직원'}]);
+});
+test('retirement after loading blocks direct queries, corrections and finalization without deleting history',async()=>{
+ const {handlers,docs,directory}=fixture();
+ const loaded=await handlers.getPayrollStaffMonth(payload,admin);
+ docs.set('existing-history/record',{totalMinutes:480});
+ directory[0].status='DISABLED';
+ assert.deepEqual((await handlers.getPayrollStaffMonth({monthName:payload.monthName},admin)).workers,[]);
+ assert.equal((await handlers.getPayrollStaffMonth(payload,admin)).success,false);
+ const request={...payload,expectedVersion:loaded.version,clientRequestId:'retired-request'};
+ assert.equal((await handlers.savePayrollStaffTimes({...request,rows:[{date:'2026-09-03',start:'14:00',end:'22:30',breakMinutes:30,reason:'확인'}]},admin)).success,false);
+ assert.equal((await handlers.savePayrollStaffFinalization(request,admin)).success,false);
+ assert.deepEqual([...docs.entries()],[['existing-history/record',{totalMinutes:480}]]);
 });
