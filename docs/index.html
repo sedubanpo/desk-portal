@@ -17705,6 +17705,7 @@
 <link rel="stylesheet" href="./inquiries.css?v=20261003-inquiry-insights">
   <link rel="stylesheet" href="./desk-refinements.css">
 <link rel="stylesheet" href="./message-templates.css?v=20261003">
+<link rel="stylesheet" href="./payroll-settlement.css?v=20261009">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -20924,7 +20925,7 @@
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
-      getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
+      getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
@@ -43057,6 +43058,7 @@ window.SeduHubAdapter={
     }
 
     function clearPayrollUnlock_() {
+      document.dispatchEvent(new Event("payroll-locked"));
       state.payroll.unlockToken = "";
       state.payroll.unlockExpiresAt = 0;
       state.privilegedAccessKey = "";
@@ -44061,6 +44063,7 @@ window.SeduHubAdapter={
 
     function renderSummary(data) {
       state.currentSummary = data || null;
+      if(window.PayrollSettlement)window.PayrollSettlement.update(data);
       var kpi = data.kpi || {};
       state.currentRows = data.rows || [];
       document.getElementById("kpiHours").textContent = formatHours(kpi.recognizedHours || 0) + "h";
@@ -45701,5 +45704,6 @@ window.SeduHubAdapter={
 <script src="./training-hr.js?v=20260925"></script>
 <script src="./inquiry-analytics.js?v=20261003-inquiry-insights"></script>
 <script src="./inquiries.js?v=20261003-inquiry-insights"></script>
+<script src="./payroll-settlement.js?v=20261009"></script>
 </body>
 </html>

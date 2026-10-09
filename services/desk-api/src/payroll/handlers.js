@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { WORKFORCE_METHODS, WORKFORCE_WRITES } from './workforce.js';
 import { isIntranetMonth, payrollMonths } from './intranet.js';
 import {
   applyPayrollSettingsUpdates,
@@ -12,18 +14,25 @@ import {
 } from './normalizers.js';
 
 export const PAYROLL_METHODS = Object.freeze([
+  ...WORKFORCE_METHODS,
   'getPayrollBootstrapData',
   'getPayrollMonthSummary',
   'getPayrollMonthlyAnalysis',
   'getPayrollSettings',
+  'getPayrollFinalizations',
+  'savePayrollFinalization',
   'savePayrollSettings',
   'savePayrollOverrides'
 ]);
 
 export const PAYROLL_WRITE_METHODS = Object.freeze([
+  'savePayrollFinalization',
+  ...WORKFORCE_WRITES,
   'savePayrollSettings',
   'savePayrollOverrides'
 ]);
+
+function calculationVersion(settings, summary) { return createHash('sha256').update(JSON.stringify({settings,kpi:summary.kpi,rows:summary.rows.map(r=>[r.rowKey,r.recognized,r.netAmount,r.recognizedHours,r.settlementPercentApplied,r.effectiveHourlyRate])})).digest('hex'); }
 
 function successFailure(message) { return { success: false, message }; }
 function requestId(payload) { return String(payload?.clientRequestId || '').replace(/[^\w:.-]/g, '').slice(0, 120); }
@@ -75,6 +84,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
       return {
         ...summary,
         success: true,
+        finalizationVersion: calculationVersion(settings,summary),
         selectedMonth: monthName,
         monthLabel: `${monthMeta.year}년 ${monthMeta.month}월`,
         salaryMode: payrollOptions(payload, settings, effectiveOverrides).salaryMode,
@@ -85,6 +95,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
         overrideSignature: payrollOverrideSignature(effectiveOverrides),
         teacherSettings: settings,
         sourcePendingCount: rows.filter(row => row.sourcePending).length,
+        sourcePendingRows: rows.filter(row => row.sourcePending).map(({name,teacher,classDateKey,start,end,attendanceCode,sourcePendingReason,studentId,lessonId})=>({name,teacher,classDateKey,start,end,attendanceCode,sourcePendingReason,studentId,lessonId})),
         cache: { source: source.sourceName, hit: false, sheetVersion: source.version, forceRefresh: Boolean(payload.forceRefresh) }
       };
     },
@@ -154,6 +165,26 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
         source: 'month-dependent',
         generatedAt: now().toISOString()
       };
+    },
+
+    async getPayrollFinalizations(payload = {}) {
+      const monthName=String(payload.monthName||'');
+      if(!parsePayrollMonthName(monthName)) return successFailure('정산 월을 선택해 주세요.');
+      return {success:true,records:await store.getFinalizations(monthName)};
+    },
+
+    async savePayrollFinalization(payload = {}, identity = {}) {
+      if(identity.role!=='ADMIN') return successFailure('관리자만 정산을 확정할 수 있습니다.');
+      const monthName=String(payload.monthName||'');
+      const meta=parsePayrollMonthName(monthName), id=requestId(payload);
+      if(!meta||!id)return successFailure('정산 월과 요청 식별자가 필요합니다.');
+      const [source,settings,overrides]=await Promise.all([readSource(monthName),store.getSettings(),store.getOverrides(monthName)]);
+      if(source.version!==payload.expectedSourceVersion || payrollOverrideSignature(overrides)!==payload.expectedOverrideSignature) return successFailure('원본 또는 정산 내역이 변경되었습니다. 새로고침한 뒤 확정해 주세요.');
+      const summary=buildPayrollSummary(source.rows,meta,payrollOptions({teacherName:String(payload.teacherName||'')},settings,overrides));
+      if(calculationVersion(settings,summary)!==payload.expectedFinalizationVersion)return successFailure('화면과 서버의 저장된 정산 조건이 다릅니다. 변경 내용을 저장하고 새로고침해 주세요.');
+      if(summary.rows.some(row=>row.sourcePending)) return successFailure('확인 필요한 수업을 인트라넷에서 수정한 뒤 확정해 주세요.');
+      if(!summary.rows.length)return successFailure('확정할 수업이 없습니다.');
+      return store.saveFinalization({requestId:id,monthName,identity,nowIso:now().toISOString(),snapshot:{teacherName:String(payload.teacherName||''),sourceVersion:source.version,overrideSignature:payrollOverrideSignature(overrides),kpi:summary.kpi,rows:summary.rows.map(({rowKey,name,teacher,classDateKey,start,end,attendanceCode,recognizedHours,amount,discount,netAmount,recognized,settlementPercentApplied,effectiveSalaryMode,effectiveHourlyRate})=>({rowKey,name,teacher,classDateKey,start,end,attendanceCode,recognizedHours,amount,discount,netAmount,recognized,settlementPercentApplied,effectiveSalaryMode,effectiveHourlyRate})),settings}});
     },
 
     async savePayrollSettings(payload = {}, identity = {}) {

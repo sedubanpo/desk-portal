@@ -153,3 +153,23 @@ test('reviewed single-individual booked time is payable but unvalidated overtime
  assert.equal(rows([approved])[0].payHours,3);
  assert.equal(rows([{...approved,singleIndividual:{bookedMinutes:240}}])[0].sourcePending,true);
 });
+
+test('absence is never pending, suspected, income or pay despite missing fee/time or manual recognition',()=>{
+ const input=rows([{...lesson,kind:'absence',rate:null,payMinutes:null}]);
+ assert.equal(input[0].sourcePending,false);assert.equal(input[0].amount,0);
+ const summary=buildPayrollSummary(input,meta,{recognitionOverrides:[{rowKey:input[0].rowKey,recognized:true}]});
+ assert.equal(summary.rows[0].recognized,false);assert.equal(summary.rows[0].suspectedRateMismatch,false);assert.equal(summary.kpi.estimatedPay,0);assert.equal(summary.kpi.netSales,0);
+});
+
+test('teacher finalization uses stored terms, rejects stale source or changed calculation, and requires admin',async()=>{
+ let version='v1',saved=null,input=rows([lesson]);const store={getSettings:async()=>({}),getOverrides:async()=>({}),saveFinalization:async args=>{saved=args.snapshot;return {success:true,id:'snapshot'};}};
+ const h=createPayrollHandlers({store,sheets:{listPayrollMonths:async()=>[]},intranet:{readMonth:async()=>({rows:input,version})},now:()=>new Date('2026-10-09')});
+ const summary=await h.getPayrollMonthSummary({monthName:'26-09'});
+ const p={monthName:'26-09',clientRequestId:'finalize-teacher',expectedSourceVersion:summary.cache.sheetVersion,expectedOverrideSignature:summary.overrideSignature,expectedFinalizationVersion:summary.finalizationVersion};
+ assert.equal((await h.savePayrollFinalization(p,{role:'STAFF'})).success,false);
+ assert.equal((await h.savePayrollFinalization({...p,expectedFinalizationVersion:'wrong'},{role:'ADMIN'})).success,false);
+ assert.equal((await h.savePayrollFinalization(p,{role:'ADMIN'})).success,true);assert.equal(saved.kpi.estimatedPay,30000);
+ version='v2';assert.equal((await h.savePayrollFinalization(p,{role:'ADMIN'})).success,false);
+ input=rows([{...lesson,rate:null}]);const pending=await h.getPayrollMonthSummary({monthName:'26-09'});
+ assert.equal((await h.savePayrollFinalization({...p,expectedSourceVersion:'v2',expectedFinalizationVersion:pending.finalizationVersion},{role:'ADMIN'})).success,false);
+});

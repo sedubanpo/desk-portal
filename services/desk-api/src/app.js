@@ -112,6 +112,7 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     if (PAYROLL_METHODS.includes(method) && !payrollGate.verify(req.identity.uid, req.get('x-payroll-unlock-token'))) {
       return next(new ApiError(401, 'payroll_unlock_required', '강사 시수 정산 잠금을 다시 풀어 주세요.'));
     }
+    if (['savePayrollStaffTimes','savePayrollStaffFinalization','savePayrollFinalization'].includes(method) && req.identity.role !== 'ADMIN') return next(new ApiError(403, 'payroll_admin_required', '관리자만 수정 및 확정할 수 있습니다.'));
     const payload = req.body?.payload ?? req.body ?? {};
     const execute = () => deskHandlers[method](payload, req.identity);
     try {

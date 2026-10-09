@@ -1,3 +1,4 @@
+import { createWorkforceHandlers } from './payroll/workforce.js';
 import { applicationDefault, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { getAuth } from 'firebase-admin/auth';
@@ -59,6 +60,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),
+      ...createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)}),
       ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace, intranet:createIntranetPayrollReader(firestore) })
     },
     runIdempotent: createIdempotencyExecutor(firestore)

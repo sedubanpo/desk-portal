@@ -242,6 +242,7 @@ function suspicionMap(rows, settingsInput) {
   const configured = new Map(settings.rules.map(rule => [`${rule.classType}|${round(rule.hours, 1)}`, rule.rate]));
   const result = {};
   rows.forEach(row => {
+    if (row.attendanceCode === '결석예고') return;
     const reasons = [];
     const expected = configured.get(`${suspicionClassType(row.classType)}|${round(row.hours, 1)}`) || 0;
     const tolerance = Math.max(settings.rateToleranceWon, expected * settings.rateTolerancePercent / 100);
@@ -324,7 +325,7 @@ export function buildPayrollSummary(rows, monthMeta, input = {}) {
       else { absenceEstimatedTotal += absenceEstimate; absenceEstimatedCount += 1; }
     }
     const payHours = row.source === 'intranet' ? row.payHours : row.hours;
-    const base = row.source === 'intranet' ? {recognized:row.sourceRecognized,freeEligible:false,label:row.sourcePending ? row.sourcePendingReason : (row.sourceRecognized ? '인트라넷 인정' : '미인정')} : attendance(row.attendance, free.has(row.rowKey)); const recognized = !row.sourcePending && recognition.has(row.rowKey) ? { ...base, recognized: recognition.get(row.rowKey), label: recognition.get(row.rowKey) ? '수동 인정' : '수동 제외' } : base;
+    const base = row.source === 'intranet' ? {recognized:row.sourceRecognized,freeEligible:false,label:row.sourcePending ? row.sourcePendingReason : (row.sourceRecognized ? '인트라넷 인정' : '미인정')} : attendance(row.attendance, free.has(row.rowKey)); const recognized = row.attendanceCode === '결석예고' ? {...base,recognized:false,label:'결석예고 · 정산 제외'} : !row.sourcePending && recognition.has(row.rowKey) ? { ...base, recognized: recognition.get(row.rowKey), label: recognition.get(row.rowKey) ? '수동 인정' : '수동 제외' } : base;
     const proposed = suggestedRate(row, baselines); const makeup = row.source !== 'intranet' && row.attendanceCode === '보강' && number(row.amount) === 0 && /당일취소|당취/.test(`${row.note} ${row.className}`.replace(/\s+/g, '')); const manualRate = number(rates.get(row.rowKey)); const hasAmountOverride = amounts.has(row.rowKey); const manualAmount = number(amounts.get(row.rowKey));
     let effectiveRate = row.rate; let amount = row.amount; let adjusted = false;
     if (hasAmountOverride) { amount = Math.round(manualAmount); effectiveRate = row.hours > 0 ? round(amount / row.hours, 2) : row.rate; adjusted = amount !== Math.round(row.amount); }

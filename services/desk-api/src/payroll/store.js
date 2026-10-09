@@ -34,6 +34,23 @@ export function createPayrollStore(firestore) {
   const legacyAuditRef = requestId => firestore.collection(COLLECTIONS.audits).doc(String(requestId || '').replace(/[^\w:.-]/g, '_').slice(0, 200));
 
   return {
+    async getFinalizations(monthName) {
+      const snapshot=await firestore.collection('payrollFinalizations').doc(monthName).collection('versions').orderBy('createdAt','desc').limit(12).get();
+      return snapshot.docs.map(d=>({id:d.id,...d.data()}));
+    },
+    async saveFinalization({requestId,monthName,identity,nowIso,snapshot}) {
+      const id=payrollWriteAuditDocumentId({requestId,method:'savePayrollFinalization',uid:identity.uid});
+      const target=firestore.collection('payrollFinalizations').doc(monthName).collection('versions').doc(id);
+      return firestore.runTransaction(async transaction=>{
+        const [existing,currentSettings,currentOverrides]=await transaction.getAll(target,settingsRef,overrideRef(monthName));
+        if(existing.exists)return {success:true,id,duplicate:true};
+        if(JSON.stringify(normalizePayrollSettings(currentSettings.data()?.settings||{}))!==JSON.stringify(snapshot.settings)||payrollOverrideSignature(currentOverrides.data()?.overrides||{})!==snapshot.overrideSignature)throw new Error('정산 조건이 변경되었습니다. 다시 조회해 주세요.');
+        if(Buffer.byteLength(JSON.stringify(snapshot),'utf8')>900000)throw new Error('확정 자료가 큽니다. 강사를 선택하여 개별 확정해 주세요.');
+        transaction.create(target,{...snapshot,monthName,createdAt:nowIso,actor:{uid:identity.uid||'',name:identity.name||''}});
+        return {success:true,id,createdAt:nowIso};
+      });
+    },
+
     async getSettings() {
       const snapshot = await settingsRef.get();
       return normalizePayrollSettings(snapshot.exists ? snapshot.data()?.settings : {});
