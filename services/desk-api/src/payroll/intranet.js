@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { parsePayrollRows, parsePayrollMonthName } from './normalizers.js';
-import { validSingleIndividual, projectedFeeRows, carryMonthlyFees, discountPolicyFor, estimatedCharge, inheritFees, recoverIssueFees, changed } from './intranet-projection.js';
+import { validSingleIndividual, projectedFeeRows, readCarriedFees, discountPolicyFor, estimatedCharge, inheritFees, recoverIssueFees, changed } from './intranet-projection.js';
 
 export const isIntranetMonth = name => { const m = parsePayrollMonthName(name); return m && m.year * 100 + m.month >= 202609; };
 export function payrollMonths(legacy, now = new Date()) {
@@ -26,6 +26,31 @@ export function combineLessons(current, past, drafts) {
   return [...rows.values()].filter(l=>!l.deletedAt && !deleted.has(`${l.studentId}|${l.id}`));
 }
 
+// Reuse the intranet reader against a bounded read-only snapshot instead of
+// repeating historical queries for every student in the payroll month.
+function snapshotDatabase(collections) {
+  const document = row => ({id:row?._documentId, data:()=>row});
+  return {
+    doc(path) {const [name,id]=path.split('/');return {get:async()=>document((collections[name]||[]).find(row=>row._documentId===id))};},
+    collection(name) {
+      let selected=collections[name]||[];
+      return {where(field,operator,value) {if(operator!=='==')throw new Error('Unsupported payroll snapshot query');selected=selected.filter(row=>row[field]===value);return this;},
+        limit(count) {selected=selected.slice(0,count);return this;},async get() {return {size:selected.length,docs:selected.map(document)};}};
+    }
+  };
+}
+function pendingReason(lesson, amount, payValid) {
+  const reasons=[];
+  if(!payValid)reasons.push('강사 인정시간 미입력 또는 수업시간 초과');
+  if(amount===null) {
+    if(lesson.scopedFee?.review)reasons.push('약정 적용 범위와 변경된 수업 확인 필요');
+    else if(lesson.automaticFeeConflict)reasons.push('적용 가능한 수강료 단가가 서로 다름');
+    else if(lesson.billMinutes==null)reasons.push('수강료 청구시간 미입력');
+    else if(lesson.rate==null)reasons.push('수업유형·강사·시간이 일치하는 단가 없음 · 인트라넷에서 해당 수업 단가 확인');
+    else reasons.push('단가는 있으나 출결·비고 또는 청구 기준 확인 필요');
+  }
+  return reasons.join(' · ');
+}
 export function intranetRows(lessons, students, meta) {
   const month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
   return lessons.filter(l=>l.date?.startsWith(month+'-') && l.kind!=='study').map((l,index)=>{
@@ -38,7 +63,7 @@ export function intranetRows(lessons, students, meta) {
     const day=Number(l.date.slice(8));
     const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,discount/100]]};
     const row=parsePayrollRows(source,meta)[0];
-    return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',discountReason:l.studentDiscount?.reason || '',studentSpecialRate:!!l.studentDiscount?.special,studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(!absent&&payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!absent&&!pending&&l.payMinutes>0,sourcePendingReason:pending?'인트라넷 금액·시수 확인 필요':'',amount:absent?0:(amount??0)};
+    return {...row,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',discountReason:l.studentDiscount?.reason || '',studentSpecialRate:!!l.studentDiscount?.special,studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(!absent&&payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!absent&&!pending&&l.payMinutes>0,sourcePendingReason:pending?pendingReason(l,amount,payValid):'',amount:absent?0:(amount??0)};
   });
 }
 
@@ -51,15 +76,16 @@ export function createIntranetPayrollReader(db) {
   };
   return {async readMonth(name) {
     const meta=parsePayrollMonthName(name), month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
-    const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs]=await Promise.all([
-      read('intranetStudentPeriods',month),read('intranetLegacyPeriods',month),read('intranetLessonDrafts',month),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null)
+    const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications]=await Promise.all([
+      read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts',month),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications')
     ]);
-    let lessons=combineLessons(current,past,drafts);
+    let lessons=combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts);
+    const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
     const periods={};
     const canonicalId=id=>{const student=roster.find(s=>s._documentId===id||s.canonicalId===id);return student?.canonicalId||student?._documentId||id;};
     for(const id of new Set(lessons.map(l=>canonicalId(l.studentId)))) {
       const saved=fees.find(p=>p.studentId===id&&p.month===month)||{};
-      const period=inheritFees(carryMonthlyFees({...saved,assignments:[...(saved.assignments||[])]},fees.filter(p=>p.studentId===id),month),baselines.find(p=>p._documentId===id),month);
+      const period=inheritFees(await readCarriedFees(feeDatabase,id,month,{...saved,assignments:[...(saved.assignments||[])]}),baselines.find(p=>p._documentId===id),month);
       period.assignments.push(...recoverIssueFees(issues.filter(i=>i.studentId===id).map(i=>({...i,id:i._documentId})),month,period));
       periods[id]={...period,discountPolicy:discountPolicyFor(discounts.find(p=>p._documentId===id),month)};
     }

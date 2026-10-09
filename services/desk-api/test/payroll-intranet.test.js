@@ -173,3 +173,43 @@ test('teacher finalization uses stored terms, rejects stale source or changed ca
  input=rows([{...lesson,rate:null}]);const pending=await h.getPayrollMonthSummary({monthName:'26-09'});
  assert.equal((await h.savePayrollFinalization({...p,expectedSourceVersion:'v2',expectedFinalizationVersion:pending.finalizationVersion},{role:'ADMIN'})).success,false);
 });
+
+function historicalReaderFixture(history, current, extra={}) {
+ const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-08',lessons:history},{studentId:'student',month:'2026-09',lessons:current}],...extra};
+ return {data,db:{collection(name){let field,value;return {where(f,op,v){field=f;value=v;return this;},limit(){return this;},async get(){const all=(data[name]||[]).filter(row=>!field||row[field]===value);return {size:all.length,docs:all.map((row,i)=>({id:row._id||String(i),data:()=>structuredClone(row)}))};}};}}};
+}
+test('payroll inherits confirmed historical tariffs, applies destination discount once and reflects history changes',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const past={...lesson,id:'past',date:'2026-08-03',className:'수학-1:1-강사',rate:100000};
+ const current={...lesson,className:past.className,rate:null,reviewed:false};
+ const {db,data}=historicalReaderFixture([past],[current],{intranetStudentDiscounts:[{_id:'student',policies:[{month:'2026-09',percent:10,courses:[],reason:'월 할인'}]}]});
+ const reader=createIntranetPayrollReader(db);const first=await reader.readMonth('26-09');
+ assert.equal(first.rows.length,1);assert.equal(first.rows[0].sourcePending,false);assert.equal(first.rows[0].amount,200000);
+ const summary=buildPayrollSummary(first.rows,meta,{ratioPercent:50});
+ assert.equal(summary.kpi.netSales,180000);assert.equal(summary.kpi.estimatedPay,90000);
+ data.intranetLegacyPeriods[0].lessons[0].rate=120000;
+ const revised=await reader.readMonth('26-09');assert.equal(revised.rows[0].amount,240000);assert.notEqual(first.version,revised.version);
+ data.intranetLegacyPeriods[0].lessons=[];
+ assert.equal((await reader.readMonth('26-09')).rows[0].sourcePending,true);
+});
+test('individual four-hour fees cannot fill a missing one-to-one two-hour tariff',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const {db}=historicalReaderFixture([{...lesson,id:'past',date:'2026-08-03',className:'사회-개별-강사',sourceMinutes:240,billMinutes:240,payMinutes:240,start:'14:00',end:'18:00',rate:28125}],[{...lesson,className:'사탐-1:1-강사',rate:null,reviewed:false}]);
+ const result=await createIntranetPayrollReader(db).readMonth('26-09');
+ assert.equal(result.rows[0].sourcePending,true);assert.match(result.rows[0].sourcePendingReason,/수업유형·강사·시간/);
+ assert.equal(buildPayrollSummary(result.rows,meta,{ratioPercent:50}).kpi.netSales,0);
+});
+test('conflicting prior confirmed tariffs remain pending with an actionable reason',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ const {db}=historicalReaderFixture([{...lesson,id:'past1',date:'2026-08-03'},{...lesson,id:'past2',date:'2026-08-04',rate:40000}],[{...lesson,rate:null,reviewed:false}]);
+ const result=await createIntranetPayrollReader(db).readMonth('26-09');
+ assert.equal(result.rows[0].sourcePending,true);assert.match(result.rows[0].sourcePendingReason,/서로 다름/);
+});
+test('pending reasons separate missing tariff and invalid teacher minutes; midnight end retains payable duration',()=>{
+ assert.match(rows([{...lesson,payMinutes:null}])[0].sourcePendingReason,/강사 인정시간/);
+ const midnight=rows([{...lesson,start:'22:00',end:'24:00'}])[0];
+ assert.equal(midnight.endMinutes,1440);assert.equal(midnight.sourcePending,false);
+ const summary=buildPayrollSummary([midnight],meta,{teacherSettings:{'강사':{salaryMode:'hourly',hourlyRate:30000}}});
+ assert.equal(summary.kpi.pureTeachingHours,2);assert.equal(summary.kpi.estimatedPay,60000);
+ assert.equal(rows([{...lesson,start:'24:00',end:'24:00'}])[0].startMinutes,null);
+});

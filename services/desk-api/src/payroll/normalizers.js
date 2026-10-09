@@ -176,7 +176,8 @@ function columnMap(headers) {
     discount: headerIndex(headers, ['할인'], 12)
   };
 }
-function parseTime(value) {
+function parseTime(value, allowEndOfDay = false) {
+  if (allowEndOfDay && text(value) === '24:00') return 1440;
   const match = text(value).match(/(오전|오후)?\s*(\d{1,2})\s*:\s*(\d{1,2})/);
   if (!match) return null;
   let hour = Number(match[2]); const minute = Number(match[3]);
@@ -208,7 +209,7 @@ export function parsePayrollRows(source, monthMeta) {
     const teacher = text(row[indexes.tr]); const name = normalizeStudent(row[indexes.name]); const className = text(row[indexes.className]);
     if (!teacher && !name && !className) return null;
     const date = dateInfo(row[indexes.classDate], monthMeta); const start = text(row[indexes.start]); const end = text(row[indexes.end]);
-    const startMinutes = parseTime(start); const endMinutes = parseTime(end);
+    const startMinutes = parseTime(start); const endMinutes = parseTime(end, true);
     const hours = Math.max(0, number(row[indexes.hours]) || (startMinutes != null && endMinutes > startMinutes ? round((endMinutes - startMinutes) / 60, 2) : 0));
     const type = classType(className); const detectedSubject = subject(className); const detectedSchoolType = schoolType(className); const detectedGradeBand = gradeBand(className);
     const rowNumber = offset + 2;
