@@ -63,7 +63,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
       const summary=buildPayrollSummary(source.rows,meta,options);
       const teachers=[...new Set(source.rows.map(r=>r.teacher).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')).map(name=>{
         const own=buildPayrollSummary(source.rows,meta,{...options,teacherName:name});
-        return {name,subject:[...new Set(own.rows.map(r=>r.subject).filter(Boolean))].join(', '),settings:settings[name]||null,kpi:own.kpi,gross:own.rows.filter(r=>!r.sourcePending).reduce((n,r)=>n+r.amount,0),pending:own.rows.some(r=>r.sourcePending)};
+        return {name,subject:[...new Set(own.rows.map(r=>r.subject).filter(Boolean))].join(', '),settings:settings[name]||null,kpi:own.kpi,gross:own.rows.filter(r=>!r.sourcePending).reduce((n,r)=>n+(r.makeupAutoPriced?0:r.amount),0),pending:own.rows.some(r=>r.sourcePending)};
       });
       return {summary,teachers};
     },

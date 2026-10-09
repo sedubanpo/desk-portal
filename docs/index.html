@@ -45062,6 +45062,7 @@ window.SeduHubAdapter={
         var discountCell = buildPayrollDiscountCell(row);
         var settlementPercentCell = buildSettlementPercentCell(row);
         var amountCell = buildPayrollAmountCell(row);
+        if (row.makeupAutoPriced) amountCell += '<br><span class="note" title="' + escapeHtml(row.makeupPricingReason || '') + '">원수업 ' + escapeHtml(row.makeupOriginalDate || '') + ' 기준 · 학생 추가 청구 없음</span>';
         var rateCell = row.rateUnit === "perClass" ? "회당 단가" : (row.sourcePending && !row.rate ? "확인 필요" : formatWon(row.rate) + "/h");
         if (row.autoRepriceEligible) {
           var inputVal = state.rateAdjustments[row.rowKey] || row.rate || row.suggestedRate || "";
