@@ -142,6 +142,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
           return { row: {
             monthName,
             monthLabel: `${monthMeta.year}년 ${monthMeta.month}월`,
+            lessonCharges: kpi.lessonCharges,
             grossSales: Math.round(Number(kpi.grossSales) || 0),
             discount: Math.round(Number(kpi.discount) || 0),
             netSales,

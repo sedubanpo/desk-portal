@@ -17694,6 +17694,15 @@
 .desk-supply-edit-dialog :focus-visible {outline:2px solid #657d35;outline-offset:3px}
 @media(max-width:650px) {.desk-supply-edit-dialog {padding:16px}.desk-supply-edit-dialog .desk-supply-entry-form {grid-template-columns:1fr}.desk-supply-edit-dialog .desk-supply-branch-fields {grid-template-columns:1fr}}
 
+
+    .payroll-charge-summary { margin: 16px 0; padding: 20px; background: var(--ds-bg-panel, white); border: 1px solid var(--ds-border, #e3e7ef); border-radius: 12px; }
+    .payroll-charge-summary h2 { margin: 0 0 8px; font-size: 18px; }
+    .payroll-charge-summary p { margin: 8px 0; line-height: 1.6; color: var(--ds-fg-soft, #48556b); }
+    .payroll-charge-summary .table-scroll { overflow-x: auto; }
+    .payroll-charge-summary table { width: 100%; min-width: 660px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .payroll-charge-summary th, .payroll-charge-summary td { padding: 12px; text-align: right; border-bottom: 1px solid var(--ds-border, #e3e7ef); white-space: nowrap; }
+    .payroll-charge-summary th:first-child { text-align: left; }
+    .payroll-charge-summary tbody tr:last-child { background: var(--ds-bg-subtle, #f5f6fb); font-weight: 700; }
 </style>
   <link rel="stylesheet" href="./workspace.css?v=20261001-personal-tasks-polish">
   <link rel="stylesheet" href="./login.css">
@@ -17899,7 +17908,7 @@
           <div class="meta" id="kpiWorkingDays">근무일 0일</div><div class="meta"><strong id="kpiLessons">인정 수업 0건</strong> · <span id="kpiLessonsSub">전체 0건</span></div>
         </article>
         <article class="card payroll-kpi">
-          <div class="label">인정 순매출</div>
+          <div class="label">강사 정산 기준 · 할인 후</div>
           <div class="value" id="kpiNetSales">0원</div>
           <div class="meta" id="kpiGrossDiscount">매출 0원 / 할인 0원</div>
         </article>
@@ -17916,6 +17925,13 @@
           <div class="value" id="kpiPureHours">0h</div>
           <div class="meta" id="kpiOverride">수동 인정/제외 0건</div>
         </article>
+      </section>
+
+      <section class="panel payroll-charge-summary" aria-labelledby="lessonChargeTitle">
+        <h2 id="lessonChargeTitle">월 전체 수업 입력 금액</h2>
+        <p>선택한 월·강사·과목 기준 · 당일취소 포함 · 강사 인정 여부와 별도로 집계</p>
+        <div id="lessonChargeSummary" aria-live="polite">집계 불러오는 중</div>
+        <p>할인 후 합계 = 할인 전 입력 금액 − 할인액. 결석예고는 제외하며, 당취보충은 원수업에 이미 청구되어 중복 합산하지 않습니다. 실제 수납액과는 다릅니다. 강사 정산 화면에서 수동 수정한 금액은 학생 청구액에 반영되지 않습니다.</p>
       </section>
 
       <section class="salary-config payroll-salary-config">
@@ -20474,7 +20490,7 @@
       </div>
       <div class="payroll-analysis-table-wrap">
         <table class="payroll-analysis-table">
-          <thead><tr><th>정산 월</th><th>인정 매출</th><th>할인</th><th>인정 순매출</th><th>예상 강사비</th><th>강사비 차감 잔여액</th><th>강사비 비중</th><th>인정 시수</th><th>강사</th></tr></thead>
+          <thead><tr><th>정산 월</th><th>전체 입력액<br>할인 전·당취 포함</th><th>전체 할인액</th><th>전체 할인 후</th><th>그중 당취<br>할인 후</th><th>강사 인정액<br>할인 전</th><th>인정 할인액</th><th>강사 인정액<br>할인 후</th><th>예상 강사비</th><th>강사비 차감 잔여액</th><th>강사비 비중</th><th>인정 시수</th><th>강사</th></tr></thead>
           <tbody id="payrollAnalysisBody"></tbody>
         </table>
       </div>
@@ -43939,7 +43955,7 @@ window.SeduHubAdapter={
             statusEl.textContent = "월별 분석 조회 오류: " + (err && err.message ? err.message : String(err));
           }
           document.getElementById("payrollAnalysisKpis").innerHTML = "";
-          document.getElementById("payrollAnalysisBody").innerHTML = '<tr><td colspan="9">데이터를 불러오지 못했습니다. 새로고침 후 다시 확인해 주세요.</td></tr>';
+          document.getElementById("payrollAnalysisBody").innerHTML = '<tr><td colspan="13">데이터를 불러오지 못했습니다. 새로고침 후 다시 확인해 주세요.</td></tr>';
           renderPayrollMonthlyAnalysisChart_([]);
         })
         .finally(function() {
@@ -43988,7 +44004,7 @@ window.SeduHubAdapter={
       if (!rows.length) {
         if (statusEl) statusEl.textContent = "선택한 범위에 정산 데이터가 없습니다.";
         if (kpiEl) kpiEl.innerHTML = "";
-        if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="9">표시할 월별 정산 데이터가 없습니다.</td></tr>';
+        if (bodyEl) bodyEl.innerHTML = '<tr><td colspan="13">표시할 월별 정산 데이터가 없습니다.</td></tr>';
         renderPayrollMonthlyAnalysisChart_([]);
         return;
       }
@@ -44013,6 +44029,10 @@ window.SeduHubAdapter={
       bodyEl.innerHTML = rows.slice().reverse().map(function(row) {
         return '<tr>' +
           '<td>' + escapeHtml(row.monthLabel || row.monthName) + (row.sourcePendingCount ? '<br><small>미확인 ' + row.sourcePendingCount + '건 제외</small>' : '') + '</td>' +
+          '<td>' + (row.lessonCharges ? formatWon(row.lessonCharges.total.gross) : '—') + '</td>' +
+          '<td>' + (row.lessonCharges ? formatWon(row.lessonCharges.total.discount) : '—') + '</td>' +
+          '<td>' + (row.lessonCharges ? formatWon(row.lessonCharges.total.net) : '—') + (row.lessonCharges && row.lessonCharges.pendingCount ? '<br><small>확인 필요 ' + row.lessonCharges.pendingCount + '건 제외</small>' : '') + '</td>' +
+          '<td>' + (row.lessonCharges ? formatWon(row.lessonCharges.canceled.net) : '—') + '</td>' +
           '<td>' + formatWon(row.grossSales || 0) + '</td>' +
           '<td>' + formatWon(row.discount || 0) + '</td>' +
           '<td>' + formatWon(row.netSales || 0) + '</td>' +
@@ -44061,6 +44081,15 @@ window.SeduHubAdapter={
       });
     }
 
+    function renderLessonChargeSummary_(charges) {
+      var el = document.getElementById("lessonChargeSummary");
+      if (!charges) { el.textContent = "월 전체 금액을 불러오지 못했습니다. 새로고침해 주세요."; return; }
+      var groups = [["일반 수업", charges.regular], ["당일취소", charges.canceled], ["전체 합계 (당취 포함)", charges.total]];
+      el.innerHTML = '<div class="table-scroll"><table><thead><tr><th scope="col">구분</th><th scope="col">수업 수</th><th scope="col">할인 전 입력 금액</th><th scope="col">차감 할인액</th><th scope="col">할인 후 금액</th></tr></thead><tbody>' + groups.map(function(item) {
+        var r = item[1]; return '<tr><th scope="row">' + item[0] + '</th><td>' + r.count + '건</td><td>' + formatWon(r.gross) + '</td><td>− ' + formatWon(r.discount) + '</td><td><strong>' + formatWon(r.net) + '</strong></td></tr>';
+      }).join('') + '</tbody></table></div>' + (charges.pendingCount ? '<p>금액·시수 확인 필요 ' + charges.pendingCount + '건은 합계에서 제외했습니다.</p>' : '');
+    }
+
     function renderSummary(data) {
       state.currentSummary = data || null;
       if(window.PayrollSettlement)window.PayrollSettlement.update(data);
@@ -44070,14 +44099,10 @@ window.SeduHubAdapter={
       document.getElementById("kpiWorkingDays").textContent = "근무일 " + (kpi.workingDays || 0) + "일";
       document.getElementById("kpiNetSales").textContent = formatWon(kpi.netSales || 0);
       document.getElementById("kpiGrossDiscount").innerHTML =
-        '<strong class="payroll-sales-red">매출 ' + formatWon(kpi.grossSales || 0) + '</strong> / ' +
-        '<strong class="payroll-discount-purple">할인 ' + formatWon(kpi.discount || 0) + '</strong> / ' +
-        '<strong class="payroll-cancel-red">당취 ' + formatWon(kpi.canceledAmount || 0) + '</strong> / ' +
-        '<strong class="payroll-absence-gray">결석예고(추정) ' + (kpi.absenceEstimatedAmount == null ? '확인 필요' : formatWon(kpi.absenceEstimatedAmount)) +
-        ' · 순매출 대비 ' + (kpi.absenceEstimatedRatio == null ? '—' : Number(kpi.absenceEstimatedRatio) + '%') +
-        (kpi.absenceUnknownCount ? ' · 추정 불가 ' + Number(kpi.absenceUnknownCount) + '건' : '') + '</strong>';
+        '할인 전 ' + formatWon(kpi.grossSales || 0) + '<br>− 할인 ' + formatWon(kpi.discount || 0) + '<br><strong>위 금액은 할인을 이미 차감했습니다.</strong><br>당취 제외 · 인정 보충 포함';
+      document.getElementById("kpiGrossDiscount").title = "강사 정산 대상으로 인정한 수업의 할인 후 금액입니다. 학생에게 청구하는 월 전체 금액은 아래 집계에서 확인하세요.";
+      renderLessonChargeSummary_(kpi.lessonCharges);
       renderPayrollRecoveryKpi_(data.rows || []);
-      document.getElementById("kpiGrossDiscount").title = "결석예고 추정액: 원래 단가 × 수업 시간(회당 단가는 1회 금액), 할인 반영. 단가가 없으면 동일 월·학생·강사·수업의 일치하는 금액으로 추정합니다. 인정 순매출·지급액에는 합산하지 않습니다. 비율은 추정액 ÷ 인정 순매출이며, 순매출 0원은 비율을 표시하지 않습니다.";
       document.getElementById("kpiPay").textContent = formatWon(kpi.estimatedPay || 0);
       var oneToOneGuide = "";
       if (state.salaryMode === "hourly" && state.selectedTeacher) {

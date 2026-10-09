@@ -310,6 +310,28 @@ export function estimateAbsenceAmount(row, rows) {
   return Math.round(estimate * (1 - discountPercent(row.discount) / 100));
 }
 
+// Student lesson charges are independent of teacher recognition and payroll overrides.
+export function summarizeLessonCharges(rows) {
+  const regular = { count: 0, gross: 0, discount: 0, net: 0 };
+  const canceled = { count: 0, gross: 0, discount: 0, net: 0 };
+  let pendingCount = 0;
+  for (const row of rows) {
+    if (row.attendanceCode === '결석예고') continue;
+    // Cancellation makeup transfers teacher pay, never creates a second student charge.
+    if (row.lessonKind === 'cancelMakeup' || row.makeupAutoPriced) continue;
+    if (row.sourcePending) { pendingCount += 1; continue; }
+    const gross = Math.round(number(row.billingAmount ?? row.amount));
+    const percent = discountPercent(row.discount);
+    const discount = row.source === 'intranet'
+      ? Math.max(0, gross) - Math.round(Math.max(0, gross) * (1 - percent / 100))
+      : Math.round(Math.max(0, gross) * percent / 100);
+    const group = row.attendanceCode === '당일취소' ? canceled : regular;
+    group.count += 1; group.gross += gross; group.discount += discount; group.net += gross - discount;
+  }
+  const total = Object.fromEntries(['count', 'gross', 'discount', 'net'].map(key => [key, regular[key] + canceled[key]]));
+  return { regular, canceled, total, pendingCount };
+}
+
 export function buildPayrollSummary(rows, monthMeta, input = {}) {
   const settings = normalizePayrollSettings(input.teacherSettings || {}); const mode = salaryMode(input.salaryMode); const ratioPercent = clamp(input.ratioPercent, 0, 100, 50); const hourlyRate = Math.max(0, number(input.hourlyRate));
   const mixedTeacherModes = !text(input.teacherName);
@@ -350,7 +372,7 @@ export function buildPayrollSummary(rows, monthMeta, input = {}) {
   Object.values(finance).forEach(item => { item.hours = round(item.hours, 2); item.hourlyHoursEligible = round(item.hourlyHoursEligible, 2); ['gross', 'net', 'canceled', 'canceledCount', 'ratioSettlement', 'oneToOneRatioSettlement', 'hourlySettlement'].forEach(key => { item[key] = Math.round(number(item[key])); }); item.settlement = Math.round(item.hourlySettlement + item.oneToOneRatioSettlement + item.ratioSettlement); });
   const estimatedPay = ratioPay + hourlyBasePay + oneToOnePay;
   return {
-    kpi: { absenceEstimatedAmount: absenceEstimatedTotal, absenceEstimatedCount, absenceUnknownCount, absenceEstimatedRatio: netTotal > 0 ? round(absenceEstimatedTotal / netTotal * 100, 1) : null, totalLessons: filtered.length, recognizedLessons, recognizedHours: round(recognizedHoursTotal, 2), pureTeachingHours: round(pureHours, 2), grossSales: Math.round(grossTotal), discount: Math.round(discountTotal), netSales: Math.round(netTotal), canceledAmount: Math.round(canceledTotal), oneToOneRatioSettlement: Math.round(oneToOnePay), workingDays: workingDays.size, estimatedPay: Math.round(estimatedPay), ratioPay: Math.round(ratioPay), hourlyPay: Math.round(hourlyBasePay + oneToOnePay), mixedTeacherModes },
+    kpi: { lessonCharges: summarizeLessonCharges(filtered), absenceEstimatedAmount: absenceEstimatedTotal, absenceEstimatedCount, absenceUnknownCount, absenceEstimatedRatio: netTotal > 0 ? round(absenceEstimatedTotal / netTotal * 100, 1) : null, totalLessons: filtered.length, recognizedLessons, recognizedHours: round(recognizedHoursTotal, 2), pureTeachingHours: round(pureHours, 2), grossSales: Math.round(grossTotal), discount: Math.round(discountTotal), netSales: Math.round(netTotal), canceledAmount: Math.round(canceledTotal), oneToOneRatioSettlement: Math.round(oneToOnePay), workingDays: workingDays.size, estimatedPay: Math.round(estimatedPay), ratioPay: Math.round(ratioPay), hourlyPay: Math.round(hourlyBasePay + oneToOnePay), mixedTeacherModes },
     classTypeSummary: Object.entries(typeTotals).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count),
     classTypeFinanceSummary: Object.values(finance).sort((a, b) => b.net - a.net),
     attendanceSummary: Object.entries(attendanceTotals).map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count),
