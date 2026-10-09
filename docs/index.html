@@ -16666,7 +16666,7 @@
     }
     .payroll-kpi-strip {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: minmax(0, .65fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(0, 1.25fr) minmax(0, .65fr);
       gap: 0;
       overflow: hidden;
       border: 1px solid var(--ds-border);
@@ -16991,9 +16991,7 @@
       .payroll-kpi-strip .payroll-kpi:nth-child(even) {
         border-right: 0;
       }
-      .payroll-kpi-strip .payroll-kpi:last-child {
-        grid-column: 1 / -1;
-        border-right: 0;
+      .payroll-kpi-strip .payroll-kpi:nth-last-child(-n + 2) {
         border-bottom: 0;
       }
       .payroll-analysis-modal {
@@ -17911,6 +17909,11 @@
           <div class="label">강사 정산 기준 · 할인 후</div>
           <div class="value" id="kpiNetSales">0원</div>
           <div class="meta" id="kpiGrossDiscount">매출 0원 / 할인 0원</div>
+        </article>
+        <article class="card payroll-kpi">
+          <div class="label">이 달 전체 실수업액</div>
+          <div class="value" id="kpiLessonChargeNet">—</div>
+          <div class="meta" id="kpiLessonChargeBasis">할인 후 · 당취 포함 · 당취보충 0원</div>
         </article>
         <article class="card payroll-kpi payroll-kpi-emphasis">
           <div class="label">예상 지급액</div>
@@ -44083,6 +44086,12 @@ window.SeduHubAdapter={
 
     function renderLessonChargeSummary_(charges) {
       var el = document.getElementById("lessonChargeSummary");
+      document.getElementById("kpiLessonChargeNet").textContent = charges ? formatWon(charges.total.net) : "—";
+      document.getElementById("kpiLessonChargeBasis").innerHTML = charges
+        ? '할인 전 ' + formatWon(charges.total.gross) + '<br>− 할인 ' + formatWon(charges.total.discount) +
+          '<br>당취 포함 ' + formatWon(charges.canceled.net) + '<br>당취보충 0원 · 결석예고 제외' +
+          '<br>수업 입력 기준 · 선택 필터 반영' + (charges.pendingCount ? '<br>확인 필요 ' + charges.pendingCount + '건 제외' : '')
+        : '집계 확인 필요 · 새로고침해 주세요.';
       if (!charges) { el.textContent = "월 전체 금액을 불러오지 못했습니다. 새로고침해 주세요."; return; }
       var groups = [["일반 수업", charges.regular], ["당일취소", charges.canceled], ["전체 합계 (당취 포함)", charges.total]];
       el.innerHTML = '<div class="table-scroll"><table><thead><tr><th scope="col">구분</th><th scope="col">수업 수</th><th scope="col">할인 전 입력 금액</th><th scope="col">차감 할인액</th><th scope="col">할인 후 금액</th></tr></thead><tbody>' + groups.map(function(item) {
