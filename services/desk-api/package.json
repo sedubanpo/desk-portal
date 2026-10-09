@@ -14,6 +14,7 @@
     "verify:payroll-parity": "node scripts/compare-payroll-parity.js"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "express": "5.2.1",
     "firebase-admin": "14.1.0",
     "google-auth-library": "^10.9.0"

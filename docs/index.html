@@ -20925,7 +20925,7 @@
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
-      getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
+      getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
@@ -45594,6 +45594,7 @@ window.SeduHubAdapter={
 
     function getRunServerTimeoutMs_(fnName) {
       var name = String(fnName || "");
+      if (name === "getPayrollWorkbookExport") return 180000;
       if (/^(getPayrollBootstrapData|getPayrollMonthSummary|getPayrollMonthlyAnalysis|getTuitionBootstrapData|getTuitionMonthSummary)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
       if (isRunServerWriteApi_(name)) return RUN_SERVER_WRITE_TIMEOUT_MS;
       return RUN_SERVER_DEFAULT_TIMEOUT_MS;
@@ -45705,5 +45706,6 @@ window.SeduHubAdapter={
 <script src="./inquiry-analytics.js?v=20261003-inquiry-insights"></script>
 <script src="./inquiries.js?v=20261003-inquiry-insights"></script>
 <script src="./payroll-settlement.js?v=20261009"></script>
+<script src="./payroll-export.js?v=20261009"></script>
 </body>
 </html>

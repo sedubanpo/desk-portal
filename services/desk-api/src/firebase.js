@@ -1,3 +1,4 @@
+import { createPayrollExportHandler } from './payroll/export-handler.js';
 import { createWorkforceHandlers } from './payroll/workforce.js';
 import { applicationDefault, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
@@ -33,6 +34,9 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
     serviceAccountEmail: workspaceServiceAccountEmail
   });
 
+  const payroll=createPayrollHandlers({store:createPayrollStore(firestore),sheets:workspace,intranet:createIntranetPayrollReader(firestore)});
+  const workforce=createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)});
+  const tuitionStore=createTuitionStore(firestore);
   return {
     inquiries: { firestore, token: notionInquiryToken, sourceId: notionInquirySourceId, historySourceId: notionInquiryHistoryId, syncKey: notionInquirySyncKey },
     training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
@@ -60,8 +64,9 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       }),
       getDeskCalendarEvents: workspace.getDeskCalendarEvents,
       ...createTuitionHandlers({ store: createTuitionStore(firestore) }),
-      ...createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)}),
-      ...createPayrollHandlers({ store: createPayrollStore(firestore), sheets: workspace, intranet:createIntranetPayrollReader(firestore) })
+      ...workforce,
+      ...payroll,
+      getPayrollWorkbookExport:createPayrollExportHandler({payroll,workforce,tuitionStore})
     },
     runIdempotent: createIdempotencyExecutor(firestore)
   };

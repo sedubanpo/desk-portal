@@ -317,3 +317,11 @@ test('personal task history uses authenticated desk route and server identity', 
   const res=await request(app).post('/v1/desk/getDeskDailyJournalTaskHistory').set('authorization','Bearer valid-token').send({payload:{uid:'forged',role:'ADMIN'}}).expect(200);
   assert.equal(res.body.success,true);assert.equal(actor.uid,'staff-1');assert.equal(actor.role,'STAFF');
 });
+
+test('monthly workbook export requires payroll permission and an unlock token', async () => {
+  const deskHandlers={getPayrollWorkbookExport:async()=>({success:true,base64:'test'})};
+  await request(testApp({deskHandlers})).post('/v1/desk/getPayrollWorkbookExport').set('authorization','Bearer valid-token').send({payload:{monthName:'26-09'}}).expect(403);
+  const app=testApp({deskHandlers,loadAccount:async()=>({account:{role:'ADMIN',status:'ACTIVE'},access:{apps:{deskPortal:true},permissions:{}}})});
+  await request(app).post('/v1/desk/getPayrollWorkbookExport').set('authorization','Bearer valid-token').send({payload:{monthName:'26-09'}}).expect(401);
+  await request(app).post('/v1/desk/getPayrollWorkbookExport').set('authorization','Bearer valid-token').set('x-payroll-unlock-token','unlock-staff-1').send({payload:{monthName:'26-09'}}).expect(200);
+});

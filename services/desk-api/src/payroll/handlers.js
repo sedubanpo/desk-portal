@@ -15,6 +15,7 @@ import {
 
 export const PAYROLL_METHODS = Object.freeze([
   ...WORKFORCE_METHODS,
+  'getPayrollWorkbookExport',
   'getPayrollBootstrapData',
   'getPayrollMonthSummary',
   'getPayrollMonthlyAnalysis',
@@ -54,6 +55,18 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
     return {rows:parsePayrollRows(source,parsePayrollMonthName(name)),version:payrollSourceVersion(source),sourceName:'google-sheets-api'};
   };
   const handlers = {
+    async readExportMonth(monthName) {
+      const meta=parsePayrollMonthName(monthName);
+      if(!meta || !(await listMonths()).includes(monthName))throw new Error('선택 월의 정산 자료가 없습니다.');
+      const [source,settings,overrides]=await Promise.all([readSource(monthName),store.getSettings(),store.getOverrides(monthName)]);
+      const options=payrollOptions({},settings,overrides);
+      const summary=buildPayrollSummary(source.rows,meta,options);
+      const teachers=[...new Set(source.rows.map(r=>r.teacher).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')).map(name=>{
+        const own=buildPayrollSummary(source.rows,meta,{...options,teacherName:name});
+        return {name,subject:[...new Set(own.rows.map(r=>r.subject).filter(Boolean))].join(', '),settings:settings[name]||null,kpi:own.kpi,gross:own.rows.filter(r=>!r.sourcePending).reduce((n,r)=>n+r.amount,0),pending:own.rows.some(r=>r.sourcePending)};
+      });
+      return {summary,teachers};
+    },
     async getPayrollBootstrapData() {
       const months = await listMonths();
       return months.length
