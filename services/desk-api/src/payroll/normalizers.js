@@ -314,6 +314,7 @@ export function estimateAbsenceAmount(row, rows) {
 export function summarizeLessonCharges(rows) {
   const regular = { count: 0, gross: 0, discount: 0, net: 0 };
   const canceled = { count: 0, gross: 0, discount: 0, net: 0 };
+  const types = new Map();
   let pendingCount = 0;
   for (const row of rows) {
     if (row.attendanceCode === '결석예고') continue;
@@ -327,9 +328,16 @@ export function summarizeLessonCharges(rows) {
       : Math.round(Math.max(0, gross) * percent / 100);
     const group = row.attendanceCode === '당일취소' ? canceled : regular;
     group.count += 1; group.gross += gross; group.discount += discount; group.net += gross - discount;
+    const type = row.classType || '미분류';
+    const category = row.attendanceCode === '당일취소' ? '당일취소' : '일반 수업';
+    const key = JSON.stringify([category, type]);
+    if (!types.has(key)) types.set(key, { category, type, count: 0, hours: 0, gross: 0, discount: 0, net: 0 });
+    const item = types.get(key);
+    item.count += 1; item.hours = round(item.hours + Math.max(0, number(row.hours)), 2);
+    item.gross += gross; item.discount += discount; item.net += gross - discount;
   }
   const total = Object.fromEntries(['count', 'gross', 'discount', 'net'].map(key => [key, regular[key] + canceled[key]]));
-  return { regular, canceled, total, pendingCount };
+  return { regular, canceled, total, pendingCount, types: [...types.values()].sort((a, b) => a.category.localeCompare(b.category, 'ko') || a.type.localeCompare(b.type, 'ko')) };
 }
 
 export function buildPayrollSummary(rows, monthMeta, input = {}) {

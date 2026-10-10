@@ -152,7 +152,7 @@ test('monthly analysis loads each month without screen filters and returns teach
   assert.deepEqual(response.rows.map(row => row.monthName), ['26-06', '26-07']);
   assert.deepEqual(response.rows[0], {
     monthName: '26-06', monthLabel: '2026년 6월', grossSales: 200000, discount: 20000,
-    lessonCharges: {regular:{count:1,gross:200000,discount:20000,net:180000},canceled:{count:0,gross:0,discount:0,net:0},total:{count:1,gross:200000,discount:20000,net:180000},pendingCount:0},
+    lessonCharges: {regular:{count:1,gross:200000,discount:20000,net:180000},canceled:{count:0,gross:0,discount:0,net:0},total:{count:1,gross:200000,discount:20000,net:180000},pendingCount:0,types:[{category:'일반 수업',type:'정규',count:1,hours:2,gross:200000,discount:20000,net:180000}]},
     netSales: 180000, estimatedPay: 80000, balanceAfterTeacherPay: 100000,
     teacherPayRate: 44.4, recognizedHours: 2, pureTeachingHours: 2,
     recognizedLessons: 1, canceledAmount: 0, absenceEstimatedAmount: 0, absenceUnknownCount: 0, sourcePendingCount: 0, source: 'google-sheets-api', teacherCount: 1

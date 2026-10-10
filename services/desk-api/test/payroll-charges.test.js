@@ -14,3 +14,11 @@ test('zero charges and whole-won discount rounding reconcile',()=>{
  const s=summarizeLessonCharges([{...base,amount:87501,billingAmount:87501},{...base,amount:0,billingAmount:0}]);
  assert.equal(s.total.net,78751);assert.equal(s.total.gross-s.total.discount,s.total.net);
 });
+
+test('type hours and amounts reconcile without counting makeup, absence or pending lessons', () => {
+ const s = summarizeLessonCharges([base, {...base, classType:'1:1', hours:1.5}, {...base,classType:'개별정규',hours:3,attendanceCode:'당일취소'}, {...base,lessonKind:'cancelMakeup'}, {...base,attendanceCode:'결석예고'}, {...base,sourcePending:true}]);
+ assert.equal(s.types.length,3);
+ assert.equal(s.types.reduce((sum,r)=>sum+r.hours,0),6.5);
+ assert.equal(s.types.find(r=>r.type==='개별정규').category,'당일취소');
+ for (const key of ['count','gross','discount','net']) assert.equal(s.types.reduce((sum,r)=>sum+r[key],0),s.total[key]);
+});

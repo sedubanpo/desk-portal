@@ -17693,6 +17693,19 @@
 @media(max-width:650px) {.desk-supply-edit-dialog {padding:16px}.desk-supply-edit-dialog .desk-supply-entry-form {grid-template-columns:1fr}.desk-supply-edit-dialog .desk-supply-branch-fields {grid-template-columns:1fr}}
 
 
+
+    .payroll-kpi-strip .meta, .payroll-charge-summary td { font-weight: 700; }
+    .payroll-minus { color: #2563eb; font-weight: 800; }
+    .payroll-plus { color: #dc2626; font-weight: 800; }
+    .payroll-delta { display: block; width: fit-content; margin: 8px 0; padding: 5px 8px; border-radius: 7px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .payroll-delta.up { background: #fff1f2; color: #be123c; }
+    .payroll-delta.down { background: #eff6ff; color: #1d4ed8; }
+    .payroll-delta small { display: block; margin-top: 3px; font-size: 10px; font-weight: 700; }
+    body #moduleTeacher #calendarGrid .day-cell.day-has-work { background: #e3f4e9; border: 2px solid #57a579; box-shadow: inset 0 4px 0 #27814f; }
+    body #moduleTeacher #calendarGrid .day-has-work .day-num { color: #14532d; font-weight: 900; }
+    body #moduleTeacher #calendarGrid .day-has-work .day-hour { background: #166534; color: #fff; font-weight: 800; }
+    body #moduleTeacher #calendarGrid .day-cell.active { outline: 3px solid #14532d; outline-offset: 1px; }
+    body #moduleTeacher #calendarGrid .day-cell:not(.day-has-work):not(.day-empty) { background: #fafafa; }
     .payroll-charge-summary { margin: 16px 0; padding: 20px; background: var(--ds-bg-panel, white); border: 1px solid var(--ds-border, #e3e7ef); border-radius: 12px; }
     .payroll-charge-summary h2 { margin: 0 0 8px; font-size: 18px; }
     .payroll-charge-summary p { margin: 8px 0; line-height: 1.6; color: var(--ds-fg-soft, #48556b); }
@@ -43197,6 +43210,7 @@ window.SeduHubAdapter={
           renderSubjectOptions();
           renderTeacherOptions();
           renderSummary(res);
+          loadPayrollComparison_(res, requestId, options);
           return res;
         })
         .catch(function(err) {
@@ -43207,6 +43221,55 @@ window.SeduHubAdapter={
         .finally(function() {
           if (requestId === state.requestSeq) setLoading(false);
         });
+    }
+
+    function loadPayrollComparison_(current, requestId, options) {
+      var metrics = [
+        ['kpiHours', 'recognizedHours', 'h'], ['kpiNetSales', 'netSales', '원'],
+        ['kpiLessonChargeNet', 'lessonCharges', '원'], ['kpiPay', 'estimatedPay', '원'],
+        ['kpiPureHours', 'pureTeachingHours', 'h']
+      ];
+      document.querySelectorAll('.payroll-delta').forEach(function(el) { el.remove(); });
+      if (!state.selectedTeacher) return;
+      var match = String(current.selectedMonth || '').match(/^(\d{2,4})-(\d{1,2})$/);
+      if (!match) return;
+      var year = Number(match[1]); if (year < 100) year += 2000;
+      var month = Number(match[2]) - 1;
+      if (!month) { year -= 1; month = 12; }
+      var previous = String(year).slice(-2) + '-' + String(month).padStart(2, '0');
+      var payload = buildPayload({forceRefresh: options.forceRefresh});
+      payload.monthName = previous;
+      function show(previousData, message) {
+        if (requestId !== state.requestSeq) return;
+        metrics.forEach(function(metric) {
+          var target = document.getElementById(metric[0]);
+          var el = document.createElement('div'); el.className = 'payroll-delta';
+          if (previousData) {
+            var currentValue = metric[1] === 'lessonCharges' ? current.kpi.lessonCharges.total.net : current.kpi[metric[1]];
+            var previousValue = metric[1] === 'lessonCharges' ? previousData.kpi.lessonCharges.total.net : previousData.kpi[metric[1]];
+            var delta = Math.round((currentValue - previousValue) * 100) / 100;
+            el.className += delta > 0 ? ' up' : delta < 0 ? ' down' : '';
+            el.textContent = (delta > 0 ? '▲ +' : delta < 0 ? '▼ −' : '＝ ') + (metric[2] === 'h' ? formatHours(Math.abs(delta)) + 'h' : formatWon(Math.abs(delta))) + ' · 전월 대비';
+            var note = document.createElement('small');
+            note.textContent = previous + '월 전체 비교 · 현재 월은 입력분 기준';
+            el.appendChild(note);
+          } else el.textContent = message;
+          target.insertAdjacentElement('afterend', el);
+        });
+      }
+      if (!(current.months || []).some(function(m) { return m === previous; })) { show(null, '전월 자료 없음'); return; }
+      show(null, '전월 비교 중…');
+      runServer('getPayrollMonthSummary', payload).then(function(res) {
+        if (requestId !== state.requestSeq) return;
+        document.querySelectorAll('.payroll-delta').forEach(function(el) { el.remove(); });
+        if (!res || !res.success) { show(null, '전월 비교 불러오기 실패'); return; }
+        if (!res.rows || !res.rows.length) { show(null, '전월 수업 내역 없음'); return; }
+        show(res);
+      }).catch(function() {
+        if (requestId !== state.requestSeq) return;
+        document.querySelectorAll('.payroll-delta').forEach(function(el) { el.remove(); });
+        show(null, '전월 비교 불러오기 실패');
+      });
     }
 
     function applySummaryMeta(data) {
@@ -44117,15 +44180,19 @@ window.SeduHubAdapter={
       var el = document.getElementById("lessonChargeSummary");
       document.getElementById("kpiLessonChargeNet").textContent = charges ? formatWon(charges.total.net) : "—";
       document.getElementById("kpiLessonChargeBasis").innerHTML = charges
-        ? '할인 전 ' + formatWon(charges.total.gross) + '<br>− 할인 ' + formatWon(charges.total.discount) +
-          '<br>당취 포함 ' + formatWon(charges.canceled.net) + '<br>당취보충 0원 · 결석예고 제외' +
+        ? '할인 전 ' + formatWon(charges.total.gross) + '<br><strong class="payroll-minus">− 할인 ' + formatWon(charges.total.discount) + '</strong>' +
+          '<br><strong class="payroll-plus">+당취 ' + formatWon(charges.canceled.net) + '</strong><br>당취보충 0원 · 결석예고 제외' +
           '<br>수업 입력 기준 · 선택 필터 반영' + (charges.pendingCount ? '<br>확인 필요 ' + charges.pendingCount + '건 제외' : '')
         : '집계 확인 필요 · 새로고침해 주세요.';
       if (!charges) { el.textContent = "월 전체 금액을 불러오지 못했습니다. 새로고침해 주세요."; return; }
-      var groups = [["일반 수업", charges.regular], ["당일취소", charges.canceled], ["전체 합계 (당취 포함)", charges.total]];
-      el.innerHTML = '<div class="table-scroll"><table><thead><tr><th scope="col">구분</th><th scope="col">수업 수</th><th scope="col">할인 전 입력 금액</th><th scope="col">차감 할인액</th><th scope="col">할인 후 금액</th></tr></thead><tbody>' + groups.map(function(item) {
-        var r = item[1]; return '<tr><th scope="row">' + item[0] + '</th><td>' + r.count + '건</td><td>' + formatWon(r.gross) + '</td><td>− ' + formatWon(r.discount) + '</td><td><strong>' + formatWon(r.net) + '</strong></td></tr>';
-      }).join('') + '</tbody></table></div>' + (charges.pendingCount ? '<p>금액·시수 확인 필요 ' + charges.pendingCount + '건은 합계에서 제외했습니다.</p>' : '');
+      var types = charges.types || [];
+      var totalHours = types.reduce(function(sum, item) { return sum + item.hours; }, 0);
+      var groups = types.map(function(item) { return { label: item.category + ' · ' + item.type, data: item }; });
+      if (!types.length) groups = [{label: '일반 수업', data: charges.regular}, {label: '당일취소', data: charges.canceled}];
+      groups.push({label: '전체 합계 (당취 포함)', data: Object.assign({}, charges.total, {hours: totalHours})});
+      el.innerHTML = '<div class="table-scroll"><table><thead><tr><th scope="col">구분 · 수업유형</th><th scope="col">수업 수</th><th scope="col">수업 시간</th><th scope="col">할인 전 입력 금액</th><th scope="col">차감 할인액</th><th scope="col">할인 후 금액</th></tr></thead><tbody>' + groups.map(function(item) {
+        var r = item.data; return '<tr><th scope="row">' + escapeHtml(item.label) + '</th><td>' + r.count + '건</td><td>' + (r.hours == null ? '—' : formatHours(r.hours) + 'h') + '</td><td>' + formatWon(r.gross) + '</td><td class="payroll-minus">− ' + formatWon(r.discount) + '</td><td><strong>' + formatWon(r.net) + '</strong></td></tr>';
+      }).join('') + '</tbody></table></div><p>시간은 학생별 입력 시간 합계이며, 당일취소 시간도 포함합니다. 중복 시간대를 제외한 강사 순수시수와는 다릅니다.</p>' + (charges.pendingCount ? '<p>금액·시수 확인 필요 ' + charges.pendingCount + '건은 합계에서 제외했습니다.</p>' : '');
     }
 
     function renderSummary(data) {
@@ -44137,7 +44204,7 @@ window.SeduHubAdapter={
       document.getElementById("kpiWorkingDays").textContent = "근무일 " + (kpi.workingDays || 0) + "일";
       document.getElementById("kpiNetSales").textContent = formatWon(kpi.netSales || 0);
       document.getElementById("kpiGrossDiscount").innerHTML =
-        '할인 전 ' + formatWon(kpi.grossSales || 0) + '<br>− 할인 ' + formatWon(kpi.discount || 0) + '<br><strong>위 금액은 할인을 이미 차감했습니다.</strong><br>당취 제외 · 인정 보충 포함';
+        '할인 전 ' + formatWon(kpi.grossSales || 0) + '<br><strong class="payroll-minus">− 할인 ' + formatWon(kpi.discount || 0) + '</strong><br><strong>위 금액은 할인을 이미 차감했습니다.</strong><br>당취 제외 · 인정 보충 포함';
       document.getElementById("kpiGrossDiscount").title = "강사 정산 대상으로 인정한 수업의 할인 후 금액입니다. 학생에게 청구하는 월 전체 금액은 아래 집계에서 확인하세요.";
       renderLessonChargeSummary_(kpi.lessonCharges);
       renderPayrollRecoveryKpi_(data.rows || []);
