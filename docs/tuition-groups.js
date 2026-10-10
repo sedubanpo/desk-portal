@@ -17,7 +17,7 @@ function tuitionSchoolGroup_(row) {
 function tuitionGroupStatus_(row) {
   var guide = Math.max(0, Number(row.guideAmount) || 0), paid = Math.max(0, Number(row.collectedAmount) || 0);
   var informed = !!row.firstGuideAt || ['안내완료','납부예정','일부완료','납부완료','연락두절','이월금'].indexOf(row.unpaidStatus) >= 0;
-  var payment = guide > 0 && paid >= guide ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+  var payment = row.unpaidStatus === '이월금' ? 'credit' : guide > 0 && paid >= guide ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
   return { informed: informed, payment: payment };
 }
 (function () {
@@ -34,11 +34,16 @@ function tuitionGroupStatus_(row) {
   var dialog = document.createElement('dialog');
   dialog.className = 'tg-dialog'; dialog.setAttribute('aria-labelledby','tgTitle');
   document.body.appendChild(dialog);
+  var detailDialog = document.createElement('dialog');
+  detailDialog.className = 'tg-dialog tg-detail-dialog'; detailDialog.setAttribute('aria-labelledby','tgDetailTitle');
+  document.body.appendChild(detailDialog);
+  var detailOpener = null;
+  detailDialog.addEventListener('close',function(){if(dialog.open && detailOpener)detailOpener.focus();});
   var rows = [], level = '고등', selection = {grade:3,kind:'due'}, version = 0, month = '';
-  var kinds = { due:'수납 확인 필요', informed:'안내 완료', waiting:'안내 전', paid:'납부 완료', partial:'일부 수납', unpaid:'미수납', all:'전체' };
+  var kinds = { due:'수납 확인 필요', informed:'안내 완료', waiting:'안내 전', paid:'납부 완료', partial:'일부 수납', unpaid:'미수납', credit:'이월금', all:'전체' };
   function matches(row, kind) {
     var s = tuitionGroupStatus_(row);
-    return kind === 'all' || (kind === 'due' ? s.payment !== 'paid' : kind === 'informed' ? s.informed : kind === 'waiting' ? !s.informed : s.payment === kind);
+    return kind === 'all' || (kind === 'due' ? (s.payment === 'partial' || s.payment === 'unpaid') : kind === 'informed' ? s.informed : kind === 'waiting' ? !s.informed : s.payment === kind);
   }
   function groupRows(grade) { return rows.filter(function(row) {var g=tuitionSchoolGroup_(row);return g.level===level && (!grade || g.grade===grade);}); }
   function details() {
@@ -48,14 +53,17 @@ function tuitionGroupStatus_(row) {
       if(isFinite(x)&&x!==y)return x-y;
       return String(a.studentName).localeCompare(String(b.studentName),'ko');
     });
-    var target = dialog.querySelector('#tgDetails');
-    target.innerHTML = '<div class="tg-detail-head"><h3>'+level+' '+(selection.grade?selection.grade+'학년':'전체')+' · '+kinds[selection.kind]+'</h3><strong>'+selected.length+'명</strong></div>'+
+    var target = detailDialog;
+    target.innerHTML = '<header class="tg-detail-head"><div><h3 id="tgDetailTitle">'+level+' '+(selection.grade?selection.grade+'학년':'전체')+' · '+kinds[selection.kind]+'</h3><strong>'+selected.length+'명</strong></div><button type="button" data-detail-close aria-label="학생 명단 닫기">닫기</button></header>'+
       '<p class="tg-hint">최초 안내일이 오래된 순 · 학생 이름을 누르면 정산 상세가 열립니다.</p>'+
       (selected.length ? '<div class="tg-student-list">'+selected.map(function(row,i){
         var s=tuitionGroupStatus_(row),out=Math.max(0,Number(row.outstandingAmount)||0);
-        return '<article><div><button type="button" data-student="'+i+'">'+esc(row.studentName)+'</button><small>'+esc(row.school||'학교 미입력')+' · '+esc(String(row.grade||'학년 미입력'))+'</small></div><div class="tg-student-state"><span>'+ (s.informed?'안내 완료':'안내 전')+' · '+kinds[s.payment]+'</span>'+tuitionNoticeAgeHtml_(row.firstGuideAt)+'</div><div class="tg-student-money"><small>미납액</small><strong>'+formatWon(out)+'</strong></div></article>';
+        return '<article><div><button type="button" data-student="'+i+'">'+esc(row.studentName)+'</button><small>'+esc(row.school||'학교 미입력')+' · '+esc(String(row.grade||'학년 미입력'))+'</small></div><div class="tg-student-state"><span>'+ (s.informed?'안내 완료':'안내 전')+' · '+kinds[s.payment]+'</span>'+tuitionNoticeAgeHtml_(row.firstGuideAt)+'</div><div class="tg-student-money"><small>'+(s.payment==='credit'?'이월금 상태':'미납액')+'</small><strong>'+(s.payment==='credit'?'미납 제외':formatWon(out))+'</strong></div></article>';
       }).join('')+'</div>' : '<p class="tg-empty">해당하는 학생이 없습니다. 다른 학년이나 그래프 항목을 선택해 주세요.</p>');
-    target.querySelectorAll('[data-student]').forEach(function(btn){btn.onclick=function(){var name=selected[Number(btn.dataset.student)].studentName;dialog.close();openTuitionStudentHistoryModal_(name);};});
+    target.querySelector('[data-detail-close]').onclick=function(){detailDialog.close();};
+    if(!detailDialog.open)detailDialog.showModal();
+    target.querySelector('[data-detail-close]').focus();
+    target.querySelectorAll('[data-student]').forEach(function(btn){btn.onclick=function(){var name=selected[Number(btn.dataset.student)].studentName;detailDialog.close();dialog.close();openTuitionStudentHistoryModal_(name);};});
   }
   function render() {
     var subset=groupRows(0),total=subset.length,paid=subset.filter(function(r){return matches(r,'paid');}).length;
@@ -68,14 +76,14 @@ function tuitionGroupStatus_(row) {
       '<div class="tg-chart-head"><h3>학년별 진행 현황</h3><span>막대 또는 범례를 눌러 명단 확인</span></div><div class="tg-grades">'+
       Array.from({length:level==='초등'?6:3},function(_,i){var grade=i+1,list=groupRows(grade),n=list.length;
         function bar(types) {return '<div class="tg-bar-row"><span>'+ (types[0]==='informed'?'안내':'수납')+'</span><div class="tg-bar">'+types.map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return count?'<button type="button" class="'+kind+'" style="flex:'+count+'" data-grade="'+grade+'" data-kind="'+kind+'" aria-label="'+grade+'학년 '+kinds[kind]+' '+count+'명">'+(count/n>=.15?count:'')+'</button>':'';}).join('')+(n?'':'<span class="tg-no-data">학생 없음</span>')+'</div></div>';}
-        return '<section class="tg-grade'+(level==='고등'&&grade===3?' priority':'')+'"><header><button type="button" data-grade="'+grade+'" data-kind="all">'+grade+'학년</button><strong>'+n+'명</strong></header>'+bar(['informed','waiting'])+bar(['paid','partial','unpaid'])+'<div class="tg-legend">'+['informed','waiting','paid','partial','unpaid'].map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return '<button type="button" data-grade="'+grade+'" data-kind="'+kind+'"'+(count?'':' disabled')+'><i class="'+kind+'"></i>'+kinds[kind]+' <b>'+count+'</b></button>';}).join('')+'</div></section>';
-      }).join('')+'</div><p class="tg-basis">선택 월의 숨김 학생 제외 · 납부 완료는 안내금액 전액 수납, 일부 수납은 수납액이 있으나 전액 수납 전인 상태입니다. 안내는 안내 기록 또는 등록된 안내 상태 기준입니다.'+(unclassified?' 학교·학년 미분류 '+unclassified+'명은 학년 그래프에서 제외됩니다.':'')+'</p><section id="tgDetails" aria-live="polite"></section></section>';
+        return '<section class="tg-grade'+(level==='고등'&&grade===3?' priority':'')+'"><header><button type="button" data-grade="'+grade+'" data-kind="all">'+grade+'학년</button><strong>'+n+'명</strong></header>'+bar(['informed','waiting'])+bar(['paid','partial','unpaid','credit'])+'<div class="tg-legend">'+['informed','waiting','paid','partial','unpaid','credit'].map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return '<button type="button" data-grade="'+grade+'" data-kind="'+kind+'"'+(count?'':' disabled')+'><i class="'+kind+'"></i>'+kinds[kind]+' <b>'+count+'</b></button>';}).join('')+'</div></section>';
+      }).join('')+'</div><p class="tg-basis">선택 월의 숨김 학생 제외 · 납부 완료는 안내금액 전액 수납, 일부 수납은 수납액이 있으나 전액 수납 전인 상태입니다. 이월금 상태는 미수납·수납 확인 대상에서 제외하고 별도로 표시합니다. 안내는 안내 기록 또는 등록된 안내 상태 기준입니다.'+(unclassified?' 학교·학년 미분류 '+unclassified+'명은 학년 그래프에서 제외됩니다.':'')+'</p></section>';
     dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
     var tabs=Array.from(dialog.querySelectorAll('[data-level]'));
     tabs.forEach(function(btn,i){btn.onclick=function(){level=btn.dataset.level;selection={grade:level==='고등'?3:1,kind:'all'};render();dialog.querySelector('[data-level="'+level+'"]').focus();};btn.onkeydown=function(e){var k=e.key,n=k==='ArrowRight'?(i+1)%3:k==='ArrowLeft'?(i+2)%3:k==='Home'?0:k==='End'?2:-1;if(n>=0){e.preventDefault();tabs[n].click();}};});
-    dialog.querySelectorAll('[data-grade]').forEach(function(btn){btn.onclick=function(){selection={grade:Number(btn.dataset.grade),kind:btn.dataset.kind};details();dialog.querySelector('#tgDetails').scrollIntoView({block:'nearest'});};});
-    var priority=dialog.querySelector('[data-priority]');if(priority)priority.onclick=function(){selection={grade:3,kind:'due'};details();dialog.querySelector('#tgDetails').scrollIntoView({block:'nearest'});};
-    details();if(window.lucide)window.lucide.createIcons();
+    dialog.querySelectorAll('[data-grade]').forEach(function(btn){btn.onclick=function(){selection={grade:Number(btn.dataset.grade),kind:btn.dataset.kind};detailOpener=btn;details();};});
+    var priority=dialog.querySelector('[data-priority]');if(priority)priority.onclick=function(){selection={grade:3,kind:'due'};detailOpener=priority;details();};
+    if(window.lucide)window.lucide.createIcons();
   }
   function load() {
     var request=++version;month=state.tuition.selectedMonth;
@@ -90,7 +98,7 @@ function tuitionGroupStatus_(row) {
     }).catch(function(err){if(request!==version||!dialog.open)return;dialog.querySelector('.tg-empty').innerHTML=esc(err.message||'조회 실패')+' <button type="button" data-retry>다시 시도</button>';dialog.querySelector('[data-retry]').onclick=load;});
   }
   opener.onclick=function(){level='고등';selection={grade:3,kind:'due'};load();};
-  dialog.addEventListener('close',function(){version++;opener.focus();});
+  dialog.addEventListener('close',function(){version++;if(detailDialog.open)detailDialog.close();opener.focus();});
   var calendar=document.getElementById('tuitionCalendarModal');
   var search=document.createElement('label');search.className='tg-calendar-search';search.innerHTML='<i data-lucide="search" aria-hidden="true"></i><span>학생 납부일 찾기</span><input type="search" aria-label="캘린더 학생 검색" placeholder="학생 이름 검색 · 보고 있는 달 기준">';
   calendar.querySelector('.tuition-calendar-toolbar').after(search);
