@@ -17705,7 +17705,7 @@
   <link rel="stylesheet" href="./workspace.css?v=20261001-personal-tasks-polish">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
-<link rel="stylesheet" href="./tuition-redesign.css?v=20260916-metrics">
+<link rel="stylesheet" href="./tuition-redesign.css?v=20261010-refund">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -39883,7 +39883,7 @@
           '</td>' +
           '<td><span class="tuition-contact-count">' + Math.max(0,toNumber(row.contactCount,0)) + '회</span></td>' +
           '<td><div class="tuition-contact-actions"><button class="act-btn" data-guide-student="' + escapeHtml(row.studentName) + '">안내 연락</button><button class="act-btn" data-contact-student="' + escapeHtml(row.studentName) + '">기록 보기</button></div></td>' +
-          '<td><button class="act-btn" data-pay-student="' + escapeHtml(row.studentName) + '"><i data-lucide="circle-plus"></i>수납 입력</button></td>' +
+          '<td><div class="tuition-contact-actions"><button class="act-btn" data-pay-student="' + escapeHtml(row.studentName) + '"><i data-lucide="circle-plus"></i>수납 입력</button><button type="button" class="act-btn" data-refund-student="' + escapeHtml(row.studentName) + '">환불</button></div></td>' +
         '</tr>';
       }).join("");
 
@@ -39898,6 +39898,9 @@
           if (window.TuitionRedesign) TuitionRedesign.openContacts(studentName);
           else openTuitionContactModal(studentName);
         });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-refund-student]"), function(btn) {
+        btn.addEventListener("click", function() { openTuitionRefundModal_(btn.getAttribute("data-refund-student")); });
       });
       Array.prototype.forEach.call(document.querySelectorAll("[data-pay-student]"), function(btn) {
         btn.addEventListener("click", function() {
@@ -42186,13 +42189,33 @@
 
     function updateTuitionPaymentPresentation_() {
       var amount = toNumber(tuitionPaymentAmountEl.value, 0);
+      if (state.tuition.refundMode && amount > 0) tuitionPaymentAmountEl.value = "+" + amount.toLocaleString("ko-KR");
       tuitionPaymentAmountEl.classList.toggle("amount-negative", amount < 0);
       tuitionPaymentAmountEl.classList.toggle("amount-positive", amount > 0);
       document.getElementById("tuitionPaymentDueDateDisplay").textContent = formatTuitionInputDate_(tuitionPaymentDueDateEl.value);
       document.getElementById("tuitionPaymentPaidAtDisplay").textContent = formatTuitionInputDate_(tuitionPaymentPaidAtEl.value);
     }
 
+    function setTuitionRefundMode_(enabled) {
+      state.tuition.refundMode = enabled;
+      document.querySelector('label[for="tuitionPaymentAmount"]').textContent = enabled ? '환불 금액 (원)' : '수납 금액 (원)';
+      document.querySelector('label[for="tuitionPaymentPaidAt"]').textContent = enabled ? '환불 일자' : '납부 일자';
+      document.querySelector('label[for="tuitionPaymentIssueMemo"]').textContent = enabled ? '환불 사유 (필수)' : '이슈 메모';
+      tuitionPaymentIssueMemoEl.placeholder = enabled ? '예: 중도 퇴원에 따른 잔여 수강료 환불' : '예: 승인 지연 / 부분 환불 / 카드 재결제';
+      tuitionPaymentIssueMemoEl.required = enabled;
+      document.getElementById('tuitionPaymentAmountHint').textContent = enabled ? '환불액은 양수(+)로 저장되며 순수납액에서 차감됩니다.' : '받은 금액은 음수(−), 환불은 양수(+)로 입력하세요.';
+    }
+    function openTuitionRefundModal_(studentName) {
+      openTuitionPaymentModal(studentName);
+      setTuitionRefundMode_(true);
+      tuitionPaymentModalTitleEl.textContent = '수강료 환불 입력';
+      saveTuitionPaymentBtnEl.textContent = '환불 내역 저장';
+      tuitionPaymentAmountEl.value = '';
+      updateTuitionPaymentPresentation_();
+      tuitionPaymentAmountEl.focus();
+    }
     function openTuitionPaymentModal(studentName, overrideTarget) {
+      setTuitionRefundMode_(false);
       var row = overrideTarget || findTuitionRowByStudent(studentName);
       state.tuition.paymentTarget = row || null;
       state.tuition.paymentEditTarget = null;
@@ -42269,6 +42292,7 @@
     }
 
     function openTuitionPaymentEditModal_(paymentKey) {
+      setTuitionRefundMode_(false);
       var target = findTuitionPaymentByClientKey_(paymentKey);
       if (!target) {
         alert("수납 내역이 갱신되었습니다. 새로고침 후 다시 선택해 주세요.");
@@ -42633,6 +42657,10 @@
         tuitionPaymentEditReasonEl.focus();
         return;
       }
+      if (state.tuition.refundMode && (toNumber(tuitionPaymentAmountEl.value, 0) <= 0 || !String(tuitionPaymentIssueMemoEl.value || '').trim())) {
+        alert('환불 금액을 양수로 입력하고 환불 사유를 적어 주세요.');
+        return;
+      }
       state.tuition.savingPayment = true;
       saveTuitionPaymentBtnEl.disabled = true;
       setLoading(true, isEdit ? "수납 내역을 수정하는 중입니다..." : "수납 내역을 저장하는 중입니다...");
@@ -42647,7 +42675,7 @@
       var updatedPayment = {
         studentName: targetName,
         dueDate: tuitionPaymentDueDateEl.value,
-        itemName: isEdit && editTarget.itemName ? editTarget.itemName : "납부금액",
+        itemName: state.tuition.refundMode ? "환불금액" : isEdit && editTarget.itemName ? editTarget.itemName : "납부금액",
         amount: toNumber(tuitionPaymentAmountEl.value, 0),
         paidAt: tuitionPaymentPaidAtEl.value,
         business: tuitionPaymentBusinessEl.value || (isEdit && editTarget.business) || "",

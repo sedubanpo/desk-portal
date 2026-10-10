@@ -857,3 +857,39 @@ test('monthly notice dates use earliest actual notice in that month, not latest 
   assert.equal(result.rows.find(row => row.studentName === '김재희').firstGuideAt, '2026-07-03T23:00:00Z');
   assert.equal(result.noticeDatesTruncated, false);
 });
+
+test('bootstrap selects Seoul current month instead of a pre-created future month', async () => {
+  const seed = tuitionSeed();
+  seed.documents['tuitionMonthIndex/future'] = {monthName:'26-08s'};
+  const result = await createTuitionHandlers({store:memoryStore(seed.documents),now:()=>new Date('2026-06-30T15:30:00Z')}).getTuitionBootstrapData();
+  assert.equal(result.selectedMonth,'26-07s');
+  assert.equal(result.summary.selectedMonth,'26-07s');
+});
+
+test('before-attendance unnotified rows are hidden without mutating the ledger', async () => {
+  const seed = tuitionSeed();
+  const snapshot = seed.documents[`tuitionMonthSnapshots/${snapshotId(seed.month)}`];
+  snapshot.rows = [
+    {studentName:'등원전',unpaidStatus:'안내이전'},
+    {studentName:'안내완료학생',unpaidStatus:'안내완료'},
+    {studentName:'당월등원',unpaidStatus:'안내이전'},
+    {studentName:'날짜없음',unpaidStatus:'안내이전'}
+  ];
+  for (const [name,date] of [['등원전','2026-08-01'],['안내완료학생','2026-08-01'],['당월등원','2026-07-31'],['날짜없음','']]) seed.documents['students/'+name]={name,active:true,firstAttendanceDate:date};
+  const store=memoryStore(seed.documents);
+  const result=await createTuitionHandlers({store}).getTuitionMonthSummary({monthName:seed.month});
+  assert.equal(result.rows.find(r=>r.studentName==='등원전').hiddenFromTuition,true);
+  for(const name of ['안내완료학생','당월등원','날짜없음'])assert.equal(result.rows.find(r=>r.studentName===name).hiddenFromTuition,false);
+  assert.equal(store.transactionCount(),0);
+});
+
+test('explicit refund requires positive amount and reason and persists in payment ledger', async () => {
+  const seed=tuitionSeed(),store=memoryStore(seed.documents),handlers=createTuitionHandlers({store});
+  const payload={monthName:seed.month,studentName:'김재희',itemName:'환불금액',amount:20000,paidAt:'2026-07-16',paymentType:'계좌이체',clientRequestId:'refund-test'};
+  assert.equal((await handlers.appendTuitionPaymentEntry(payload)).success,false);
+  assert.equal((await handlers.appendTuitionPaymentEntry({...payload,amount:-20000,issueMemo:'중도 퇴원'})).success,false);
+  const result=await handlers.appendTuitionPaymentEntry({...payload,issueMemo:'중도 퇴원'});
+  assert.equal(result.success,true);
+  const refund=Object.entries(store.dump()).filter(([k])=>k.startsWith('tuitionPayments/')).map(([,v])=>v).find(v=>v.itemName==='환불금액');
+  assert.equal(refund.amount,20000);assert.equal(refund.issueMemo,'중도 퇴원');
+});

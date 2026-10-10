@@ -271,7 +271,7 @@ body #moduleTuition .tr-recent-panel .tuition-log-pagination {flex-wrap:wrap;gap
 @media(max-width:1100px){body #moduleTuition .tuition-shell {padding-right:0;}body #moduleTuition .tr-recent-panel {position:static;width:auto;}body #moduleTuition .tr-recent-panel tbody {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {max-height:380px;}}
 
 /* Keep contact composition directly reachable and extend the receipt rail to the workspace. */
-body #moduleTuition .tuition-contact-actions {display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:66px;}
+body #moduleTuition .tuition-contact-actions {display:flex;flex-direction:row;align-items:center;gap:4px;min-width:0;white-space:nowrap;}
 @media(min-width:1101px){
   body #moduleTuition .tr-recent-panel {bottom:0;display:flex;flex-direction:column;}
   body #moduleTuition .tr-recent-panel .tuition-recent-table-wrap {flex:1;min-height:0;max-height:none;}
@@ -305,3 +305,8 @@ body #moduleTuition .tr-rate small {font-size:10px;}
 .tr-status-arc {cursor:help;transition:stroke-width .15s;}.tr-status-arc:hover,.tr-status-arc:focus {stroke-width:33;outline:none;}
 .tr-status-report li:hover,.tr-status-report li:focus {background:var(--tr-soft);outline:2px solid var(--portal-action-border);outline-offset:2px;border-radius:5px;}
 @media(prefers-reduced-motion:reduce){.tr-status-arc{transition:none;}}
+
+body #moduleTuition .tuition-table [data-refund-student] {color:#2563eb;border-color:#bfd3fc;background:#f4f8ff;}
+body #moduleTuition .tuition-table td,body #moduleTuition .tuition-table th {padding-left:8px;padding-right:8px;}
+body #moduleTuition .tuition-table .tuition-col-contact {max-width:120px;}
+body #moduleTuition .tuition-table .tuition-contact-memo {max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

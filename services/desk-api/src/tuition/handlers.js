@@ -119,7 +119,8 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
     async getTuitionBootstrapData() {
       const months = await loadMonths(store);
       if (!months.length) return failure('Firestore 수강료 월 인덱스가 비어 있습니다. 수강료 Firebase 마이그레이션을 먼저 실행해 주세요.');
-      const selectedMonth = months[0];
+      const selectedMonth = monthName(formatDateKey(nowDate(), timeZone).slice(0, 7));
+      if (!months.includes(selectedMonth)) months.unshift(selectedMonth);
       const summary = await buildMonthSummary(store, { monthName: selectedMonth, months });
       return { success: true, months, selectedMonth, summary };
     },
@@ -493,6 +494,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       if (!student) return failure('학생명이 없습니다.');
       if (!requestId) return failure('저장 요청 식별자가 없습니다. 다시 시도해 주세요.');
       if (!amount) return failure('금액이 0원일 수 없습니다.');
+      if (payload.itemName === '환불금액' && (amount <= 0 || !text(payload.issueMemo))) return failure('환불은 양수 금액과 환불 사유를 입력해 주세요.');
       if (!text(payload.paidAt)) return failure('납부일을 입력해 주세요.');
       if (!text(payload.paymentType)) return failure('결제구분을 입력해 주세요.');
       const date = nowDate();
@@ -599,6 +601,12 @@ async function buildMonthSummary(store, payload) {
     return [row.studentName, row.school, row.grade].join('').toLowerCase().replace(/\s+/g, '').includes(keyword);
   }).map(row => ({
     ...row,
+    autoHiddenBeforeAttendance: unpaidStatus(row.unpaidStatus) === '안내이전'
+      && /^\d{4}-\d{2}-\d{2}$/.test(row.firstAttendanceDate || '')
+      && month < monthName(row.firstAttendanceDate.slice(0, 7)),
+    hiddenFromTuition: Boolean(row.hiddenFromTuition) || (unpaidStatus(row.unpaidStatus) === '안내이전'
+      && /^\d{4}-\d{2}-\d{2}$/.test(row.firstAttendanceDate || '')
+      && month < monthName(row.firstAttendanceDate.slice(0, 7))),
     firstGuideAt: [row.firstGuideAt, firstNoticeDates[studentName(row.studentName)]]
       .filter(value => value && Number.isFinite(Date.parse(value)))
       .sort((a, b) => Date.parse(a) - Date.parse(b))[0] || '',
@@ -1324,6 +1332,7 @@ function studentMasterTuitionRow(document) {
   return {
     ...baseTuitionRow(name),
     studentId: text(document?.studentId || document?.id),
+    firstAttendanceDate: text(document?.firstAttendanceDate),
     school: text(document?.school || document?.schoolName),
     grade: text(document?.grade || document?.gradeName),
     masterRegistrationStatus: text(document?.status || document?.registrationStatus || document?.enrollmentStatus),
@@ -1356,6 +1365,7 @@ function mergeStudentMasterRows(snapshotRows, masterRows) {
       studentId: text(row.studentId) || master.studentId,
       school: text(row.school) || master.school,
       grade: text(row.grade) || master.grade,
+      firstAttendanceDate: master.firstAttendanceDate || text(row.firstAttendanceDate),
       masterRegistrationStatus: master.masterRegistrationStatus || text(row.masterRegistrationStatus)
     };
   });
