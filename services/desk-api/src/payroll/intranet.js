@@ -69,13 +69,28 @@ export function intranetRows(lessons, students, meta) {
 }
 
 export function createIntranetPayrollReader(db) {
-  const read=async(name,month,limit=5000)=>{
+  const pendingReads = new Map();
+  const load=async(name,month,limit=5000)=>{
     let query=db.collection(name); if(month) query=query.where('month','==',month);
     const snap=await query.limit(limit+1).get();
     if(snap.size>limit) throw new Error('인트라넷 조회 한도를 초과했습니다. 일부 자료로 정산하지 않습니다.');
-    return snap.docs.map(d=>({...d.data(),_documentId:d.id}));
+    return snap;
   };
-  return {async readMonth(name) {
+  // Concurrent month/teacher requests share only in-flight collection reads.
+  // Settled snapshots are not retained, so explicit refresh still reaches Firestore.
+  const sharedRead = async (name, month, limit = 5000) => {
+    const key = JSON.stringify([name, month, limit]);
+    if (!pendingReads.has(key)) {
+      pendingReads.set(key, load(name, month, limit).finally(() => pendingReads.delete(key)));
+    }
+    const snap = await pendingReads.get(key);
+    return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
+  };
+  return {async readMonth(name, { forceRefresh = false } = {}) {
+    const read = forceRefresh ? async (collection, month, limit = 5000) => {
+      const snap = await load(collection, month, limit);
+      return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
+    } : sharedRead;
     const meta=parsePayrollMonthName(name), month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
     const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks]=await Promise.all([
       read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),read('intranetMakeupLinks')

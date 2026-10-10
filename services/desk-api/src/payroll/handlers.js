@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { createReadCache } from './read-cache.js';
 import { WORKFORCE_METHODS, WORKFORCE_WRITES } from './workforce.js';
 import { isIntranetMonth, payrollMonths } from './intranet.js';
 import {
@@ -41,18 +42,24 @@ function requestId(payload) { return String(payload?.clientRequestId || '').repl
 export function createPayrollHandlers({ store, sheets, intranet, now = () => new Date() }) {
   if (!store || !sheets) throw new TypeError('payroll store and sheets reader are required.');
 
-  const listMonths = async () => {
-    const legacy = await sheets.listPayrollMonths().catch(error => { if (!intranet) throw error; return []; });
+  const sourceCache = createReadCache({ ttlMs: 30000, maxEntries: 12 });
+  const monthCache = createReadCache({ ttlMs: 60000, maxEntries: 1 });
+  const listMonths = async (forceRefresh = false) => {
+    const legacy = await monthCache.read('months', () => sheets.listPayrollMonths(), { forceRefresh }).then(result => result.value).catch(error => { if (!intranet) throw error; return []; });
     return intranet ? payrollMonths(legacy,now()) : legacy;
   };
-  const readSource = async (name) => {
+  const loadSource = async (name, forceRefresh = false) => {
     if (isIntranetMonth(name)) {
       if (!intranet) throw new Error('인트라넷 데이터 연결이 설정되지 않았습니다.');
-      const source = await intranet.readMonth(name);
+      const source = await intranet.readMonth(name, { forceRefresh });
       return {...source, sourceName:'intranet'};
     }
     const source = await sheets.readPayrollMonth(name);
     return {rows:parsePayrollRows(source,parsePayrollMonthName(name)),version:payrollSourceVersion(source),sourceName:'google-sheets-api'};
+  };
+  const readSource = async (name, { reuse = false, forceRefresh = false } = {}) => {
+    const result = await sourceCache.read(name, () => loadSource(name, forceRefresh || !reuse), { forceRefresh: forceRefresh || !reuse });
+    return { ...result.value, cacheHit: result.hit, sourceAgeMs: result.ageMs };
   };
   const handlers = {
     async readExportMonth(monthName) {
@@ -79,14 +86,14 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
     },
 
     async getPayrollMonthSummary(payload = {}) {
-      const months = await listMonths();
+      const months = await listMonths(Boolean(payload.forceRefresh));
       if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
       const monthName = String(payload.monthName || months[0]).trim();
       const monthMeta = parsePayrollMonthName(monthName);
       if (!monthMeta) return successFailure(`월 탭 이름 형식이 올바르지 않습니다: ${monthName}`);
       if (!months.includes(monthName)) return successFailure(`선택한 월 탭을 찾을 수 없습니다: ${monthName}`);
       const [source, settings, savedOverrides] = await Promise.all([
-        readSource(monthName),
+        readSource(monthName, { reuse: true, forceRefresh: Boolean(payload.forceRefresh) }),
         store.getSettings(),
         store.getOverrides(monthName)
       ]);
@@ -109,12 +116,12 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
         teacherSettings: settings,
         sourcePendingCount: rows.filter(row => row.sourcePending).length,
         sourcePendingRows: rows.filter(row => row.sourcePending).map(({name,teacher,classDateKey,start,end,attendanceCode,sourcePendingReason,studentId,lessonId})=>({name,teacher,classDateKey,start,end,attendanceCode,sourcePendingReason,studentId,lessonId})),
-        cache: { source: source.sourceName, hit: false, sheetVersion: source.version, forceRefresh: Boolean(payload.forceRefresh) }
+        cache: { source: source.sourceName, hit: source.cacheHit, sourceAgeMs: source.sourceAgeMs, maxAgeMs: 30000, sheetVersion: source.version, forceRefresh: Boolean(payload.forceRefresh) }
       };
     },
 
     async getPayrollMonthlyAnalysis(payload = {}) {
-      const months = await listMonths();
+      const months = await listMonths(Boolean(payload.forceRefresh));
       if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
       const limit = Math.min(24, Math.max(1, Math.trunc(Number(payload.limit) || 12)));
       const selectedMonths = months.slice(0, limit);
@@ -128,7 +135,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
           const monthMeta = parsePayrollMonthName(monthName);
           if (!monthMeta) throw new Error('invalid month tab name');
           const [source, overrides] = await Promise.all([
-            readSource(monthName),
+            readSource(monthName, { reuse: true, forceRefresh: Boolean(payload.forceRefresh) }),
             store.getOverrides(monthName)
           ]);
           const parsedRows = source.rows;

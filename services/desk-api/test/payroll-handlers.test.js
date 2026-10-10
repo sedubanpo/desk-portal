@@ -220,3 +220,19 @@ test('invalid month and missing request ids fail before touching storage', async
   assert.match((await handlers.savePayrollOverrides({ monthName: '26-07' }, {})).message, /요청 식별자/);
   assert.match((await handlers.savePayrollSettings({ updates: [] }, {})).message, /요청 식별자/);
 });
+
+test('filter queries reuse source while settings stay fresh; refresh and finalization reload source', async () => {
+  let reads=0,lists=0;
+  const store=memoryStore();
+  const api=createPayrollHandlers({store,sheets:{async listPayrollMonths(){lists++;return ['26-07'];},async readPayrollMonth(){reads++;return structuredClone(source);}}});
+  const first=await api.getPayrollMonthSummary({monthName:'26-07'});
+  const filtered=await api.getPayrollMonthSummary({monthName:'26-07',teacherName:'김강사'});
+  assert.equal(reads,1);assert.equal(lists,1);assert.equal(filtered.cache.hit,true);
+  assert.deepEqual(filtered.kpi,{...first.kpi,mixedTeacherModes:false});
+  store.getSettings=async()=>({'김강사':{salaryMode:'ratio',ratioPercent:60}});
+  const settingsChanged=await api.getPayrollMonthSummary({monthName:'26-07',teacherName:'김강사'});
+  assert.notEqual(settingsChanged.kpi.estimatedPay,filtered.kpi.estimatedPay);assert.equal(reads,1);
+  await api.getPayrollMonthSummary({monthName:'26-07',forceRefresh:true});assert.equal(reads,2);assert.equal(lists,2);
+  await api.savePayrollFinalization({monthName:'26-07',clientRequestId:'fresh-check',expectedSourceVersion:'stale'},{role:'ADMIN'});
+  assert.equal(reads,3);
+});

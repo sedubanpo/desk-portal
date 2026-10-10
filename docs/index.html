@@ -43962,6 +43962,7 @@ window.SeduHubAdapter={
       }
       if (payrollAnalysisRefreshBtnEl) payrollAnalysisRefreshBtnEl.disabled = true;
       analysis.loadingPromise = runServer("getPayrollMonthlyAnalysis", {
+        forceRefresh: !!forceRefresh,
         limit: 24,
         ratioPercent: state.ratioPercent,
         hourlyRate: state.hourlyRate

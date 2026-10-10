@@ -38,7 +38,7 @@ test('September summary and monthly analysis never read September Sheet',async()
  const read=[]; const store={getSettings:async()=>({}),getOverrides:async()=>({})};
  const h=createPayrollHandlers({store,sheets:{listPayrollMonths:async()=>['26-09','26-08'],readPayrollMonth:async m=>{read.push(m);return {values:[]};}},intranet:{readMonth:async()=>({rows:rows([lesson]),version:'v1'})},now:()=>new Date('2026-09-16')});
  const s=await h.getPayrollMonthSummary({monthName:'26-09'});assert.equal(s.success,true);assert.equal(s.cache.source,'intranet');assert.equal(s.rows.length,1);
- await h.getPayrollMonthSummary({monthName:'26-08'});await h.getPayrollMonthlyAnalysis();assert.deepEqual(read,['26-08','26-08']);
+ await h.getPayrollMonthSummary({monthName:'26-08'});await h.getPayrollMonthlyAnalysis();assert.deepEqual(read,['26-08']);
 });
 
 test('actual duration remains visible while teacher pay minutes control recognized hours',()=>{
@@ -212,4 +212,15 @@ test('pending reasons separate missing tariff and invalid teacher minutes; midni
  const summary=buildPayrollSummary([midnight],meta,{teacherSettings:{'강사':{salaryMode:'hourly',hourlyRate:30000}}});
  assert.equal(summary.kpi.pureTeachingHours,2);assert.equal(summary.kpi.estimatedPay,60000);
  assert.equal(rows([{...lesson,start:'24:00',end:'24:00'}])[0].startMinutes,null);
+});
+
+test('concurrent month reads share collection I/O while force refresh starts independent reads',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ let reads=0;const resolvers=[];
+ const db={collection(){return {where(){return this;},limit(){return this;},get(){reads++;return new Promise(resolve=>resolvers.push(()=>resolve({size:0,docs:[]})));}};}};
+ const reader=createIntranetPayrollReader(db);
+ const a=reader.readMonth('26-09'),b=reader.readMonth('26-10');
+ assert.equal(reads,11);
+ const fresh=reader.readMonth('26-09',{forceRefresh:true});assert.equal(reads,22);
+ resolvers.forEach(resolve=>resolve());await Promise.all([a,b,fresh]);
 });
