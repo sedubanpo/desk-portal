@@ -28458,7 +28458,7 @@
               '" data-desk-date="' + escapeHtml(cell.date) + '">' +
               '<div class="desk-day-head">' +
                 '<div class="desk-day-num">' + escapeHtml(dayTitle) + (isTodayCell ? '<span class="desk-day-today-label">오늘</span>' : '') + '</div>' +
-                '<div class="desk-day-head-tools"><button type="button" class="desk-day-copy" data-desk-day-copy="' + escapeHtml(cell.date) + '" data-copy-hide-manager="' + (hideManager ? 'true' : 'false') + '" aria-label="' + escapeHtml(cell.date) + ' 근무표 복사" title="이 날짜 근무표 텍스트 복사"><i data-lucide="clipboard"></i></button><span class="desk-day-count">' + dayItems.length + '건</span></div>' +
+                '<div class="desk-day-head-tools"><button type="button" class="desk-day-copy" data-desk-day-copy="' + escapeHtml(cell.date) + '" data-copy-hide-manager="' + (hideManager ? 'true' : 'false') + '" aria-label="' + escapeHtml(cell.date) + ' 근무표 이미지 복사" title="이 날짜 근무표 이미지 복사"><i data-lucide="clipboard"></i></button><span class="desk-day-count">' + dayItems.length + '건</span></div>' +
               '</div>' +
               '<div class="desk-day-shifts">' +
                 (primaryItems.length ? primaryItems.map(function(item, itemIndex) {
@@ -29638,6 +29638,39 @@
           setLoading(false);
         });
       });
+    }
+
+    function copyDeskDayScheduleImage_(button) {
+      var node = button.closest('.desk-calendar-day');
+      if (!node || button.disabled) return;
+      if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined' || typeof window.html2canvas !== 'function') {
+        showClientMessage('이미지 복사를 지원하지 않는 브라우저입니다. Chrome에서 다시 시도해 주세요.');
+        return;
+      }
+      button.disabled = true;
+      // Start the clipboard write in the click gesture; resolve the PNG asynchronously.
+      var imagePromise = Promise.resolve().then(function() {
+        return window.html2canvas(node, {
+          backgroundColor: '#ffffff', scale: 2, useCORS: true,
+          onclone: function(doc) {
+            doc.querySelectorAll('[data-desk-day-copy]').forEach(function(el) { el.style.visibility = 'hidden'; });
+          }
+        });
+      }).then(function(canvas) {
+        return new Promise(function(resolve, reject) {
+          canvas.toBlob(function(blob) { if (blob) resolve(blob); else reject(new Error('이미지 생성 실패')); }, 'image/png');
+        });
+      });
+      imagePromise.catch(function() {});
+      try {
+        return navigator.clipboard.write([new ClipboardItem({'image/png': imagePromise})])
+          .then(function() { showClientMessage('해당 날짜의 근무표 이미지를 복사했습니다.'); })
+          .catch(function() { showClientMessage('이미지를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.'); })
+          .finally(function() { button.disabled = false; });
+      } catch (err) {
+        button.disabled = false;
+        showClientMessage('이미지를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.');
+      }
     }
 
     async function copyDeskSelectedDateImage_() {
@@ -37239,7 +37272,7 @@
       if (deskCalendarGridEl) {
         deskCalendarGridEl.addEventListener("click", function(event) {
           var copyDay = event.target.closest('[data-desk-day-copy]');
-          if (copyDay) { event.stopPropagation(); copyDeskDayScheduleText_(copyDay.dataset.deskDayCopy, copyDay.dataset.copyHideManager === 'true'); return; }
+          if (copyDay) { event.stopPropagation(); copyDeskDayScheduleImage_(copyDay); return; }
           var hideManager = event.target.closest('[data-desk-manager-toggle]');
           if (hideManager) { event.stopPropagation(); var key = hideManager.dataset.deskManagerToggle; state.desk.hiddenManagerWeeks = state.desk.hiddenManagerWeeks || {}; state.desk.hiddenManagerWeeks[key] = !state.desk.hiddenManagerWeeks[key]; renderDeskMonthlySchedule_(); return; }
           var weekSummaryBtn = event.target.closest("[data-desk-week-summary-toggle]");
