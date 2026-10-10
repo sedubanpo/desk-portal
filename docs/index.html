@@ -29665,7 +29665,7 @@
       try {
         return navigator.clipboard.write([new ClipboardItem({'image/png': imagePromise})])
           .then(function() { showClientMessage('해당 날짜의 근무표 이미지를 복사했습니다.'); })
-          .catch(function() { showClientMessage('이미지를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.'); })
+          .catch(function(err) { console.error('schedule-image-copy', err); showClientMessage('이미지 복사 실패: ' + (err.message || String(err))); })
           .finally(function() { button.disabled = false; });
       } catch (err) {
         button.disabled = false;
