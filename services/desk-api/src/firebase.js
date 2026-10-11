@@ -21,7 +21,7 @@ function firebaseApp(projectId) {
   return initializeApp(projectId ? { projectId } : undefined);
 }
 
-export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds, subscriptionSupabaseToken, subscriptionSupabaseOrgSlugs, notionInquiryToken, notionInquirySourceId, notionInquiryHistoryId, notionInquirySyncKey }) {
+export function createFirebaseDependencies({ projectId, checkRevokedTokens, legacyRtdbUrl, payrollSpreadsheetId, deskCalendarId, workspaceServiceAccountEmail, subscriptionBillingTable, subscriptionFirebaseProjectIds, subscriptionSupabaseToken, subscriptionSupabaseOrgSlugs, notionInquiryToken, notionInquirySourceId, notionInquiryHistoryId, notionInquirySyncKey, notionFollowupToken, notionFollowupSourceId }) {
   const app = firebaseApp(projectId);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
@@ -38,6 +38,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   const workforce=createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)});
   const tuitionStore=createTuitionStore(firestore);
   return {
+    followup: { firestore, token: notionFollowupToken, sourceId: notionFollowupSourceId },
     inquiries: { firestore, token: notionInquiryToken, sourceId: notionInquirySourceId, historySourceId: notionInquiryHistoryId, syncKey: notionInquirySyncKey },
     training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),

@@ -33,6 +33,8 @@ export function loadConfig(env = process.env) {
       : production
         ? DEFAULT_PRODUCTION_ORIGINS
         : [...DEFAULT_PRODUCTION_ORIGINS, 'http://localhost:3000', 'http://localhost:8080'],
+    notionFollowupToken: String(env.NOTION_FOLLOWUP_TOKEN || env.NOTION_INQUIRY_TOKEN || '').trim(),
+    notionFollowupSourceId: String(env.NOTION_FOLLOWUP_SOURCE_ID || '63d66cfc-8bbe-420e-9fd7-34ed4eaab301').trim(),
     notionInquiryToken: String(env.NOTION_INQUIRY_TOKEN || '').trim(),
     notionInquirySourceId: String(env.NOTION_INQUIRY_SOURCE_ID || '5a9e0b14-58d8-4163-812b-48e4df51dcbc').trim(),
     notionInquiryHistoryId: String(env.NOTION_INQUIRY_HISTORY_ID || '').trim(),
