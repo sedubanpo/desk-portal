@@ -29641,70 +29641,109 @@
       });
     }
 
-    function copyDeskDayScheduleImage_(button) {
-      var node = button.closest('.desk-calendar-day');
-      if (!node || button.disabled) return;
+    function renderDeskCopyReport_(dateKey, items) {
+      var rows = items.slice().sort(compareDeskShift_);
+      var ranges = rows.map(function(item) {
+        var start = parseDeskTimeToMinutes_(item.start);
+        var end = parseDeskTimeToMinutes_(item.end);
+        if (item.unavailable || start < 0 || end < 0 || !isFinite(start + end) || start === end) return null;
+        if (end < start) end += 1440;
+        return { start: start, end: end };
+      });
+      var valid = ranges.filter(Boolean);
+      var first = valid.length ? Math.floor(Math.min.apply(null, valid.map(function(r) { return r.start; })) / 60) * 60 : 540;
+      var last = valid.length ? Math.ceil(Math.max.apply(null, valid.map(function(r) { return r.end; })) / 60) * 60 : 1380;
+      var span = Math.max(60, last - first);
+      var tickStep = span > 600 ? 240 : 120;
+      function clock(minutes) { return (minutes >= 1440 ? '익일 ' : '') + pad2_(Math.floor(minutes / 60) % 24) + ':' + pad2_(minutes % 60); }
+      var ticks = [];
+      for (var minute = first; minute <= last; minute += tickStep) ticks.push(minute);
+      if (ticks[ticks.length - 1] !== last) ticks.push(last);
+      var axis = ticks.map(function(minute, index) {
+        return '<span style="position:absolute;left:' + ((minute - first) / span * 100) + '%;transform:translateX(' + (index === 0 ? '0' : index === ticks.length - 1 ? '-100%' : '-50%') + ')">' + clock(minute) + '</span>';
+      }).join('');
+      var grid = ticks.map(function(minute) { return '<span style="position:absolute;top:0;bottom:0;border-left:1px solid #dce5e9;left:' + ((minute - first) / span * 100) + '%"></span>'; }).join('');
+      var workerCount = new Set(rows.filter(function(r) { return !r.unavailable; }).map(function(r) { return r.worker; })).size;
+      function timeLabel(item, range) {
+        return range ? clock(range.start) + ' – ' + clock(range.end) + ' · ' + formatDeskHours_((range.end - range.start) / 60) : formatDeskShiftTime_(item);
+      }
+      var cards = rows.map(function(item, index) {
+        var palette = getDeskWorkerPalette_(item.worker || '');
+        return '<div style="position:relative;overflow:hidden;padding:12px;border:1px solid ' + palette.border + ';border-radius:12px;background:' + palette.bg + ';min-height:94px;box-sizing:border-box">' +
+          '<span aria-hidden="true" style="position:absolute;right:8px;bottom:0;font-size:72px;line-height:1.15;opacity:.10;pointer-events:none">' + escapeHtml(getDeskRoleEmoji_(item)) + '</span>' +
+          '<div style="position:relative"><div style="font-size:19px;font-weight:800;color:' + palette.fg + '">' + escapeHtml(item.worker || '근무자') + '</div>' +
+          '<div style="font-size:12px;font-weight:700;margin-top:4px;white-space:normal">' + escapeHtml(timeLabel(item, ranges[index])) + '</div>' +
+          '<div style="font-size:12px;color:#64748b;margin-top:4px">' + escapeHtml(getDeskDisplayRole_(item)) + '</div>' +
+          (item.note ? '<div style="font-size:13px;margin-top:6px;overflow-wrap:anywhere">' + escapeHtml(item.note) + '</div>' : '') + '</div></div>';
+      }).join('');
+      var timeline = rows.map(function(item, index) {
+        var palette = getDeskWorkerPalette_(item.worker || '');
+        var range = ranges[index];
+        var bar = range ? '<div style="position:absolute;top:4px;height:16px;border-radius:5px;background:' + palette.accent + ';left:' + ((range.start - first) / span * 100) + '%;width:' + ((range.end - range.start) / span * 100) + '%"></div>' : '<span style="position:relative;font-size:12px;color:#64748b">' + escapeHtml(formatDeskShiftTime_(item)) + '</span>';
+        return '<div style="display:grid;grid-template-columns:48px minmax(0,1fr);gap:6px;align-items:center;margin-bottom:3px"><div style="font-size:13px;font-weight:800;color:' + palette.fg + ';overflow-wrap:anywhere">' + escapeHtml(item.worker || '근무자') + '</div><div style="position:relative;height:24px;background:#f8fafb;border-radius:5px">' + grid + bar + '</div></div>';
+      }).join('');
+      var html = '<div style="padding:16px;background:#fff;color:#233648;font:15px/1.5 Arial, sans-serif;font-variant-numeric:tabular-nums">' +
+        '<header style="background:#126852;color:white;border-radius:16px;padding:14px 16px;margin-bottom:14px"><div style="font-size:12px;letter-spacing:2px;font-weight:700;opacity:.85">에스에듀 · 반포관</div><div style="font-size:21px;font-weight:800;margin-top:4px">' + escapeHtml(formatDeskDateLabel_(dateKey)) + ' 근무표</div><div style="margin-top:4px;font-size:12px">근무자 ' + workerCount + '명 · 근무 일정 ' + rows.length + '건</div></header>' +
+        '<div style="display:grid;grid-template-columns:208px minmax(0,1fr);gap:14px;align-items:stretch">' +
+        '<section><div style="font-size:15px;font-weight:800;margin-bottom:8px">근무자 목록</div><div style="display:grid;gap:8px">' + (cards || '<div style="padding:20px;background:#f5f8f7;border-radius:12px">등록된 근무 일정이 없습니다.</div>') + '</div></section>' +
+        '<div style="display:flex;flex-direction:column;min-width:0"><section><div style="font-size:15px;font-weight:800;margin-bottom:8px">시간대별 근무 현황</div><div style="margin-left:54px;position:relative;height:21px;font-size:11px;font-weight:700;color:#64748b">' + axis + '</div>' + timeline + '</section>';
+      var calendar = state.desk.calendarEventsByDate[dateKey];
+      var events = calendar && Array.isArray(calendar.events) ? calendar.events : [];
+      html += '<section style="flex:1;margin-top:10px;padding:10px;background:#f7f9fc;border:1px solid #e1e7ef;border-radius:12px"><div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:800;margin-bottom:8px"><span>구글 캘린더 · 일정</span><span style="font-size:12px;color:#64748b">' + events.length + '건</span></div>';
+      if (!calendar || !calendar.success) html += '<div style="padding:12px;background:#fff5e5;border-radius:8px;font-size:13px">캘린더 조회 실패 · ' + escapeHtml(calendar && calendar.message || '연동 상태를 확인해 주세요.') + '</div>';
+      else if (!events.length) html += '<div style="padding:12px;color:#64748b;font-size:13px">해당 날짜에 등록된 일정이 없습니다.</div>';
+      html += events.map(function(event) { return '<div style="padding:8px 9px;margin-bottom:5px;border-radius:8px;background:#fff;border:1px solid #e4eaf2;overflow-wrap:anywhere"><div style="font-size:14px;font-weight:700">' + escapeHtml(event.title || '일정') + '</div><div style="font-size:12px;color:#3467ad;font-weight:700;margin-top:3px">' + escapeHtml(formatDeskCalendarEventTimeLabel_(event)) + '<span style="color:#64748b;font-weight:400"> · ' + escapeHtml(event.sourceLabel || '반포관 데스크') + '</span></div></div>'; }).join('');
+      if (calendar && calendar.warnings && calendar.warnings.length) html += '<div style="font-size:12px;color:#94621c;margin-top:8px">' + escapeHtml(calendar.warnings.join(' · ')) + '</div>';
+      return html + '</section></div></div></div>';
+    }
+
+    function createDeskDayReportPng_(dateKey, hideManager) {
+      // Snapshot the requested date before asynchronous calendar loading changes the view.
+      var items = state.desk.scheduleItems.filter(function(item) {
+        return item.date === dateKey && (!hideManager || String(item.worker || '').trim() !== '홍성우');
+      }).map(function(item) { return Object.assign({}, item); });
+      return ensureDeskCalendarEventsLoaded_(dateKey).then(function() {
+        var node = document.createElement('div');
+        node.style.cssText = 'position:fixed;left:-12000px;top:0;width:720px;height:auto;z-index:-1;background:#fff';
+        node.innerHTML = renderDeskCopyReport_(dateKey, items);
+        document.body.appendChild(node);
+        return Promise.resolve(document.fonts && document.fonts.ready).then(function() {
+          return window.html2canvas(node, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+        }).then(function(canvas) {
+          return new Promise(function(resolve, reject) {
+            canvas.toBlob(function(blob) { if (blob) resolve(blob); else reject(new Error('이미지 생성 실패')); }, 'image/png');
+          });
+        }).finally(function() { node.remove(); });
+      });
+    }
+
+    function copyDeskReportImage_(dateKey, button, hideManager) {
+      if (!dateKey || button && button.disabled) return;
       if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined' || typeof window.html2canvas !== 'function') {
         showClientMessage('이미지 복사를 지원하지 않는 브라우저입니다. Chrome에서 다시 시도해 주세요.');
         return;
       }
-      button.disabled = true;
-      // Start the clipboard write in the click gesture; resolve the PNG asynchronously.
-      var imagePromise = Promise.resolve().then(function() {
-        return window.html2canvas(node, {
-          backgroundColor: '#ffffff', scale: 2, useCORS: true,
-          onclone: function(doc) {
-            doc.querySelectorAll('[data-desk-day-copy]').forEach(function(el) { el.style.visibility = 'hidden'; });
-          }
-        });
-      }).then(function(canvas) {
-        return new Promise(function(resolve, reject) {
-          canvas.toBlob(function(blob) { if (blob) resolve(blob); else reject(new Error('이미지 생성 실패')); }, 'image/png');
-        });
-      });
+      if (button) button.disabled = true;
+      var imagePromise = createDeskDayReportPng_(dateKey, hideManager);
       imagePromise.catch(function() {});
       try {
+        // Keep clipboard access inside the click gesture, including on Safari.
         return navigator.clipboard.write([new ClipboardItem({'image/png': imagePromise})])
           .then(function() { showClientMessage('해당 날짜의 근무표 이미지를 복사했습니다.'); })
           .catch(function(err) { console.error('schedule-image-copy', err); showClientMessage('이미지 복사 실패: ' + (err.message || String(err))); })
-          .finally(function() { button.disabled = false; });
+          .finally(function() { if (button) button.disabled = false; });
       } catch (err) {
-        button.disabled = false;
-        showClientMessage('이미지를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인해 주세요.');
+        if (button) button.disabled = false;
+        showClientMessage('이미지 복사 실패: ' + (err.message || String(err)));
       }
     }
 
-    async function copyDeskSelectedDateImage_() {
-      var selectedDateKey = state.desk.selectedDateKey || getDeskDateKey_(new Date());
-      await ensureDeskCalendarEventsLoaded_(selectedDateKey);
-      var node = deskSelectedDateListEl && deskSelectedDateListEl.querySelector(".desk-day-copy-frame") || deskSelectedDateCardEl;
-      if (!node) {
-        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "대상 없음", true);
-        return;
-      }
-      if (typeof window.html2canvas !== "function" || typeof ClipboardItem === "undefined") {
-        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "브라우저 미지원", true);
-        return;
-      }
-      var canvas = await window.html2canvas(node, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        onclone: function(clonedDoc) {
-          Array.prototype.forEach.call(clonedDoc.querySelectorAll("[data-desk-copy-hide='true']"), function(el) {
-            el.style.display = "none";
-          });
-        }
-      });
-      var blob = await new Promise(function(resolve) {
-        canvas.toBlob(resolve, "image/png");
-      });
-      if (!blob) {
-        flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "이미지 실패", true);
-        return;
-      }
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      flashDeskButtonFeedback_(deskCopySelectedDateImageBtnEl, "이미지 복사 완료");
+    function copyDeskDayScheduleImage_(button) {
+      return copyDeskReportImage_(button.getAttribute('data-desk-day-copy'), button, button.getAttribute('data-copy-hide-manager') === 'true');
+    }
+
+    function copyDeskSelectedDateImage_() {
+      return copyDeskReportImage_(state.desk.selectedDateKey || getDeskDateKey_(new Date()), deskCopySelectedDateImageBtnEl, false);
     }
 
     function renderDeskEditorState_(items) {
