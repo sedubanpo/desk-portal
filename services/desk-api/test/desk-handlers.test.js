@@ -784,3 +784,15 @@ test('zero maximum disables only that branch, preserves stock and excludes its p
  const saved=await handlers.saveDeskSupplyConsumable({item});assert.equal(saved.success,true);
  const resumed=await handlers.adjustDeskSupplyConsumable({id:'toner',branch:'본관',delta:1});assert.equal(resumed.success,true);assert.equal(resumed.data.consumables[0].branchStocks['본관'].qty,4);
 });
+
+test('journal saves and reloads 01:30 records under the selected work date', async () => {
+  const handlers = createDeskHandlers({ store: memoryStore(), now: () => '2026-10-11T02:00:00+09:00' });
+  const memo = { id:'early-morning', dateKey:'2026-10-11', worker:'테스트', text:'마감 정리', createdAt:'2026-10-11T01:30:00', category:'일반' };
+  const saved = await handlers.saveDeskDailyJournalMemo({dateKey:memo.dateKey,memo});
+  assert.equal(saved.success,true);
+  const reloaded = await handlers.getDeskDailyJournalData({dateKey:memo.dateKey});
+  assert.equal(reloaded.memos.length,1);
+  assert.equal(reloaded.memos[0].createdAt,memo.createdAt);
+  assert.equal(reloaded.memos[0].text,memo.text);
+  assert.equal((await handlers.getDeskDailyJournalData({dateKey:'2026-10-10'})).memos.length,0);
+});

@@ -31149,10 +31149,9 @@
     }
 
     function compareDeskSharedTask_(a, b) {
-      var aOrder = normalizeDeskTaskSortOrder_(a && a.sortOrder);
-      var bOrder = normalizeDeskTaskSortOrder_(b && b.sortOrder);
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return String(b.updatedAt || b.createdAt || "").localeCompare(String(a.updatedAt || a.createdAt || ""));
+      // Publication time stays stable when acknowledgements or content are edited.
+      return String(b.createdAt || b.dateKey || "").localeCompare(String(a.createdAt || a.dateKey || "")) ||
+        String(a.id || "").localeCompare(String(b.id || ""));
     }
 
     function isDeskTaskTargetedToWorker_(item, worker) {
@@ -31196,8 +31195,8 @@
     function buildDeskJournalDateTime_(dateKey, timeValue, fallback) {
       var safeDate = String(dateKey || "").trim();
       var safeTime = String(timeValue || "").trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate) || !/^\d{2}:\d{2}$/.test(safeTime)) {
-        return String(fallback || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate) || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(safeTime)) {
+        return "";
       }
       return safeDate + "T" + safeTime + ":00";
     }
@@ -31238,8 +31237,6 @@
         if (hours === 12) hours = 0;
       } else if (meridiem === "오후") {
         if (hours < 12) hours += 12;
-      } else if (hours >= 1 && hours <= 7) {
-        hours += 12;
       }
       if (hours < 0 || hours > 23) return "";
       return pad2_(hours) + ":" + pad2_(minutes);
@@ -34690,7 +34687,7 @@
       });
       if (target === deskJournalTaskBoardEl && deskTaskQueueCountEl) deskTaskQueueCountEl.textContent = shared.length + "건";
       target.innerHTML = '<div class="desk-manager-board-head">' +
-        '<div><strong>등록된 공동 업무</strong><span>노출 순서와 확인 현황</span></div>' +
+        '<div><strong>등록된 공동 업무</strong><span>최신 게시순 · 확인 현황</span></div>' +
         '<span>' + escapeHtml(String(visible.length)) + '/' + escapeHtml(String(shared.length)) + '건</span>' +
       '</div>' +
       '<label class="desk-manager-search"><i data-lucide="search"></i><input type="search" data-desk-shared-manager-search="1" value="' + escapeHtml(state.desk.daily.sharedManagerKeyword || "") + '" placeholder="제목, 분류, 대상 검색" aria-label="공동 업무 검색"></label>' +
@@ -34713,8 +34710,6 @@
           '</div>' +
           (item.note ? '<div class="desk-muted">' + escapeHtml(item.note) + '</div>' : '') +
           (isDeskAdminAccount_() ? '<div class="desk-task-actions">' +
-            '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="-1">위로</button>' +
-            '<button class="modal-action ghost" type="button" data-desk-shared-move="' + escapeHtml(item.id) + '" data-desk-shared-move-dir="1">아래로</button>' +
             '<button class="modal-action ghost" type="button" data-desk-shared-edit="' + escapeHtml(item.id) + '">편집</button>' +
             '<button class="modal-action ghost" type="button" data-desk-shared-visibility="' + escapeHtml(item.id) + '">' + (item.hiddenFromWorkerBand ? '상단 노출' : '상단 숨김') + '</button>' +
             '<button class="modal-action ghost danger" type="button" data-desk-journal-task-delete="' + escapeHtml(item.id) + '">삭제</button>' +
@@ -35030,9 +35025,9 @@
       if (!worker) return "";
       var workers = collectDeskDailyWorkers_(dateKey);
       var tasks = mergeDeskDailyCarryoverTasks_(dateKey, getDeskDailyJournalTasks_(dateKey), workers).filter(function(item) {
-        return (isDeskSharedTask_(item) && isDeskTaskTargetedToWorker_(item, worker)) ||
+        return !item.deleted && !isDeskSharedTask_(item) && (
           isSameDeskWorkerName_(item.worker, worker) ||
-          (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, worker));
+          (isDeskImportantTask_(item) && isDeskTaskTargetedToWorker_(item, worker)));
       });
       var memos = getDeskDailyJournalMemos_(dateKey)
         .filter(function(item) { return isSameDeskWorkerName_(item.worker, worker); })
@@ -35058,8 +35053,20 @@
       } else {
         lines.push("- 등록된 근무시간 없음");
       }
+      if (shifts.length) lines.push("- 총 근무시간(등록 근무표 기준): " + formatDeskHours_(sumDeskCountedHours_(shifts)));
       lines.push("");
       lines.push("2. 업무 요약");
+      var byType = Object.create(null);
+      countedTasks.filter(function(item) { return item.completed; }).forEach(function(item) {
+        var type = getDeskTaskMeta_(item).label || "일반";
+        byType[type] = (byType[type] || 0) + 1;
+      });
+      memos.forEach(function(item) {
+        var type = getDeskMemoType_(item) || "일반";
+        byType[type] = (byType[type] || 0) + 1;
+      });
+      lines.push("- 총 처리 기록 " + (completed + memos.length) + "건 (완료 배정 " + completed + "건 + 현장 기록 " + memos.length + "건)");
+      Object.keys(byType).sort().forEach(function(type) { lines.push("- " + type + ": " + byType[type] + "건"); });
       lines.push("- 배정 " + countedTasks.length + "건 / 완료 " + completed + "건 / 미해결 " + pending + "건");
       if (tasks.length) {
         tasks.forEach(function(item) {
@@ -36172,7 +36179,9 @@
       }
       if (!text) return;
       var clientOrder = nextDeskDailyMemoClientOrder_();
-      var createdAt = buildDeskCurrentDateTimeForKey_(dateKey);
+      var savedAt = buildDeskCurrentDateTimeForKey_(dateKey);
+      var leadingTime = parseDeskMemoLeadingTime_(text);
+      var createdAt = leadingTime ? buildDeskJournalDateTime_(dateKey, leadingTime.time, savedAt) : savedAt;
       if (deskJournalMemoInputEl) {
         deskJournalMemoInputEl.value = "";
         deskJournalMemoInputEl.focus();
@@ -36187,7 +36196,7 @@
         mode: state.desk.daily.memoMode || "report",
         highlight: !!state.desk.daily.memoHighlight,
         createdAt: createdAt,
-        updatedAt: createdAt,
+        updatedAt: savedAt,
         clientOrder: clientOrder
       }, function() {
         state.desk.daily.editingMemoId = "";
@@ -36249,6 +36258,8 @@
           return;
         }
         next.createdAt = createdAt;
+        var leading = parseDeskMemoLeadingTime_(next.text);
+        if (leading && leading.text) next.text = leading.text;
       }
       upsertDeskDailyMemo_(next, function() {
         state.desk.daily.editingMemoId = "";
@@ -36267,8 +36278,11 @@
         alert("시간 형식을 확인해 주세요.");
         return;
       }
+      var leading = parseDeskMemoLeadingTime_(current.text);
       upsertDeskDailyMemo_(Object.assign({}, current, {
-        createdAt: createdAt
+        text: leading && leading.text ? leading.text : current.text,
+        createdAt: createdAt,
+        updatedAt: buildDeskCurrentDateTimeForKey_(dateKey)
       }));
     }
 

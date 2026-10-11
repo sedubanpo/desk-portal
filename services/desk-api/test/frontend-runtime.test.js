@@ -1090,3 +1090,88 @@ test('payroll row settlement uses discounted net and keeps excluded/hourly rows 
  assert.match(context.buildPayrollSettlementCell({...row,effectiveSalaryMode:'hourly'}),/중복 시간 제외/);
  assert.match(context.buildPayrollSettlementCell({...row,effectiveSalaryMode:'hourly',settlementPercentOverridden:true}),/27,000원/);
 });
+
+test('journal preserves early morning times and manual edits override legacy text prefixes', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const context = vm.createContext({
+    pad2_: value => String(value).padStart(2, '0'),
+    state: { desk: { daily: { dateKey: '2026-10-11' } } },
+    buildDeskCurrentDateTimeForKey_: () => '2026-10-11T10:00:00',
+    alert: () => {},
+  });
+  for (const name of ['parseDeskMemoTimeText_', 'parseDeskMemoLeadingTime_', 'buildDeskJournalDateTime_', 'getDeskMemoDisplayParts_', 'saveDeskDailyMemoTime_']) {
+    vm.runInContext(extractFunction(source, name), context);
+  }
+  for (const [input, expected] of [['00:00','00:00'],['01:30','01:30'],['07:15','07:15'],['13:30','13:30'],['오후 1:30','13:30'],['오전 12:00','00:00'],['25:70','']]) {
+    assert.equal(context.parseDeskMemoTimeText_(input, true), expected);
+  }
+  let saved;
+  const memo = { id: 'early', dateKey: '2026-10-11', text: '01:30 마감 정리', createdAt: '2026-10-11T10:00:00' };
+  context.getDeskDailyJournalMemos_ = () => [memo];
+  context.upsertDeskDailyMemo_ = value => { saved = value; };
+  assert.equal(context.getDeskMemoDisplayParts_(memo).createdAt, '2026-10-11T01:30:00');
+  context.saveDeskDailyMemoTime_('early', '02:15');
+  assert.equal(saved.text, '마감 정리');
+  assert.equal(context.getDeskMemoDisplayParts_(saved).createdAt, '2026-10-11T02:15:00');
+  saved = undefined;
+  context.saveDeskDailyMemoTime_('early', '25:70');
+  assert.equal(saved, undefined);
+});
+
+test('shared notices follow publication time regardless of manual order or later edits', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const compare = loadFunction(source, 'compareDeskSharedTask_', {});
+  const older = { id:'old', createdAt:'2026-10-01T09:00:00', updatedAt:'2026-10-11T12:00:00', sortOrder:-100 };
+  const newer = { id:'new', createdAt:'2026-10-11T09:00:00', sortOrder:100 };
+  assert.deepEqual([older,newer].sort(compare).map(item => item.id), ['new','old']);
+});
+
+test('personal report excludes all shared notices and summarizes worker hours and task types', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const tasks = [
+    {worker:'테스트',shared:true,title:'노출 공지'},
+    {worker:'테스트',shared:true,hiddenFromWorkerBand:true,title:'숨긴 공지'},
+    {worker:'테스트',completed:true,title:'교실 정리',category:'시설'},
+    {worker:'테스트',completed:false,title:'후속 연락',category:'상담'},
+    {worker:'다른 사람',completed:true,title:'다른 작업',category:'시설'},
+  ];
+  const report = loadFunction(source, 'buildDeskDailyReportText_', {
+    state:{desk:{daily:{dateKey:'2026-10-11',reportWorker:'테스트'},scheduleItems:[{date:'2026-10-11',worker:'테스트',hours:6.5}]}},
+    collectDeskDailyWorkers_:()=>[], getDeskDailyJournalTasks_:()=>tasks,
+    mergeDeskDailyCarryoverTasks_:(_,items)=>items, isDeskSharedTask_:item=>item.shared,
+    isSameDeskWorkerName_:(a,b)=>a===b, isDeskImportantTask_:()=>false,
+    getDeskDailyJournalMemos_:()=>[{worker:'테스트',category:'상담',text:'학부모 연락',createdAt:'2026-10-11T01:30:00'}],
+    compareDeskDailyMemo_:()=>0, compareDeskShift_:()=>0, isDeskMemoHighlighted_:()=>false,
+    getDeskWeekIndex_:()=>2, formatDeskDateLabel_:v=>v,
+    getDeskDisplayRole_:()=> '데스크', formatDeskReportShiftTime_:()=> '09:30–16:00',
+    formatDeskHours_:v=>v+'시간', getDeskCountedHours_:i=>i.hours, sumDeskCountedHours_:items=>items.reduce((sum,i)=>sum+i.hours,0),
+    getDeskTaskMeta_:i=>({label:i.category}), getDeskMemoType_:i=>i.category,
+    getDeskMemoDisplayParts_:i=>i, formatDeskReportTimeFromStamp_:s=>s.slice(11,16),
+  })();
+  assert.doesNotMatch(report, /노출 공지|숨긴 공지|다른 작업|\[공동\]/);
+  assert.match(report, /총 근무시간\(등록 근무표 기준\): 6.5시간/);
+  assert.match(report, /총 처리 기록 2건/);
+  assert.match(report, /시설: 1건/);
+  assert.match(report, /상담: 1건/);
+  assert.match(report, /01:30 \[상담\] 학부모 연락/);
+});
+
+test('new journal form persists a leading 01:30 time rather than the input wall clock', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  let saved;
+  const context = vm.createContext({
+    pad2_: value => String(value).padStart(2,'0'),
+    state:{desk:{daily:{dateKey:'2026-10-11'}}},
+    deskJournalMemoSubmitBtnEl:null, deskJournalMemoWorkerEl:{value:'테스트'},
+    deskJournalMemoInputEl:{value:'01:30 마감 정리',focus(){}},
+    nextDeskDailyMemoClientOrder_:()=>123, buildDeskCurrentDateTimeForKey_:()=> '2026-10-11T10:00:00',
+    buildDeskShiftId_:()=> 'new-memo', showDeskMemoSaveStatus_:()=>{},
+    upsertDeskDailyMemo_:value=>{saved=value;},
+  });
+  for (const name of ['parseDeskMemoTimeText_','parseDeskMemoLeadingTime_','buildDeskJournalDateTime_','saveDeskDailyMemoFromForm_']) vm.runInContext(extractFunction(source,name),context);
+  context.saveDeskDailyMemoFromForm_();
+  assert.equal(saved.createdAt,'2026-10-11T01:30:00');
+  assert.equal(saved.updatedAt,'2026-10-11T10:00:00');
+  assert.equal(saved.dateKey,'2026-10-11');
+  assert.equal(saved.text,'01:30 마감 정리');
+});
