@@ -1164,6 +1164,7 @@ test('new journal form persists a leading 01:30 time rather than the input wall 
     state:{desk:{daily:{dateKey:'2026-10-11'}}},
     deskJournalMemoSubmitBtnEl:null, deskJournalMemoWorkerEl:{value:'테스트'},
     deskJournalMemoInputEl:{value:'01:30 마감 정리',focus(){}},
+    deskJournalMemoDurationEl:{value:'45'}, alert:()=>{},
     nextDeskDailyMemoClientOrder_:()=>123, buildDeskCurrentDateTimeForKey_:()=> '2026-10-11T10:00:00',
     buildDeskShiftId_:()=> 'new-memo', showDeskMemoSaveStatus_:()=>{},
     upsertDeskDailyMemo_:value=>{saved=value;},
@@ -1174,4 +1175,50 @@ test('new journal form persists a leading 01:30 time rather than the input wall 
   assert.equal(saved.updatedAt,'2026-10-11T10:00:00');
   assert.equal(saved.dateKey,'2026-10-11');
   assert.equal(saved.text,'01:30 마감 정리');
+  assert.equal(saved.durationMinutes,45);
+  assert.equal(context.deskJournalMemoDurationEl.value,'');
+  saved=undefined;
+  context.deskJournalMemoInputEl.value='잘못된 시간';
+  context.deskJournalMemoDurationEl.value='-1';
+  context.saveDeskDailyMemoFromForm_();
+  assert.equal(saved,undefined);
+  assert.equal(context.deskJournalMemoInputEl.value,'잘못된 시간');
+});
+
+test('report activity timeline preserves gaps, early hours, overnight dates and empty states', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  const render = loadFunction(source, 'buildDeskReportActivityHtml_', {
+    getDeskMemoDisplayParts_:i=>i, formatDeskJournalTimeOnly_:s=>s.slice(11,16),
+    getDeskMemoType_:i=>i.category, getDeskReportTypeStyle_:()=>({color:'#64748b'}),
+    renderDeskReportTypeBadge_:s=>s, escapeHtml:s=>String(s),
+  });
+  const entry=(time,category='일반')=>({createdAt:time,category});
+  const html=render([entry('2026-10-11T01:30:00'),entry('2026-10-10T23:30:00'),entry('2026-10-11T00:00:00','상담')]);
+  assert.match(html,/2시간 0분/);
+  assert.equal((html.match(/class="desk-report-activity-track"/g)||[]).length,1);
+  assert.match(html,/class="desk-report-activity-legend"/);
+  assert.doesNotMatch(html,/desk-report-activity-row/);
+  assert.match(html,/left:25.000%/);
+  assert.equal((html.match(/class="desk-report-activity-dot"/g)||[]).length,3);
+  assert.match(render([]),/시간이 기록된 업무가 없습니다/);
+  assert.match(render([entry('invalid')]),/시간이 기록된 업무가 없습니다/);
+  assert.match(render([entry('2026-10-11T01:30:00')]),/기록 1건/);
+  assert.doesNotMatch(html,/NaN|Infinity/);
+});
+
+test('report duration extends the timeline endpoint without adding overlapping work twice', async () => {
+  const source=await readFile(frontendPath,'utf8');
+  const render=loadFunction(source,'buildDeskReportActivityHtml_',{
+    getDeskMemoDisplayParts_:i=>i,formatDeskJournalTimeOnly_:s=>s.slice(11,16),getDeskMemoType_:i=>i.category,
+    getDeskReportTypeStyle_:()=>({color:'#64748b'}),renderDeskReportTypeBadge_:s=>s,escapeHtml:s=>String(s),
+  });
+  const html=render([
+    {createdAt:'2026-10-11T23:30:00+09:00',durationMinutes:90,category:'상담'},
+    {createdAt:'2026-10-12T00:00:00+09:00',durationMinutes:30,category:'자료'}
+  ]);
+  assert.match(html,/1시간 30분/);
+  assert.equal((html.match(/class="desk-report-activity-range"/g)||[]).length,2);
+  assert.match(html,/width:100.000%/);
+  assert.match(html,/소요 90분/);
+  assert.doesNotMatch(html,/NaN|Infinity/);
 });

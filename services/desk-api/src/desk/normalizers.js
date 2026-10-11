@@ -122,6 +122,7 @@ export function dailyMemo(item = {}, fallbackId = '', fallbackDateKey = '', now 
     category: String(item.category || item.type || item.memoType || '일반').trim() || '일반',
     mode: String(item.mode || 'report').trim() === 'record' ? 'record' : 'report',
     highlight: Boolean(item.highlight || item.important || item.major),
+    durationMinutes: Math.min(1440, Math.max(0, Math.floor(Number(item.durationMinutes) || 0))),
     createdAt: String(item.createdAt || now).trim(),
     updatedAt: String(item.updatedAt || item.createdAt || now).trim(),
     clientOrder: memoOrder(item.clientOrder, stamp)

@@ -796,3 +796,15 @@ test('journal saves and reloads 01:30 records under the selected work date', asy
   assert.equal(reloaded.memos[0].text,memo.text);
   assert.equal((await handlers.getDeskDailyJournalData({dateKey:'2026-10-10'})).memos.length,0);
 });
+
+test('journal duration survives save, reload, edit and clearing without affecting older records', async () => {
+  const handlers = createDeskHandlers({store:memoryStore()});
+  const memo = {id:'duration',dateKey:'2026-10-11',worker:'테스트',text:'상담',createdAt:'2026-10-11T23:30:00',durationMinutes:90};
+  await handlers.saveDeskDailyJournalMemo({dateKey:memo.dateKey,memo});
+  let result=await handlers.getDeskDailyJournalData({dateKey:memo.dateKey});
+  assert.equal(result.memos[0].durationMinutes,90);
+  await handlers.saveDeskDailyJournalMemo({dateKey:memo.dateKey,memo:{...result.memos[0],text:'상담 완료'}});
+  assert.equal((await handlers.getDeskDailyJournalData({dateKey:memo.dateKey})).memos[0].durationMinutes,90);
+  await handlers.saveDeskDailyJournalMemo({dateKey:memo.dateKey,memo:{...memo,durationMinutes:0}});
+  assert.equal((await handlers.getDeskDailyJournalData({dateKey:memo.dateKey})).memos[0].durationMinutes,0);
+});
