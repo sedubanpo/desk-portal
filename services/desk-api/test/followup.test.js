@@ -9,7 +9,7 @@ import { createFollowupService } from '../src/followup/service.js';
 import { createFollowupRouter } from '../src/followup/router.js';
 const source='11111111111111111111111111111111',target='22222222222222222222222222222222';
 const actor={uid:'worker',name:'테스트',role:'STAFF'};
-function fixture(){
+function fixture(journalSync){
  const records=new Map(),calls=[];let serial=10,clock=0;const now=()=>new Date(Date.parse('2026-10-11T03:00:00.000Z')+clock);
  const ref=path=>({path,collection:n=>collection(path+'/'+n),get:async()=>({data:()=>structuredClone(records.get(path))}),set:async(v,o)=>{records.set(path,o?.merge?{...records.get(path),...structuredClone(v)}:structuredClone(v));}});
  const collection=path=>({doc:key=>ref(path+'/'+key)});let lane=Promise.resolve();const firestore={collection,runTransaction:fn=>{const p=lane.then(()=>fn({get:r=>r.get(),set:(r,v,o)=>r.set(v,o)}));lane=p.catch(()=>{});return p;}};
@@ -22,7 +22,7 @@ function fixture(){
   if(path==='/pages'&&method==='POST'){const key=String(++serial).padStart(32,'0');const p={...page(key),parent:body.parent,properties:{...body.properties,'업무 ID':{unique_id:{prefix:'WFU',number:serial}}}};pages.set(key,p);return structuredClone(p);}
   const key=path.split('/').at(-1),p=pages.get(key);if(!p)throw new ApiError(404,'missing','missing');if(method==='PATCH'){p.properties={...p.properties,...body.properties};p.last_edited_time=new Date(now().getTime()+1000).toISOString();}return structuredClone(p);
  }
- const service=createFollowupService({notion,firestore,sourceId:source,now});return {service,pages,records,calls,notion,firestore,setOverride:f=>override=f,tick:ms=>clock+=ms,page};
+ const service=createFollowupService({notion,firestore,sourceId:source,now,journalSync});return {service,pages,records,calls,notion,firestore,setOverride:f=>override=f,tick:ms=>clock+=ms,page};
 }
 const command=patch=>({requestId:crypto.randomUUID(),patch});
 const csv='Date,User,Message\n2026-10-11 01:30:00,테스트,"환불 확인 부탁드립니다\n다음주 다시 연락"\n2026-10-11 10:30:00,동료,사진';
@@ -51,3 +51,11 @@ test('anonymous, inactive, instructor rejected before upload; active staff can l
 test('review receipts and exclusions survive reopening the import',async()=>{const f=fixture();const b=await f.service.upload({text:csv,room:'방',filename:'a.csv'},actor);await f.service.skipImport(b.batchId,{index:1,skipped:true},actor);await f.service.commitImport(b.batchId,{...command({title:'환불 확인',rooms:['방']}),index:0,slot:'0',reviewed:true},actor);const reopened=await f.service.importPage(b.batchId,{page:0},actor);assert.equal(reopened.messages[1].skipped,true);assert.equal(reopened.messages[0].receipts.length,1);assert.equal(reopened.messages[0].receipts[0].title,'환불 확인');await assert.rejects(f.service.skipImport(b.batchId,{index:0,skipped:true},{...actor,uid:'other'}),e=>e.status===404);});
 test('10000 record upload is chunked, final page is reachable and index maps correctly',async()=>{const f=fixture();const text='Date,User,Message\n'+Array.from({length:10000},(_,i)=>`2026-10-11 01:30:00,staff,업무 ${i} 확인`).join('\n');const b=await f.service.upload({text,room:'방',filename:'many.csv'},actor);const last=await f.service.importPage(b.batchId,{page:999},actor);assert.equal(last.messages[9].index,9999);assert.equal(last.messages[9].text,'업무 9999 확인');assert.equal([...f.records.keys()].filter(k=>k.includes('/chunks/')).length,1000);});
 test('merging into an already merged task is rejected to prevent cycles',async()=>{const f=fixture();const other='33333333333333333333333333333333';f.pages.set(other,f.page(other,{status:'병합',mergeTarget:[target]}));const r=(await f.service.detail(target)).item;await assert.rejects(f.service.save({...command({}),id:target,version:r.version,mergeTarget:other},{...actor,role:'ADMIN'}),e=>e.code==='merged_target');});
+
+
+test('saved Notion operation retries journal synchronization without another Notion write',async()=>{
+ let attempts=0;const f=fixture({validate:async()=>{},staff:async()=>[],sync:async(item,actor,flags)=>{attempts++;assert.deepEqual(item.owners,['테스트']);assert.equal(flags.assign,true);if(attempts===1)throw Error('offline');return {count:1};}});
+ const row=(await f.service.detail(target)).item;const cmd={...command({owners:['테스트']}),id:target,version:row.version};
+ await assert.rejects(()=>f.service.save(cmd,actor),e=>e.code==='journal_sync_pending');
+ const result=await f.service.save(cmd,actor);assert.equal(result.journal.count,1);assert.equal(attempts,2);assert.equal(f.calls.filter(c=>c.method==='PATCH').length,1);
+});

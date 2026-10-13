@@ -17759,7 +17759,7 @@
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
-<link rel="stylesheet" href="./work-followup.css?v=20261011-followup">
+<link rel="stylesheet" href="./work-followup.css?v=20261013-followup">
 <link rel="stylesheet" href="./inquiries.css?v=20261003-inquiry-insights">
   <link rel="stylesheet" href="./desk-refinements.css">
 <link rel="stylesheet" href="./message-templates.css?v=20261003">
@@ -20992,7 +20992,7 @@
       getDeskScheduleMonthData: true, getDeskScheduleDayHistory: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskAttendanceMonthData: true, saveDeskAttendancePunch: true, saveDeskAttendanceCorrectionRequest: true, saveDeskAttendanceCorrectionDecision: true,
       getDeskCalendarEvents: true,
-      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, getDeskDailyJournalTaskHistory: true, getDeskStaffDirectory: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
+      getDeskDailyJournalData: true, getDeskDailyJournalPendingTasks: true, getDeskDailyJournalTaskLedger: true, getDeskDailyJournalTaskHistory: true, getDeskStaffDirectory: true, getDeskStaffIcons: true, saveDeskDailyJournalTask: true, deleteDeskDailyJournalTask: true, saveDeskDailyJournalMemo: true, deleteDeskDailyJournalMemo: true,
       getDeskPortalConfig: true, saveDeskPortalConfig: true, getDeskSubscriptionSyncCapabilities: true, saveDeskSubscriptionSync: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
@@ -28086,7 +28086,7 @@
       var safeDateKey = String(dateKey || "").trim();
       if (!safeDateKey) return Promise.resolve();
       if (force && !state.desk.calendarEventsLoading[safeDateKey]) delete state.desk.calendarEventsByDate[safeDateKey];
-      if (!force && state.desk.calendarEventsByDate[safeDateKey]) return Promise.resolve();
+      if (!force && state.desk.calendarEventsByDate[safeDateKey] && Date.now() - Date.parse(state.desk.calendarEventsByDate[safeDateKey].checkedAt) < 60000) return Promise.resolve();
       if (state.desk.calendarEventsLoading[safeDateKey]) return state.desk.calendarEventsLoading[safeDateKey];
       var request = runServer("getDeskCalendarEvents", { dateKey: safeDateKey }).then(function(res) {
         if (!res || !res.success) {
@@ -28756,7 +28756,7 @@
       if (!events.length) {
         var sourceName = calendarState && calendarState.sources ? String(calendarState.sources.source || "") : "";
         var connected = !!(calendarState && calendarState.success && sourceName === "calendarApi");
-        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="' + (connected ? 'calendar-check-2' : 'calendar-days') + '"></i></span><div><strong>' + (connected ? '연동 정상 · 일정 없음' : '표시할 일정 없음') + '</strong><span>' + (connected ? '선택한 날짜에는 등록된 구글 캘린더 일정이 없습니다.' : '반포관 데스크에 해당 날짜 일정이 없습니다.') + '</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
+        return '<div class="desk-day-calendar-slot"><span class="desk-day-calendar-slot-icon"><i data-lucide="' + (connected ? 'calendar-check-2' : 'calendar-days') + '"></i></span><div><strong>' + (connected ? '연동 정상 · 일정 없음' : '표시할 일정 없음') + '</strong><span>' + (connected ? '선택한 날짜의 반포관 데스크 일정이 없습니다. 다른 캘린더 일정은 포함하지 않습니다.' : '반포관 데스크에 해당 날짜 일정이 없습니다.') + '</span>' + (warningText ? '<small>' + escapeHtml(warningText) + '</small>' : '') + '</div></div>';
       }
       return events.map(function(item) {
         return '<div class="desk-day-calendar-slot source-calendar">' +
@@ -32172,11 +32172,11 @@
 
     function loadDeskSharedStaffIcons_(force) {
       var cache = state.desk.staffIcons;
-      if (!state.firebaseFirestore || !state.firebaseUser) return Promise.resolve({});
+      if (!state.firebaseUser) return Promise.resolve({});
       if (cache.loaded && !force) return Promise.resolve(cache.byName || {});
       if (cache.loadingPromise && !force) return cache.loadingPromise;
       cache.loadingPromise = Promise.all([
-        state.firebaseFirestore.collection("sharedIconAssets").get(),
+        runServer("getDeskStaffIcons", {}),
         runServer("getDeskStaffDirectory", {}).catch(function(err) {
           console.warn("staff icon directory unavailable", err && err.message ? err.message : err);
           return { success: false, staff: [] };
@@ -32184,13 +32184,11 @@
       ]).then(function(results) {
         var snapshot = results[0];
         var directory = results[1];
-        return indexDeskStaffIcons_(snapshot.docs.map(normalizeDeskStaffIconAsset_), directory && directory.success ? directory.staff : []);
+        if (!snapshot.success || !directory.success) throw new Error("직급 아이콘 정보를 불러오지 못했습니다.");
+        return indexDeskStaffIcons_((snapshot.icons || []).map(normalizeDeskStaffIconAsset_), directory && directory.success ? directory.staff : []);
       }).catch(function(err) {
         console.warn("shared staff icons unavailable", err && err.message ? err.message : err);
-        cache.loaded = true;
-        cache.byName = {};
-        cache.byLookupKey = {};
-        cache.staffByName = {};
+        cache.loaded = false;
         return {};
       }).finally(function() {
         cache.loadingPromise = null;
@@ -33906,6 +33904,15 @@
           if (state.activeModule === "expense" && state.desk.activeTab === "supplies") renderDeskSupplies_();
         });
     }
+
+    window.addEventListener("desk-followup-assigned", function() {
+      state.desk.daily.loadedDates = {};
+      state.desk.daily.loadErrors = {};
+      resetDeskDailyCarryoverLoad_();
+      state.desk.daily.taskLedgerLoaded = false;
+      state.desk.daily.taskLedgerSummary = null;
+      if (state.desk.activeTab === "dailyJournal") reloadDeskDailyJournalData_();
+    });
 
     function reloadDeskDailyJournalData_(button) {
       if (shouldDeferPortalDataLoad_()) return Promise.resolve();
@@ -46026,7 +46033,7 @@ window.SeduHubAdapter={
 <script src="./training.js?v=20260926-five"></script>
 <script src="./training-hr.js?v=20260925"></script>
 <script src="./inquiry-analytics.js?v=20261003-inquiry-insights"></script>
-<script src="./work-followup.js?v=20261011-followup"></script>
+<script src="./work-followup.js?v=20261013-followup"></script>
 <script src="./inquiries.js?v=20261003-inquiry-insights"></script>
 <script src="./payroll-settlement.js?v=20261009"></script>
 <script src="./payroll-export.js?v=20261009"></script>

@@ -1222,3 +1222,17 @@ test('report duration extends the timeline endpoint without adding overlapping w
   assert.match(html,/소요 90분/);
   assert.doesNotMatch(html,/NaN|Infinity/);
 });
+
+test('rank assets load through authenticated API without Firestore and failed directory can retry', async () => {
+  const source = await readFile(frontendPath, 'utf8');
+  let fail=true,calls=0;
+  const context=vm.createContext({console:{warn(){}},state:{firebaseUser:{uid:'test'},desk:{staffIcons:{loaded:false,byName:{}}}},canonicalizeDeskWorkerName_:n=>String(n||'').trim(),getDeskIdentityName_:()=>'',runServer:async method=>{
+    calls++;
+    if(method==='getDeskStaffDirectory'){if(fail)throw Error('temporary');return {success:true,staff:[{uid:'worker',name:'가직원',staffPosition:'대리'}]};}
+    return {success:true,icons:[{category:'PERSON',status:'ACTIVE',lookupKey:'staff-position:대리',imageUrl:'https://example.com/deputy.png'}]};
+  }});
+  for(const name of ['normalizeDeskStaffIconName_','normalizeDeskStaffIconAsset_','indexDeskStaffIcons_','loadDeskSharedStaffIcons_'])vm.runInContext(extractFunction(source,name),context);
+  await context.loadDeskSharedStaffIcons_(false);assert.equal(context.state.desk.staffIcons.loaded,false);
+  fail=false;await context.loadDeskSharedStaffIcons_(false);assert.equal(context.state.desk.staffIcons.byName['가직원'].imageUrl,'https://example.com/deputy.png');
+  const count=calls;await context.loadDeskSharedStaffIcons_(false);assert.equal(calls,count);
+});

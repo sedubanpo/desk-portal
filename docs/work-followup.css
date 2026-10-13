@@ -11,3 +11,41 @@
 .wf-form-grid>label{min-width:0}.wf-form-grid input,.wf-form-grid textarea,.wf-form-grid select{width:100%;min-width:0}
 
 .wf-extra{font-size:12px;position:relative}.wf-extra summary{cursor:pointer;min-height:40px;padding:12px;border-radius:8px;background:#f4f7f1}.wf-extra>div{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.wf-extra[open]{flex-basis:100%}
+
+/* Follow-up actions stay within the existing lime operations palette. */
+.wf-workspace { position:relative; }
+.wf-load-track { height:3px; overflow:hidden; opacity:0; }
+.wf [aria-busy="true"] .wf-load-track { opacity:1; }
+.wf-load-track span { display:block; height:100%; width:35%; background:#748d35; }
+.wf [aria-busy="true"] .wf-load-track span { animation:wf-progress 1.4s cubic-bezier(.16,1,.3,1) infinite; }
+.wf-loading { display:flex; justify-content:center; align-items:center; gap:20px; padding:36px 16px; color:#344b43; }
+.wf-loading strong,.wf-loading div>span { display:block; }
+.wf-loading div>span { font-size:13px; margin-top:6px; color:#57675e; }
+.wf-orbit { display:flex; align-items:center; gap:5px; height:32px; }
+.wf-orbit i { width:9px; height:9px; background:#748d35; border-radius:50%; animation:wf-pulse 1s ease-in-out infinite alternate; }
+.wf-orbit i:nth-child(2) { animation-delay:.2s; }.wf-orbit i:nth-child(3) { animation-delay:.4s; }
+.wf-skeleton { display:grid; gap:16px; padding:8px 16px 24px; }
+.wf-skeleton span { height:32px; border-radius:6px; background:#eff3e7; animation:wf-fade 1.4s ease-in-out infinite alternate; }
+.wf-owner-button { display:flex; align-items:center; gap:8px; text-align:left; padding:6px 8px; border:1px solid #d9e4d0; border-radius:8px; background:#fff; cursor:pointer; }
+.wf-owner-button:hover { background:#f1f6e6; border-color:#829d46; }
+.wf-owner-button>svg { width:15px; height:15px; flex:none; color:#526b34; }
+.wf-complete-button { display:flex; align-items:center; gap:5px; margin-top:8px; padding:5px 8px; color:#286747; background:#eef8f1; border:1px solid #cce5d5; border-radius:6px; cursor:pointer; font-size:12px; }
+.wf-complete-button:hover { background:#deefdf; }.wf-complete-button svg { width:14px;height:14px; }
+.wf-dialog:has(.wf-quick-form) { width:min(540px,calc(100vw - 32px)); }
+.wf-action-intro { display:flex; gap:12px; margin-bottom:24px; align-items:flex-start; }
+.wf-action-intro>svg { width:30px;height:30px; color:#547b34; flex:none; }
+.wf-action-intro strong { font-size:17px; line-height:1.5; }.wf-action-intro p { font-size:13px;line-height:1.6;color:#59695e; margin:8px 0 0; }
+.wf-owner-picker { border:0;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+.wf-owner-picker legend { padding:0 0 12px;font-size:13px;color:#59695e; }
+.wf-owner-picker label { display:flex;align-items:center;gap:8px; flex-wrap:wrap;padding:12px;border:1px solid #dce5d5;border-radius:8px;cursor:pointer; }
+.wf-owner-picker label:has(:checked) { background:#eff6df;border-color:#779443; }
+.wf-owner-picker input { width:16px;height:16px;accent-color:#627e32; }.wf-owner-picker small {color:#53664b;}
+.wf-resolution-label { display:grid;gap:10px;font-size:14px;font-weight:600; }
+.wf-resolution-label textarea { width:100%;resize:vertical;min-height:120px;font:inherit;line-height:1.6;padding:12px;border:1px solid #cddac2;border-radius:8px; }
+@keyframes wf-progress { from { transform:translateX(-110%); } to { transform:translateX(400%); } }
+@keyframes wf-pulse { to { transform:translateY(-7px);background:#b0c568; } }
+@keyframes wf-fade { to { opacity:.45; } }
+@media(prefers-reduced-motion:reduce) { .wf-load-track span,.wf-orbit i,.wf-skeleton span {animation:none!important;} }
+@media(max-width:480px) { .wf-owner-picker {grid-template-columns:minmax(0,1fr);} }
+
+@media(max-width:640px){.wf tbody tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.wf td:nth-child(3){display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:0}.wf td:nth-child(3) .wf-stars{margin:0;max-width:100%;white-space:normal}.wf td:nth-child(3) .wf-complete-button{margin:0;max-width:100%}}

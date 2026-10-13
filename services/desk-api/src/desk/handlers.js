@@ -52,6 +52,7 @@ export const DESK_READ_METHODS = new Set([
   'getDeskDailyJournalTaskLedger',
   'getDeskDailyJournalTaskHistory',
   'getDeskStaffDirectory',
+  'getDeskStaffIcons',
   'getDeskSuppliesData',
   'getDeskRecruitingApplicantsData',
   'getDeskPortalConfig',
@@ -76,7 +77,7 @@ export const DESK_ATTENDANCE_ADMIN_METHODS = new Set(['saveDeskAttendanceCorrect
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
 
-export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [], subscriptionBilling = { capabilities: () => ({}), sync: async () => { throw new Error('구독 청구 연동이 설정되지 않았습니다.'); } } }) {
+export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [], loadStaffIcons = async () => [], subscriptionBilling = { capabilities: () => ({}), sync: async () => { throw new Error('구독 청구 연동이 설정되지 않았습니다.'); } } }) {
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
@@ -89,6 +90,9 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
         handlers.getDeskAttendanceMonthData({monthKey:today.slice(0,7)},identity)
       ]);
       return buildHubNotifications(identity,journals.flatMap(day=>day.tasks),attendance,now());
+    },
+    async getDeskStaffIcons() {
+      return { success: true, icons: await loadStaffIcons() };
     },
     async getDeskStaffDirectory() {
       const staff = (await loadStaffDirectory()).map(item => ({

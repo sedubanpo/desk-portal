@@ -3,12 +3,12 @@ import { ApiError } from '../http.js';
 import { FIELDS, STATUSES, TYPES, hash, id, normalize, compact, validatePatch, properties, buildQuery, today } from './model.js';
 import { parseChat } from './import.js';
 
-export function createFollowupService({notion,firestore,sourceId,now=()=>new Date()}){
+export function createFollowupService({notion,firestore,sourceId,journalSync,loadStaffDirectory=async()=>[],now=()=>new Date()}){
  const root=firestore.collection('deskFollowup').doc(id(sourceId));
  const queries=root.collection('queries'),ops=root.collection('operations'),locks=root.collection('locks'),batches=root.collection('imports');
  let metadata=null,metadataAt=0;
  async function schema(){if(metadata&&now().getTime()-metadataAt<60000)return metadata;const raw=await notion(`/data_sources/${sourceId}`);for(const key of ['title','status','rooms','owners','nextCheck','evidence','messageKeys'])if(!raw.properties?.[FIELDS[key]])throw new ApiError(503,'schema_changed','노션 업무 팔로우 속성을 확인해 주세요.');metadata=raw;metadataAt=now().getTime();return raw;}
- async function meta(){const s=await schema();return {statuses:STATUSES,types:TYPES,rooms:(s.properties['소스방']?.multi_select?.options||[]).map(o=>o.name),owners:(s.properties['담당']?.multi_select?.options||[]).map(o=>o.name),sourceUrl:'https://www.notion.so/'+id(sourceId)};}
+ async function meta(){const s=await schema();return {staff:journalSync?await journalSync.staff():await loadStaffDirectory(),statuses:STATUSES,types:TYPES,rooms:(s.properties['소스방']?.multi_select?.options||[]).map(o=>o.name),owners:(s.properties['담당']?.multi_select?.options||[]).map(o=>o.name),sourceUrl:'https://www.notion.so/'+id(sourceId)};}
  async function sourcePage(value){const p=await notion('/pages/'+id(value));if(!p.parent?.data_source_id||id(p.parent.data_source_id)!==id(sourceId))throw new ApiError(403,'wrong_source','업무 팔로우 DB의 항목만 관리할 수 있습니다.');if(p.archived||p.in_trash)throw new ApiError(409,'archived','노션에서 보관된 업무입니다.');return p;}
  async function list(input={},actor={}){
   const query=buildQuery(input,actor,now()),ref=queries.doc(hash(query));const saved=(await ref.get()).data(),generation=(await root.get()).data()?.generation||'';
@@ -22,6 +22,13 @@ export function createFollowupService({notion,firestore,sourceId,now=()=>new Dat
  async function known(marker){const r=await notion(`/data_sources/${sourceId}/query`,'POST',{page_size:2,filter:{property:'원문메시지키',rich_text:{contains:marker}}});return r.results?.[0];}
  async function save(body,actor,importRecord=null){
   const target=body.id?id(body.id):'',patch=validatePatch(body.patch||{});
+  if(journalSync && Object.hasOwn(patch,'owners')) await journalSync.validate(patch.owners);
+  async function synchronize(response){
+   if(!journalSync)return response;
+   const item=normalize(await sourcePage(response.item.id));
+   try { return {...response,journal:await journalSync.sync(item,actor,{assign:Object.hasOwn(patch,'owners'),statusChanged:Object.hasOwn(patch,'status')||!!body.mergeTarget})}; }
+   catch(e){throw new ApiError(503,'journal_sync_pending','노션은 저장되었으나 일일 업무일지 배정을 확인하지 못했습니다. 같은 저장 버튼으로 다시 시도해 주세요.');}
+  }
   if(!/^[a-zA-Z0-9-]{16,100}$/.test(body.requestId||''))throw new ApiError(400,'request_id_required','저장 요청 번호가 필요합니다.');
   if(body.mergeTarget&&actor.role!=='ADMIN')throw new ApiError(403,'admin_required','업무 병합은 관리자가 처리합니다.');
   if(body.mergeTarget&&(!target||id(body.mergeTarget)===target))throw new ApiError(400,'invalid_merge','서로 다른 두 업무를 선택해 주세요.');
@@ -32,14 +39,14 @@ export function createFollowupService({notion,firestore,sourceId,now=()=>new Dat
   const fingerprint=hash({target,patch,note:body.note||'',mergeTarget:body.mergeTarget||'',importKey:importRecord?.message.key||''});
   let op=await firestore.runTransaction(async tx=>{const old=(await tx.get(ref)).data(),held=(await tx.get(lock)).data();
    // A message slot is a durable receipt across repeat imports and staff accounts.
-   if(old?.response&&importRecord)return old;
-   if(old?.fingerprint&&old.fingerprint!==fingerprint)throw new ApiError(409,'request_reused','진행 중인 요청의 내용이 달라졌습니다. 저장 결과를 먼저 확인해 주세요.');
-   if(old?.response)return old;if(held?.until>now().getTime())throw new ApiError(409,'save_in_progress','이 업무를 저장 중입니다. 잠시 후 다시 시도해 주세요.');
+
+   if(!importRecord&&old?.fingerprint&&old.fingerprint!==fingerprint)throw new ApiError(409,'request_reused','진행 중인 요청의 내용이 달라졌습니다. 저장 결과를 먼저 확인해 주세요.');
+   if(held?.until>now().getTime())throw new ApiError(409,'save_in_progress','이 업무를 저장 중입니다. 잠시 후 다시 시도해 주세요.');
    const value=old||{fingerprint,at:now().toISOString(),actor:actorName(actor),target};tx.set(lock,{owner,until:now().getTime()+180000});tx.set(ref,value);return value;});
-  if(op.response)return importRecord?{...op.response,duplicate:true}:op.response;
   try{
+   if(op.response)return await synchronize(importRecord?{...op.response,duplicate:true}:op.response);
    await schema();let page=target?await sourcePage(target):null;
-   if(!page){const found=await known(marker);if(found){page=await sourcePage(found.id);const response={ok:true,item:normalize(page)};await ref.set({response},{merge:true});await invalidate();return {...response,duplicate:true};}}
+   if(!page){const found=await known(marker);if(found){page=await sourcePage(found.id);const response={ok:true,item:normalize(page)};await ref.set({response},{merge:true});await invalidate();return await synchronize({...response,duplicate:true});}}
    let current=page?normalize(page):null;
    if(!op.prepared){
     if(current&&current.version!==body.version)throw new ApiError(409,'stale_record','노션 또는 다른 근무자가 수정한 업무입니다. 다시 열어 변경 내용을 확인해 주세요.');
@@ -61,7 +68,7 @@ export function createFollowupService({notion,firestore,sourceId,now=()=>new Dat
    if(target){if(current.version!==op.before&&!(op.attempted&&matches(current)))throw new ApiError(409,'stale_record','저장 중 원본이 변경되었습니다. 업무를 다시 열어 주세요.');if(!matches(current)){await ref.set({attempted:true},{merge:true});page=await notion('/pages/'+target,'PATCH',{properties:op.properties});}}
    else {if(op.attempted)throw new ApiError(503,'create_uncertain','이전 등록 결과를 확인 중입니다. 같은 요청으로 재시도해 주세요. 중복 생성을 막기 위해 다시 등록하지 않습니다.');await ref.set({attempted:true},{merge:true});page=await notion('/pages','POST',{parent:{type:'data_source_id',data_source_id:sourceId},properties:op.properties});}
    const verified=normalize(await sourcePage(page.id));if(!matches(verified))throw new ApiError(409,'verification_conflict','저장 결과가 변경되었습니다. 노션 원본을 확인해 주세요.');
-   const response={ok:true,item:verified};await ref.set({response,finishedAt:now().toISOString()},{merge:true});await invalidate();return response;
+   const response={ok:true,item:verified};await ref.set({response,finishedAt:now().toISOString()},{merge:true});await invalidate();return await synchronize(response);
   }finally{await firestore.runTransaction(async tx=>{const held=(await tx.get(lock)).data();if(held?.owner===owner)tx.set(lock,{until:0});});}
  }
  async function upload(body,actor){const parsed=parseChat(body),batchId=hash([actor.uid,parsed.room,parsed.messages.map(m=>m.key)]),ref=batches.doc(batchId);const existing=(await ref.get()).data();if(existing?.ready)return {batchId,...existing,resumed:true};

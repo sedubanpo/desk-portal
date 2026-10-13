@@ -107,7 +107,7 @@ test('supply management presents a branch-coded inventory database with favorite
 test('shared staff icons are cached by Korean name and reused across desk surfaces', async () => {
   const source = await readFile(frontendPath, 'utf8');
 
-  assert.match(source, /collection\("sharedIconAssets"\)\.get\(\)/);
+  assert.match(source, /runServer\("getDeskStaffIcons", \{\}\)/);
   assert.match(source, /getDeskStaffDirectory: true/);
   assert.match(source, /runServer\("getDeskStaffDirectory", \{\}\)/);
   assert.match(source, /function normalizeDeskStaffIconAsset_/);

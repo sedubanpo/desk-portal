@@ -1,3 +1,4 @@
+import { createFollowupJournalSync } from './followup/journal-sync.js';
 import { createPayrollExportHandler } from './payroll/export-handler.js';
 import { createWorkforceHandlers } from './payroll/workforce.js';
 import { applicationDefault, getApp, getApps, initializeApp } from 'firebase-admin/app';
@@ -38,7 +39,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   const workforce=createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)});
   const tuitionStore=createTuitionStore(firestore);
   return {
-    followup: { firestore, token: notionFollowupToken, sourceId: notionFollowupSourceId },
+    followup: { firestore, token: notionFollowupToken, sourceId: notionFollowupSourceId, loadStaffDirectory: () => loadStaffDirectory(firestore), journalSync: createFollowupJournalSync({store:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)}) },
     inquiries: { firestore, token: notionInquiryToken, sourceId: notionInquirySourceId, historySourceId: notionInquiryHistoryId, syncKey: notionInquirySyncKey },
     training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
     verifyIdToken: token => auth.verifyIdToken(token, checkRevokedTokens),
@@ -56,6 +57,10 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       ...createDeskHandlers({
         store: createDeskStore(legacyDatabase),
         loadStaffDirectory: () => loadStaffDirectory(firestore),
+        loadStaffIcons: async () => {
+          const snapshot = await firestore.collection("sharedIconAssets").where("category", "==", "PERSON").get();
+          return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(asset => (asset.status || "ACTIVE") === "ACTIVE" && /^https:\/\//.test(asset.imageUrl || asset.downloadURL || "")).map(asset => ({ category: "PERSON", status: "ACTIVE", lookupKey: asset.lookupKey || "", displayName: asset.displayName || "", aliases: Array.isArray(asset.aliases) ? asset.aliases : [], imageUrl: asset.imageUrl || asset.downloadURL }));
+        },
         subscriptionBilling: createSubscriptionBilling({
           table: subscriptionBillingTable,
           firebaseProjectIds: subscriptionFirebaseProjectIds,

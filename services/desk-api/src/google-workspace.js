@@ -34,7 +34,7 @@ function normalizeCalendarEvent(event = {}) {
   const start = event.start?.dateTime || (event.start?.date ? `${event.start.date}T00:00:00+09:00` : '');
   const end = event.end?.dateTime || (event.end?.date ? `${event.end.date}T00:00:00+09:00` : '');
   const title = String(event.summary || '제목 없음').trim();
-  if (!title || /에스학원\s*대치관/.test(title)) return null;
+  if (!title || event.status === 'cancelled') return null;
   return {
     id: `calendar_${String(event.id || randomUUID()).replace(/[^\w-]/g, '_')}`,
     source: 'calendar',
@@ -118,17 +118,20 @@ export function createGoogleWorkspaceReader({
     async getDeskCalendarEvents(payload = {}) {
       const requestedDate = dateKey(payload.dateKey);
       if (!requestedDate) return { success: false, message: 'dateKey가 올바르지 않습니다.' };
-      if (!calendarId) return { success: true, dateKey: requestedDate, sources: { calendar: 0, source: 'none' }, warnings: ['캘린더 ID가 설정되어 있지 않습니다.'], events: [] };
+      if (!calendarId) return { success: false, dateKey: requestedDate, message: '반포관 데스크 캘린더 연결 설정을 확인해 주세요.', events: [] };
       const range = calendarRange(requestedDate);
-      const data = await request(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
-        timeMin: range.start.toISOString(),
-        timeMax: range.end.toISOString(),
-        singleEvents: true,
-        orderBy: 'startTime',
-        maxResults: 100,
-        timeZone: 'Asia/Seoul'
-      });
-      const events = (data.items || []).map(normalizeCalendarEvent).filter(Boolean).sort(compareEvents);
+      const items = [];
+      let pageToken;
+      do {
+        const data = await request(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`, {
+          timeMin: range.start.toISOString(), timeMax: range.end.toISOString(),
+          singleEvents: true, orderBy: 'startTime', maxResults: 250,
+          timeZone: 'Asia/Seoul', ...(pageToken ? { pageToken } : {})
+        });
+        items.push(...(data.items || []));
+        pageToken = data.nextPageToken;
+      } while (pageToken);
+      const events = items.map(normalizeCalendarEvent).filter(Boolean).sort(compareEvents);
       return {
         success: true,
         dateKey: requestedDate,

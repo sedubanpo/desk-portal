@@ -16,9 +16,9 @@ const rows=[mk(1,'수학 수업 시간 변경 및 학부모 안내','진행 중'
 window.calls=[];window.mockRows=rows;
 const message={at:'2026-10-11T01:30:00+09:00',sender:'김담당',text:'환불 확인 부탁드립니다.\n다음주 다시 연락\n<img src=x onerror=alert(1)>',location:'CSV 레코드 2',key:'key-1',type:'수납·환불',suggested:true,title:'환불 확인 부탁드립니다.',index:0};
 window.view=DeskWorkFollowup.mount(document.querySelector('#test'),{base:'https://test.local',uid:'test',getToken:async()=> 'token',isAdmin:true,fetchImpl:async(url,init)=>{
-const u=new URL(url);window.calls.push({path:u.pathname,query:u.search,body:init.body?JSON.parse(init.body):null});let r;
+await new Promise(resolve=>setTimeout(resolve,80));const u=new URL(url);window.calls.push({path:u.pathname,query:u.search,body:init.body?JSON.parse(init.body):null});let r;
 if(u.pathname.endsWith('/school-icons'))r={icons:[{displayName:'반포고',imageUrl:'',aliases:[]}]};
-else if(u.pathname.endsWith('/meta'))r={rooms:['반포관 데스크','수납 업무방','시설 관리방','운영 업무방'],owners:['김담당','이실무','박관리']};
+else if(u.pathname.endsWith('/meta'))r={staff:['김담당','이실무','박관리'].map(name=>({name,staffPosition:'주임'})),rooms:['반포관 데스크','수납 업무방','시설 관리방','운영 업무방'],owners:['김담당','이실무','박관리']};
 else if(u.pathname.endsWith('/save')){const body=JSON.parse(init.body);r={ok:true,item:{...rows[0],...body.patch}};}
 else if(u.pathname.endsWith('/imports')&&init.method==='POST')r={batchId:'b'.repeat(64),room:'반포관 데스크',filename:'chat.csv',total:1,suggested:1,ignored:0};
 else if(u.pathname.includes('/imports/')&&u.pathname.endsWith('/commit'))r={ok:true,item:{...rows[0],code:'WFU-24',title:'환불 확인'}};
@@ -28,12 +28,23 @@ else r={items:rows,nextCursor:null,syncedAt:'2026-10-11T03:30:00Z',warning:''};
 return new Response(JSON.stringify(r),{status:200,headers:{'Content-Type':'application/json'}});
 }});view.load();
 });
+await page.locator('.wf-loading').first().waitFor();await page.screenshot({path:path.join(output,'followup-loading.png')});
 await page.getByRole('button',{name:'수학 수업 시간 변경 및 학부모 안내',exact:true}).waitFor();
 await page.screenshot({path:path.join(output,'followup-desktop.png'),fullPage:true});
+await page.getByRole('button',{name:'수학 수업 시간 변경 및 학부모 안내 담당자 지정',exact:true}).click();
+await page.getByRole('dialog').locator('input[value="이실무"]').check();
+await page.screenshot({path:path.join(output,'followup-assign.png')});
+await page.getByRole('button',{name:'담당자 저장',exact:true}).click();
+await page.waitForTimeout(150);assert.deepEqual(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/save')).at(-1).body.patch.owners),['김담당','이실무']);
+await page.getByRole('button',{name:'수학 수업 시간 변경 및 학부모 안내 완료 처리',exact:true}).click();
+await page.getByLabel('완료 근거').fill('확정 시간표와 학부모 안내 완료 확인');
+await page.screenshot({path:path.join(output,'followup-complete.png')});
+await page.getByRole('dialog').getByRole('button',{name:'완료 처리',exact:true}).click();
+await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/save')).at(-1).body.patch.status),'해결');
 await page.getByRole('button',{name:'내 담당',exact:true}).click();await page.waitForTimeout(100);assert.ok((await page.evaluate(()=>calls.at(-1).query)).includes('view=mine'));
 await page.getByRole('button',{name:'수학 수업 시간 변경 및 학부모 안내',exact:true}).click();
 await page.waitForTimeout(200);await page.getByRole('dialog').getByLabel('다음 행동',{exact:true}).fill('새 결과 확인');await page.getByRole('dialog').getByRole('button',{name:'저장',exact:true}).click();await page.waitForTimeout(100);
-const saved=await page.evaluate(()=>calls.find(c=>c.path.endsWith('/save')).body);assert.equal(saved.patch.nextAction,'새 결과 확인');assert.equal(saved.patch.rooms,undefined);assert.equal(saved.patch.title,undefined);
+const saved=await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/save')).at(-1).body);assert.equal(saved.patch.nextAction,'새 결과 확인');assert.equal(saved.patch.rooms,undefined);assert.equal(saved.patch.title,undefined);
 await page.getByRole('button',{name:'업무 등록',exact:true}).click();await page.getByRole('dialog').getByLabel('업무명',{exact:true}).fill('새 업무');await page.getByRole('dialog').getByLabel('소스방',{exact:true}).fill('반포관 데스크');await page.getByRole('dialog').getByRole('button',{name:'저장',exact:true}).click();await page.waitForTimeout(100);
 await page.getByRole('button',{name:'대화 파일 가져오기',exact:true}).click();await page.getByRole('dialog').getByLabel('소스방',{exact:true}).fill('반포관 데스크');await page.getByRole('dialog').locator('input[type=file]').setInputFiles({name:'chat.csv',mimeType:'text/csv',buffer:Buffer.from('Date,User,Message\n2026-10-11 01:30:00,김담당,환불 확인 부탁')});await page.getByRole('button',{name:'원문 읽고 검토하기'}).click();await page.locator('[data-message]').click();
 assert.equal(await page.locator('.wf-review img').count(),0);await page.locator('input[name=reviewed]').check();
