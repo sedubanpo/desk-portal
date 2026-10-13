@@ -32171,25 +32171,34 @@
     }
 
     function loadDeskSharedStaffIcons_(force) {
+      var uid = String(state.firebaseUser && state.firebaseUser.uid || "");
       var cache = state.desk.staffIcons;
-      if (!state.firebaseUser) return Promise.resolve({});
-      if (cache.loaded && !force) return Promise.resolve(cache.byName || {});
-      if (cache.loadingPromise && !force) return cache.loadingPromise;
+      if (cache.uid !== uid) {
+        cache = state.desk.staffIcons = { uid: uid, loaded: false, loadedAt: 0, loadingPromise: null, byName: {}, byLookupKey: {}, staffByName: {} };
+      }
+      if (!uid) return Promise.resolve({});
+      if (cache.loadingPromise) return cache.loadingPromise;
+      if (cache.loaded && !force && Date.now() - cache.loadedAt < 300000) return Promise.resolve(cache.byName || {});
+      function isCurrent() {
+        return state.desk.staffIcons === cache && String(state.firebaseUser && state.firebaseUser.uid || "") === uid;
+      }
       cache.loadingPromise = Promise.all([
         runServer("getDeskStaffIcons", {}),
-        runServer("getDeskStaffDirectory", {}).catch(function(err) {
-          console.warn("staff icon directory unavailable", err && err.message ? err.message : err);
-          return { success: false, staff: [] };
-        })
+        runServer("getDeskStaffDirectory", {})
       ]).then(function(results) {
+        if (!isCurrent()) return {};
         var snapshot = results[0];
         var directory = results[1];
-        if (!snapshot.success || !directory.success) throw new Error("직급 아이콘 정보를 불러오지 못했습니다.");
-        return indexDeskStaffIcons_((snapshot.icons || []).map(normalizeDeskStaffIconAsset_), directory && directory.success ? directory.staff : []);
+        if (!snapshot || !snapshot.success || !Array.isArray(snapshot.icons) || !directory || !directory.success || !Array.isArray(directory.staff)) throw new Error("Staff directory unavailable");
+        var indexed = indexDeskStaffIcons_(snapshot.icons.map(normalizeDeskStaffIconAsset_), directory.staff);
+        cache.loadedAt = Date.now();
+        return indexed;
       }).catch(function(err) {
         console.warn("shared staff icons unavailable", err && err.message ? err.message : err);
+        if (!isCurrent()) return {};
+        // Keep the last successful icons, but allow the next request to retry.
         cache.loaded = false;
-        return {};
+        return cache.byName || {};
       }).finally(function() {
         cache.loadingPromise = null;
       });
