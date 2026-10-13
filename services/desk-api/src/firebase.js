@@ -57,6 +57,10 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       ...createDeskHandlers({
         store: createDeskStore(legacyDatabase),
         loadStaffDirectory: () => loadStaffDirectory(firestore),
+        loadRewardStudents: async () => {
+          const snapshot = await firestore.collection('students').get();
+          return snapshot.docs.map(doc => ({...doc.data(),id:doc.id})).filter(s => !s.isAlias && s.identityStatus !== 'ALIAS' && s.active !== false && s.isActive !== false && !/^(INACTIVE|DISABLED|DELETED|STOPPED|WITHDRAWN|PAUSED|중지|중지생|퇴원|퇴원생|휴원|휴원생|비활성|삭제)$/.test(String(s.status || s.registrationStatus || s.enrollmentStatus || '').toUpperCase()) && (s.active === true || s.isActive === true || /^(ACTIVE|REGISTERED|ENROLLED|CURRENT|RETURNING|재원|재원생|등록)$/.test(String(s.status || s.registrationStatus || s.enrollmentStatus || '').toUpperCase()))).map(s => ({id:s.id,name:s.name || s.studentName || '',school:s.school || '',grade:String(s.grade || '')})).filter(s=>s.name).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+        },
         loadStaffIcons: async () => {
           const snapshot = await firestore.collection("sharedIconAssets").where("category", "==", "PERSON").get();
           return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(asset => (asset.status || "ACTIVE") === "ACTIVE" && /^https:\/\//.test(asset.imageUrl || asset.downloadURL || "")).map(asset => ({ category: "PERSON", status: "ACTIVE", lookupKey: asset.lookupKey || "", displayName: asset.displayName || "", aliases: Array.isArray(asset.aliases) ? asset.aliases : [], imageUrl: asset.imageUrl || asset.downloadURL }));

@@ -17757,6 +17757,7 @@
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261010-refund">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
+<link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
 <link rel="stylesheet" href="./work-followup.css?v=20261013-followup">
@@ -18777,6 +18778,7 @@
                   <button class="desk-supply-tab active" type="button" data-desk-supplies-tab="inventory" aria-pressed="true"><i data-lucide="package-check" aria-hidden="true"></i><span>소모품 현황</span></button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="assets" aria-pressed="false"><i data-lucide="boxes" aria-hidden="true"></i><span>물품 관리</span></button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="purchase" aria-pressed="false"><i data-lucide="shopping-cart" aria-hidden="true"></i><span>구매 요청</span></button>
+                  <button class="desk-supply-tab" type="button" data-desk-supplies-tab="rewards" aria-pressed="false"><i data-lucide="gift" aria-hidden="true"></i><span>학생 리워드</span></button>
                   <button class="desk-supply-tab" type="button" data-desk-supplies-tab="subscriptions" aria-pressed="false"><i data-lucide="credit-card" aria-hidden="true"></i><span>유료 구독 현황</span></button>
                 </section>
                 <section class="desk-supply-sync-status" id="deskSupplySyncStatus" aria-live="polite">
@@ -18898,6 +18900,7 @@
                 </div>
               </section>
 
+              <section class="desk-supply-panel hidden" data-desk-supplies-panel="rewards"><div id="studentRewards"></div></section>
               <section class="desk-supply-panel hidden" data-desk-supplies-panel="subscriptions">
 <article id="deskSubscriptions" class="sub-ledger" aria-labelledby="subHeading">
   <div class="sub-head"><div><h3 id="subHeading">유료 구독 현황</h3><p>업무에 쓰는 구독, 매월 결제 기록부터 대표님 보고까지.</p></div><button type="button" id="subSettings">구독 설정 · 추가</button></div>
@@ -20996,6 +20999,7 @@
       getDeskPortalConfig: true, saveDeskPortalConfig: true, getDeskSubscriptionSyncCapabilities: true, saveDeskSubscriptionSync: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
+      getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
       getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
@@ -23991,6 +23995,7 @@
       });
       renderDeskSuppliesSyncStatus_();
       if (shouldDeferPortalDataLoad_()) return;
+      if (state.desk.suppliesTab === "rewards" && window.ensureStudentRewards) window.ensureStudentRewards();
       if (state.desk.suppliesTab === "subscriptions" && window.ensureDeskSubscriptions) window.ensureDeskSubscriptions();
       if (!state.desk.supplies.loaded) {
         if (deskSupplyInventoryBodyEl) deskSupplyInventoryBodyEl.innerHTML = '<tr><td colspan="6">소모품 데이터를 불러오는 중입니다...</td></tr>';
@@ -46035,6 +46040,7 @@ window.SeduHubAdapter={
 <script src="./tuition-redesign.js?v=20260916-metrics"></script>
 <script src="./tuition-groups.js?v=20261010-2"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
+<script src="./student-rewards.js?v=20261013"></script>
 <script src="./subscriptions.js?v=20260925-chart"></script>
 <script src="./desk-refinements.js?v=20261002"></script>
 <script src="./message-templates.js?v=20261003"></script>

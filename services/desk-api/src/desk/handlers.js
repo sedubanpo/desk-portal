@@ -1,3 +1,4 @@
+import { createRewardMethods } from './rewards.js';
 import { prepareMessageTemplates } from './message-templates.js';
 import { prepareResponseLog } from './response-log.js';
 import { buildHubNotifications } from './hub-notifications.js';
@@ -42,6 +43,7 @@ const PATHS = Object.freeze({
 });
 
 export const DESK_READ_METHODS = new Set([
+  'getDeskRewards', 'getDeskRewardStudents',
   'getHubNotifications',
   'getDeskScheduleMonthData',
   'getDeskScheduleDayHistory',
@@ -60,6 +62,7 @@ export const DESK_READ_METHODS = new Set([
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
+  'saveDeskReward',
   'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries',
   'saveDeskAttendancePunch', 'saveDeskAttendanceCorrectionRequest', 'saveDeskAttendanceCorrectionDecision',
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
@@ -77,10 +80,11 @@ export const DESK_ATTENDANCE_ADMIN_METHODS = new Set(['saveDeskAttendanceCorrect
 
 export const DESK_METHODS = new Set([...DESK_READ_METHODS, ...DESK_WRITE_METHODS]);
 
-export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [], loadStaffIcons = async () => [], subscriptionBilling = { capabilities: () => ({}), sync: async () => { throw new Error('구독 청구 연동이 설정되지 않았습니다.'); } } }) {
+export function createDeskHandlers({ store, now = () => new Date().toISOString(), loadStaffDirectory = async () => [], loadStaffIcons = async () => [], loadRewardStudents = async () => [], subscriptionBilling = { capabilities: () => ({}), sync: async () => { throw new Error('구독 청구 연동이 설정되지 않았습니다.'); } } }) {
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
+    ...createRewardMethods({store, now, loadRewardStudents}),
     async getHubNotifications(_payload = {}, identity = {}) {
       // Fixed window and verified identity; the browser cannot choose a recipient.
       const today=seoulDateKey(now());
