@@ -38984,13 +38984,17 @@
 
     function loadBootstrap() {
       setLoading(true, "초기 데이터를 불러오는 중입니다...");
-      state.payroll.loadingPromise = runServer("getPayrollBootstrapData")
-        .then(function(res) {
+      state.payroll.loadingPromise = Promise.all([
+        runServer("getPayrollBootstrapData"),
+        ensureTeacherSettingsLoaded_().catch(function() {})
+      ])
+        .then(function(results) {
+          var res = results[0];
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "초기 로드 실패");
           state.months = res.months || [];
           state.selectedMonth = res.selectedMonth || (state.months[0] || "");
           renderMonthOptions();
-          return ensureTeacherSettingsLoaded_().catch(function() {}).then(function() {
+          return Promise.resolve().then(function() {
             renderModeState();
             return refreshSummary(false, { settingsReady: true });
           }).then(function(summaryRes) {

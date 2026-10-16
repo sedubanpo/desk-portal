@@ -29,15 +29,33 @@ export function combineLessons(current, past, drafts) {
 
 // Reuse the intranet reader against a bounded read-only snapshot instead of
 // repeating historical queries for every student in the payroll month.
-function snapshotDatabase(collections) {
+export function snapshotDatabase(collections) {
   const document = row => ({id:row?._documentId, data:()=>row});
-  return {
-    doc(path) {const [name,id]=path.split('/');return {get:async()=>document((collections[name]||[]).find(row=>row._documentId===id))};},
-    collection(name) {
-      let selected=collections[name]||[];
-      return {where(field,operator,value) {if(operator!=='==')throw new Error('Unsupported payroll snapshot query');selected=selected.filter(row=>row[field]===value);return this;},
-        limit(count) {selected=selected.slice(0,count);return this;},async get() {return {size:selected.length,docs:selected.map(document)};}};
+  const indexes = new Map();
+  const lookup = (name, field, value) => {
+    const key = JSON.stringify([name, field]);
+    if (!indexes.has(key)) {
+      const index = new Map();
+      for (const row of collections[name] || []) {
+        const bucket = index.get(row[field]) || [];
+        bucket.push(row);
+        index.set(row[field], bucket);
+      }
+      indexes.set(key, index);
     }
+    return indexes.get(key).get(value) || [];
+  };
+  const query = (name, selected = null) => ({
+    where(field, operator, value) {
+      if (operator !== '==') throw new Error('Unsupported payroll snapshot query');
+      return query(name, selected === null ? lookup(name, field, value) : selected.filter(row => row[field] === value));
+    },
+    limit(count) { return query(name, (selected || collections[name] || []).slice(0, count)); },
+    async get() { const rows = selected || collections[name] || []; return {size:rows.length, docs:rows.map(document)}; }
+  });
+  return {
+    doc(path) { const [name,id] = path.split('/'); return {get:async()=>document(lookup(name,'_documentId',id)[0])}; },
+    collection: name => query(name)
   };
 }
 function pendingReason(lesson, amount, payValid) {
@@ -87,6 +105,7 @@ export function createIntranetPayrollReader(db) {
     return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
   };
   return {async readMonth(name, { forceRefresh = false } = {}) {
+    const started=performance.now();
     const read = forceRefresh ? async (collection, month, limit = 5000) => {
       const snap = await load(collection, month, limit);
       return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
@@ -95,10 +114,13 @@ export function createIntranetPayrollReader(db) {
     const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks]=await Promise.all([
       read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),read('intranetMakeupLinks')
     ]);
+    const readMs=Math.round(performance.now()-started);
     let lessons=combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
     const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
     const periods={};
-    const canonicalId=id=>{const student=roster.find(s=>s._documentId===id||s.canonicalId===id);return student?.canonicalId||student?._documentId||id;};
+    const rosterIndex=new Map();
+    for(const student of roster) for(const id of [student._documentId,student.canonicalId]) if(id&&!rosterIndex.has(id)) rosterIndex.set(id,student);
+    const canonicalId=id=>{const student=rosterIndex.get(id);return student?.canonicalId||student?._documentId||id;};
     for(const id of new Set(lessons.map(l=>canonicalId(l.studentId)))) {
       const saved=fees.find(p=>p.studentId===id&&p.month===month)||{};
       const period=inheritFees(await readCarriedFees(feeDatabase,id,month,{...saved,assignments:[...(saved.assignments||[])]}),baselines.find(p=>p._documentId===id),month);
@@ -108,7 +130,7 @@ export function createIntranetPayrollReader(db) {
     const students=roster.map(s=>({...s,id:s._documentId}));
     const decisions=Object.fromEntries((sessionDocs.find(s=>s._documentId===month)?.records||[]).map(r=>[r.key,r.decision]));
     const project=rows=>projectedFeeRows(rows,students,{periods},month,decisions).map(r=>r.lesson);
-    const hypothetical=project(lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l));
+    const hypothetical=lessons.some(l=>l.kind==='absence') ? project(lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l)) : [];
     const absentRates=new Map(hypothetical.map(l=>[`${l.studentId}|${l.id}`,l]));
     lessons=project(lessons).map(l=>l.kind==='absence'?{...l,absenceRate:absentRates.get(`${l.studentId}|${l.id}`)?.rate,absenceRateUnit:absentRates.get(`${l.studentId}|${l.id}`)?.rateUnit}:l);
     const studentMap=new Map(roster.map(s=>[s._documentId,s]));
@@ -129,6 +151,9 @@ export function createIntranetPayrollReader(db) {
     const currentRows=intranetRows(lessons,studentMap,meta);
     const links=makeupLinks.flatMap(d=>(d.links||[]).map(l=>({...l,studentId:d.studentId})));
     const rows=priceCancellationMakeups(currentRows,[...historicRows,...currentRows],links);
-    return {rows,version:createHash('sha256').update(JSON.stringify(rows)).digest('hex')};
+    const version=createHash('sha256').update(JSON.stringify(rows)).digest('hex');
+    const timings={readMs,calculationMs:Math.round(performance.now()-started-readMs),totalMs:Math.round(performance.now()-started)};
+    console.info(JSON.stringify({event:'payroll-source-timing',month,rows:rows.length,...timings}));
+    return {rows,version,timings};
   }};
 }

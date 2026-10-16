@@ -224,3 +224,19 @@ test('concurrent month reads share collection I/O while force refresh starts ind
  const fresh=reader.readMonth('26-09',{forceRefresh:true});assert.equal(reads,22);
  resolvers.forEach(resolve=>resolve());await Promise.all([a,b,fresh]);
 });
+
+
+test('indexed historical snapshot preserves query isolation and read limits',async()=>{
+ const {snapshotDatabase}=await import('../src/payroll/intranet.js');
+ const records=[{_documentId:'a',studentId:'one',month:'2026-08'},{_documentId:'b',studentId:'two',month:'2026-09'},{_documentId:'c',studentId:'one',month:'2026-09'}];
+ const db=snapshotDatabase({history:records});
+ const base=db.collection('history');
+ const one=base.where('studentId','==','one');
+ assert.deepEqual((await one.limit(1).get()).docs.map(d=>d.id),['a']);
+ assert.deepEqual((await one.get()).docs.map(d=>d.id),['a','c']);
+ assert.deepEqual((await one.where('month','==','2026-09').get()).docs.map(d=>d.id),['c']);
+ assert.equal((await base.get()).size,3);
+ assert.equal((await db.doc('history/b').get()).data(),records[1]);
+ assert.equal((await db.doc('history/missing').get()).data(),undefined);
+ assert.equal((await base.where('studentId','==','missing').get()).size,0);
+});
