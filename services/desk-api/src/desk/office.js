@@ -41,8 +41,8 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
   if(!validOfficeDate(date)||!['seat','start','edit','complete','cancel'].includes(p.action))return fail('작업 정보를 확인해 주세요.');
   if(!/^[a-zA-Z0-9-]{16,80}$/.test(p.operationId||'')||!Number.isSafeInteger(p.version)||p.version<0)return fail('저장 정보를 다시 불러와 주세요.');
   if(typeof p.workerKey!=='string'||!/^\w{24}$/.test(p.workerKey))return fail('근무자를 선택해 주세요.');
-  if(p.action==='seat'&&p.seat!==''&&!OFFICE_SEATS.includes(p.seat))return fail('자리를 선택해 주세요.');
-  if(['start','edit'].includes(p.action)&&(typeof p.text!=='string'||!p.text.trim()||p.text.length>500))return fail('업무 내용을 500자 이내로 입력해 주세요.');
+  if((p.action==='seat'||(p.action==='start'&&p.seat!==undefined))&&p.seat!==''&&!OFFICE_SEATS.includes(p.seat))return fail('자리를 선택해 주세요.');
+  if((['start','edit'].includes(p.action)||(p.action==='complete'&&p.text!==undefined))&&(typeof p.text!=='string'||!p.text.trim()||p.text.length>500))return fail('업무 내용을 500자 이내로 입력해 주세요.');
   const fingerprint=createHash('sha256').update(JSON.stringify([p.action,p.workerKey,p.version,p.seat||'',p.text||'',actor.uid])).digest('hex');
   directoryCache=null;
   const stamp=now(),people=await roster(date),person=people.find(s=>s.key===p.workerKey);
@@ -58,18 +58,19 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
    if((before?.version||0)!==p.version)return reject('다른 화면에서 변경되었습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.');
    if(!person&&!['complete','cancel'].includes(p.action)&&!(p.action==='seat'&&p.seat===''))return reject('현재 근무표에 없는 근무자입니다.');
    const next={...(before||{}),...target,version:p.version+1,updatedAt:stamp,updatedBy:actor.name||actor.nickname||'근무자',updatedByUid:actor.uid};
-   if(p.action==='seat'){
+   if(p.action==='seat'||(p.action==='start'&&p.seat!==undefined)){
     if(p.seat&&Object.entries(office.workers||{}).some(([key,w])=>key!==p.workerKey&&w.seat===p.seat))return reject('다른 근무자가 먼저 선택한 자리입니다.');
     next.seat=p.seat;next.seatDate=date;
-   }else if(p.action==='start'){
+   }
+   if(p.action==='start'){
     if(before?.task)return reject('진행 중인 업무를 먼저 완료하거나 취소해 주세요.');
     next.task={id:p.operationId,text:p.text.trim(),startedAt:stamp,startedBy:actor.name||'근무자',startedByUid:actor.uid};
-   }else{
+   }else if(p.action!=='seat'){
     if(!before?.task)return reject('진행 중인 업무가 없습니다.');
     if(p.action==='edit')next.task={...before.task,text:p.text.trim()};
     else{
      if(p.action==='complete'){
-      const task=before.task,id='office-'+task.id;
+      const task={...before.task,text:p.text===undefined?before.task.text:p.text.trim()},id='office-'+task.id;
       day.memos||={};
       // The office state and journal record commit in the same day transaction.
       if(!day.memos[id])day.memos[id]={...dailyMemo({id,worker:target.name,text:task.text,createdAt:task.startedAt,updatedAt:stamp,durationMinutes:Math.max(0,Math.floor((Date.parse(stamp)-Date.parse(task.startedAt))/60000)),mode:'record'},id,date,stamp),source:'mini-office',startedAt:task.startedAt,completedAt:stamp,completedBy:actor.name||'근무자',completedByUid:actor.uid};
@@ -79,7 +80,7 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
     }
    }
    office.workers||={};office.workers[p.workerKey]=next;office.updatedAt=stamp;
-   office.operations||={};office.operations[p.operationId]={fingerprint,action:p.action,workerKey:p.workerKey,at:stamp,by:actor.name||'근무자',uid:actor.uid,before:before?.task?.text||'',after:next.task?.text||'',seat:next.seat||''};
+   office.operations||={};office.operations[p.operationId]={fingerprint,action:p.action,workerKey:p.workerKey,at:stamp,by:actor.name||'근무자',uid:actor.uid,before:before?.task?.text||'',after:p.action==='complete'?(p.text===undefined?before.task.text:p.text.trim()):(next.task?.text||''),seat:next.seat||''};
    day.office=office;result={success:true};return day;
   });
   return result||fail('저장 결과를 확인하지 못했습니다.');

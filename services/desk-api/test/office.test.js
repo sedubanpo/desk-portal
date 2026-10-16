@@ -39,3 +39,19 @@ test('history pages without overlap and returns empty dates',async()=>{
 });
 
 test('partial subscription failure releases already registered listeners',()=>{const f=fixture();let calls=0,closed=0;f.store.subscribe=()=>{if(++calls===2)throw Error('connection unavailable');return ()=>closed++;};assert.throws(()=>f.office.watch('2026-10-16',()=>{},()=>{}));assert.equal(closed,1);});
+
+test('completion saves edited content atomically and records both versions',async()=>{
+ const f=fixture();await f.mutate({action:'start',text:'원본'});
+ const p={action:'complete',text:'수정된 최종 업무',version:1,operationId:'complete-edited-task-123'};
+ assert.equal((await f.mutate({...p,text:' '})).success,false);
+ assert.equal((await f.mutate(p)).success,true);assert.equal((await f.mutate(p)).replayed,true);
+ const day=f.records['desk_portal/daily_journal/2026-10-16'];assert.equal(Object.keys(day.memos).length,1);assert.equal(Object.values(day.memos)[0].text,'수정된 최종 업무');
+ const event=day.office.operations[p.operationId];assert.equal(event.before,'원본');assert.equal(event.after,'수정된 최종 업무');
+});
+test('starting work saves the selected seat and rejects occupied seats without starting work',async()=>{
+ const f=fixture(),s=await f.office.snapshot('2026-10-16');await f.mutate({action:'seat',seat:'main-1',workerKey:s.people[1].key},f.admin);
+ assert.equal((await f.mutate({action:'start',seat:'main-1',text:'충돌'})).success,false);
+ let snapshot=await f.office.snapshot('2026-10-16');assert.equal(snapshot.workers[s.people[0].key],undefined);
+ assert.equal((await f.mutate({action:'start',seat:'annex-2',text:'업무'})).success,true);
+ snapshot=await f.office.snapshot('2026-10-16');assert.equal(snapshot.workers[s.people[0].key].seat,'annex-2');assert.equal(snapshot.workers[s.people[0].key].task.text,'업무');
+});
