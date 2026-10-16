@@ -36,6 +36,12 @@ export function createDeskStore(database, { readTimeoutMs = DEFAULT_READ_TIMEOUT
   }
 
   return {
+    subscribe(path, onChange, onError) {
+      const target = ref(path);
+      const listener = () => onChange();
+      target.on('value', listener, onError);
+      return () => target.off('value', listener);
+    },
     async get(path) {
       let snapshot;
       try {

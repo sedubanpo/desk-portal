@@ -17757,6 +17757,7 @@
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261010-refund">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
+<link rel="stylesheet" href="./mini-office.css?v=20261016">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -19768,6 +19769,7 @@
               </div>
             </header>
 
+            <section id="deskMiniOffice" aria-label="실시간 미니 사무실"></section>
             <div class="desk-journal-shell">
               <section class="desk-journal-statusbar hidden" aria-hidden="true">
                 <span class="hidden" id="deskJournalTaskSummary">0건</span>
@@ -20999,7 +21001,7 @@
       getDeskPortalConfig: true, saveDeskPortalConfig: true, getDeskSubscriptionSyncCapabilities: true, saveDeskSubscriptionSync: true,
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
-      getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
+      getDeskOfficeHistory: true, getDeskOffice: true, saveDeskOffice: true, getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
       getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
@@ -30878,6 +30880,8 @@
         durationMinutes: Math.min(1440, Math.max(0, Math.floor(Number(item && item.durationMinutes) || 0))),
         createdAt: createdAt,
         updatedAt: updatedAt,
+        officeCompletedAt: String(item && (item.completedAt || item.officeCompletedAt) || ''),
+        officeCompletedBy: String(item && (item.completedBy || item.officeCompletedBy) || ''),
         clientOrder: normalizeDeskDailyMemoClientOrder_(item && item.clientOrder, createdAt || updatedAt)
       };
     }
@@ -30997,6 +31001,8 @@
           return {
             id: item.id,
             text: item.title || item.note || "공동 업무",
+            note: item.note || "",
+            updatedAt: item.updatedAt || item.createdAt || "",
             author: item.createdByName || item.updatedByName || "기록자 미상"
           };
         });
@@ -34882,7 +34888,7 @@
               (isEditing
                 ? '<select class="desk-note-type-select" data-desk-journal-memo-type="' + escapeHtml(item.id) + '" aria-label="업무 유형">' + buildDeskMemoTypeSelectOptions_(type) + '</select>'
                 : '<span class="desk-memo-type-badge ' + escapeHtml(getDeskMemoTypeClass_(type)) + '"><i data-lucide="' + escapeHtml(typeIcon) + '"></i>' + escapeHtml(type) + '</span>') +
-              (isEditing ? '<label>소요(분)<input type="number" min="1" max="1440" step="1" class="desk-note-time-input" data-desk-journal-memo-duration="' + escapeHtml(item.id) + '" value="' + (item.durationMinutes || '') + '" aria-label="업무 소요시간(분)"></label>' : (item.durationMinutes ? '<span class="desk-muted">소요 ' + item.durationMinutes + '분</span>' : '')) +
+              (isEditing ? '<label>소요(분)<input type="number" min="1" max="1440" step="1" class="desk-note-time-input" data-desk-journal-memo-duration="' + escapeHtml(item.id) + '" value="' + (item.durationMinutes || '') + '" aria-label="업무 소요시간(분)"></label>' : (item.durationMinutes ? '<span class="desk-muted">소요 ' + item.durationMinutes + '분</span>' : '') + (item.officeCompletedAt ? '<span class="desk-muted">완료 ' + escapeHtml(formatDeskJournalTimeOnly_(item.officeCompletedAt)) + ' · 처리 ' + escapeHtml(item.officeCompletedBy) + '</span>' : '')) +
             '</div>' +
             '<div class="desk-note-body">' +
               '<div class="desk-note-main">' +
@@ -46041,6 +46047,19 @@ window.SeduHubAdapter={
 <script src="./tuition-groups.js?v=20261010-2"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
+<script src="./mini-office.js?v=20261016"></script>
+<script>
+DeskMiniOffice.init({
+ base: DESK_CLOUD_API_BASE,
+ context: function() { return {active:state.activeModule === 'expense' && state.desk.activeTab === 'dailyJournal' && state.cloudApiReady, dateKey:state.desk.daily.dateKey || getDeskDateKey_(new Date()), identity:state.cloudIdentity}; },
+ token: function() { return state.firebaseUser.getIdToken(); },
+ badge: function(name) { return getDeskWorkerBadgeHtml_(name); },
+ notices: function() { return getDeskGlobalNoticeItems_(); },
+ save: function(payload) { return runServer('saveDeskOffice',payload); },
+ history: function(payload) { return runServer('getDeskOfficeHistory',payload); },
+ refreshJournal: function(date) { if(state.cloudApiReady) ensureDeskDailyJournalLoaded_(date,true).catch(function(){}); }
+});
+</script>
 <script src="./subscriptions.js?v=20260925-chart"></script>
 <script src="./desk-refinements.js?v=20261002"></script>
 <script src="./message-templates.js?v=20261003"></script>

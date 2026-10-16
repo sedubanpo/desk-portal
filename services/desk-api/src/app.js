@@ -1,3 +1,4 @@
+import {officeStream} from './desk/office-stream.js';
 import { createFollowupRouter } from './followup/router.js';
 import { createInquiryRouter } from './inquiries/router.js';
 import express from 'express';
@@ -36,7 +37,7 @@ function canonicalJson(value) {
 const SUPPORTED_METHODS = new Set([...DESK_METHODS, ...TUITION_METHODS, ...PAYROLL_METHODS]);
 const WRITE_METHODS = new Set([...DESK_WRITE_METHODS, ...TUITION_WRITE_METHODS, ...PAYROLL_WRITE_METHODS]);
 
-export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess, training, inquiries, followup }) {
+export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {}, runIdempotent = async (_context, operation) => operation(), payrollAccess, training, inquiries, followup, office }) {
   const app = express();
   const requireStaff = createRequireStaff({ verifyIdToken, loadAccount });
   const payrollGate = payrollAccess || createPayrollAccess({
@@ -72,6 +73,8 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
       timestamp: new Date().toISOString()
     });
   });
+
+  if (office) app.get('/v1/office/stream', requireStaff, officeStream(office));
 
   app.get('/v1/me', requireStaff, (req, res) => {
     res.json({ ok: true, user: req.identity });

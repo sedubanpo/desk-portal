@@ -43,7 +43,7 @@ const PATHS = Object.freeze({
 });
 
 export const DESK_READ_METHODS = new Set([
-  'getDeskRewards', 'getDeskRewardStudents',
+  'getDeskOfficeHistory', 'getDeskOffice', 'getDeskRewards', 'getDeskRewardStudents',
   'getHubNotifications',
   'getDeskScheduleMonthData',
   'getDeskScheduleDayHistory',
@@ -62,7 +62,7 @@ export const DESK_READ_METHODS = new Set([
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
-  'saveDeskReward',
+  'saveDeskOffice', 'saveDeskReward',
   'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries',
   'saveDeskAttendancePunch', 'saveDeskAttendanceCorrectionRequest', 'saveDeskAttendanceCorrectionDecision',
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
@@ -408,6 +408,10 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
       if (!rtdbKey(memo.id)) return failure('기록 ID가 올바르지 않습니다.');
       if (!memo.worker) return failure('기록 근무자 이름이 필요합니다.');
       if (!memo.text) return failure('기록 내용을 입력해 주세요.');
+      const prior = await store.get(`${PATHS.journal}/${key}/memos/${memo.id}`);
+      if (prior?.source === 'mini-office') {
+        for (const field of ['source','startedAt','completedAt','completedBy','completedByUid']) memo[field] = prior[field] || '';
+      }
       await store.set(`${PATHS.journal}/${key}/memos/${memo.id}`, memo);
       return { success: true, dateKey: key, memo };
     },

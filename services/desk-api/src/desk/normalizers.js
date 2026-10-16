@@ -125,6 +125,7 @@ export function dailyMemo(item = {}, fallbackId = '', fallbackDateKey = '', now 
     durationMinutes: Math.min(1440, Math.max(0, Math.floor(Number(item.durationMinutes) || 0))),
     createdAt: String(item.createdAt || now).trim(),
     updatedAt: String(item.updatedAt || item.createdAt || now).trim(),
+    ...(item.source === 'mini-office' ? {source:'mini-office', startedAt:String(item.startedAt || item.createdAt || ''), completedAt:String(item.completedAt || ''), completedBy:String(item.completedBy || ''), completedByUid:String(item.completedByUid || '')} : {}),
     clientOrder: memoOrder(item.clientOrder, stamp)
   };
 }

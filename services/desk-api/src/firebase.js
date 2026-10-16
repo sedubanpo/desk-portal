@@ -1,3 +1,4 @@
+import {createOffice} from './desk/office.js';
 import { createFollowupJournalSync } from './followup/journal-sync.js';
 import { createPayrollExportHandler } from './payroll/export-handler.js';
 import { createWorkforceHandlers } from './payroll/workforce.js';
@@ -38,7 +39,9 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   const payroll=createPayrollHandlers({store:createPayrollStore(firestore),sheets:workspace,intranet:createIntranetPayrollReader(firestore)});
   const workforce=createWorkforceHandlers({firestore,deskStore:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)});
   const tuitionStore=createTuitionStore(firestore);
+  const office=createOffice({store:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore,['ADMIN','STAFF','DESK'])});
   return {
+    office,
     followup: { firestore, token: notionFollowupToken, sourceId: notionFollowupSourceId, loadStaffDirectory: () => loadStaffDirectory(firestore), journalSync: createFollowupJournalSync({store:createDeskStore(legacyDatabase),loadStaffDirectory:()=>loadStaffDirectory(firestore)}) },
     inquiries: { firestore, token: notionInquiryToken, sourceId: notionInquirySourceId, historySourceId: notionInquiryHistoryId, syncKey: notionInquirySyncKey },
     training: { firestore, bucket: getStorage(app).bucket('fir-lms-prod-training-evidence') },
@@ -54,6 +57,9 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
       };
     },
     deskHandlers: {
+      getDeskOfficeHistory: p=>office.history(p),
+      getDeskOffice: p=>office.snapshot(p.dateKey),
+      saveDeskOffice: (p,actor)=>office.mutate(p,actor),
       ...createDeskHandlers({
         store: createDeskStore(legacyDatabase),
         loadStaffDirectory: () => loadStaffDirectory(firestore),
@@ -82,7 +88,7 @@ export function createFirebaseDependencies({ projectId, checkRevokedTokens, lega
   };
 }
 
-async function loadStaffDirectory(firestore) {
+async function loadStaffDirectory(firestore, roles = ['STAFF']) {
   const [usersSnapshot, profilesSnapshot] = await Promise.all([
     firestore.collection('users').get(),
     firestore.collection('userProfiles').get()
@@ -98,7 +104,7 @@ async function loadStaffDirectory(firestore) {
       name: user.name || profile.displayName || '',
       staffPosition: user.staffPosition || profile.staffPosition || ''
     };
-  }).filter(item => item.role === 'STAFF');
+  }).filter(item => roles.includes(item.role));
 }
 
 function legacyFirebaseApp(databaseURL) {
