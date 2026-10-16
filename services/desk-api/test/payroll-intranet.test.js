@@ -240,3 +240,33 @@ test('indexed historical snapshot preserves query isolation and read limits',asy
  assert.equal((await db.doc('history/missing').get()).data(),undefined);
  assert.equal((await base.where('studentId','==','missing').get()).size,0);
 });
+
+test('partitioned projection matches shared calculator across students, aliases, absences and discounts',async()=>{
+ const {projectedPayrollFeeRows}=await import('../src/payroll/intranet.js');
+ const {projectedFeeRows}=await import('../src/payroll/intranet-projection.js');
+ const students=Array.from({length:30},(_,i)=>({id:'s'+i,canonicalId:'canonical'+i}));
+ const periods=Object.fromEntries(students.map((s,i)=>[s.canonicalId,{assignments:[],discountPolicy:{month:'2026-09',percent:i%3*5,specialHourly:null,courses:[],reason:'할인'}}]));
+ const lessons=Array.from({length:600},(_,i)=>{
+   const kind=['regular','late','absence','cancel','cancelMakeup','free'][Math.floor(i/30)%6];
+   return {...lesson,id:'l'+i,studentId:i%2?students[i%30].id:students[i%30].canonicalId,date:'2026-09-'+String(1+Math.floor(i/30)).padStart(2,'0'),kind,billMinutes:['absence','cancelMakeup','free'].includes(kind)?0:120,payMinutes:kind==='absence'?0:120};
+ });
+ const expected=projectedFeeRows(lessons,students,{periods},'2026-09');
+ assert.deepEqual(projectedPayrollFeeRows(lessons,students,{periods},'2026-09'),expected);
+ const duplicates=[...lessons,lessons[0]];
+ assert.deepEqual(projectedPayrollFeeRows(duplicates,students,{periods},'2026-09'),projectedFeeRows(duplicates,students,{periods},'2026-09'));
+});
+
+test('calculation reuse rereads source on force refresh and invalidates on edits and deletion',async()=>{
+ const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
+ let reads=0;
+ const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[lesson]}]};
+ const db={collection(name){return {where(){return this;},limit(){return this;},async get(){reads++;const all=data[name]||[];return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const reader=createIntranetPayrollReader(db);
+ const first=await reader.readMonth('26-09');assert.equal(first.timings.calculationCacheHit,false);
+ first.rows[0].amount=999;
+ const second=await reader.readMonth('26-09',{forceRefresh:true});assert.equal(reads,22);assert.equal(second.timings.calculationCacheHit,true);assert.equal(second.rows[0].amount,60000);
+ data.intranetLegacyPeriods[0].lessons[0]={...lesson,rate:40000};
+ const edited=await reader.readMonth('26-09',{forceRefresh:true});assert.equal(edited.timings.calculationCacheHit,false);assert.equal(edited.rows[0].amount,80000);
+ data.intranetLegacyPeriods=[];
+ const deleted=await reader.readMonth('26-09',{forceRefresh:true});assert.equal(deleted.timings.calculationCacheHit,false);assert.equal(deleted.rows.length,0);
+});

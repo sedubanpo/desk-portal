@@ -1,3 +1,4 @@
+import { createReadCache } from './read-cache.js';
 import { priceCancellationMakeups } from './makeup.js';
 import { createHash } from 'node:crypto';
 import { parsePayrollRows, parsePayrollMonthName } from './normalizers.js';
@@ -86,8 +87,35 @@ export function intranetRows(lessons, students, meta) {
   });
 }
 
+// Fee/session evidence is scoped to the normalized student. Partition before
+// invoking the shared intranet calculator so each student's pass scans only
+// their lessons, rather than every lesson in the academy.
+export function projectedPayrollFeeRows(lessons, students, data, month, decisions = {}) {
+  const ids=new Set();
+  for(const lesson of lessons) {
+    // Preserve legacy behavior for malformed/duplicate IDs instead of changing
+    // how the shared calculator's replacement maps resolve them.
+    if(ids.has(lesson.id)) return projectedFeeRows(lessons,students,data,month,decisions);
+    ids.add(lesson.id);
+  }
+  const studentIndex=new Map();
+  for(const student of students) for(const id of [student.id,student.canonicalId]) if(id&&!studentIndex.has(id)) studentIndex.set(id,student);
+  const groups=new Map();
+  for(const lesson of lessons) {
+    const id=studentIndex.get(lesson.studentId)?.id || lesson.studentId;
+    if(!groups.has(id)) groups.set(id,[]);
+    groups.get(id).push(lesson);
+  }
+  const results=new Map();
+  for(const rows of groups.values()) for(const row of projectedFeeRows(rows,students,data,month,decisions)) results.set(row.lesson.id,row);
+  return lessons.flatMap(lesson=>results.has(lesson.id)?[results.get(lesson.id)]:[]);
+}
+
 export function createIntranetPayrollReader(db) {
   const pendingReads = new Map();
+  // Keys include every freshly read source document. This caches computation,
+  // never the database read, including on explicit refresh and finalization.
+  const calculations = createReadCache({ttlMs: 30 * 60 * 1000, maxEntries: 4});
   const load=async(name,month,limit=5000)=>{
     let query=db.collection(name); if(month) query=query.where('month','==',month);
     const snap=await query.limit(limit+1).get();
@@ -115,6 +143,8 @@ export function createIntranetPayrollReader(db) {
       read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),read('intranetMakeupLinks')
     ]);
     const readMs=Math.round(performance.now()-started);
+    const fingerprint=createHash('sha256').update(JSON.stringify([month,current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks])).digest('hex');
+    const calculation=await calculations.read(fingerprint,async()=>{
     let lessons=combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
     const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
     const periods={};
@@ -129,7 +159,7 @@ export function createIntranetPayrollReader(db) {
     }
     const students=roster.map(s=>({...s,id:s._documentId}));
     const decisions=Object.fromEntries((sessionDocs.find(s=>s._documentId===month)?.records||[]).map(r=>[r.key,r.decision]));
-    const project=rows=>projectedFeeRows(rows,students,{periods},month,decisions).map(r=>r.lesson);
+    const project=rows=>projectedPayrollFeeRows(rows,students,{periods},month,decisions).map(r=>r.lesson);
     const hypothetical=lessons.some(l=>l.kind==='absence') ? project(lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l)) : [];
     const absentRates=new Map(hypothetical.map(l=>[`${l.studentId}|${l.id}`,l]));
     lessons=project(lessons).map(l=>l.kind==='absence'?{...l,absenceRate:absentRates.get(`${l.studentId}|${l.id}`)?.rate,absenceRateUnit:absentRates.get(`${l.studentId}|${l.id}`)?.rateUnit}:l);
@@ -145,14 +175,17 @@ export function createIntranetPayrollReader(db) {
         const period=inheritFees(await readCarriedFees(feeDatabase,id,historicMonth,{...saved,assignments:[...(saved.assignments||[])]}),baselines.find(p=>p._documentId===id),historicMonth);
         historicPeriods[id]={...period,discountPolicy:discountPolicyFor(discounts.find(p=>p._documentId===id),historicMonth)};
       }
-      const projected=projectedFeeRows(historicLessons,students,{periods:historicPeriods},historicMonth,{}).map(r=>r.lesson);
+      const projected=projectedPayrollFeeRows(historicLessons,students,{periods:historicPeriods},historicMonth,{}).map(r=>r.lesson);
       historicRows.push(...intranetRows(projected,studentMap,parsePayrollMonthName(historicMonth.slice(2))));
     }
     const currentRows=intranetRows(lessons,studentMap,meta);
     const links=makeupLinks.flatMap(d=>(d.links||[]).map(l=>({...l,studentId:d.studentId})));
     const rows=priceCancellationMakeups(currentRows,[...historicRows,...currentRows],links);
     const version=createHash('sha256').update(JSON.stringify(rows)).digest('hex');
-    const timings={readMs,calculationMs:Math.round(performance.now()-started-readMs),totalMs:Math.round(performance.now()-started)};
+    return {rows,version};
+    });
+    const {rows,version}=calculation.value;
+    const timings={calculationCacheHit:calculation.hit,readMs,calculationMs:Math.round(performance.now()-started-readMs),totalMs:Math.round(performance.now()-started)};
     console.info(JSON.stringify({event:'payroll-source-timing',month,rows:rows.length,...timings}));
     return {rows,version,timings};
   }};
