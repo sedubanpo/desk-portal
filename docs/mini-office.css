@@ -9,3 +9,19 @@
 /* One shared chalkboard sits in front of all three buildings. */
 .mo-board{position:relative;margin:0 14px 22px;padding:20px 26px 22px;border:8px solid #b39369;border-radius:10px;background:#354f43;color:#f7f4df;box-shadow:inset 0 0 0 2px #263d32,0 4px 0 #92734e,0 8px 16px #614a2510}.mo-board>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid #e9edcf30}.mo-board header div>span{font-size:10px;letter-spacing:.06em;color:#ccd7ba}.mo-board h4{font-size:21px;margin:6px 0 0;color:#fff9df;letter-spacing:-.03em}.mo-board-count{font-size:12px;white-space:nowrap;color:#e0e9cd}.mo-board-notices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;max-height:280px;overflow:auto;scrollbar-color:#9ba88a #354f43;scrollbar-width:thin}.mo-board details{min-width:0;border-bottom:1px solid #e9edcf22;align-self:start}.mo-board summary{display:flex;align-items:center;gap:10px;min-height:54px;cursor:pointer;list-style:none;padding:10px 0}.mo-board summary::-webkit-details-marker{display:none}.mo-board-number{font-size:11px;color:#c9cfa9;flex:none}.mo-board strong{font-size:13px;line-height:1.7;font-weight:600;overflow-wrap:anywhere}.mo-board-expand{margin-left:auto;color:#d4dfbf;flex:none}.mo-board details[open] .mo-board-expand{transform:rotate(45deg)}.mo-board-detail{padding:0 0 16px 25px}.mo-board-detail p{font-size:12px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;color:#eceddc;margin:0 0 12px}.mo-board-detail small{display:flex;align-items:center;gap:7px;flex-wrap:wrap;color:#c8d2bb;font-size:10px}.mo-board-detail img{max-width:20px;max-height:20px}.mo-board-detail time{margin-left:auto}.mo-board-empty{font-size:13px;color:#d4dec8;padding:20px 0;margin:0;grid-column:1/-1}.mo-board-ledge{position:absolute;left:-13px;right:-13px;height:8px;background:#c3a379;bottom:-10px;border-radius:2px;box-shadow:0 3px 0 #8f704a}.mo-board-ledge i{position:absolute;right:78px;bottom:8px;width:28px;height:5px;background:#eee9d1;border-radius:2px;transform:rotate(-3deg)}.mo-board-ledge b{position:absolute;right:22px;bottom:8px;width:38px;height:12px;border-top:6px solid #b69a72;background:#d9d5b5;border-radius:2px}@media(max-width:760px){.mo-board{margin:0 4px 22px;padding:15px 14px 18px;border-width:6px}.mo-board-notices{grid-template-columns:1fr;max-height:250px}.mo-board h4{font-size:18px}.mo-board>header{gap:8px}.mo-board-count{font-size:10px}}
 @media(max-width:760px){.mo-board-ledge{left:-8px;right:-8px}}
+
+/* A single compact office remains inside the main building. */
+.mo-director{width:min(390px,calc(100% - 24px));box-sizing:border-box;margin:4px 12px 14px auto;padding:12px;border:1px solid #a5af92;border-radius:8px;background:#e9e7cf;}
+.mo-director h5{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:13px;color:#3c5144;}
+.mo-director h5 small{font-size:10px;font-weight:500;color:#59674c;}
+.mo-director .mo-seat{display:grid;grid-template-columns:minmax(0,1fr) 110px;grid-template-rows:100px auto;gap:8px;padding:0;}
+.mo-director .mo-bubble{grid-column:1;grid-row:1;height:100%;}
+.mo-director .mo-furniture{grid-column:2;grid-row:1;height:100px;margin:0;}
+.mo-director .mo-name{grid-column:1/-1;grid-row:2;min-height:36px;}
+.mo-director .mo-seat:before,.mo-director .mo-seat:after{right:123px;}
+.mo-director .mo-monitor{left:8%;width:38px;height:32px;}
+.mo-director .mo-character{width:45px;height:60px;left:calc(50% - 22px);}
+.mo-director .mo-mug{right:12%;}
+.mo-director .mo-desk:before,.mo-director .mo-desk:after{display:block!important;}
+.mo-scene{align-items:start;}
+@media(max-width:760px){.mo-director{margin-top:14px;}.mo-director .mo-seat{grid-template-columns:minmax(0,1fr) 90px;}.mo-director .mo-seat:before,.mo-director .mo-seat:after{right:103px;}}

@@ -55,3 +55,14 @@ test('starting work saves the selected seat and rejects occupied seats without s
  assert.equal((await f.mutate({action:'start',seat:'annex-2',text:'업무'})).success,true);
  snapshot=await f.office.snapshot('2026-10-16');assert.equal(snapshot.workers[s.people[0].key].seat,'annex-2');assert.equal(snapshot.workers[s.people[0].key].task.text,'업무');
 });
+
+test('main director office is one reservable seat with normal task and collision rules',async()=>{
+ const f=fixture(),s=await f.office.snapshot('2026-10-16');
+ assert.equal((await f.mutate({action:'seat',seat:'main-director'})).success,true);
+ assert.equal((await f.mutate({action:'seat',seat:'main-director',workerKey:s.people[1].key},f.admin)).success,false);
+ assert.equal((await f.mutate({action:'start',seat:'main-director',text:'원장실 상담',version:1})).success,true);
+ assert.equal((await f.mutate({action:'complete',version:2})).success,true);
+ const day=f.records['desk_portal/daily_journal/2026-10-16'];
+ assert.equal(Object.values(day.office.workers)[0].seat,'main-director');
+ assert.equal(Object.values(day.memos)[0].text,'원장실 상담');
+});

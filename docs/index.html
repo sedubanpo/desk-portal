@@ -17755,9 +17755,9 @@
   <link rel="stylesheet" href="./workspace.css?v=20261001-personal-tasks-polish">
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
-<link rel="stylesheet" href="./tuition-redesign.css?v=20261010-refund">
+<link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
-<link rel="stylesheet" href="./mini-office.css?v=20261016">
+<link rel="stylesheet" href="./mini-office.css?v=20261017-office-tuition">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -18265,6 +18265,9 @@
             <div class="tuition-metric-group">
               <div class="tuition-metric-group-title">금액 대조</div>
               <div class="tuition-metric-pair">
+                <button type="button" class="tuition-metric-card tuition-previous-card" id="tuitionPreviousCard" aria-haspopup="dialog" onclick="openTuitionPreviousDialog_()">
+                  <span class="tuition-previous-copy"><span class="label">전월 미납자</span><span id="tuitionPreviousNames" class="tuition-previous-names" aria-live="polite">조회 중…</span><span class="meta" id="tuitionPreviousHint">전월 미납·일부 납부 확인</span></span>
+                </button>
                 <article class="tuition-metric-card">
                   <span class="tuition-metric-icon blue"><i data-lucide="wallet-cards"></i></span>
                   <div>
@@ -39128,6 +39131,7 @@
       }
       if (forceReload) {
         state.tuition.loaded = false;
+        state.tuition.unpaidCacheByMonth = {};
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
       }
@@ -39438,7 +39442,8 @@
     }
 
 	    function renderTuitionSummary(data) {
-	      state.tuition.pendingSummary = !!(data && data.pendingSummary);
+	      loadTuitionPreviousCard_();
+      state.tuition.pendingSummary = !!(data && data.pendingSummary);
 	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
       state.tuition.tuitionMemoWarnings = data && data.tuitionMemoWarnings ? data.tuitionMemoWarnings : {};
       state.tuition.monthAvailability = (data.monthAvailability || state.tuition.monthAvailability || []).slice();
@@ -40696,6 +40701,11 @@
         if (!name) return;
         map[name] = {
           monthName: monthName || "",
+          studentName: name,
+          school: row.school || "",
+          grade: row.grade || "",
+          guideAmount: guide,
+          collectedAmount: collected,
           unpaidStatus: status || "안내이전",
           outstandingAmount: outstanding
         };
@@ -40717,7 +40727,8 @@
         statusFilter: "",
         keyword: ""
       }).then(function(res) {
-        if (!res || !res.success) throw new Error(res && res.message ? res.message : "전월 미납 조회 실패");
+        if (!res || !res.success || res.pendingSummary) throw new Error("전월 미납 조회 실패");
+        if (!state.tuition.unpaidCacheByMonth[prevMonth] || state.tuition.unpaidCacheByMonth[prevMonth].promise !== promise) return {};
         var map = buildTuitionUnpaidCarryMap_(res.rows || [], prevMonth);
         state.tuition.unpaidCacheByMonth[prevMonth] = {
           loaded: true,
@@ -40725,10 +40736,7 @@
         };
         return map;
       }).catch(function() {
-        state.tuition.unpaidCacheByMonth[prevMonth] = {
-          loaded: true,
-          map: {}
-        };
+        if (state.tuition.unpaidCacheByMonth[prevMonth] && state.tuition.unpaidCacheByMonth[prevMonth].promise === promise) state.tuition.unpaidCacheByMonth[prevMonth] = { loaded: false, error: true, map: {} };
         return {};
       });
 
@@ -40738,6 +40746,65 @@
         promise: promise
       };
       return promise;
+    }
+
+    function loadTuitionPreviousCard_() {
+      var month = state.tuition.selectedMonth;
+      if (!month) return;
+      document.getElementById("tuitionPreviousNames").textContent = "조회 중…";
+      document.getElementById("tuitionPreviousHint").textContent = formatTuitionMonthLabel_(getTuitionPrevMonthName_(month)) + " 기준";
+      return ensureTuitionPreviousMonthUnpaidCache_(month).then(function() {
+        if (state.tuition.selectedMonth !== month) return;
+        renderTuitionPreviousCard_();
+      });
+    }
+
+    function tuitionPreviousRows_() {
+      var cache = state.tuition.unpaidCacheByMonth[getTuitionPrevMonthName_(state.tuition.selectedMonth)] || {};
+      return Object.keys(cache.map || {}).map(function(key) { return cache.map[key]; }).sort(function(a, b) { return a.studentName.localeCompare(b.studentName, "ko"); });
+    }
+
+    function renderTuitionPreviousCard_() {
+      var month = getTuitionPrevMonthName_(state.tuition.selectedMonth);
+      var cache = state.tuition.unpaidCacheByMonth[month] || {};
+      var rows = tuitionPreviousRows_();
+      document.getElementById("tuitionPreviousNames").textContent = cache.error ? "조회하지 못했습니다" : !cache.loaded ? "조회 중…" : rows.length ? rows.map(function(row) { return row.studentName; }).join(" · ") : "전월 미납자가 없습니다";
+      document.getElementById("tuitionPreviousHint").textContent = cache.error ? "눌러서 다시 조회" : formatTuitionMonthLabel_(month) + " · 상세 보기";
+      var dialog = document.getElementById("tuitionPreviousDialog");
+      if (dialog && dialog.open) renderTuitionPreviousDialog_();
+    }
+
+    function openTuitionPreviousDialog_() {
+      var cache = state.tuition.unpaidCacheByMonth[getTuitionPrevMonthName_(state.tuition.selectedMonth)] || {};
+      if (cache.error) { loadTuitionPreviousCard_(); return; }
+      var dialog = document.getElementById("tuitionPreviousDialog");
+      if (!dialog) {
+        dialog = document.createElement("dialog");
+        dialog.id = "tuitionPreviousDialog";
+        dialog.className = "tuition-previous-dialog";
+        dialog.setAttribute("aria-labelledby", "tuitionPreviousTitle");
+        dialog.innerHTML = '<header><div><h2 id="tuitionPreviousTitle">전월 미납자</h2><p id="tuitionPreviousSummary"></p></div><button type="button" class="btn outline" autofocus>닫기</button></header><p class="tuition-previous-note">전월에 안내한 금액 중 남아 있는 잔액입니다. 일부 납부 학생도 포함하며, 이번 달 수납 합계와는 별도로 표시합니다.</p><div id="tuitionPreviousList"></div>';
+        dialog.querySelector("button").addEventListener("click", function() { dialog.close(); });
+        dialog.addEventListener("click", function(event) { if (event.target === dialog) { var r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
+        document.body.appendChild(dialog);
+      }
+      renderTuitionPreviousDialog_();
+      dialog.showModal();
+    }
+
+    function renderTuitionPreviousDialog_() {
+      var month = getTuitionPrevMonthName_(state.tuition.selectedMonth);
+      var cache = state.tuition.unpaidCacheByMonth[month] || {};
+      var rows = tuitionPreviousRows_();
+      document.getElementById("tuitionPreviousSummary").textContent = formatTuitionMonthLabel_(month) + " · " + rows.length + "명 · 미납 합계 " + formatWon(rows.reduce(function(sum, row) { return sum + row.outstandingAmount; }, 0));
+      var list = document.getElementById("tuitionPreviousList");
+      if (!cache.loaded || !rows.length) { list.textContent = cache.error ? "조회에 실패했습니다. 팝업을 닫고 카드를 눌러 다시 조회해 주세요." : !cache.loaded ? "전월 내역을 불러오는 중입니다…" : "전월 미납자가 없습니다."; return; }
+      list.innerHTML = rows.map(function(row) {
+        return '<article class="tuition-previous-student"><div><button type="button" class="tuition-name-link" data-previous-history="' + escapeHtml(row.studentName) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button><p>' + escapeHtml((row.school || "학교 미입력") + " " + formatTuitionGradeLabel(row.grade)) + '</p>' + buildTuitionStatusBadge(row.unpaidStatus) + '</div><dl><div><dt>안내 금액</dt><dd>' + formatWon(row.guideAmount) + '</dd></div><div><dt>납부 금액</dt><dd>' + formatWon(row.collectedAmount) + '</dd></div><div><dt>남은 금액</dt><dd class="tuition-previous-balance">' + formatWon(row.outstandingAmount) + '</dd></div></dl></article>';
+      }).join("");
+      list.querySelectorAll("[data-previous-history]").forEach(function(button) {
+        button.addEventListener("click", function() { document.getElementById("tuitionPreviousDialog").close(); openTuitionStudentHistoryModal_(button.getAttribute("data-previous-history")); });
+      });
     }
 
     function getTuitionCarryoverHiddenKey_(studentName) {
@@ -46051,7 +46118,7 @@ window.SeduHubAdapter={
 <script src="./tuition-groups.js?v=20261010-2"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
-<script src="./mini-office.js?v=20261016-input-fix"></script>
+<script src="./mini-office.js?v=20261017-office-tuition"></script>
 <script>
 DeskMiniOffice.init({
  base: DESK_CLOUD_API_BASE,

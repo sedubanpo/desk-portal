@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import {canonicalWorker, dailyMemo, scheduleEntry, workerKey} from './normalizers.js';
 const ROOT='desk_portal/daily_journal';
-export const OFFICE_SEATS=['main-1','main-2','main-3','annex-2','annex-3'];
+export const OFFICE_SEATS=['main-1','main-2','main-3','main-director','annex-2','annex-3'];
 export const officeToday=stamp=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date(stamp));
 export const validOfficeDate=s=>/^20\d{2}-\d{2}-\d{2}$/.test(s||'')&&Number.isFinite(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s;
 const previousDate=date=>new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
