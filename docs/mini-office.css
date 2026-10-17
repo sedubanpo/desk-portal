@@ -25,3 +25,32 @@
 .mo-director .mo-desk:before,.mo-director .mo-desk:after{display:block!important;}
 .mo-scene{align-items:start;}
 @media(max-width:760px){.mo-director{margin-top:14px;}.mo-director .mo-seat{grid-template-columns:minmax(0,1fr) 90px;}.mo-director .mo-seat:before,.mo-director .mo-seat:after{right:103px;}}
+
+/* Empty desks have their stage lights off; controls remain readable and usable. */
+.mo-seat.empty .mo-furniture{filter:brightness(.48) saturate(.35);background:radial-gradient(ellipse at 50% 80%,#25332c55,transparent 75%);border-radius:8px;}
+.mini-office .mo-seat.empty .mo-bubble{background:#e0e4da;border-color:#a4afa1;box-shadow:none;}
+.mo-seat.empty .mo-bubble span,.mo-seat.empty .mo-bubble strong{color:#465445;}
+.mini-office .mo-seat.empty .mo-name{background:#d4dacd;color:#43513f;box-shadow:none;}
+.mo-seat.empty .mo-monitor{background:#293a33;border-color:#3a4941;}
+.mo-seat.empty .mo-monitor b{visibility:hidden;}
+.mini-office .mo-seat.empty button:hover{background:#edf3d9;}
+.mo-board strong{font-size:16px;line-height:1.75;}
+.mo-board-detail p{font-size:15px;line-height:1.85;}
+@media(max-width:760px){.mo-board strong{font-size:15px;}.mo-board-detail p{font-size:14px;}}
+
+/* Keep the worker selector in the unused floor beside the director's office. */
+.mo-scene:has(.journal-worker-picker){grid-template-rows:auto 1fr;}
+.mo-scene:has(.journal-worker-picker)>.mo-main{grid-column:1;grid-row:1/3;}
+.mo-scene:has(.journal-worker-picker)>[data-room="annex-2"]{grid-column:2;grid-row:1;}
+.mo-scene:has(.journal-worker-picker)>[data-room="annex-3"]{grid-column:3;grid-row:1;}
+body.desk-daily-journal-mode .mo-scene>.journal-worker-picker{grid-column:2/4;grid-row:2;align-self:start;margin:0;padding:14px;min-width:0;}
+body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
+.journal-board-tabs{display:flex;gap:8px;padding:0 0 12px;margin-bottom:14px;border-bottom:1px solid #dce5cc;}
+.journal-board-tabs button{font:inherit;font-size:14px;font-weight:650;padding:10px 16px;min-height:42px;border:1px solid transparent;border-radius:8px;background:transparent;color:#526448;cursor:pointer;}
+.journal-board-tabs button[aria-selected="true"]{background:#e3edbb;border-color:#c8d997;color:#354c22;}
+.journal-board-tabs button:hover{background:#f0f5e4;}
+.journal-board-tabs button:focus-visible{outline:2px solid #657f36;outline-offset:2px;}
+#journalTasksPanel[hidden],#journalNoticesPanel[hidden]{display:none!important;}
+#journalNoticesPanel .desk-journal-shared-strip{margin:0;}
+@media(max-width:760px){body.desk-daily-journal-mode .mo-scene>.journal-worker-picker{display:block;margin-top:16px;}.journal-board-tabs button{padding:10px;font-size:13px;}}
+.desk-journal-layout.ledger-mode #journalTasksPanel>.desk-card-title-row{display:none;}

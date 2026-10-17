@@ -17,16 +17,20 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
  async function roster(date){
   const [month,staff]=await Promise.all([store.get('desk_portal/monthly_schedule/'+date.slice(0,7)),directory()]);
   const active=staff.filter(s=>s.status==='ACTIVE');
-  return [...new Set(Object.values(month?.entries||month||{}).map(s=>scheduleEntry(s)).filter(s=>s.date===date&&!s.unavailable).map(s=>s.worker))].flatMap(name=>{
+  return [...new Set([...Object.values(month?.entries||month||{}).map(s=>scheduleEntry(s)).filter(s=>s.date===date&&!s.unavailable).map(s=>s.worker),'김용찬','홍성우'])].flatMap(name=>{
    const matches=active.filter(s=>workerKey(s.name)===workerKey(name));
    return matches.length===1?[{key:keyFor(name),name:canonicalWorker(name),uid:matches[0].uid,position:matches[0].staffPosition||''}]:[];
   });
+ }
+ async function managementUids(){
+  const active=(await directory()).filter(s=>s.status==='ACTIVE');
+  return ['홍성우','안종성'].flatMap(name=>{const matches=active.filter(s=>workerKey(s.name)===workerKey(name));return matches.length===1?[matches[0].uid]:[];});
  }
  async function snapshot(date){
   if(!validOfficeDate(date))return fail('날짜를 확인해 주세요.');
   const previous=previousDate(date);
   const [people,office,prior]=await Promise.all([roster(date),store.get(ROOT+'/'+date+'/office'),store.get(ROOT+'/'+previous+'/office/workers')]);
-  return {success:true,previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:office?.workers||{},updatedAt:office?.updatedAt||'',serverTime:now()};
+  return {success:true,managementUids:await managementUids(),previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:office?.workers||{},updatedAt:office?.updatedAt||'',serverTime:now()};
  }
  async function history({dateKey:date,workerKey:key,before=''}={}){
   if(!validOfficeDate(date)||!/^\w{24}$/.test(key||'')||typeof before!=='string'||before.length>120)return fail('조회 정보를 확인해 주세요.');
@@ -47,13 +51,14 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
   directoryCache=null;
   const stamp=now(),people=await roster(date),person=people.find(s=>s.key===p.workerKey);
   if(date!==officeToday(stamp)&&!['complete','cancel'].includes(p.action))return fail('이전 날짜에는 미완료 업무만 종료할 수 있습니다.');
+  const canManage=actor.role==='ADMIN'||(await managementUids()).includes(actor.uid);
   let result;
   await store.transaction(ROOT+'/'+date,current=>{
    const day=structuredClone(current||{}),office=day.office||{workers:{},operations:{}},before=office.workers?.[p.workerKey];
    const target=person||before;
    const reject=message=>{result=fail(message);return current??null;};
    if(!target)return reject('당일 근무표에 등록된 근무자만 사용할 수 있습니다.');
-   if(actor.role!=='ADMIN'&&target.uid!==actor.uid)return reject('본인의 업무만 변경할 수 있습니다.');
+   if(!canManage&&target.uid!==actor.uid)return reject('본인의 업무만 변경할 수 있습니다.');
    if(office.operations?.[p.operationId]){if(office.operations[p.operationId].fingerprint!==fingerprint)return reject('같은 요청으로 다른 내용을 저장할 수 없습니다.');result={success:true,replayed:true};return current;}
    if((before?.version||0)!==p.version)return reject('다른 화면에서 변경되었습니다. 최신 내용을 확인한 뒤 다시 시도해 주세요.');
    if(!person&&!['complete','cancel'].includes(p.action)&&!(p.action==='seat'&&p.seat===''))return reject('현재 근무표에 없는 근무자입니다.');

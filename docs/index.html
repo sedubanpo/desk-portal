@@ -17757,7 +17757,7 @@
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
-<link rel="stylesheet" href="./mini-office.css?v=20261017-office-tuition">
+<link rel="stylesheet" href="./mini-office.css?v=20261017-office-layout">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -19780,19 +19780,7 @@
               </section>
 
               <div class="journal-context-grid">
-              <section class="desk-journal-shared-strip" aria-labelledby="deskSharedNoticeTitle">
-                <div class="desk-shared-summary-head">
-                  <div class="desk-shared-summary-heading">
-                    <div class="desk-shared-summary-title" id="deskSharedNoticeTitle"><i data-lucide="megaphone"></i><span>공동 업무 공지</span></div>
-                    <p>모든 근무자가 함께 확인하고 이어서 처리할 업무입니다.</p>
-                  </div>
-                  <div class="desk-shared-summary-columns" aria-hidden="true"><span>업무 / 내용</span><span>기록자</span><span>확인 현황</span><span>최근 수정</span></div>
-                  <div class="desk-shared-summary-list" id="deskJournalSharedSummaryList">
-                    <div class="desk-shared-summary-empty">등록된 공동 업무가 없습니다.</div>
-                  </div>
-                  <div class="desk-shared-summary-count" id="deskJournalSharedSummaryCount">0건</div>
-                </div>
-              </section>
+
 
               <section class="journal-worker-picker" aria-labelledby="journalWorkerPickerTitle">
                 <h3 id="journalWorkerPickerTitle">근무자 선택</h3>
@@ -19895,6 +19883,11 @@
               <section class="desk-journal-layout" id="deskJournalLayout">
                 <div class="desk-journal-main">
                   <article class="desk-editor-card desk-task-queue-card">
+                    <div class="journal-board-tabs" role="tablist" aria-label="업무 및 공지">
+                      <button type="button" id="journalTasksTab" role="tab" aria-selected="true" aria-controls="journalTasksPanel" data-journal-board-tab="tasks">업무 배정 원장</button>
+                      <button type="button" id="journalNoticesTab" role="tab" aria-selected="false" aria-controls="journalNoticesPanel" tabindex="-1" data-journal-board-tab="notices">공동 업무 공지</button>
+                    </div>
+                    <div id="journalTasksPanel" role="tabpanel" aria-labelledby="journalTasksTab">
                     <div class="desk-card-title-row">
                       <div>
                         <div class="desk-task-heading"><div class="desk-side-title" id="deskTaskQueueTitle">미해결 업무 / 작업 큐</div><span class="desk-task-queue-count" id="deskTaskQueueCount" aria-live="polite" aria-label="미해결 업무 수">0건</span></div>
@@ -19922,6 +19915,22 @@
                       </form>
                     </details>
                     <div class="desk-journal-task-board" id="deskJournalTaskBoard"></div>
+                    </div>
+                    <div id="journalNoticesPanel" role="tabpanel" aria-labelledby="journalNoticesTab" hidden>
+              <section class="desk-journal-shared-strip" aria-labelledby="deskSharedNoticeTitle">
+                <div class="desk-shared-summary-head">
+                  <div class="desk-shared-summary-heading">
+                    <div class="desk-shared-summary-title" id="deskSharedNoticeTitle"><i data-lucide="megaphone"></i><span>공동 업무 공지</span></div>
+                    <p>모든 근무자가 함께 확인하고 이어서 처리할 업무입니다.</p>
+                  </div>
+                  <div class="desk-shared-summary-columns" aria-hidden="true"><span>업무 / 내용</span><span>기록자</span><span>확인 현황</span><span>최근 수정</span></div>
+                  <div class="desk-shared-summary-list" id="deskJournalSharedSummaryList">
+                    <div class="desk-shared-summary-empty">등록된 공동 업무가 없습니다.</div>
+                  </div>
+                  <div class="desk-shared-summary-count" id="deskJournalSharedSummaryCount">0건</div>
+                </div>
+              </section>
+                    </div>
                   </article>
 
                 </div>
@@ -46118,7 +46127,8 @@ window.SeduHubAdapter={
 <script src="./tuition-groups.js?v=20261010-2"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
-<script src="./mini-office.js?v=20261017-office-tuition"></script>
+<script src="./journal-layout.js?v=20261017-tabs"></script>
+<script src="./mini-office.js?v=20261017-office-layout"></script>
 <script>
 DeskMiniOffice.init({
  base: DESK_CLOUD_API_BASE,

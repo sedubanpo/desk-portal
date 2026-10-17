@@ -11,10 +11,10 @@ function fixture(){
  const office=createOffice({store,loadStaffDirectory:async()=>staff,now:()=>stamp});let seq=0;
  const actor={uid:'a',name:'안종성',role:'STAFF'},admin={uid:'admin',name:'관리자',role:'ADMIN'};
  const mutate=async(p,who=actor)=>office.mutate({dateKey:'2026-10-16',workerKey:(await office.snapshot('2026-10-16')).people[0].key,version:0,operationId:'operation-'+String(++seq).padStart(16,'0'),...p},who);
- return {office,store,records,mutate,actor,admin,tick:s=>stamp=s};
+ return {office,store,records,staff,mutate,actor,admin,tick:s=>stamp=s};
 }
 test('only active scheduled workers appear; seat collisions and stale changes are rejected',async()=>{const f=fixture(),s=await f.office.snapshot('2026-10-16');assert.equal(s.people.length,2);assert.equal((await f.mutate({action:'seat',seat:'main-1'})).success,true);assert.equal((await f.mutate({action:'seat',seat:'main-1',workerKey:s.people[1].key},f.admin)).success,false);assert.equal((await f.mutate({action:'seat',seat:'main-2',version:0})).success,false);assert.equal((await f.mutate({action:'seat',seat:'main-2',version:1})).success,true);});
-test('worker cannot impersonate another; administrator proxy completion atomically creates one memo',async()=>{const f=fixture(),s=await f.office.snapshot('2026-10-16'),other=s.people[1].key;assert.equal((await f.mutate({action:'start',text:'다른 사람',workerKey:other})).success,false);await f.mutate({action:'start',text:'학부모 상담'});f.tick('2026-10-16T05:12:00.000Z');const p={action:'complete',version:1,operationId:'operation-complete-1234'};assert.equal((await f.mutate(p,f.admin)).success,true);assert.equal((await f.mutate(p,f.admin)).replayed,true);const day=f.records['desk_portal/daily_journal/2026-10-16'];assert.equal(Object.values(day.office.workers)[0].task,null);assert.equal(Object.keys(day.memos).length,1);const memo=Object.values(day.memos)[0];assert.equal(memo.durationMinutes,12);assert.equal(memo.worker,'안종성');assert.equal(memo.completedByUid,'admin');assert.equal(memo.createdAt,'2026-10-16T05:00:00.000Z');assert.equal(memo.completedAt,'2026-10-16T05:12:00.000Z');assert.equal((await f.mutate({...p,action:'cancel'},f.admin)).success,false);});
+test('worker cannot impersonate another; administrator proxy completion atomically creates one memo',async()=>{const f=fixture(),s=await f.office.snapshot('2026-10-16'),other=s.people[1].key;assert.equal((await f.mutate({action:'start',text:'다른 사람'}, {uid:'b',name:'권민정',role:'STAFF'})).success,false);await f.mutate({action:'start',text:'학부모 상담'});f.tick('2026-10-16T05:12:00.000Z');const p={action:'complete',version:1,operationId:'operation-complete-1234'};assert.equal((await f.mutate(p,f.admin)).success,true);assert.equal((await f.mutate(p,f.admin)).replayed,true);const day=f.records['desk_portal/daily_journal/2026-10-16'];assert.equal(Object.values(day.office.workers)[0].task,null);assert.equal(Object.keys(day.memos).length,1);const memo=Object.values(day.memos)[0];assert.equal(memo.durationMinutes,12);assert.equal(memo.worker,'안종성');assert.equal(memo.completedByUid,'admin');assert.equal(memo.createdAt,'2026-10-16T05:00:00.000Z');assert.equal(memo.completedAt,'2026-10-16T05:12:00.000Z');assert.equal((await f.mutate({...p,action:'cancel'},f.admin)).success,false);});
 test('edit retains start time, cancellation never adds a memo; existing journal data survives',async()=>{const f=fixture();f.records['desk_portal/daily_journal/2026-10-16']={tasks:{x:{title:'기존 업무'}},memos:{old:{text:'기존 기록'}}};await f.mutate({action:'start',text:'원래 업무'});await f.mutate({action:'edit',text:'수정 업무',version:1});const d=f.records['desk_portal/daily_journal/2026-10-16'];assert.equal(Object.values(d.office.workers)[0].task.startedAt,'2026-10-16T05:00:00.000Z');await f.mutate({action:'cancel',version:2});assert.equal(Object.keys(d.memos).length,1);assert.equal(d.tasks.x.title,'기존 업무');assert.equal((await f.mutate({action:'start',text:'',version:3})).success,false);});
 test('past unfinished work can finish, but new work and seats are today-only',async()=>{const f=fixture();await f.mutate({action:'start',text:'어제 업무'});f.tick('2026-10-17T05:00:00.000Z');assert.equal((await f.mutate({action:'seat',seat:'main-1',version:1})).success,false);assert.equal((await f.mutate({action:'complete',version:1})).success,true);});
 test('cold transaction callbacks retry and preserve correct versions',async()=>{const f=fixture();await f.mutate({action:'start',text:'업무'});const orig=f.store.transaction;f.store.transaction=async(path,fn)=>{assert.equal(fn(null),null);return orig(path,fn);};assert.equal((await f.mutate({action:'complete',version:1})).success,true);});
@@ -65,4 +65,19 @@ test('main director office is one reservable seat with normal task and collision
  const day=f.records['desk_portal/daily_journal/2026-10-16'];
  assert.equal(Object.values(day.office.workers)[0].seat,'main-director');
  assert.equal(Object.values(day.memos)[0].text,'원장실 상담');
+});
+
+
+test('leaders can sit without a shift; proxy rights use active directory UIDs rather than claimed names',async()=>{
+ const f=fixture();f.staff.push({uid:'director',name:'김용찬',status:'ACTIVE'},{uid:'deputy',name:'홍성우',status:'ACTIVE'});
+ const snapshot=await f.office.snapshot('2026-10-16');
+ assert.equal(snapshot.people.length,4);assert.deepEqual(snapshot.managementUids,['deputy','a']);
+ const director=snapshot.people.find(p=>p.uid==='director'),deputy=snapshot.people.find(p=>p.uid==='deputy');
+ assert.equal((await f.mutate({workerKey:director.key,action:'seat',seat:'main-director'},{uid:'director',name:'김용찬',role:'STAFF'})).success,true);
+ assert.equal((await f.mutate({workerKey:deputy.key,action:'seat',seat:'annex-2'},{uid:'deputy',name:'홍성우',role:'STAFF'})).success,true);
+ assert.equal((await f.mutate({workerKey:director.key,action:'start',text:'대리 입력',version:1},f.actor)).success,true);
+ assert.equal((await f.mutate({workerKey:director.key,action:'edit',text:'부원장 수정',version:2},{uid:'deputy',name:'홍성우',role:'STAFF'})).success,true);
+ assert.equal((await f.mutate({workerKey:director.key,action:'edit',text:'이름 위조',version:3},{uid:'b',name:'안종성',role:'STAFF'})).success,false);
+ f.staff.find(p=>p.uid==='deputy').status='INACTIVE';
+ assert.equal((await f.mutate({workerKey:director.key,action:'edit',text:'비활성',version:3},{uid:'deputy',name:'홍성우',role:'STAFF'})).success,false);
 });
