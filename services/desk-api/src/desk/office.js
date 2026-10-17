@@ -1,12 +1,21 @@
 import {createHash} from 'node:crypto';
 import {canonicalWorker, dailyMemo, scheduleEntry, workerKey} from './normalizers.js';
 const ROOT='desk_portal/daily_journal';
-export const OFFICE_SEATS=['main-1','main-2','main-3','main-director','annex-2','annex-3'];
+export const OFFICE_SEATS=['main-1','main-2','main-3','main-director','main-classroom','annex-2','annex-3'];
 export const officeToday=stamp=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date(stamp));
 export const validOfficeDate=s=>/^20\d{2}-\d{2}-\d{2}$/.test(s||'')&&Number.isFinite(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s;
 const previousDate=date=>new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
 const keyFor=name=>createHash('sha256').update(workerKey(name)).digest('hex').slice(0,24);
 const fail=message=>({success:false,message});
+const attendancePath=date=>'desk_portal/staff_attendance/'+date.slice(0,7)+'/'+date;
+// Checkout releases only the seat. Tasks and their audit history remain intact.
+function visibleWorkers(workers={},attendance={}){
+ return Object.fromEntries(Object.entries(workers).map(([key,w])=>{
+  const out=attendance?.[w.uid]?.clockOut;
+  const released=Number.isFinite(Date.parse(out))&&!(Date.parse(w.seatSelectedAt)>Date.parse(out));
+  return [key,released?{...w,seat:'',checkedOut:true}:w];
+ }));
+}
 export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOString()}){
  let directoryCache=null,directoryAt=0,directoryPromise;
  async function directory(){
@@ -29,8 +38,8 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
  async function snapshot(date){
   if(!validOfficeDate(date))return fail('날짜를 확인해 주세요.');
   const previous=previousDate(date);
-  const [people,office,prior]=await Promise.all([roster(date),store.get(ROOT+'/'+date+'/office'),store.get(ROOT+'/'+previous+'/office/workers')]);
-  return {success:true,managementUids:await managementUids(),previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:office?.workers||{},updatedAt:office?.updatedAt||'',serverTime:now()};
+  const [people,office,prior,attendance]=await Promise.all([roster(date),store.get(ROOT+'/'+date+'/office'),store.get(ROOT+'/'+previous+'/office/workers'),store.get(attendancePath(date))]);
+  return {success:true,managementUids:await managementUids(),previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:visibleWorkers(office?.workers,attendance),updatedAt:office?.updatedAt||'',serverTime:now()};
  }
  async function history({dateKey:date,workerKey:key,before=''}={}){
   if(!validOfficeDate(date)||!/^\w{24}$/.test(key||'')||typeof before!=='string'||before.length>120)return fail('조회 정보를 확인해 주세요.');
@@ -52,6 +61,7 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
   const stamp=now(),people=await roster(date),person=people.find(s=>s.key===p.workerKey);
   if(date!==officeToday(stamp)&&!['complete','cancel'].includes(p.action))return fail('이전 날짜에는 미완료 업무만 종료할 수 있습니다.');
   const canManage=actor.role==='ADMIN'||(await managementUids()).includes(actor.uid);
+  const attendance=await store.get(attendancePath(date));
   let result;
   await store.transaction(ROOT+'/'+date,current=>{
    const day=structuredClone(current||{}),office=day.office||{workers:{},operations:{}},before=office.workers?.[p.workerKey];
@@ -64,8 +74,9 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
    if(!person&&!['complete','cancel'].includes(p.action)&&!(p.action==='seat'&&p.seat===''))return reject('현재 근무표에 없는 근무자입니다.');
    const next={...(before||{}),...target,version:p.version+1,updatedAt:stamp,updatedBy:actor.name||actor.nickname||'근무자',updatedByUid:actor.uid};
    if(p.action==='seat'||(p.action==='start'&&p.seat!==undefined)){
-    if(p.seat&&Object.entries(office.workers||{}).some(([key,w])=>key!==p.workerKey&&w.seat===p.seat))return reject('다른 근무자가 먼저 선택한 자리입니다.');
-    next.seat=p.seat;next.seatDate=date;
+    if(p.seat&&Object.entries(visibleWorkers(office.workers,attendance)).some(([key,w])=>key!==p.workerKey&&w.seat===p.seat))return reject('다른 근무자가 먼저 선택한 자리입니다.');
+    if(p.seat&&Date.parse(attendance?.[target.uid]?.clockOut)&&target.uid!==actor.uid)return reject('퇴근 후 연장 근무 자리는 본인이 선택해 주세요.');
+    next.seat=p.seat;next.seatDate=date;next.seatSelectedAt=stamp;
    }
    if(p.action==='start'){
     if(before?.task)return reject('진행 중인 업무를 먼저 완료하거나 취소해 주세요.');
@@ -92,7 +103,7 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
  }
  function watch(date,onChange,onError){
   const stops=[];
-  try { for(const path of [ROOT+'/'+previousDate(date)+'/office',ROOT+'/'+date+'/office','desk_portal/monthly_schedule/'+date.slice(0,7)])stops.push(store.subscribe(path,onChange,onError)); }
+  try { for(const path of [ROOT+'/'+previousDate(date)+'/office',ROOT+'/'+date+'/office','desk_portal/monthly_schedule/'+date.slice(0,7),attendancePath(date)])stops.push(store.subscribe(path,onChange,onError)); }
   catch(error){stops.forEach(fn=>fn());throw error;}
   return ()=>stops.forEach(fn=>fn());
  }

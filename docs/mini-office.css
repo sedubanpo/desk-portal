@@ -67,3 +67,15 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 .mo-rank-icon{display:inline-flex;width:20px;height:20px;color:#a47924}
 .mo-deputy .mo-rank-icon{color:#527b68}
 .mo-rank-icon svg{width:100%;height:100%}
+
+/* Compact classroom and director office share the lower main-building floor. */
+.mo-side-rooms{display:grid;grid-template-columns:minmax(150px,1fr) minmax(0,1.7fr);gap:12px;margin:4px 12px 14px;align-items:start}
+.mo-side-rooms .mo-director{width:auto;margin:0;min-width:0}
+.mo-classroom{min-width:0;padding:12px;border-radius:8px;background:#e4ead7;box-shadow:inset 0 0 0 1px #a5af92}
+.mo-classroom h5{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:13px}.mo-classroom h5 small{font-size:10px;font-weight:500;color:#59674c}
+.mo-classroom .mo-furniture{height:100px}.mo-classroom .mo-desk{top:30px}.mo-classroom .mo-monitor{top:0}.mo-classroom .mo-character{top:18px}.mo-classroom .mo-chair{top:43px}.mo-classroom .mo-mug{top:23px}
+.mo-side-rooms .mo-director .mo-seat{grid-template-columns:minmax(0,1fr) 80px}
+.mo-task-icon{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#f5ffdc;font-size:23px;font-weight:800;line-height:1;font-style:normal;text-shadow:0 0 5px #e7ffc455}
+.mo-monitor:has(.mo-task-icon){padding:1px;background:#36584e}.mo-icon-preview{font-size:12px;color:#526c48;background:#f0f5e7;border-radius:8px;padding:10px 12px}
+@media(max-width:1100px){.mo-side-rooms{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.mo-side-rooms .mo-director .mo-seat{display:block}.mo-side-rooms .mo-director .mo-furniture{height:117px}.mo-side-rooms .mo-director .mo-bubble{height:98px}.mo-side-rooms .mo-director .mo-seat:before,.mo-side-rooms .mo-director .mo-seat:after{right:7px}}
+@media(max-width:480px){.mo-side-rooms{grid-template-columns:1fr;gap:12px}.mo-classroom .mo-seat{max-width:260px;margin:auto}}

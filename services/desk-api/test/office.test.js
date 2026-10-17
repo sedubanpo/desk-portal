@@ -81,3 +81,23 @@ test('leaders can sit without a shift; proxy rights use active directory UIDs ra
  f.staff.find(p=>p.uid==='deputy').status='INACTIVE';
  assert.equal((await f.mutate({workerKey:director.key,action:'edit',text:'비활성',version:3},{uid:'deputy',name:'홍성우',role:'STAFF'})).success,false);
 });
+
+test('checkout releases a seat without losing work; only self can select an overtime seat',async()=>{
+ const f=fixture(),key=(await f.office.snapshot('2026-10-16')).people[0].key;
+ await f.mutate({action:'start',seat:'main-classroom',text:'강의실 수업 지원'});
+ f.records['desk_portal/staff_attendance/2026-10/2026-10-16']={a:{clockOut:'2026-10-16T05:10:00.000Z'}};
+ f.tick('2026-10-16T05:11:00.000Z');
+ let s=await f.office.snapshot('2026-10-16');assert.equal(s.workers[key].seat,'');assert.equal(s.workers[key].task.text,'강의실 수업 지원');
+ assert.equal((await f.mutate({action:'seat',seat:'main-classroom',version:1},f.admin)).success,false);
+ const other=s.people[1].key;
+ assert.equal((await f.mutate({action:'seat',workerKey:other,seat:'main-classroom'},f.admin)).success,true);
+ assert.equal((await f.mutate({action:'seat',seat:'main-classroom',version:1})).success,false);
+ assert.equal((await f.mutate({action:'seat',seat:'main-1',version:1})).success,true);
+ s=await f.office.snapshot('2026-10-16');assert.equal(s.workers[key].seat,'main-1');
+ await f.mutate({action:'edit',text:'연장 업무',version:2});assert.equal((await f.office.snapshot('2026-10-16')).workers[key].seat,'main-1');
+ f.records['desk_portal/staff_attendance/2026-10/2026-10-16'].a.clockOut='2026-10-16T05:12:00.000Z';
+ assert.equal((await f.office.snapshot('2026-10-16')).workers[key].seat,'');
+});
+test('attendance subscription is released with the office subscriptions',()=>{
+ const f=fixture(),paths=[];let closed=0;f.store.subscribe=p=>{paths.push(p);return ()=>closed++;};const stop=f.office.watch('2026-10-16',()=>{},()=>{});assert.ok(paths.includes('desk_portal/staff_attendance/2026-10/2026-10-16'));stop();assert.equal(closed,4);
+});
