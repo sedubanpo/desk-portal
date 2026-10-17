@@ -54,3 +54,16 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 #journalNoticesPanel .desk-journal-shared-strip{margin:0;}
 @media(max-width:760px){body.desk-daily-journal-mode .mo-scene>.journal-worker-picker{display:block;margin-top:16px;}.journal-board-tabs button{padding:10px;font-size:13px;}}
 .desk-journal-layout.ledger-mode #journalTasksPanel>.desk-card-title-row{display:none;}
+
+/* Keep seating controls in the office while removing secondary lists. */
+.mini-office .mo-unseated,.mini-office .mo-previous{display:none!important}
+.mo-person-label{display:inline-flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;max-width:100%}
+.mo-person-label .mo-position{font-size:11px;font-weight:600;color:#69755b;white-space:nowrap}
+.mo-person-label.mo-leader{padding:7px 14px;border:1px solid #b79a55;border-radius:7px;background:linear-gradient(135deg,#fff8df,#ead6a2);color:#60451e;box-shadow:inset 0 1px 0 #fffdf4,0 2px 3px #63533018;gap:9px}
+.mo-leader .mo-person-name{font-size:14px;font-weight:800;letter-spacing:.03em}
+.mo-leader .mo-position{color:inherit;border-left:1px solid #b79a5570;padding-left:9px}
+.mo-leader.mo-deputy{background:linear-gradient(135deg,#eef4f0,#cbded4);border-color:#799889;color:#294f42}
+.mo-deputy .mo-position{border-color:#79988970}
+.mo-rank-icon{display:inline-flex;width:20px;height:20px;color:#a47924}
+.mo-deputy .mo-rank-icon{color:#527b68}
+.mo-rank-icon svg{width:100%;height:100%}

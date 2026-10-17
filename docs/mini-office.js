@@ -6,7 +6,13 @@ const clock=v=>v?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-
 const dateNow=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
 let root,bridge,data,contextKey='',dataContextKey='',controller,retry,timer,dialog,generation=0,lastSeen='',connected=false,collapsed=false,currentRoom='main',errorDelay=1000,saving=false;
 const api=async(p)=>{const r=await bridge.save(p);if(!r?.success)throw Error(r?.message||'저장하지 못했습니다.');return r;};
-function badge(name){return bridge.badge(name);}
+function badge(name){
+ const person=data?.people?.find(p=>p.name===name);
+ const leader=name==='김용찬'?'대표':name==='홍성우'?'부원장':'';
+ const position=leader||person?.position||'';
+ const crown='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 5 4 4-7 4 7 5-4-2 12H5Z" fill="currentColor"/><path d="M6 22h12" stroke="currentColor" stroke-width="2"/></svg>';
+ return `<span class="mo-person-label ${leader?'mo-leader '+(name==='김용찬'?'mo-principal':'mo-deputy'):''}">${leader?`<span class="mo-rank-icon">${crown}</span><span class="mo-person-name">${escape(name)}</span>`:bridge.badge(name)}${position?`<span class="mo-position">${escape(position)}</span>`:''}</span>`;
+}
 function character(name){
  const hash=[...name].reduce((n,c)=>n+c.charCodeAt(0),0),shirts=['#508c80','#83709b','#bd7959','#6386a3','#9a985d'],hair=['#504136','#493d47','#6c513a'];
  return `<svg class="mo-character" viewBox="0 0 32 42" shape-rendering="crispEdges" aria-hidden="true"><path fill="#3f4f44" d="M8 32h7v8H7v-3h1m10-5h7v8h-8v-3h1"/><path fill="${shirts[hash%5]}" d="M7 21h18v14H7z"/><path fill="#eee5cd" d="M13 21h6v5h-6z"/><path fill="#efc69f" d="M7 8h18v13H7zM4 24h4v9H4zm20 0h4v9h-4z"/><path fill="${hair[hash%3]}" d="M7 4h18v7H7zM4 8h5v8H4zm19 0h5v8h-5z"/><path fill="#34453d" d="M10 14h3v3h-3zm9 0h3v3h-3z"/><path fill="#c0856e" d="M14 19h5v2h-5z"/>${hash%2?'<path fill="#dbb766" d="M20 5h6v3h-6z"/>':''}</svg>`;
