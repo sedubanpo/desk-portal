@@ -100,3 +100,4 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 .mo-seat-manage:hover{background:#e9f0d4}
 .mo-director .mo-seat{grid-template-rows:minmax(132px,auto) auto}
 .mo-director .mo-furniture{align-self:end}
+.mini-office .mo-seat-manage{font-size:11px;padding:6px;white-space:nowrap}
