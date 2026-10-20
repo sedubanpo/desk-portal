@@ -44,8 +44,14 @@ try{
  await a.locator('[name=seat]').selectOption('');await a.getByRole('button',{name:'업무 시작',exact:true}).click();await a.locator('dialog').waitFor({state:'hidden'});assert.equal(Object.values(get('desk_portal/daily_journal/'+date+'/office/workers')).find(w=>w.uid==='u0').seat,'');
  await a.getByRole('button',{name:'내 자리·업무'}).click();await a.locator('[name=text]').fill('완료 시 수정한 최종 내용');await a.getByRole('button',{name:'✓ 완료하고 일지 기록'}).click();await a.locator('dialog').waitFor({state:'hidden'});assert.ok(Object.values(get('desk_portal/daily_journal/'+date+'/memos')).some(m=>m.text==='완료 시 수정한 최종 내용'));
  await a.getByRole('button',{name:'내 자리·업무'}).click();await a.getByRole('button',{name:'업무 히스토리',exact:true}).click();await a.locator('.mo-history-event.complete').first().waitFor();assert.ok(await a.getByText('완료 시 수정한 최종 내용',{exact:true}).isVisible());await a.keyboard.press('Escape');
- await a.getByRole('button',{name:'본관 강의실 자리 선택',exact:true}).click();await a.locator('[name=text]').fill('수업 지도');await a.getByRole('button',{name:'업무 시작',exact:true}).click();await a.locator('.mo-classroom .working').waitFor();
+ assert.equal(await a.locator('[data-classroom-toggle]').getAttribute('aria-expanded'),'false');await a.locator('[data-classroom-toggle]').click();await b.locator('[data-classroom-toggle]').click();await a.getByRole('button',{name:'본관 강의실 자리 선택',exact:true}).click();await a.locator('[name=classroom]').fill('301호');await a.locator('[name=text]').fill('수업 지도');await a.getByRole('button',{name:'업무 시작',exact:true}).click();await a.locator('.mo-classroom .working').waitFor();
  assert.equal(await a.locator('.mo-classroom .mo-task-icon').getAttribute('data-task-icon'),'수업·학습');
+ await a.getByRole('button',{name:'내 자리·업무'}).click();
+ await a.getByRole('button',{name:'＋ 새로운 업무',exact:true}).click();await a.locator('[name=text]').fill('상담 준비');await a.locator('[name=progress]').fill('50');await a.getByRole('button',{name:'업무 시작',exact:true}).click();
+ await b.locator('.mo-classroom [role=progressbar][aria-valuenow="50"]').waitFor();
+ await a.getByRole('button',{name:'내 자리·업무'}).click();assert.equal(await a.locator('[data-task]').count(),2);await a.locator('[data-task]').filter({hasText:'수업 지도'}).click();await a.getByRole('button',{name:'말풍선에 표시',exact:true}).click();
+ await b.locator('.mo-classroom .mo-bubble strong').filter({hasText:'수업 지도'}).waitFor();
+ await a.screenshot({path:'/private/tmp/mini-office-multiple-tasks.png',fullPage:true});
  put('desk_portal/staff_attendance/'+date.slice(0,7)+'/'+date+'/u0',{clockOut:new Date().toISOString()});
  await a.locator('.mo-classroom .empty').waitFor();await b.locator('.mo-classroom .empty').waitFor();
  await a.getByRole('button',{name:'내 자리·업무'}).click();await a.getByText('퇴근으로 자리가 비워졌습니다. 연장 근무를 하려면 본인이 자리를 다시 선택해 주세요.',{exact:true}).waitFor();await a.locator('[name=seat]').selectOption('main-classroom');await a.getByRole('button',{name:'자리 저장',exact:true}).click();await a.locator('.mo-classroom .working').waitFor();await a.keyboard.press('Escape');

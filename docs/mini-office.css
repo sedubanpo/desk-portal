@@ -79,3 +79,24 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 .mo-monitor:has(.mo-task-icon){padding:1px;background:#36584e}.mo-icon-preview{font-size:12px;color:#526c48;background:#f0f5e7;border-radius:8px;padding:10px 12px}
 @media(max-width:1100px){.mo-side-rooms{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.mo-side-rooms .mo-director .mo-seat{display:block}.mo-side-rooms .mo-director .mo-furniture{height:117px}.mo-side-rooms .mo-director .mo-bubble{height:98px}.mo-side-rooms .mo-director .mo-seat:before,.mo-side-rooms .mo-director .mo-seat:after{right:7px}}
 @media(max-width:480px){.mo-side-rooms{grid-template-columns:1fr;gap:12px}.mo-classroom .mo-seat{max-width:260px;margin:auto}}
+
+/* Multiple ongoing tasks share one selected speech bubble. */
+.mini-office .mo-bubble{min-height:132px;height:auto}
+.mo-progress{display:block!important;height:7px;background:#dce4ce;border-radius:99px;overflow:hidden;margin-top:9px}
+.mo-progress i{display:block;height:100%;background:linear-gradient(90deg,#709856,#b3c66e);border-radius:inherit;transition:width .2s ease}
+.mo-progress-caption{font-size:11px!important;font-variant-numeric:tabular-nums;color:#59704b!important;margin-top:4px}
+.mo-classroom-toggle{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;text-align:left;background:transparent;border:0;color:inherit;font-weight:700;padding:0 0 8px}
+.mo-classroom-toggle small{font-size:11px;font-weight:400}.mo-classroom-toggle>span{margin-left:auto}
+.mo-classroom.is-collapsed{align-self:start}.mo-classroom [hidden]{display:none!important}
+.mo-task-list{display:grid;gap:8px;margin:12px 0}
+.mo-task-list button{display:grid;gap:4px;text-align:left;min-height:48px;padding:10px 12px;border:1px solid #dce4ce;border-radius:10px;background:#fafbf6;color:#41543f}
+.mo-task-list button[aria-pressed="true"]{border-color:#799858;background:#eef4df;box-shadow:inset 3px 0 #799858}
+.mo-task-list small{font-size:11px;color:#647653;font-variant-numeric:tabular-nums}
+.mo-progress-editor{position:relative;margin-top:16px}.mo-progress-editor output{float:right;color:#557837;font-variant-numeric:tabular-nums}
+.mo-progress-editor input[type="range"]{width:100%;min-height:40px;accent-color:#789b50;padding:0}
+.mo-dialog [data-classroom-field][hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.mo-progress i{transition:none}}
+.mo-seat-manage{grid-column:1/-1;width:100%;min-height:40px;margin-top:6px;border:1px solid #acba95;border-radius:7px;background:#f4f7e8;color:#526a40;font:inherit;font-size:11px;cursor:pointer}
+.mo-seat-manage:hover{background:#e9f0d4}
+.mo-director .mo-seat{grid-template-rows:minmax(132px,auto) auto}
+.mo-director .mo-furniture{align-self:end}

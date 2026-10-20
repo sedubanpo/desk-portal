@@ -44,19 +44,22 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
  async function history({dateKey:date,workerKey:key,before=''}={}){
   if(!validOfficeDate(date)||!/^\w{24}$/.test(key||'')||typeof before!=='string'||before.length>120)return fail('조회 정보를 확인해 주세요.');
   const office=await store.get(ROOT+'/'+date+'/office')||{};
-  const events=Object.entries(office.operations||{}).filter(([,e])=>e.workerKey===key&&['start','edit','complete','cancel'].includes(e.action)).map(([id,e])=>({id,cursor:e.at+'|'+id,action:e.action,at:e.at,by:e.by,before:e.before||'',after:e.after||''})).sort((a,b)=>a.cursor<b.cursor?1:a.cursor>b.cursor?-1:0);
+  const events=Object.entries(office.operations||{}).filter(([,e])=>e.workerKey===key&&['start','edit','select','complete','cancel'].includes(e.action)).map(([id,e])=>({id,cursor:e.at+'|'+id,action:e.action,at:e.at,by:e.by,progress:e.progress??null,before:e.before||'',after:e.after||''})).sort((a,b)=>a.cursor<b.cursor?1:a.cursor>b.cursor?-1:0);
   const rows=events.filter(e=>!before||e.cursor<before),page=rows.slice(0,50);
   return {success:true,dateKey:date,events:page,nextCursor:rows.length>50?page.at(-1).cursor:'',total:events.length};
  }
  async function mutate(p={},actor={}){
   if(!['ADMIN','STAFF','DESK'].includes(actor.role))return fail('데스크 근무자 권한이 필요합니다.');
   const date=p.dateKey;
-  if(!validOfficeDate(date)||!['seat','start','edit','complete','cancel'].includes(p.action))return fail('작업 정보를 확인해 주세요.');
+  if(!validOfficeDate(date)||!['seat','start','edit','select','complete','cancel'].includes(p.action))return fail('작업 정보를 확인해 주세요.');
   if(!/^[a-zA-Z0-9-]{16,80}$/.test(p.operationId||'')||!Number.isSafeInteger(p.version)||p.version<0)return fail('저장 정보를 다시 불러와 주세요.');
   if(typeof p.workerKey!=='string'||!/^\w{24}$/.test(p.workerKey))return fail('근무자를 선택해 주세요.');
   if((p.action==='seat'||(p.action==='start'&&p.seat!==undefined))&&p.seat!==''&&!OFFICE_SEATS.includes(p.seat))return fail('자리를 선택해 주세요.');
   if((['start','edit'].includes(p.action)||(p.action==='complete'&&p.text!==undefined))&&(typeof p.text!=='string'||!p.text.trim()||p.text.length>500))return fail('업무 내용을 500자 이내로 입력해 주세요.');
-  const fingerprint=createHash('sha256').update(JSON.stringify([p.action,p.workerKey,p.version,p.seat||'',p.text||'',actor.uid])).digest('hex');
+  if(p.progress!==undefined&&(!Number.isInteger(p.progress)||p.progress<0||p.progress>100))return fail('진행률은 0~100 사이로 입력해 주세요.');
+  if(p.classroom!==undefined&&(typeof p.classroom!=='string'||p.classroom.length>30))return fail('강의실은 30자 이내로 입력해 주세요.');
+  if(p.taskId!==undefined&&(typeof p.taskId!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(p.taskId)))return fail('업무를 다시 선택해 주세요.');
+  const fingerprint=createHash('sha256').update(JSON.stringify([p.action,p.workerKey,p.version,p.seat||'',p.text||'',p.taskId||'',p.progress??null,p.classroom??null,actor.uid])).digest('hex');
   directoryCache=null;
   const stamp=now(),people=await roster(date),person=people.find(s=>s.key===p.workerKey);
   if(date!==officeToday(stamp)&&!['complete','cancel'].includes(p.action))return fail('이전 날짜에는 미완료 업무만 종료할 수 있습니다.');
@@ -76,27 +79,36 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
    if(p.action==='seat'||(p.action==='start'&&p.seat!==undefined)){
     if(p.seat&&Object.entries(visibleWorkers(office.workers,attendance)).some(([key,w])=>key!==p.workerKey&&w.seat===p.seat))return reject('다른 근무자가 먼저 선택한 자리입니다.');
     if(p.seat&&Date.parse(attendance?.[target.uid]?.clockOut)&&target.uid!==actor.uid)return reject('퇴근 후 연장 근무 자리는 본인이 선택해 주세요.');
+    if(p.classroom!==undefined)next.classroom=p.classroom.trim();
     next.seat=p.seat;next.seatDate=date;next.seatSelectedAt=stamp;
    }
+   const tasks={...(before?.tasks||(before?.task?{[before.task.id]:before.task}:{}))};
+   const taskId=p.taskId||before?.task?.id,task=tasks[taskId];
    if(p.action==='start'){
-    if(before?.task)return reject('진행 중인 업무를 먼저 완료하거나 취소해 주세요.');
-    next.task={id:p.operationId,text:p.text.trim(),startedAt:stamp,startedBy:actor.name||'근무자',startedByUid:actor.uid};
+    if(Object.keys(tasks).length>=20)return reject('진행 업무는 최대 20개입니다. 마친 업무를 완료해 주세요.');
+    tasks[p.operationId]={id:p.operationId,text:p.text.trim(),progress:p.progress??0,startedAt:stamp,startedBy:actor.name||'근무자',startedByUid:actor.uid};
+    next.selectedTaskId=p.operationId;
    }else if(p.action!=='seat'){
-    if(!before?.task)return reject('진행 중인 업무가 없습니다.');
-    if(p.action==='edit')next.task={...before.task,text:p.text.trim()};
+    if(!task)return reject('진행 중인 업무가 없습니다. 최신 내용을 확인해 주세요.');
+    if(p.action==='select')next.selectedTaskId=taskId;
+    else if(p.action==='edit')tasks[taskId]={...task,text:p.text.trim(),progress:p.progress??task.progress??0};
     else{
      if(p.action==='complete'){
-      const task={...before.task,text:p.text===undefined?before.task.text:p.text.trim()},id='office-'+task.id;
+      const text=p.text===undefined?task.text:p.text.trim(),id='office-'+task.id;
       day.memos||={};
-      // The office state and journal record commit in the same day transaction.
-      if(!day.memos[id])day.memos[id]={...dailyMemo({id,worker:target.name,text:task.text,createdAt:task.startedAt,updatedAt:stamp,durationMinutes:Math.max(0,Math.floor((Date.parse(stamp)-Date.parse(task.startedAt))/60000)),mode:'record'},id,date,stamp),source:'mini-office',startedAt:task.startedAt,completedAt:stamp,completedBy:actor.name||'근무자',completedByUid:actor.uid};
+      // Commit the completed task and its journal record atomically.
+      if(!day.memos[id])day.memos[id]={...dailyMemo({id,worker:target.name,text,createdAt:task.startedAt,updatedAt:stamp,durationMinutes:Math.max(0,Math.floor((Date.parse(stamp)-Date.parse(task.startedAt))/60000)),mode:'record'},id,date,stamp),source:'mini-office',startedAt:task.startedAt,completedAt:stamp,completedBy:actor.name||'근무자',completedByUid:actor.uid};
       next.lastCompletedAt=stamp;
      }
-     next.task=null;
+     delete tasks[taskId];
     }
    }
+   next.tasks=tasks;
+   next.selectedTaskId=tasks[next.selectedTaskId||before?.task?.id]?.id||Object.keys(tasks)[0]||'';
+   // Keep the single-task projection for existing clients and speech bubbles.
+   next.task=tasks[next.selectedTaskId]||null;
    office.workers||={};office.workers[p.workerKey]=next;office.updatedAt=stamp;
-   office.operations||={};office.operations[p.operationId]={fingerprint,action:p.action,workerKey:p.workerKey,at:stamp,by:actor.name||'근무자',uid:actor.uid,before:before?.task?.text||'',after:p.action==='complete'?(p.text===undefined?before.task.text:p.text.trim()):(next.task?.text||''),seat:next.seat||''};
+   office.operations||={};office.operations[p.operationId]={fingerprint,action:p.action,workerKey:p.workerKey,at:stamp,by:actor.name||'근무자',uid:actor.uid,taskId:p.action==='start'?p.operationId:taskId||'',progress:p.action==='complete'?100:p.progress??task?.progress??0,before:task?.text||'',after:p.action==='complete'?(p.text===undefined?task.text:p.text.trim()):(tasks[p.action==='start'?p.operationId:taskId]?.text||next.task?.text||''),seat:next.seat||''};
    day.office=office;result={success:true};return day;
   });
   return result||fail('저장 결과를 확인하지 못했습니다.');

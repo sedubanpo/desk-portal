@@ -101,3 +101,22 @@ test('checkout releases a seat without losing work; only self can select an over
 test('attendance subscription is released with the office subscriptions',()=>{
  const f=fixture(),paths=[];let closed=0;f.store.subscribe=p=>{paths.push(p);return ()=>closed++;};const stop=f.office.watch('2026-10-16',()=>{},()=>{});assert.ok(paths.includes('desk_portal/staff_attendance/2026-10/2026-10-16'));stop();assert.equal(closed,4);
 });
+
+test('multiple tasks retain progress, selection and independent completion with legacy migration',async()=>{
+ const f=fixture(),key=(await f.office.snapshot('2026-10-16')).people[0].key;
+ await f.mutate({action:'start',seat:'main-classroom',classroom:'301호',text:'첫 업무',progress:25});
+ const dayPath='desk_portal/daily_journal/2026-10-16';
+ let w=f.records[dayPath].office.workers[key],first=w.task.id;
+ delete w.tasks;delete w.selectedTaskId; // Deployed single-task data must survive migration.
+ assert.equal((await f.mutate({action:'start',text:'두 번째 업무',progress:60,version:1})).success,true);
+ w=f.records[dayPath].office.workers[key];const second=w.task.id;
+ assert.equal(Object.keys(w.tasks).length,2);assert.equal(w.classroom,'301호');
+ assert.equal((await f.mutate({action:'select',taskId:first,version:2},f.admin)).success,true);
+ assert.equal((await f.mutate({action:'edit',taskId:second,text:'두 번째 수정',progress:80,version:3})).success,true);
+ w=f.records[dayPath].office.workers[key];assert.equal(w.task.id,first);assert.equal(w.tasks[second].progress,80);
+ assert.equal((await f.mutate({action:'edit',text:'잘못된 진행률',progress:101,version:4})).success,false);
+ assert.equal((await f.mutate({action:'select',taskId:second,version:4},{uid:'b',role:'STAFF'})).success,false);
+ const done={action:'complete',taskId:second,version:4,operationId:'multi-task-complete-001'};
+ assert.equal((await f.mutate(done)).success,true);assert.equal((await f.mutate(done)).replayed,true);
+ w=f.records[dayPath].office.workers[key];assert.equal(w.task.id,first);assert.equal(w.task.progress,25);assert.equal(Object.keys(w.tasks).length,1);assert.equal(Object.keys(f.records[dayPath].memos).length,1);
+});
