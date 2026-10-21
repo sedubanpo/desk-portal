@@ -120,3 +120,40 @@ test('multiple tasks retain progress, selection and independent completion with 
  assert.equal((await f.mutate(done)).success,true);assert.equal((await f.mutate(done)).replayed,true);
  w=f.records[dayPath].office.workers[key];assert.equal(w.task.id,first);assert.equal(w.task.progress,25);assert.equal(Object.keys(w.tasks).length,1);assert.equal(Object.keys(f.records[dayPath].memos).length,1);
 });
+
+test('drag swaps both workers atomically, preserves tasks and rejects stale or unauthorized targets',async()=>{
+ const f=fixture(),[a,b]=(await f.office.snapshot('2026-10-16')).people;
+ await f.mutate({action:'start',seat:'main-1',text:'상담'});
+ await f.mutate({action:'start',workerKey:b.key,seat:'main-2',text:'수납'},f.admin);
+ const move={action:'move',workerKey:b.key,version:1,seat:'main-1',targetKey:a.key,targetVersion:1};
+ assert.equal((await f.mutate(move,{uid:'b',role:'STAFF'})).success,false);
+ assert.equal((await f.mutate({...move,targetVersion:0},f.admin)).success,false);
+ const request={...move,operationId:'swap-operation-valid-001'};
+ assert.equal((await f.mutate(request,f.admin)).success,true);assert.equal((await f.mutate(request,f.admin)).replayed,true);
+ let w=(await f.office.snapshot('2026-10-16')).workers;assert.equal(w[a.key].seat,'main-2');assert.equal(w[b.key].seat,'main-1');assert.equal(w[a.key].task.text,'상담');assert.equal(w[b.key].task.text,'수납');assert.equal(w[a.key].version,2);
+ assert.equal((await f.mutate({action:'move',workerKey:b.key,version:2,seat:'annex-2',targetKey:'',targetVersion:0},{uid:'b',role:'STAFF'})).success,true);
+ assert.equal((await f.mutate({action:'move',version:2,seat:'annex-2',targetKey:'',targetVersion:0},f.admin)).success,false);
+});
+test('direct progress update preserves text and selection and enforces stale version and permissions',async()=>{
+ const f=fixture();await f.mutate({action:'start',text:'원본 업무',progress:10});
+ const snap=await f.office.snapshot('2026-10-16'),key=snap.people[0].key,id=snap.workers[key].task.id;
+ const payload={action:'progress',taskId:id,progress:67,version:1,operationId:'progress-update-test-001'};
+ assert.equal((await f.mutate(payload,{uid:'b',role:'STAFF'})).success,false);
+ assert.equal((await f.mutate(payload)).success,true);assert.equal((await f.mutate(payload)).replayed,true);
+ assert.equal((await f.mutate({...payload,operationId:'progress-update-test-002',progress:90})).success,false);
+ const task=(await f.office.snapshot('2026-10-16')).workers[key].task;assert.equal(task.text,'원본 업무');assert.equal(task.progress,67);
+ const history=await f.office.history({dateKey:'2026-10-16',workerKey:key});assert.ok(history.events.some(e=>e.action==='progress'&&e.progress===67));
+});
+test('snapshot includes only the worker shift times without extra schedule lookups',async()=>{
+ const f=fixture();f.records['desk_portal/monthly_schedule/2026-10'].entries.a.start='14:00';f.records['desk_portal/monthly_schedule/2026-10'].entries.a.end='22:30';
+ const people=(await f.office.snapshot('2026-10-16')).people;assert.deepEqual(people[0].shifts,[{start:'14:00',end:'22:30'}]);
+});
+test('releasing a seat still succeeds when another worker is unseated',async()=>{
+ const f=fixture(),people=(await f.office.snapshot('2026-10-16')).people;
+ await f.mutate({action:'seat',seat:''});await f.mutate({action:'seat',workerKey:people[1].key,seat:'main-1'},f.admin);
+ assert.equal((await f.mutate({action:'seat',workerKey:people[1].key,seat:'',version:1},f.admin)).success,true);
+});
+test('a newly started task history begins at zero regardless of the previously selected task',async()=>{
+ const f=fixture();await f.mutate({action:'start',text:'첫 업무',progress:67});await f.mutate({action:'start',text:'새 업무',version:1});
+ const key=(await f.office.snapshot('2026-10-16')).people[0].key,h=await f.office.history({dateKey:'2026-10-16',workerKey:key});assert.equal(h.events.find(e=>e.after==='새 업무').progress,0);
+});

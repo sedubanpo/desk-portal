@@ -4,7 +4,7 @@ const seats=[['main-1','본관 1번'],['main-2','본관 2번'],['main-3','본관
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clock=v=>v?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(v)):'';
 const dateNow=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
-let root,bridge,data,contextKey='',dataContextKey='',controller,retry,timer,dialog,generation=0,lastSeen='',connected=false,collapsed=false,currentRoom='main',errorDelay=1000,saving=false;
+let toolbar,drag=null,serverOffset=0,lastShiftMinute='',root,bridge,data,contextKey='',dataContextKey='',controller,retry,timer,dialog,generation=0,lastSeen='',connected=false,collapsed=false,currentRoom='main',errorDelay=1000,saving=false;
 const api=async(p)=>{const r=await bridge.save(p);if(!r?.success)throw Error(r?.message||'저장하지 못했습니다.');return r;};
 function badge(name){
  const person=data?.people?.find(p=>p.name===name);
@@ -17,7 +17,7 @@ function character(name){
  const hash=[...name].reduce((n,c)=>n+c.charCodeAt(0),0),shirts=['#508c80','#83709b','#bd7959','#6386a3','#9a985d'],hair=['#504136','#493d47','#6c513a'];
  return `<svg class="mo-character" viewBox="0 0 32 42" shape-rendering="crispEdges" aria-hidden="true"><path fill="#3f4f44" d="M8 32h7v8H7v-3h1m10-5h7v8h-8v-3h1"/><path fill="${shirts[hash%5]}" d="M7 21h18v14H7z"/><path fill="#eee5cd" d="M13 21h6v5h-6z"/><path fill="#efc69f" d="M7 8h18v13H7zM4 24h4v9H4zm20 0h4v9h-4z"/><path fill="${hair[hash%3]}" d="M7 4h18v7H7zM4 8h5v8H4zm19 0h5v8h-5z"/><path fill="#34453d" d="M10 14h3v3h-3zm9 0h3v3h-3z"/><path fill="#c0856e" d="M14 19h5v2h-5z"/>${hash%2?'<path fill="#dbb766" d="M20 5h6v3h-6z"/>':''}</svg>`;
 }
-function people(){const map=new Map((data?.people||[]).map(p=>[p.key,{...p,...data.workers[p.key]}]));for(const [key,w]of Object.entries(data?.workers||{}))if(!map.has(key))map.set(key,{...w,key,offSchedule:true});return [...map.values()];}
+function people(){const map=new Map((data?.people||[]).map(p=>[p.key,{...p,...data.workers[p.key],shifts:p.shifts}]));for(const [key,w]of Object.entries(data?.workers||{}))if(!map.has(key))map.set(key,{...w,key,offSchedule:true});return [...map.values()];}
 function canManage(){const identity=bridge.context().identity;return identity?.role==='ADMIN'||(data?.managementUids||[]).includes(identity?.uid);}
 function allowed(p){return canManage()||bridge.context().identity?.uid===p.uid;}
 function taskIcon(text=''){
@@ -25,9 +25,23 @@ function taskIcon(text=''){
  const match=types.find(([pattern])=>pattern.test(text));return match?{symbol:match[1],label:match[2]}:{symbol:'▤',label:'일반 업무'};
 }
 function monitor(task){const icon=taskIcon(task?.text);return task?`<span class="mo-task-icon" title="${icon.label}" data-task-icon="${icon.label}">${icon.symbol}</span>`:'<b></b><b></b><b></b>';}
+function shiftMarkup(p){
+ const now=Date.now()+serverOffset;
+ const intervals=(p.shifts||[]).flatMap(s=>{
+  if(!/^\d{2}:\d{2}$/.test(s.start)||!/^\d{2}:\d{2}$/.test(s.end))return [];
+  const start=Date.parse(data.dateKey+'T'+s.start+':00+09:00');let end=Date.parse(data.dateKey+'T'+s.end+':00+09:00');if(end<=start)end+=86400000;
+  return Number.isFinite(start)&&Number.isFinite(end)?[{start,end}]:[];
+ }).sort((a,b)=>a.start-b.start);
+ // Merge overlapping shifts so the remaining time is never counted twice.
+ const merged=[];for(const span of intervals){const last=merged.at(-1);if(last&&span.start<=last.end)last.end=Math.max(last.end,span.end);else merged.push({...span});}
+ const total=merged.reduce((n,s)=>n+s.end-s.start,0),left=merged.reduce((n,s)=>n+Math.max(0,s.end-Math.max(now,s.start)),0);
+ const minutes=Math.ceil(left/60000),label=!total?'일정 없음':now<merged[0].start?'시작 전':minutes?`${Math.floor(minutes/60)}시간 ${minutes%60}분 남음`:'근무 종료';
+ const percent=total?Math.max(0,Math.min(100,Math.round(left/total*100))):0;
+ return `<span class="mo-shift" title="근무표 기준 · ${escape(label)}" aria-label="${escape(p.name)} 근무표 기준 ${escape(label)}"><span class="mo-shift-track"><i style="height:${percent}%"></i></span><small>${escape(label)}</small></span>`;
+}
 function seatMarkup(id){
- const p=people().find(w=>w.seat===id),task=p?.task;
- return `<div class="mo-seat ${p?(task?'working':'occupied'):'empty'}"><button class="mo-bubble" ${p?`data-history="${escape(p.key)}" aria-label="${escape(p.name)} 업무 히스토리 보기"`:'data-worker=""'} data-seat="${id}" ${!p?'aria-label="'+seats.find(s=>s[0]===id)[1]+' 자리 선택"':''}>${p?`<span>${task?'진행 중 · '+clock(task.startedAt):p.lastCompletedAt?'완료 · '+clock(p.lastCompletedAt):'업무 대기'}</span><strong>${escape(task?.text||'다음 업무를 준비하고 있어요')}</strong>${task?`<span class="mo-progress" role="progressbar" aria-label="업무 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Number(task.progress)||0}"><i style="width:${Number(task.progress)||0}%"></i></span><span class="mo-progress-caption">${Number(task.progress)||0}% · ${Object.keys(p.tasks||{[task.id]:task}).length}개 업무</span>`:''}<em>업무 히스토리 ↗</em>`:'<span>빈자리</span><strong>이 자리에 앉기 ＋</strong>'}</button><div class="mo-furniture" aria-hidden="true"><div class="mo-monitor">${monitor(task)}</div><div class="mo-mug"></div><div class="mo-desk"></div>${p?character(p.name):'<div class="mo-chair"></div>'}</div><button class="mo-name" data-worker="${escape(p?.key||'')}" data-seat="${id}">${p?badge(p.name):'<span>'+seats.find(s=>s[0]===id)[1]+'</span>'}${p?.offSchedule?'<small>근무표 변경됨</small>':''}</button>${p&&allowed(p)?`<button class="mo-seat-manage" data-worker="${escape(p.key)}">＋ 업무 관리</button>`:''}</div>`;
+ const p=people().find(w=>w.seat===id),task=p?.task,editable=p&&allowed(p)&&data.dateKey===dateNow();
+ return `<div data-seat-id="${id}" class="mo-seat ${p?(task?'working':'occupied'):'empty'}"><div class="mo-bubble"><button class="mo-bubble-content" ${p?`data-history="${escape(p.key)}" aria-label="${escape(p.name)} 업무 히스토리 보기"`:'data-worker=""'} data-seat="${id}" ${!p?'aria-label="'+seats.find(s=>s[0]===id)[1]+' 자리 선택"':''}>${p?`<span>${task?'진행 중 · '+clock(task.startedAt):p.lastCompletedAt?'완료 · '+clock(p.lastCompletedAt):'업무 대기'}</span><strong>${escape(task?.text||'다음 업무를 준비하고 있어요')}</strong>`:'<span>빈자리</span><strong>이 자리에 앉기 ＋</strong>'}</button>${task?`<button class="mo-progress-control" data-progress="${escape(p.key)}" aria-label="${escape(p.name)} 업무 진행률 ${Number(task.progress)||0}% 조절" ${!editable?'disabled':''}><span class="mo-progress" role="progressbar" aria-label="업무 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Number(task.progress)||0}"><i style="width:${Number(task.progress)||0}%"></i></span><span class="mo-progress-caption">${Number(task.progress)||0}% · ${Object.keys(p.tasks||{[task.id]:task}).length}개 업무</span></button>`:''}${p?`<button class="mo-history-link" data-history="${escape(p.key)}">업무 히스토리 ↗</button>`:''}</div><div class="mo-furniture"><div class="mo-monitor" aria-hidden="true">${monitor(task)}</div><div class="mo-mug" aria-hidden="true"></div><div class="mo-desk" aria-hidden="true"></div>${p?`<button class="mo-drag-character" data-drag-worker="${escape(p.key)}" aria-label="${escape(p.name)} 자리 이동" ${!editable?'disabled':''}>${character(p.name)}</button><span data-shift-worker="${escape(p.key)}">${shiftMarkup(p)}</span>`:'<div class="mo-chair" aria-hidden="true"></div>'}</div><button class="mo-name" data-worker="${escape(p?.key||'')}" data-seat="${id}">${p?badge(p.name):'<span>'+seats.find(s=>s[0]===id)[1]+'</span>'}${p?.offSchedule?'<small>근무표 변경됨</small>':''}</button>${p&&allowed(p)?`<button class="mo-seat-manage" data-worker="${escape(p.key)}">＋ 업무 관리</button>`:''}</div>`;
 }
 let classroomOpen=false;
 let noticeSignature='';
@@ -37,7 +51,7 @@ function paintBoard(){
  const opened=new Set([...board.querySelectorAll('details[open]')].map(el=>el.dataset.notice));
  board.innerHTML=`<header><div><span>본관 · 2관 · 3관 함께 확인</span><h4>우리의 공용 칠판</h4></div><span class="mo-board-count">전체 공지 ${items.length}건</span></header><div class="mo-board-notices">${items.length?items.map((item,i)=>`<details data-notice="${escape(item.id)}" ${opened.has(String(item.id))?'open':''}><summary><span class="mo-board-number">${String(i+1).padStart(2,'0')}</span><strong>${escape(item.text)}</strong><span class="mo-board-expand" aria-hidden="true">＋</span></summary><div class="mo-board-detail"><p>${escape(item.note||'별도 상세 내용이 없습니다.')}</p><small>기록 ${badge(item.author)}${item.updatedAt?`<time>${escape(String(item.updatedAt).slice(0,10))}</time>`:''}</small></div></details>`).join(''):'<p class="mo-board-empty">등록된 전체 공지사항이 없습니다.</p>'}</div><div class="mo-board-ledge" aria-hidden="true"><i></i><b></b></div>`;
 }
-function paint(){if(!data)return;
+function paint(){if(!data||drag)return;
  const list=people();
  const picker=document.querySelector('.journal-worker-picker'),focused=picker?.contains(document.activeElement)?document.activeElement:null;
  if(picker)picker.remove();
@@ -45,12 +59,12 @@ function paint(){if(!data)return;
  if(picker){if(collapsed)root.querySelector('.mo-content').before(picker);else root.querySelector('.mo-scene').append(picker);if(focused)focused.focus({preventScroll:true});}
  root.querySelector('.mo-unseated').innerHTML=`<span>미배치 근무자</span>${list.filter(p=>!p.seat).map(p=>`<button data-worker="${escape(p.key)}">${character(p.name)}${badge(p.name)}<small>${p.task?'업무 진행 중':p.offSchedule?'근무표 변경됨':'자리 선택 전'}</small></button>`).join('')||'<small>모든 근무자가 자리를 선택했습니다.</small>'}`;
  root.querySelector('.mo-previous').innerHTML=(data.previousPending||[]).length?'<span>전날 마치지 않은 업무</span>'+data.previousPending.map(p=>`<button data-previous="${escape(p.key)}">${badge(p.name)} · ${escape(p.task.text)}</button>`).join(''):'';
- root.querySelector('.mo-sub').textContent=`${data.dateKey} · 근무자 ${data.people.length}명 · 진행 중 ${list.filter(p=>p.task).length}명`;
+
  root.querySelector('.mo-date-note').textContent=data.dateKey===dateNow()?'퇴근 기록이 있으면 자리가 비워집니다. 연장 근무는 내 자리·업무에서 다시 선택해 주세요.':'이전 날짜의 기록입니다. 미완료 업무는 상세 화면에서 종료할 수 있습니다.';
- root.querySelector('[data-my]').disabled=!list.some(allowed);
+ toolbar.querySelector('[data-my]').disabled=!list.some(allowed);
  if(!list.length)root.querySelector('.mo-unseated').innerHTML='<span>오늘의 근무자가 없습니다.</span><small>월별 근무표에 등록된 활성 근무자가 표시됩니다.</small>';
 }
-function status(text){root.querySelector('.mo-sync').textContent=text;root.dataset.connected=String(connected);}
+function status(text){toolbar.querySelector('.mo-sync').textContent=text;root.dataset.connected=String(connected);}
 function stop(){generation++;controller?.abort();controller=null;clearTimeout(retry);connected=false;}
 async function connect(){
  const c=bridge.context();if(!c.active||!c.identity||document.hidden||!navigator.onLine)return;
@@ -65,7 +79,7 @@ async function connect(){
   while(true){const {value,done}=await reader.read();if(done)break;clearTimeout(watchdog);watchdog=setTimeout(()=>abort.abort(),15000);buffer+=decoder.decode(value,{stream:true});let index;
    while((index=buffer.indexOf('\n\n'))>=0){const event=buffer.slice(0,index);buffer=buffer.slice(index+2);if(event.includes('event: unavailable'))throw Error('조회 실패');const line=event.split('\n').find(l=>l.startsWith('data: '));if(!line)continue;
     const next=JSON.parse(line.slice(6));if(!next.success)throw Error(next.message);if(tokenGeneration!==generation)return;
-    const changed=data?.updatedAt!==next.updatedAt;data=next;lastSeen=new Date().toISOString();connected=true;errorDelay=1000;paint();status('실시간 연결 · '+clock(lastSeen));if(changed)bridge.refreshJournal(next.dateKey);
+    const changed=data?.updatedAt!==next.updatedAt;data=next;serverOffset=Date.parse(next.serverTime)-Date.now();lastSeen=new Date().toISOString();connected=true;errorDelay=1000;paint();status('실시간 연결 · '+clock(lastSeen));if(changed)bridge.refreshJournal(next.dateKey);
    }
   }
   if(tokenGeneration===generation){connected=false;status('연결 갱신 중 · 마지막 갱신 '+clock(lastSeen));retry=setTimeout(connect,250);}
@@ -123,10 +137,10 @@ function show(person,preferredSeat,choices,recordDate,editingId){
 }
 let historyRequest=0;
 function showHistory(person,recordDate){
- const labels={select:'말풍선 업무 선택',start:'업무 시작',edit:'내용 수정',complete:'완료 · 일지 기록',cancel:'업무 취소'};
+ const labels={progress:'진행률 변경',select:'말풍선 업무 선택',start:'업무 시작',edit:'내용 수정',complete:'완료 · 일지 기록',cancel:'업무 취소'};
  let date=recordDate||data.dateKey,cursor='',rows=[];
  dialog.setAttribute('aria-label','업무 히스토리');
- dialog.innerHTML=`<header><div><p>업무 히스토리</p><h3>${badge(person.name)}</h3></div><button type="button" data-close aria-label="닫기">✕</button></header><div class="mo-form-body mo-history-body"><div class="mo-history-tools"><label>조회 날짜<input type="date" value="${escape(date)}" aria-label="업무 히스토리 날짜"></label><button type="button" data-reload>새로고침</button></div><p class="mo-history-message" role="status"></p><div class="mo-history-list"></div><button type="button" data-more hidden>이전 기록 더 보기</button></div><footer><button type="button" class="mo-primary" data-current>현재 자리·업무 ${allowed(person)?'관리':'보기'}</button></footer>`;
+ dialog.innerHTML=`<header><div><p>업무 히스토리</p><h3>${badge(person.name)}</h3></div><button type="button" data-close aria-label="닫기">✕</button></header><div class="mo-form-body mo-history-body"><div class="mo-history-tools"><label>조회 날짜<input type="date" value="${escape(date)}" aria-label="업무 히스토리 날짜"></label><button type="button" data-reload>새로고침</button></div><p class="mo-history-message" role="status"></p><div class="mo-history-list"></div><button type="button" data-more hidden>이전 기록 더 보기</button></div><footer><button type="button" class="mo-primary" data-current>현재 자리·업무 ${allowed(person)?'관리':'보기'}</button>${allowed(person)&&data.dateKey===dateNow()?'<form class="mo-history-quick"><input name="quickTask" aria-label="새로운 업무 바로 입력" maxlength="500" placeholder="새로운 업무 입력" required><button type="submit">업무 추가</button><span role="status"></span></form>':''}</footer>`;
  const container=dialog.querySelector('.mo-history-list'),message=dialog.querySelector('.mo-history-message'),more=dialog.querySelector('[data-more]');
  async function load(append=false){
   const ticket=++historyRequest,account=bridge.context().identity?.uid;
@@ -143,15 +157,68 @@ function showHistory(person,recordDate){
  dialog.querySelector('[data-close]').onclick=()=>{historyRequest++;dialog.close();};
  dialog.querySelector('[data-current]').onclick=()=>{historyRequest++;const latest=listPerson(person.key);if(latest)show(latest);};
  dialog.querySelector('input').onchange=e=>{if(e.target.value){date=e.target.value;load();}};
+ const quick=dialog.querySelector('.mo-history-quick');
+ if(quick){let pending=null;quick.onsubmit=async e=>{e.preventDefault();if(saving)return;const latest=listPerson(person.key),text=quick.elements.quickTask.value.trim();if(!text)return;
+ const payload={dateKey:data.dateKey,workerKey:person.key,version:latest?.version||0,action:'start',text};
+ const signature=JSON.stringify(payload);if(!pending||pending.signature!==signature)pending={signature,id:crypto.randomUUID()};
+ saving=true;quick.querySelector('button').disabled=true;
+ try{if(!connected)throw Error('연결을 확인한 뒤 다시 시도해 주세요.');await api({...payload,operationId:pending.id});pending=null;quick.reset();quick.querySelector('[role=status]').textContent='업무를 추가했습니다.';if(date===data.dateKey)await load();}
+ catch(err){quick.querySelector('[role=status]').textContent=err.message;}finally{saving=false;quick.querySelector('button').disabled=false;}};}
  dialog.querySelector('[data-reload]').onclick=()=>load();more.onclick=()=>load(true);
  if(!dialog.open)dialog.showModal();load();
 }
+function showProgress(person){
+ if(!allowed(person)||!person.task||data.dateKey!==dateNow())return;
+ const task=person.task,date=data.dateKey,version=person.version||0;
+ dialog.setAttribute('aria-label','업무 진행률 조절');
+ dialog.innerHTML=`<form><header><h3>업무 진행률</h3><button type="button" data-close aria-label="닫기">✕</button></header><div class="mo-form-body"><p>${escape(task.text)}</p><label class="mo-progress-editor">진행률 <output>${Number(task.progress)||0}%</output><input name="progress" aria-label="업무 진행률" type="range" min="0" max="100" step="1" value="${Number(task.progress)||0}"></label><div class="mo-progress-presets">${[0,25,50,75,100].map(n=>`<button type="button" data-percent="${n}">${n}%</button>`).join('')}</div><p class="mo-form-error" role="alert"></p></div><footer><button class="mo-primary" type="submit">진행률 저장</button></footer></form>`;
+ const form=dialog.querySelector('form'),input=form.elements.progress;let pending=null;
+ input.oninput=()=>form.querySelector('output').textContent=input.value+'%';
+ form.querySelectorAll('[data-percent]').forEach(b=>b.onclick=()=>{input.value=b.dataset.percent;input.oninput();});
+ form.querySelector('[data-close]').onclick=()=>dialog.close();
+ form.onsubmit=async e=>{e.preventDefault();if(saving)return;const progress=Number(input.value);if(!pending||pending.progress!==progress)pending={progress,id:crypto.randomUUID()};saving=true;form.querySelectorAll('button,input').forEach(el=>el.disabled=true);dialog.oncancel=e=>e.preventDefault();
+ try{if(!connected)throw Error('연결을 확인한 뒤 다시 시도해 주세요.');await api({dateKey:date,workerKey:person.key,version,action:'progress',taskId:task.id,progress,operationId:pending.id});dialog.close();}
+ catch(err){form.querySelector('.mo-form-error').textContent=err.message;}finally{saving=false;dialog.oncancel=null;form.querySelectorAll('button,input').forEach(el=>el.disabled=false);}};
+ if(!dialog.open)dialog.showModal();input.focus();
+}
+let suppressClickUntil=0;
+function installDrag(){
+ root.addEventListener('pointerdown',e=>{
+  const button=e.target.closest('[data-drag-worker]');if(!button||button.disabled||!connected||saving||e.button!==0)return;
+  const person=listPerson(button.dataset.dragWorker);if(!person||!allowed(person))return;
+  drag={person:{...person},x:e.clientX,y:e.clientY,pointer:e.pointerId,button,moved:false,target:null};root.setPointerCapture(e.pointerId);
+ });
+ root.addEventListener('pointermove',e=>{
+  if(!drag||drag.pointer!==e.pointerId)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.moved&&Math.hypot(dx,dy)<6)return;
+  drag.moved=true;drag.button.classList.add('is-dragging');drag.button.style.transform=`translate(${dx}px,${dy}px)`;
+  root.querySelectorAll('.mo-drop-target').forEach(el=>el.classList.remove('mo-drop-target'));
+  drag.target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-seat-id]');
+  if(drag.target&&root.contains(drag.target))drag.target.classList.add('mo-drop-target');else drag.target=null;
+ });
+ async function finish(e,cancel=false){
+  if(!drag||drag.pointer!==e.pointerId)return;const current=drag;drag=null;
+  if(root.hasPointerCapture(e.pointerId))root.releasePointerCapture(e.pointerId);
+  current.button.style.transform='';current.button.classList.remove('is-dragging');root.querySelectorAll('.mo-drop-target').forEach(el=>el.classList.remove('mo-drop-target'));
+  if(!current.moved){paint();if(!cancel)openPerson(current.person.key);suppressClickUntil=Date.now()+400;return;}
+  suppressClickUntil=Date.now()+400;
+  const seat=current.target?.dataset.seatId;if(cancel||!seat||seat===current.person.seat){paint();return;}
+  const other=people().find(p=>p.seat===seat&&p.key!==current.person.key);
+  if(other&&!allowed(other)){root.querySelector('.mo-notice').textContent='다른 근무자와의 자리 교환은 관리 권한이 필요합니다.';paint();return;}
+  saving=true;
+  try{if(!connected)throw Error('연결을 확인한 뒤 다시 시도해 주세요.');await api({dateKey:data.dateKey,workerKey:current.person.key,version:current.person.version||0,action:'move',seat,targetKey:other?.key||'',targetVersion:other?.version||0,operationId:crypto.randomUUID()});root.querySelector('.mo-notice').textContent=other?'두 근무자의 자리를 바꿨습니다.':'자리를 옮겼습니다.';}
+  catch(err){root.querySelector('.mo-notice').textContent=err.message;}finally{saving=false;paint();}
+ }
+ root.addEventListener('pointerup',e=>finish(e));root.addEventListener('pointercancel',e=>finish(e,true));
+}
 function listPerson(key){return people().find(p=>p.key===key);}
-function init(b){bridge=b;root=document.getElementById('deskMiniOffice');if(!root)return;root.className='mini-office';root.innerHTML=`<header class="mo-head"><div><div class="mo-eyebrow">OUR LITTLE OFFICE</div><h3>오늘의 사무실</h3><p class="mo-sub">근무자와 업무를 연결합니다.</p></div><div class="mo-head-tools"><span class="mo-sync" role="status"></span><button data-my>내 자리·업무</button><button data-collapse aria-expanded="true">접기</button></div></header><div class="mo-content"><section class="mo-board" aria-label="전체 관 공용 칠판"></section><nav class="mo-room-tabs" aria-label="사무실 선택">${[['main','본관'],['annex-2','2관'],['annex-3','3관']].map(([id,label])=>`<button data-room-tab="${id}" aria-pressed="${id===currentRoom}">${label}</button>`).join('')}</nav><div class="mo-scene"></div><div class="mo-unseated"></div><div class="mo-previous"></div><p class="mo-date-note"></p></div><p class="mo-notice" role="status"></p>`;
+function init(b){bridge=b;root=document.getElementById('deskMiniOffice');if(!root)return;root.className='mini-office';root.innerHTML=`<div class="mo-head-tools"><span class="mo-sync" role="status"></span><button data-my>내 자리·업무</button><button data-collapse aria-expanded="true">접기</button></div><div class="mo-content"><section class="mo-board" aria-label="전체 관 공용 칠판"></section><nav class="mo-room-tabs" aria-label="사무실 선택">${[['main','본관'],['annex-2','2관'],['annex-3','3관']].map(([id,label])=>`<button data-room-tab="${id}" aria-pressed="${id===currentRoom}">${label}</button>`).join('')}</nav><div class="mo-scene"></div><div class="mo-unseated"></div><div class="mo-previous"></div><p class="mo-date-note"></p></div><p class="mo-notice" role="status"></p>`;
+ toolbar=root.querySelector('.mo-head-tools');const nav=document.querySelector('.desk-journal-date-nav');if(nav)nav.before(toolbar);
  const picker=document.querySelector('.journal-worker-picker');if(picker){root.querySelector('.mo-scene').append(picker);const old=document.querySelector('.journal-context-grid');if(old)old.style.display='none';}
  dialog=document.createElement('dialog');dialog.className='mo-dialog';dialog.setAttribute('aria-label','자리와 진행 업무');document.body.append(dialog);
- root.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-classroom-toggle')){classroomOpen=!classroomOpen;paint();root.querySelector('[data-classroom-toggle]').focus();return;}if(b.hasAttribute('data-collapse')){collapsed=!collapsed;const picker=root.querySelector('.journal-worker-picker');if(picker){if(collapsed)root.querySelector('.mo-content').before(picker);else root.querySelector('.mo-scene').append(picker);}root.querySelector('.mo-content').hidden=collapsed;b.textContent=collapsed?'펼치기':'접기';b.setAttribute('aria-expanded',String(!collapsed));return;}if(b.dataset.roomTab){currentRoom=b.dataset.roomTab;root.querySelectorAll('[data-room-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));paint();return;}if(b.dataset.previous){const p=data.previousPending.find(p=>p.key===b.dataset.previous);if(p)show(p,null,null,data.previousDate);return;}if(b.dataset.history){const p=listPerson(b.dataset.history);if(p)showHistory(p);return;}if(b.hasAttribute('data-my')){const p=people().find(p=>p.uid===bridge.context().identity.uid)||people().find(allowed);if(p)openPerson(p.key);return;}if(b.hasAttribute('data-worker'))openPerson(b.dataset.worker,b.dataset.seat);};
- document.addEventListener('visibilitychange',sync);window.addEventListener('offline',sync);window.addEventListener('online',sync);timer=setInterval(sync,1000);sync();
+ const handleClick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.progress){const p=listPerson(b.dataset.progress);if(p)showProgress(p);return;}if(b.dataset.dragWorker){if(Date.now()<suppressClickUntil)return;openPerson(b.dataset.dragWorker);return;}if(b.hasAttribute('data-classroom-toggle')){classroomOpen=!classroomOpen;paint();root.querySelector('[data-classroom-toggle]').focus();return;}if(b.hasAttribute('data-collapse')){collapsed=!collapsed;const picker=root.querySelector('.journal-worker-picker');if(picker){if(collapsed)root.querySelector('.mo-content').before(picker);else root.querySelector('.mo-scene').append(picker);}root.querySelector('.mo-content').hidden=collapsed;b.textContent=collapsed?'펼치기':'접기';b.setAttribute('aria-expanded',String(!collapsed));return;}if(b.dataset.roomTab){currentRoom=b.dataset.roomTab;root.querySelectorAll('[data-room-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));paint();return;}if(b.dataset.previous){const p=data.previousPending.find(p=>p.key===b.dataset.previous);if(p)show(p,null,null,data.previousDate);return;}if(b.dataset.history){const p=listPerson(b.dataset.history);if(p)showHistory(p);return;}if(b.hasAttribute('data-my')){const p=people().find(p=>p.uid===bridge.context().identity.uid)||people().find(allowed);if(p)openPerson(p.key);return;}if(b.hasAttribute('data-worker'))openPerson(b.dataset.worker,b.dataset.seat);};
+ root.onclick=handleClick;toolbar.onclick=e=>{e.stopPropagation();handleClick(e);};installDrag();
+ document.addEventListener('visibilitychange',sync);window.addEventListener('offline',sync);window.addEventListener('online',sync);timer=setInterval(()=>{sync();const minute=Math.floor((Date.now()+serverOffset)/60000);if(minute!==lastShiftMinute){lastShiftMinute=minute;root.querySelectorAll('[data-shift-worker]').forEach(el=>{const p=listPerson(el.dataset.shiftWorker);if(p)el.innerHTML=shiftMarkup(p);});}},1000);sync();
 }
 window.DeskMiniOffice={init,sync};
 })();

@@ -101,3 +101,32 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 .mo-director .mo-seat{grid-template-rows:minmax(132px,auto) auto}
 .mo-director .mo-furniture{align-self:end}
 .mini-office .mo-seat-manage{font-size:11px;padding:6px;white-space:nowrap}
+/* Direct controls keep the office compact while preserving keyboard access. */
+.mini-office .mo-bubble{display:flex;flex-direction:column;justify-content:center;min-height:160px;padding:8px;box-sizing:border-box}
+.mini-office .mo-bubble-content,.mini-office .mo-history-link,.mini-office .mo-progress-control{width:100%;border:0;box-shadow:none;background:transparent;text-align:left;padding:0;color:inherit;min-height:40px;border-radius:5px}
+.mini-office .mo-bubble-content{display:block;font:inherit;font-size:12px}
+.mini-office .mo-bubble-content>span{display:block;font-size:10px;color:#7b866d;margin-bottom:4px}
+.mini-office .mo-history-link{font-size:10px;color:#738365}
+.mini-office .mo-progress-control .mo-progress{margin-top:0}
+.mini-office .mo-progress-control:disabled{opacity:1;cursor:default}
+.mini-office .mo-progress-control:not(:disabled):hover{background:#edf2df}
+.mo-director .mo-seat{grid-template-rows:minmax(160px,auto) auto}
+.mini-office .mo-drag-character{position:absolute;z-index:3;bottom:0;left:calc(50% - 30px);width:60px;height:76px;min-height:40px;padding:0;border:0;background:transparent;box-shadow:none;touch-action:none;cursor:grab}
+.mini-office .mo-drag-character:disabled{opacity:1;cursor:default}
+.mo-drag-character .mo-character{position:static;width:100%;height:100%;filter:none}
+.mo-drag-character.is-dragging{pointer-events:none;cursor:grabbing;filter:drop-shadow(0 5px 5px #203c3450)}
+.mo-seat:has(.is-dragging){z-index:10}.mo-room:has(.is-dragging){z-index:10;overflow:visible}
+.mo-seat.mo-drop-target{outline:2px dashed #638644;outline-offset:3px;background:#ebf2cf60;border-radius:8px}
+.mo-shift{position:absolute;left:calc(50% + 29px);bottom:8px;display:flex;align-items:end;gap:3px;max-width:calc(50% - 30px);color:#405b38;pointer-events:none}
+.mo-shift-track{display:flex;align-items:end;flex:none;width:5px;height:42px;background:#eee9d6;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px #5c724738}
+.mo-shift-track i{width:100%;background:#72934e;border-radius:4px}.mo-shift small{font-size:9px;line-height:1.35;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mo-director .mo-drag-character{width:44px;height:60px;left:calc(50% - 26px)}
+.mo-director .mo-shift{left:calc(50% + 18px);max-width:calc(50% - 18px)}
+.mo-head-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#526848}
+.mo-head-tools button{min-height:40px;padding:8px 12px;background:#fffef6;border:1px solid #d0dbbd;border-radius:8px;color:#526848;font:inherit;font-size:12px;cursor:pointer}
+.mo-head-tools .mo-sync{font-size:11px;white-space:nowrap}.journal-header-tools{align-items:center!important;flex-wrap:wrap}
+.mo-history-quick{display:flex;gap:6px;flex:1;flex-wrap:wrap;min-width:180px}.mo-history-quick input{flex:1;min-width:100px;width:0;padding:10px;border:1px solid #cad5c2;border-radius:8px;font:inherit;font-size:13px}.mo-history-quick [role=status]{flex-basis:100%;font-size:11px;color:#59724c}
+.mo-dialog footer:has(.mo-history-quick){flex-wrap:wrap;align-items:start}.mo-progress-presets{display:flex;gap:6px;flex-wrap:wrap}.mo-progress-presets button{min-width:40px;min-height:40px}
+@media(max-width:760px){.mo-head-tools{width:100%;max-width:none}.mo-head-tools .mo-sync{flex-basis:auto}.mo-shift small{display:none}.mo-shift{left:calc(50% + 20px)}.mini-office .mo-drag-character{width:44px;left:calc(50% - 22px);height:65px}.mo-director .mo-shift small,.mo-classroom .mo-shift small{display:block}}
+.mo-drag-character{user-select:none;-webkit-user-select:none}
+@media(max-width:760px){.mo-shift small{display:block;font-size:8px;max-width:25px}.mo-shift{max-width:calc(50% - 21px)}}
