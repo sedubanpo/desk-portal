@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
     "test:coverage": "node --test --experimental-test-coverage",
     "migrate:payroll-config": "node scripts/migrate-payroll-config.js",
     "verify:payroll-parity": "node scripts/compare-payroll-parity.js"

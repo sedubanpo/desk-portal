@@ -72,7 +72,7 @@ export function createRoutineMethods({ store, loadStaffDirectory, now }) {
       ]);
       return {
         success: true,
-        templates: Object.values(templates || {}),
+        templates: Object.values(templates || {}).filter((t) => !t.deletedAt),
         day: day || { version: 0, items: {} },
         staff: people,
         canManage: manager(i),
@@ -96,6 +96,7 @@ export function createRoutineMethods({ store, loadStaffDirectory, now }) {
         root + "/templates/" + id,
         p.version || 0,
         (current) => {
+          if (current?.deletedAt) fail(410, "삭제된 루틴입니다. 새 루틴으로 등록해 주세요.");
           if (current && current.creator.uid !== i.uid && !manager(i))
             fail(403, "작성자 또는 업무 관리자만 원본을 수정할 수 있습니다.");
           return {
@@ -116,6 +117,24 @@ export function createRoutineMethods({ store, loadStaffDirectory, now }) {
         },
       );
       return { success: true, template: saved };
+    },
+    async deleteDeskRoutineTemplate(p = {}, i) {
+      if (!/^[\w-]{1,80}$/.test(p.id || "")) fail(400, "잘못된 업무입니다.");
+      await edit(root + "/templates/" + p.id, p.version, (current) => {
+        if (!current || current.deletedAt) fail(404, "이미 삭제되었거나 없는 루틴입니다.");
+        if (current.creator.uid !== i.uid && !manager(i))
+          fail(403, "작성자 또는 업무 관리자만 원본을 삭제할 수 있습니다.");
+        // Keep a tombstone to reject stale edits; dated snapshots are never touched.
+        return {
+          id: current.id,
+          creator: current.creator,
+          version: current.version + 1,
+          active: false,
+          deletedAt: now(),
+          deletedBy: actor(i),
+        };
+      });
+      return { success: true };
     },
     async prepareDeskRoutineDay(p = {}, i) {
       if (!validDate(p.date)) fail(400, "날짜를 확인해 주세요.");
@@ -140,7 +159,7 @@ export function createRoutineMethods({ store, loadStaffDirectory, now }) {
           d.items ||= {};
           let changed = false;
           for (const t of templates.filter(
-            (t) => t.active && t.weekdays.includes(weekday),
+            (t) => !t.deletedAt && t.active && t.weekdays.includes(weekday),
           )) {
             if (d.items[t.id]) continue;
             const role = (key) => {

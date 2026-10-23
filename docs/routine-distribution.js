@@ -167,7 +167,7 @@
                   .filter((t) => t.grade === g)
                   .map(
                     (t) =>
-                      `<article data-id="${t.id}"><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경">⠿ ${g} 등급</button><h4>${esc(t.title)}</h4><p>${esc(t.type)} · ${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</p><p>책임 ${identity(t.responsible)}<br>보조 ${identity(t.assistant)}</p><p>작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button></article>`,
+                      `<article data-id="${t.id}"><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경">⠿ ${g} 등급</button><h4>${esc(t.title)}</h4><p>${esc(t.type)} · ${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</p><p>책임 ${identity(t.responsible)}<br>보조 ${identity(t.assistant)}</p><p>작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
                   )
                   .join("")}</section>`,
             )
@@ -242,11 +242,24 @@
       }
     }
     const show = (html) => {
+      dialog.removeAttribute("aria-labelledby");
       dialog.innerHTML =
         '<button class="rd-close" type="button">닫기</button>' + html;
       dialog.querySelector(".rd-close").onclick = () => dialog.close();
       dialog.showModal();
     };
+    function confirmDelete(t) {
+      if (!t || !canEdit(t)) return;
+      show(`<h3 id="rd-delete-title">루틴을 삭제할까요?</h3><p>${esc(t.title)}</p><p>보관함에서 삭제되며 앞으로 자동 배정되지 않습니다. <strong>기존 날짜별 배정·완료 이력은 그대로 유지됩니다.</strong></p><p>삭제 후에는 새 루틴으로 다시 등록해야 합니다.</p><div class="rd-delete-actions"><button type="button" data-cancel-delete>취소</button><button type="button" class="rd-danger" data-confirm-delete>루틴 삭제</button></div>`);
+      dialog.setAttribute("aria-labelledby", "rd-delete-title");
+      const cancel = dialog.querySelector("[data-cancel-delete]");
+      cancel.onclick = () => dialog.close();
+      cancel.focus();
+      dialog.querySelector("[data-confirm-delete]").onclick = async () => {
+        dialog.close();
+        await save("deleteDeskRoutineTemplate", { id: t.id, version: t.version }, "루틴을 삭제했습니다. 기존 배정·완료 이력은 유지됩니다.");
+      };
+    }
     function choices(selected = "") {
       const working = workNames();
       return (
@@ -425,6 +438,8 @@
         filter = b.dataset.filter;
         render();
       }
+      if (b.dataset.delete)
+        confirmDelete(data.templates.find((t) => t.id === b.dataset.delete));
       if (b.dataset.edit)
         editor(data.templates.find((t) => t.id === b.dataset.edit));
       const t = items().find((t) => t.id === b.dataset.task);

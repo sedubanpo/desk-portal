@@ -63,7 +63,7 @@ export const DESK_READ_METHODS = new Set([
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
-  'saveDeskRoutineTemplate','prepareDeskRoutineDay','updateDeskRoutineDay', 'saveDeskOffice', 'saveDeskReward',
+  'saveDeskRoutineTemplate','deleteDeskRoutineTemplate','prepareDeskRoutineDay','updateDeskRoutineDay', 'saveDeskOffice', 'saveDeskReward',
   'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries',
   'saveDeskAttendancePunch', 'saveDeskAttendanceCorrectionRequest', 'saveDeskAttendanceCorrectionDecision',
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',

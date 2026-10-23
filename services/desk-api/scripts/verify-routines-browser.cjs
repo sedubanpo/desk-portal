@@ -97,6 +97,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
           d.day.version++;
           return { success: true, day: d.day };
         }
+        if (m === "deleteDeskRoutineTemplate") {
+          d.templates = d.templates.filter(t => t.id !== p.id);
+          return { success: true };
+        }
         if (m === "saveDeskRoutineTemplate") {
           const t = d.templates.find((t) => t.id === p.id);
           Object.assign(t, p, { version: t.version + 1 });
@@ -147,6 +151,24 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
       ),
       fullPage: true,
     });
+    // Deletion requires confirmation; cancellation/Escape never mutate data.
+    await page.locator('[data-delete=task1]').click();
+    await page.getByText('기존 날짜별 배정·완료 이력은 그대로 유지됩니다.', {exact:true}).waitFor();
+    await page.getByRole('button', {name:'취소', exact:true}).click();
+    assert.equal(await page.locator('[data-delete=task1]').count(), 1);
+    await page.locator('[data-delete=task1]').click();
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => routineFixture.templates.length), 4);
+    await page.locator('[data-delete=task1]').click();
+    await page.getByRole('button', {name:'루틴 삭제', exact:true}).click();
+    await page.locator('[data-delete=task1]').waitFor({state:'detached'});
+    assert.equal(await page.evaluate(() => routineFixture.templates.length), 3);
+    assert.ok(await page.evaluate(() => routineFixture.day.items.task1));
+    await page.locator('[data-tab=today]').click();
+    await page.locator('.rd-task[data-id=task1]').waitFor();
+    assert.equal(await page.locator('.rd-task').count(), 4);
+    await page.locator('[data-tab=library]').click();
+    await page.locator('[data-delete=task0]').waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({
       path: path.join(
@@ -163,7 +185,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     );
     assert.deepEqual(errors, []);
     console.log(
-      "PASS actual app parsing/navigation, role assignment, exclusion error, grade drag and mobile layout",
+      "PASS actual app parsing/navigation, role assignment, exclusion error, grade drag, deletion confirmation/cancel/history retention and mobile layout",
     );
   } finally {
     await browser.close();

@@ -239,6 +239,11 @@ test("HTTP auth, routing and author permission are enforced", async () => {
     .set("x-idempotency-key", "routine-test-author-0001")
     .send({ payload: { ...template, version: 1 } })
     .expect(403);
+  await request(app).post("/v1/desk/deleteDeskRoutineTemplate")
+    .send({ payload: { id: "sample", version: 1 } }).expect(401);
+  await request(app).post("/v1/desk/deleteDeskRoutineTemplate")
+    .set("Authorization", "Bearer b").set("x-idempotency-key", "routine-test-delete-0001")
+    .send({ payload: { id: "sample", version: 1 } }).expect(403);
   const r = await request(app)
     .post("/v1/desk/prepareDeskRoutineDay")
     .set("Authorization", "Bearer a")
@@ -292,4 +297,32 @@ test("cold RTDB transaction retries null before the actual persisted snapshot", 
   assert.equal(d.day.version, 5);
   assert.equal(d.day.items.sample.status, "done");
   assert.equal(noChangeWrites, 1);
+});
+
+test("deletion preserves completed snapshots and prevents future generation and resurrection", async () => {
+  const { api, a } = setup();
+  await api.saveDeskRoutineTemplate(template, a);
+  await api.prepareDeskRoutineDay({ date: "2026-10-23" }, a);
+  await api.updateDeskRoutineDay({ date: "2026-10-23", id: "sample", version: 1, action: "status", status: "done" }, a);
+  const before = (await api.getDeskRoutineBoard({ date: "2026-10-23" }, a)).day;
+  await api.deleteDeskRoutineTemplate({ id: "sample", version: 1 }, a);
+  const after = await api.getDeskRoutineBoard({ date: "2026-10-23" }, a);
+  assert.equal(after.templates.length, 0);
+  assert.deepEqual(after.day, before);
+  assert.deepEqual((await api.prepareDeskRoutineDay({ date: "2026-10-23" }, a)).day, before);
+  assert.equal(Object.keys((await api.prepareDeskRoutineDay({ date: "2026-10-30" }, a)).day.items).length, 0);
+  await assert.rejects(api.saveDeskRoutineTemplate({ ...template, version: 1 }, a), { status: 409 });
+  await assert.rejects(api.saveDeskRoutineTemplate({ ...template, version: 2 }, a), { status: 410 });
+});
+
+test("deletion enforces ownership, manager permission and optimistic concurrency", async () => {
+  const { api, a, b } = setup();
+  await api.saveDeskRoutineTemplate(template, a);
+  await assert.rejects(api.deleteDeskRoutineTemplate({ id: "sample", version: 1 }, b), { status: 403 });
+  await api.saveDeskRoutineTemplate({ ...template, version: 1, title: "updated" }, a);
+  await assert.rejects(api.deleteDeskRoutineTemplate({ id: "sample", version: 1 }, a), { status: 409 });
+  await api.deleteDeskRoutineTemplate({ id: "sample", version: 2 }, { ...b, permissions: { canManageDailyTasks: true } });
+  assert.equal((await api.getDeskRoutineBoard({ date: "2026-10-23" }, a)).templates.length, 0);
+  await assert.rejects(api.deleteDeskRoutineTemplate({ id: "sample", version: 3 }, a), { status: 404 });
+  await assert.rejects(api.deleteDeskRoutineTemplate({ id: "../days", version: 1 }, a), { status: 400 });
 });
