@@ -118,6 +118,12 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     await page.locator("[data-desk-tab=routines]").click();
     await page.locator(".rd-task").first().waitFor();
     assert.equal(await page.locator(".rd-task").count(), 4);
+    await page.locator('[data-search]').fill('수강료');
+    assert.equal(await page.locator('.rd-task').count(), 1);
+    await page.locator('[data-search]').fill('없는 업무 검색');
+    await page.getByText('조건에 맞는 업무가 없습니다.', {exact:true}).waitFor();
+    await page.locator('.rd-searchbar [data-reset]').click();
+    assert.equal(await page.locator('.rd-task').count(), 4);
     await page.locator("[data-self=responsible]").first().click();
     await page.waitForFunction(
       () => routineFixture.day.items.task0.responsible === "me",
@@ -140,6 +146,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     });
     await page.locator("[data-tab=library]").click();
     await page.locator("[data-move]").first().waitFor();
+    await page.locator('[data-library-state]').selectOption('paused');
+    assert.equal(await page.locator('[data-move]').count(), 0);
+    await page.locator('[data-library-state]').selectOption('all');
+    assert.equal(await page.locator('[data-move]').count(), 4);
+    await page.locator('[data-search]').fill('출결');
+    assert.equal(await page.locator('[data-move]').count(), 1);
+    await page.locator('.rd-searchbar [data-reset]').click();
     await page
       .locator("[data-move=task1]")
       .dragTo(page.locator("[data-grade=S]"));

@@ -36,6 +36,8 @@
     let gradeFilter = "",
       typeFilter = "",
       workerFilter = "",
+      search = "",
+      libraryState = "active",
       loading = false;
     let date = new Intl.DateTimeFormat("sv-SE", {
         timeZone: "Asia/Seoul",
@@ -48,12 +50,15 @@
       disposed = false,
       undo = null;
     root.innerHTML =
-      '<div class="rd"><header><div><h2>루틴 업무 분배</h2><p>함께 할 일을 모으고, 책임과 보조를 나눠요.</p></div><button data-add>＋ 루틴 등록</button></header><nav><button data-tab="today">오늘의 배정</button><button data-tab="library">루틴 보관함</button><input type="date" aria-label="배정 날짜"><button data-reload>새로고침</button></nav><p role="status" class="rd-message"></p><div class="rd-content"></div><dialog class="rd-dialog"></dialog></div>';
+      '<div class="rd"><header><div><h2>루틴 업무 분배</h2><p>함께 할 일을 모으고, 책임과 보조를 나눠요.</p></div><button class="rd-primary" data-add>루틴 등록</button></header><nav aria-label="루틴 보기"><div class="rd-tabs"><button data-tab="today">오늘의 배정</button><button data-tab="library">루틴 보관함</button></div><input type="date" aria-label="배정 날짜"><button data-reload>새로고침</button></nav><div class="rd-searchbar"><label>업무 검색<input type="search" data-search placeholder="업무명이나 수행 방법 검색" autocomplete="off"></label><button data-reset>검색·필터 초기화</button></div><p role="status" class="rd-message"></p><div class="rd-content"></div><dialog class="rd-dialog"></dialog></div>';
     const box = root.querySelector(".rd-content"),
       message = root.querySelector(".rd-message"),
       dialog = root.querySelector("dialog"),
       input = root.querySelector("input");
     input.value = date;
+    const searchInput = root.querySelector('[data-search]');
+    searchInput.oninput = () => { search = searchInput.value.trim().toLocaleLowerCase('ko'); if (data) render(); };
+    const matches = (t) => !search || (t.title + " " + (t.description || "")).toLocaleLowerCase('ko').includes(search);
     const tell = (s) => (message.textContent = s);
     const items = () => Object.values(data?.day.items || {});
     const person = (id) => data.staff.find((s) => s.uid === id);
@@ -156,25 +161,28 @@
         );
       input.hidden = tab === "library";
       const all = items();
-      const stats = `<div class="rd-stats">${esc(date)} · ${all.length}건 · 책임 미배정 ${all.filter((t) => !t.responsible).length} · 보조 미배정 ${all.filter((t) => !t.assistant).length} · 완료 ${all.filter((t) => t.status === "done").length}</div>`;
+      const completed = all.filter(t => t.status === "done").length;
+      const unassigned = all.filter(t => !t.responsible || !t.assistant).length;
+      const stats = `<div class="rd-summary"><div><strong>${completed}<span> / ${all.length}</span></strong><span>업무 완료</span></div><div class="rd-completion"><progress value="${completed}" max="${all.length || 1}" aria-label="전체 업무 완료 현황"></progress><span>${all.length ? Math.round(completed / all.length * 100) : 0}% 완료 · ${all.filter(t => t.status === "doing").length}건 진행 중</span></div><button data-filter="unassigned">담당 배정 필요 <b>${unassigned}</b><small>책임 ${all.filter(t => !t.responsible).length} · 보조 ${all.filter(t => !t.assistant).length}</small></button></div>`;
       if (tab === "library") {
+        const library = data.templates.filter(matches).filter(t => libraryState === "all" || (libraryState === "active" ? t.active : !t.active));
         box.innerHTML =
-          '<p>등급 손잡이를 다른 열로 끌거나 등급 버튼을 눌러 변경하세요. 원본 변경은 다음 생성분부터 적용됩니다.</p><div class="rd-columns">' +
+          `<div class="rd-library-tools"><div><strong>반복 업무 보관함</strong><p>등급 손잡이를 끌어 이동하세요. 버튼으로도 변경할 수 있습니다.</p><small>원본 변경은 다음 생성분부터 적용됩니다.</small></div><label>표시<select data-library-state aria-label="보관함 표시">${[['active','사용 중'],['paused','일시 중지'],['all','전체 루틴']].map(([v,l])=>`<option value="${v}" ${libraryState===v?'selected':''}>${l}</option>`).join('')}</select></label></div><div class="rd-columns">` +
           Object.entries(grades)
             .map(
               ([g, label]) =>
-                `<section data-grade="${g}"><h3>${g} <small>${label}</small></h3>${data.templates
+                `<section data-grade="${g}"><h3><span class="rd-grade" data-level="${g}">${g}</span><span>${label}</span><span class="rd-count">${library.filter(t=>t.grade===g).length}</span></h3>${library
                   .filter((t) => t.grade === g)
                   .map(
                     (t) =>
-                      `<article data-id="${t.id}"><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경">⠿ ${g} 등급</button><h4>${esc(t.title)}</h4><p>${esc(t.type)} · ${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</p><p>책임 ${identity(t.responsible)}<br>보조 ${identity(t.assistant)}</p><p>작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
+                      `<article data-id="${t.id}"><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3h1m4 0h1M5 8h1m4 0h1M5 13h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${g} 등급</button><h4>${esc(t.title)}</h4><div class="rd-meta"><span>${esc(t.type)}</span><span>${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</span>${!t.active ? "<span>일시 중지</span>" : ""}</div><dl class="rd-defaults"><div><dt>기본 책임</dt><dd>${identity(t.responsible)}</dd></div><div><dt>기본 보조</dt><dd>${identity(t.assistant)}</dd></div></dl><p class="rd-creator">작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
                   )
-                  .join("")}</section>`,
+                  .join("")}${library.some(t=>t.grade===g) ? "" : '<p class="rd-column-empty">이 등급의 루틴이 없습니다.<br>손잡이를 끌어 옮길 수 있어요.</p>'}</section>`,
             )
             .join("") +
           "</div>";
       } else {
-        const shown = all
+        const shown = all.filter(matches)
           .filter(
             (t) =>
               (!gradeFilter || t.grade === gradeFilter) &&
@@ -207,7 +215,7 @@
           ]
             .map(
               ([k, v]) =>
-                `<button data-filter="${k}" aria-pressed="${filter === k}">${v}</button>`,
+                `<button data-filter="${k}" aria-pressed="${filter === k}">${v} <span class="rd-count">${k === "all" ? all.length : k === "mine" ? all.filter(t=>[t.responsible,t.assistant].includes(uid)).length : k === "unassigned" ? unassigned : completed}</span></button>`,
             )
             .join("") +
           `<select data-query="grade" aria-label="등급 필터"><option value="">모든 등급</option>${Object.keys(
@@ -220,15 +228,16 @@
             .join(
               "",
             )}</select><select data-query="type" aria-label="유형 필터"><option value="">모든 유형</option>${[...new Set(all.map((t) => t.type))].map((v) => `<option ${typeFilter === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select><select data-query="worker" aria-label="담당자 필터"><option value="">모든 근무자</option>${data.staff.map((s) => `<option value="${esc(s.uid)}" ${workerFilter === s.uid ? "selected" : ""}>${esc(s.name)}</option>`).join("")}</select></div>` +
+          `<div class="rd-list-heading"><span>업무 ${shown.length}건</span><span>책임 · 직접 수행</span><span>보조 · 함께 확인</span><span>진행 상태</span></div>` +
           shown
             .map(
               (t) =>
-                `<article class="rd-task" data-id="${t.id}"><div><button data-day-grade="${t.id}">${t.grade}</button><strong>${esc(t.title)}</strong><small>${esc(t.type)}</small><details><summary>수행 방법·변경 이력</summary><p>${esc(t.description)}</p><p>작성 ${badge(t.creator.name)}</p>${(t.history || []).map((h) => `<p>${esc(timeLabel(h.at))} · ${esc(h.actor.name)} · ${esc(historyText(h))}</p>`).join("")}</details></div>${["responsible", "assistant"].map((r, i) => `<div><label>${i ? "보조" : "책임"}</label>${t[r] ? `<button data-role="${r}" data-task="${t.id}">${identity(t[r])}</button>` : `<button data-self="${r}" data-task="${t.id}">＋ 내가 맡기</button><button data-role="${r}" data-task="${t.id}">근무자 선택</button>${t[i ? "defaultAssistant" : "defaultResponsible"] ? "<small>기본 담당 비근무 · 재배정 필요</small>" : ""}`}</div>`).join("")}<div><button data-state="${t.id}" ${data.canManage || [t.responsible, t.assistant].includes(uid) ? "" : 'disabled title="책임·보조 담당자가 상태를 변경합니다"'}>${labels[t.status]}</button>${t.status === "done" && t.completed ? `<small>${esc(t.completed.actor.name)} · ${t.completed.role}</small>` : ""}${t.reason ? `<small>${esc(t.reason)}</small>` : ""}</div></article>`,
+                `<article class="rd-task" data-status="${t.status}" data-id="${t.id}"><div class="rd-task-main"><button class="rd-grade" data-level="${t.grade}" data-day-grade="${t.id}" aria-label="${esc(t.title)} 등급 변경">${t.grade}</button><strong>${esc(t.title)}</strong><small>${esc(t.type)}</small><details><summary>수행 방법·변경 이력</summary><p>${esc(t.description)}</p><p>작성 ${badge(t.creator.name)}</p>${(t.history || []).map((h) => `<p>${esc(timeLabel(h.at))} · ${esc(h.actor.name)} · ${esc(historyText(h))}</p>`).join("")}</details></div>${["responsible", "assistant"].map((r, i) => `<div class="rd-assignment"><label>${i ? "보조" : "책임"}</label>${t[r] ? `<button class="rd-assignee" data-role="${r}" data-task="${t.id}" aria-label="${esc(t.title)} ${i ? "보조" : "책임"} 변경">${identity(t[r])}<span class="rd-change">변경</span></button>` : `<button class="rd-self" data-self="${r}" data-task="${t.id}">＋ 내가 맡기</button><button data-role="${r}" data-task="${t.id}">근무자 선택</button>${t[i ? "defaultAssistant" : "defaultResponsible"] ? "<small>기본 담당 비근무 · 재배정 필요</small>" : ""}`}</div>`).join("")}<div class="rd-state"><label>진행 상태</label><button data-state="${t.id}" ${data.canManage || [t.responsible, t.assistant].includes(uid) ? "" : 'disabled title="책임·보조 담당자가 상태를 변경합니다"'}>${labels[t.status]}</button>${t.status === "done" && t.completed ? `<small>${esc(t.completed.actor.name)} · ${t.completed.role}</small>` : ""}${t.reason ? `<small>${esc(t.reason)}</small>` : ""}</div></article>`,
             )
             .join("") +
           (shown.length
             ? ""
-            : '<div class="rd-empty">해당 업무가 없습니다. 보관함에서 반복 요일을 확인하거나 루틴을 등록하세요.</div>');
+            : `<div class="rd-empty"><strong>${all.length ? '조건에 맞는 업무가 없습니다.' : '이 날짜에 배정된 루틴이 없습니다.'}</strong><p>${all.length ? '검색어나 필터를 바꾸어 확인해 주세요.' : '보관함에서 반복 요일을 확인하거나 새 루틴을 등록하세요.'}</p><button ${all.length ? 'data-reset' : 'data-tab="library"'}>${all.length ? '검색·필터 초기화' : '보관함 열기'}</button></div>`);
       }
       if (undo) {
         const b = document.createElement("button");
@@ -425,6 +434,7 @@
       const b = e.target.closest("button");
       if (!b || busy || loading || !data) return;
       if (b.hasAttribute("data-add")) editor();
+      if (b.hasAttribute("data-reset")) { search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
       if (b.dataset.tab) {
         tab = b.dataset.tab;
         undo = null;
@@ -508,6 +518,7 @@
       }
     };
     root.onchange = (e) => {
+      if (e.target.hasAttribute("data-library-state")) { libraryState = e.target.value; render(); }
       if (e.target.dataset.query) {
         const q = e.target.dataset.query;
         if (q === "grade") gradeFilter = e.target.value;
