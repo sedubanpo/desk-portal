@@ -1,3 +1,4 @@
+import {createRoutineMethods} from './routines.js';
 import { createRewardMethods } from './rewards.js';
 import { prepareMessageTemplates } from './message-templates.js';
 import { prepareResponseLog } from './response-log.js';
@@ -43,7 +44,7 @@ const PATHS = Object.freeze({
 });
 
 export const DESK_READ_METHODS = new Set([
-  'getDeskOfficeHistory', 'getDeskOffice', 'getDeskRewards', 'getDeskRewardStudents',
+  'getDeskRoutineBoard', 'getDeskOfficeHistory', 'getDeskOffice', 'getDeskRewards', 'getDeskRewardStudents',
   'getHubNotifications',
   'getDeskScheduleMonthData',
   'getDeskScheduleDayHistory',
@@ -62,7 +63,7 @@ export const DESK_READ_METHODS = new Set([
 ]);
 
 export const DESK_WRITE_METHODS = new Set([
-  'saveDeskOffice', 'saveDeskReward',
+  'saveDeskRoutineTemplate','prepareDeskRoutineDay','updateDeskRoutineDay', 'saveDeskOffice', 'saveDeskReward',
   'saveDeskScheduleEntry', 'deleteDeskScheduleEntry', 'batchUpdateDeskScheduleEntries',
   'saveDeskAttendancePunch', 'saveDeskAttendanceCorrectionRequest', 'saveDeskAttendanceCorrectionDecision',
   'saveDeskDailyJournalTask', 'deleteDeskDailyJournalTask', 'saveDeskDailyJournalMemo', 'deleteDeskDailyJournalMemo',
@@ -84,16 +85,22 @@ export function createDeskHandlers({ store, now = () => new Date().toISOString()
   if (!store) throw new TypeError('desk store is required.');
 
   const handlers = {
+    ...createRoutineMethods({store,loadStaffDirectory,now}),
     ...createRewardMethods({store, now, loadRewardStudents}),
     async getHubNotifications(_payload = {}, identity = {}) {
       // Fixed window and verified identity; the browser cannot choose a recipient.
       const today=seoulDateKey(now());
       const dates=Array.from({length:8},(_,i)=>new Date(Date.parse(today+'T12:00:00+09:00')-i*86400000).toISOString().slice(0,10));
-      const [journals,attendance]=await Promise.all([
+      const [journals,attendance,routines]=await Promise.all([
         Promise.all(dates.map(day=>handlers.getDeskDailyJournalData({dateKey:day}))),
-        handlers.getDeskAttendanceMonthData({monthKey:today.slice(0,7)},identity)
+        handlers.getDeskAttendanceMonthData({monthKey:today.slice(0,7)},identity),
+        store.get('desk_portal/routine_distribution/days/'+today)
       ]);
-      return buildHubNotifications(identity,journals.flatMap(day=>day.tasks),attendance,now());
+      const routineTasks=Object.values(routines?.items||{}).filter(t=>[t.responsible,t.assistant].includes(identity.uid)).flatMap(t=>{
+        const h=[...(t.history||[])].reverse().find(h=>h.action==='assign'&&h.actor.uid!==identity.uid&&[h.after?.responsible,h.after?.assistant].includes(identity.uid));
+        return h?[{id:'routine:'+today+':'+t.id,assignedUid:identity.uid,title:'루틴 배정 · '+t.title,progressStatus:t.responsible===identity.uid?'책임':'보조',updatedByName:h.actor.name,updatedAt:h.at,completed:['done','excluded'].includes(t.status)}]:[];
+      });
+      return buildHubNotifications(identity,journals.flatMap(day=>day.tasks).concat(routineTasks),attendance,now());
     },
     async getDeskStaffIcons() {
       return { success: true, icons: await loadStaffIcons() };

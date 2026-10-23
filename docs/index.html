@@ -17803,7 +17803,7 @@
         <p class="workspace-nav-label">데스크 업무</p>
           <section class="desk-subtabs">
             <button class="desk-subtab active" type="button" data-desk-tab="dailyJournal"><i data-lucide="notebook-pen" aria-hidden="true"></i><span>일일 업무일지</span></button>
-            <button class="desk-subtab" type="button" data-desk-tab="workFollowup"><i data-lucide="list-checks" aria-hidden="true"></i><span>업무 팔로우</span></button>
+            <button class="desk-subtab" type="button" data-desk-tab="routines"><span>루틴 업무 분배</span></button><button class="desk-subtab" type="button" data-desk-tab="workFollowup"><i data-lucide="list-checks" aria-hidden="true"></i><span>업무 팔로우</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="inquiries"><i data-lucide="user-round-search" aria-hidden="true"></i><span>신규문의 관리센터</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="responseCenter"><i data-lucide="headphones" aria-hidden="true"></i><span>응대 센터</span></button>
             <button class="desk-subtab" type="button" data-desk-tab="monthlySchedule"><i data-lucide="calendar-days" aria-hidden="true"></i><span>월별 근무표</span></button>
@@ -19465,7 +19465,7 @@
             </div>
           </section>
 
-          <section class="desk-panel hidden" data-desk-panel="workFollowup"></section>
+          <section class="desk-panel hidden" data-desk-panel="routines"></section><section class="desk-panel hidden" data-desk-panel="workFollowup"></section>
           <section class="desk-panel hidden" data-desk-panel="inquiries"></section>
           <section class="desk-panel hidden" data-desk-panel="responseCenter">
             <div class="desk-response-shell">
@@ -19747,7 +19747,7 @@
             </div>
           </section>
 
-          <section class="desk-panel" data-desk-panel="dailyJournal">
+          <section class="desk-panel" data-desk-panel="dailyJournal"><button type="button" onclick="state.desk.activeTab='routines';renderDeskLayout_();">내 루틴 · 오늘의 업무 분배 열기</button>
             <header class="desk-panel-head">
               <div>
                 <h2 class="desk-panel-title">일일 업무일지</h2>
@@ -21005,7 +21005,7 @@
       authDomain: "fir-lms-prod.firebaseapp.com",
       projectId: "fir-lms-prod"
     };
-    var DESK_CLOUD_METHODS = {
+    var DESK_CLOUD_METHODS = {getDeskRoutineBoard:true,saveDeskRoutineTemplate:true,prepareDeskRoutineDay:true,updateDeskRoutineDay:true,
       getDeskScheduleMonthData: true, getDeskScheduleDayHistory: true, saveDeskScheduleEntry: true, deleteDeskScheduleEntry: true, batchUpdateDeskScheduleEntries: true,
       getDeskAttendanceMonthData: true, saveDeskAttendancePunch: true, saveDeskAttendanceCorrectionRequest: true, saveDeskAttendanceCorrectionDecision: true,
       getDeskCalendarEvents: true,
@@ -22265,7 +22265,7 @@
         }
       };
       var config = configMap[state.activeModule] || configMap.expense;
-      var pageNames = { workFollowup: "업무 팔로우", inquiries: "신규문의 관리센터", dailyJournal: "일일 업무일지", responseCenter: "응대 센터", monthlySchedule: "월별 근무표", supplies: "물품 관리", recruiting: "인사 관리", messageTemplates: "메시지 템플릿" };
+      var pageNames = { routines:"루틴 업무 분배", workFollowup: "업무 팔로우", inquiries: "신규문의 관리센터", dailyJournal: "일일 업무일지", responseCenter: "응대 센터", monthlySchedule: "월별 근무표", supplies: "물품 관리", recruiting: "인사 관리", messageTemplates: "메시지 템플릿" };
       var currentPage = document.getElementById("workspaceCurrentPage");
       if (currentPage) currentPage.textContent = state.activeModule === "expense" ? (pageNames[state.desk.activeTab] || config.title) : config.title;
       Array.prototype.forEach.call(deskTabEls, function(btn) {
@@ -28042,6 +28042,7 @@
       if (state.desk.activeTab === "supplies") renderDeskSupplies_();
       if (state.desk.activeTab === "dailyJournal") renderDeskDailyJournal_();
       if (state.desk.activeTab === "recruiting") renderDeskRecruiting_();
+      if (state.desk.activeTab === "routines" && window.renderDeskRoutines_) window.renderDeskRoutines_();
       if (state.desk.activeTab === "workFollowup" && window.renderDeskWorkFollowup_) window.renderDeskWorkFollowup_();
       if (state.desk.activeTab === "inquiries" && window.renderDeskInquiries_) window.renderDeskInquiries_();
       if (state.desk.activeTab === "responseCenter") renderDeskResponseCenter_();
@@ -46012,7 +46013,7 @@ window.SeduHubAdapter={
     }
 
     function isRunServerWriteApi_(fnName) {
-      return /^(create|save|delete|append|update|batchUpdate|adjust|add|import)/.test(String(fnName || ""));
+      return /^(create|save|delete|append|update|batchUpdate|adjust|add|import|prepare)/.test(String(fnName || ""));
     }
 
     function shouldRetryRunServer_(fnName) {
@@ -46152,5 +46153,5 @@ DeskMiniOffice.init({
 <script src="./inquiries.js?v=20261003-inquiry-insights"></script>
 <script src="./payroll-settlement.js?v=20261009"></script>
 <script src="./payroll-export.js?v=20261009"></script>
-</body>
+<link rel="stylesheet" href="./routine-distribution.css?v=20261023"><script src="./routine-distribution.js?v=20261023"></script></body>
 </html>

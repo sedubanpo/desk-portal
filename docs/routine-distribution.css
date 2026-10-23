@@ -1,0 +1,215 @@
+.rd {
+  padding: 24px;
+  color: #344937;
+}
+.rd header,
+.rd nav,
+.rd-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.rd header {
+  justify-content: space-between;
+}
+.rd h2 {
+  font-size: 24px;
+  margin: 0;
+}
+.rd p {
+  line-height: 1.6;
+}
+.rd button,
+.rd input,
+.rd select,
+.rd textarea {
+  font: inherit;
+  border: 1px solid #cbd5b8;
+  border-radius: 9px;
+  padding: 10px;
+  background: #fffef8;
+  color: #344937;
+}
+.rd button {
+  cursor: pointer;
+}
+.rd button:hover,
+.rd button[aria-pressed="true"] {
+  background: #e2ecba;
+}
+.rd :focus-visible {
+  outline: 3px solid #789638;
+  outline-offset: 2px;
+}
+.rd button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.rd nav {
+  margin: 24px 0;
+}
+.rd-message {
+  min-height: 24px;
+  color: #85541e;
+}
+.rd-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.rd-columns section {
+  background: #f0f2e8;
+  border-radius: 14px;
+  padding: 12px;
+}
+.rd-columns section:nth-child(1) {
+  background: #faece6;
+}
+.rd-columns section:nth-child(2) {
+  background: #f8f0dc;
+}
+.rd-columns section:nth-child(4) {
+  background: #eeebf6;
+}
+.rd article {
+  background: #fffef8;
+  border: 1px solid #dce2cd;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.rd h4 {
+  margin: 12px 0;
+  font-size: 16px;
+}
+.rd small {
+  display: block;
+  font-size: 12px;
+  color: #65735e;
+}
+.rd-grip {
+  cursor: grab !important;
+}
+.rd-task {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) 1fr 1fr 130px;
+  gap: 16px;
+  align-items: start;
+}
+.rd-task strong {
+  display: block;
+  margin: 8px 0;
+}
+.rd-task label {
+  display: block;
+  font-size: 12px;
+}
+.rd-task button {
+  margin: 3px;
+}
+.rd-task details {
+  font-size: 12px;
+  margin-top: 12px;
+}
+.rd-stats {
+  padding: 16px;
+  background: #edf1df;
+  border-radius: 12px;
+}
+.rd-dialog {
+  border: 1px solid #cbd5b8;
+  border-radius: 16px;
+  padding: 24px;
+  width: min(560px, 90vw);
+  max-height: 85vh;
+  color: #344937;
+}
+.rd-dialog::backdrop {
+  background: #1c2f2266;
+}
+.rd-dialog form {
+  display: grid;
+  gap: 12px;
+}
+.rd-dialog label {
+  display: grid;
+  gap: 4px;
+}
+.rd-dialog fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.rd-dialog fieldset label {
+  display: flex;
+}
+.rd-close {
+  float: right;
+}
+.rd-dialog textarea {
+  min-height: 90px;
+}
+.rd-saving .rd-content {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.rd-error {
+  color: #a33a2a;
+}
+.rd-empty {
+  padding: 40px;
+  text-align: center;
+}
+@media (max-width: 1000px) {
+  .rd-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rd-task {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rd-task > div:first-child {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 580px) {
+  .rd {
+    padding: 12px;
+  }
+  .rd-columns {
+    grid-template-columns: 1fr;
+  }
+  .rd-task {
+    gap: 8px;
+  }
+  .rd header h2 {
+    font-size: 21px;
+  }
+}
+
+.rd {
+  font-family: inherit;
+}
+.rd-columns .rd-drop {
+  outline: 3px dashed #5b7c2f;
+  outline-offset: -3px;
+}
+.rd-task > div,
+.rd-columns article {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rd-dialog input,
+.rd-dialog select,
+.rd-dialog textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+.rd-dialog form > button {
+  background: #dfeaad;
+  font-weight: 700;
+}
+.rd-saving .rd-dialog form {
+  pointer-events: none;
+  opacity: 0.65;
+}
