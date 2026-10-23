@@ -1,3 +1,4 @@
+import {visibleDeadline} from './visible-deadline.mjs';
 // Install in each application origin. A ticket is never accepted from an unknown origin/window.
 export async function installSso({appId,brokerUrl,hubOrigins,signIn,signOut,windowObject=window}){
   const nonce=new URL(windowObject.location.href).searchParams.get('hub_nonce');
@@ -15,7 +16,7 @@ export async function installSso({appId,brokerUrl,hubOrigins,signIn,signOut,wind
   async function receive(event){
     const d=event.data;
     if(disposed||event.source!==peer||event.origin!==origin||!d||d.channel!=='sedu-hub-v1'||d.appId!==appId||d.nonce!==nonce)return;
-    if(d.type==='logout'){sequence++;disposed=true;clearInterval(ping);clearTimeout(deadline);await signOut();send('signed-out');windowObject.removeEventListener('message',receive);return;}
+    if(d.type==='logout'){sequence++;disposed=true;clearInterval(ping);deadline();await signOut();send('signed-out');windowObject.removeEventListener('message',receive);return;}
     if(d.type!=='ticket'||busy||authenticated||!/^[A-Za-z0-9_-]{43}$/.test(d.code||''))return;
     busy=true;const current=++sequence;clearInterval(ping);
     try{
@@ -24,12 +25,12 @@ export async function installSso({appId,brokerUrl,hubOrigins,signIn,signOut,wind
       const result=await r.json();if(disposed||current!==sequence)return;
       await signIn(result.customToken,result.uid);
       if(disposed||current!==sequence){await signOut();return;}
-      authenticated=true;send('authenticated');
+      authenticated=true;deadline();send('authenticated');
     }catch{try{await signOut();}catch{}if(!disposed)send('error');}
   }
   windowObject.addEventListener('message',receive);
   const ping=setInterval(()=>{if(!busy&&!authenticated)send('ready',{challenge});},750);
   send('ready',{challenge});
-  const deadline=setTimeout(()=>{clearInterval(ping);if(!authenticated){disposed=true;windowObject.removeEventListener('message',receive);}},30000);
-  return ()=>{disposed=true;sequence++;clearInterval(ping);clearTimeout(deadline);windowObject.removeEventListener('message',receive);};
+  const deadline=visibleDeadline(()=>{clearInterval(ping);if(!authenticated){disposed=true;windowObject.removeEventListener('message',receive);send('error');}},30000,windowObject.document);
+  return ()=>{disposed=true;sequence++;clearInterval(ping);deadline();windowObject.removeEventListener('message',receive);};
 }
