@@ -4,6 +4,7 @@ const seats=[['main-1','본관 1번'],['main-2','본관 2번'],['main-3','본관
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clock=v=>v?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(v)):'';
 const dateNow=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
+let renderSignature='';
 let toolbar,drag=null,serverOffset=0,lastShiftMinute='',root,bridge,data,contextKey='',dataContextKey='',controller,retry,timer,dialog,generation=0,lastSeen='',connected=false,collapsed=false,currentRoom='main',errorDelay=1000,saving=false;
 const api=async(p)=>{const r=await bridge.save(p);if(!r?.success)throw Error(r?.message||'저장하지 못했습니다.');return r;};
 function badge(name){
@@ -79,7 +80,8 @@ async function connect(){
   while(true){const {value,done}=await reader.read();if(done)break;clearTimeout(watchdog);watchdog=setTimeout(()=>abort.abort(),15000);buffer+=decoder.decode(value,{stream:true});let index;
    while((index=buffer.indexOf('\n\n'))>=0){const event=buffer.slice(0,index);buffer=buffer.slice(index+2);if(event.includes('event: unavailable'))throw Error('조회 실패');const line=event.split('\n').find(l=>l.startsWith('data: '));if(!line)continue;
     const next=JSON.parse(line.slice(6));if(!next.success)throw Error(next.message);if(tokenGeneration!==generation)return;
-    const changed=data?.updatedAt!==next.updatedAt;data=next;serverOffset=Date.parse(next.serverTime)-Date.now();lastSeen=new Date().toISOString();connected=true;errorDelay=1000;paint();status('실시간 연결 · '+clock(lastSeen));if(changed)bridge.refreshJournal(next.dateKey);
+    // Reconnects may repeat the same snapshot with a new server clock. Keep focused controls attached.
+    const changed=data?.updatedAt!==next.updatedAt;const signature=JSON.stringify({...next,serverTime:undefined});const needsPaint=signature!==renderSignature;renderSignature=signature;data=next;serverOffset=Date.parse(next.serverTime)-Date.now();lastSeen=new Date().toISOString();connected=true;errorDelay=1000;if(needsPaint)paint();status('실시간 연결 · '+clock(lastSeen));if(changed)bridge.refreshJournal(next.dateKey);
    }
   }
   if(tokenGeneration===generation){connected=false;status('연결 갱신 중 · 마지막 갱신 '+clock(lastSeen));retry=setTimeout(connect,250);}
@@ -93,7 +95,7 @@ function sync(){
  if(key===contextKey&&identityKey===dataContextKey)return;
  stop();contextKey=key;
  if(identityKey!==dataContextKey){
-  dataContextKey=identityKey;data=null;lastSeen='';
+  dataContextKey=identityKey;data=null;renderSignature='';lastSeen='';
   if(dialog.open&&!saving)dialog.close();
   root.querySelectorAll('.mo-scene > :not(.journal-worker-picker)').forEach(node=>node.remove());root.querySelector('.mo-unseated').innerHTML='';root.querySelector('.mo-previous').innerHTML='';
  }

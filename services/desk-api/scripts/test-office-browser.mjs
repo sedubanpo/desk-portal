@@ -27,6 +27,7 @@ DeskMiniOffice.init({notices:()=>testNotices,base:location.origin,context:()=>({
 const server=http.createServer((req,res)=>{if(req.url.startsWith('/v1/'))return app(req,res);res.setHeader('Content-Type',req.url.startsWith('/mini-office.js')?'text/javascript':req.url.startsWith('/mini-office.css')?'text/css':'text/html');res.end(req.url.startsWith('/mini-office.')?fs.readFileSync('docs'+req.url.split('?')[0]):html);});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
 app=createApp({config:{allowedOrigins:[base]},payrollAccess:{},office,deskHandlers:{saveDeskOffice:office.mutate,getDeskOffice:p=>office.snapshot(p.dateKey),getDeskOfficeHistory:office.history},verifyIdToken:async token=>({uid:token}),loadAccount:async uid=>({account:{role:uid==='admin'?'ADMIN':'STAFF',status:'ACTIVE',name:uid==='admin'?'관리자':staff.find(s=>s.uid===uid)?.name},access:{apps:{deskPortal:true}}})});
 const browser=await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});const context=await browser.newContext({viewport:{width:1440,height:900}}),a=await context.newPage(),b=await context.newPage(),errors=[];for(const p of [a,b])p.on('pageerror',e=>errors.push(e.message));
+await context.addInitScript(()=>{const original=window.fetch;window.officeFrames=0;window.officeWrites=0;window.officeWritesPending=0;window.fetch=async(...args)=>{const url=String(args[0]);const write=url.includes('/saveDeskOffice');if(write){window.officeWrites++;window.officeWritesPending++;}try{const response=await original(...args);if(!url.includes('/office/stream')||!response.body)return response;const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='';return new Response(new ReadableStream({async pull(controller){const {done,value}=await reader.read();if(done){controller.close();return;}buffer+=decoder.decode(value,{stream:true});let at;while((at=buffer.indexOf('\n\n'))>=0){if(buffer.slice(0,at).startsWith('data: '))window.officeFrames++;buffer=buffer.slice(at+2);}controller.enqueue(value);},cancel(reason){return reader.cancel(reason);}}),{status:response.status,headers:response.headers});}finally{if(write)window.officeWritesPending--;}};});
 await context.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
 try{
  await a.goto(base+'/?user=u0');await b.goto(base+'/?user=admin');await a.locator('[data-connected=true]').waitFor();await b.locator('[data-connected=true]').waitFor();
@@ -56,13 +57,21 @@ try{
  await a.locator('.mo-classroom [data-progress]').click();await a.getByRole('slider',{name:'업무 진행률',exact:true}).fill('67');await a.getByRole('button',{name:'진행률 저장',exact:true}).click();await b.locator('.mo-classroom [role=progressbar][aria-valuenow="67"]').waitFor();
  await a.getByRole('button',{name:'안종성 업무 히스토리 보기',exact:true}).click();await a.getByLabel('새로운 업무 바로 입력').fill('히스토리에서 추가한 업무');await a.getByRole('button',{name:'업무 추가',exact:true}).click();await a.getByText('업무를 추가했습니다.',{exact:true}).waitFor();await b.locator('.mo-classroom .mo-bubble-content').filter({hasText:'히스토리에서 추가한 업무'}).waitFor();await a.screenshot({path:'/private/tmp/office-quick-history.png'});await a.keyboard.press('Escape');
  assert.ok(await a.locator('.mo-classroom .mo-shift').getAttribute('aria-label'));
+ // Identical realtime snapshots must keep the focused seat control attached.
+ const frame=await a.evaluate(()=>{window.keptSeat=document.querySelector('[data-seat-id="main-classroom"] .mo-drag-character');keptSeat.focus();return officeFrames;});
+ put('desk_portal/daily_journal/'+date+'/office',get('desk_portal/daily_journal/'+date+'/office'));
+ await a.waitForFunction(n=>officeFrames>n,frame);assert.equal(await a.evaluate(()=>keptSeat.isConnected&&document.activeElement===keptSeat),true);
  // Actual pointer drag into an empty seat, then swap with another worker and restore.
  async function dragSeat(from,to){
   const handle=a.locator(`[data-seat-id="${from}"] .mo-drag-character`),target=a.locator(`[data-seat-id="${to}"] .mo-name`);
-  await handle.scrollIntoViewIfNeeded();const start=await handle.boundingBox(),end=await target.boundingBox();await a.mouse.move(start.x+start.width/2,start.y+start.height/2);await a.mouse.down();await a.mouse.move(end.x+end.width/2,end.y+end.height/2,{steps:12});await a.mouse.up();
+  await a.waitForFunction(()=>officeWritesPending===0);
+  const boxes=await Promise.all([handle.boundingBox(),target.boundingBox()]);
+  await a.evaluate(({top,bottom})=>window.scrollTo({top:scrollY+(top+bottom-innerHeight)/2,behavior:'instant'}),{top:Math.min(boxes[0].y,boxes[1].y),bottom:Math.max(boxes[0].y+boxes[0].height,boxes[1].y+boxes[1].height)});
+  const start=await handle.boundingBox(),end=await target.boundingBox(),viewport=a.viewportSize();
+  assert.ok(start.y>=0&&start.y+start.height<=viewport.height&&end.y>=0&&end.y+end.height<=viewport.height,'Both drag endpoints must be inside the viewport');const writes=await a.evaluate(()=>officeWrites);await a.mouse.move(start.x+start.width/2,start.y+start.height/2);await a.mouse.down();await a.mouse.move(end.x+end.width/2,end.y+end.height/2,{steps:12});await a.mouse.up();await a.waitForFunction(n=>officeWrites>n&&officeWritesPending===0,writes);
  }
- await dragSeat('main-classroom','main-1');await b.locator('[data-seat-id="main-1"] .mo-name').filter({hasText:'안종성'}).waitFor();
- await dragSeat('main-1','main-2');await b.locator('[data-seat-id="main-2"] .mo-name').filter({hasText:'안종성'}).waitFor();await b.locator('[data-seat-id="main-1"] .mo-name').filter({hasText:'권민정'}).waitFor();
+ await dragSeat('main-classroom','main-1');await b.locator('[data-seat-id="main-1"] .mo-name').filter({hasText:'안종성'}).waitFor();await a.locator('[data-seat-id="main-1"] .mo-name').filter({hasText:'안종성'}).waitFor();
+ await dragSeat('main-1','main-2');await b.locator('[data-seat-id="main-2"] .mo-name').filter({hasText:'안종성'}).waitFor();await a.locator('[data-seat-id="main-2"] .mo-name').filter({hasText:'안종성'}).waitFor();await b.locator('[data-seat-id="main-1"] .mo-name').filter({hasText:'권민정'}).waitFor();
  await dragSeat('main-2','main-classroom');await b.locator('.mo-classroom .mo-name').filter({hasText:'안종성'}).waitFor();
  await a.screenshot({path:'/private/tmp/office-interactions-desktop.png',fullPage:true});
  put('desk_portal/staff_attendance/'+date.slice(0,7)+'/'+date+'/u0',{clockOut:new Date().toISOString()});
@@ -72,5 +81,5 @@ try{
  await context.setOffline(true);await a.locator('[data-connected=false]').waitFor();assert.match(await a.locator('.mo-sync').innerText(),/마지막 갱신/);assert.equal(await a.locator('.mo-seat').count(),7);await context.setOffline(false);await a.locator('[data-connected=true]').waitFor();
  const priorRefresh=await a.locator('.mo-sync').innerText();await a.waitForTimeout(23000);await a.locator('[data-connected=true]').waitFor();assert.equal([...listeners.values()].reduce((n,s)=>n+s.size,0),8);
  await a.evaluate(()=>{testActive=false;DeskMiniOffice.sync();});await b.evaluate(()=>{testActive=false;DeskMiniOffice.sync();});await a.waitForTimeout(200);assert.equal([...listeners.values()].reduce((n,s)=>n+s.size,0),0);assert.deepEqual(errors,[]);
- console.log('PASS two authenticated clients: realtime start, admin completion, atomic journal, own-only controls, mobile, reconnect, unsubscribe');
+ console.log('PASS two authenticated clients: duplicate snapshot focus retention, three consecutive seat moves/swaps, realtime start, admin completion, atomic journal, own-only controls, mobile, reconnect, unsubscribe');
 }catch(e){console.error('BROWSER',await a.locator('body').innerText());await a.screenshot({path:'/private/tmp/mini-office-failure.png'});throw e;}finally{await browser.close();await new Promise(r=>server.close(r));}
