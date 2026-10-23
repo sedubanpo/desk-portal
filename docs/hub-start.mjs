@@ -1,3 +1,5 @@
 import {installSso} from './hub-client.mjs';
 const start=()=>installSso({appId:"desk",...{"brokerUrl":"https://asia-northeast3-fir-lms-prod.cloudfunctions.net/hubSsoApi","hubOrigins":["https://sedubanpo.github.io"]},...window.SeduHubAdapter});
-if(document.readyState==='complete')start();else window.addEventListener('load',start,{once:true});
+// Module scripts execute after parsing. Do not wait for images or hidden-frame
+// load completion before starting the authentication handshake.
+start().catch(() => console.warn('허브 로그인 연결을 시작하지 못했습니다.'));
