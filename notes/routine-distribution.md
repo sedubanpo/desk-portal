@@ -81,3 +81,7 @@
 - Confirm selected titles before deleting or enabling. Activation previews stored repeat weekdays; no weekday/default-role changes are implied.
 - Sequential existing version-checked APIs preserve creator/manager permissions and dated snapshots. Refresh once after the batch instead of once per item. Successful items leave selection; failed items remain for review/retry. An auth disposal stops further requests.
 - Local browser regression covers filtered selection, permissions, activation/cancel, bulk deletion/cancel, partial failure/retry, snapshot preservation and mobile overflow. Production business records are not mutated for QA.
+
+## Daily bulk assignment (2026-10-24)
+Select visible daily tasks and assign responsible/helper together. Each role supports keeping its current value, clearing it, choosing any active worker, and a self shortcut. Preflight validates distinct roles against each task's retained role. Updates are sequential using each response's day version; the batch stops on conflict/error, retains remaining selection and refreshes once. Date/filter/search changes clear selection. Only dated assignments change; templates and status/history are preserved by the existing API.
+Mock browser checks cover self/other assignment, one-role preservation, duplicate-role rejection, filtered selection, partial failure stop and cancel. No real worker assignments were altered for QA.

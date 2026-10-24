@@ -93,6 +93,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
         if (m === "prepareDeskRoutineDay")
           return { day: structuredClone(d.day) };
         if (m === "updateDeskRoutineDay") {
+          if (window.failDayId === p.id) throw Error("다른 근무자가 변경했습니다.");
+          if (p.version !== d.day.version) throw Error("버전 충돌");
           Object.assign(d.day.items[p.id], p);
           d.day.version++;
           return { success: true, day: d.day };
@@ -125,10 +127,48 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     await page.getByText('조건에 맞는 업무가 없습니다.', {exact:true}).waitFor();
     await page.locator('.rd-searchbar [data-reset]').click();
     assert.equal(await page.locator('.rd-task').count(), 4);
-    await page.locator("[data-self=responsible]").first().click();
+    await page.locator('[data-day-select=task0]').check();
+    await page.locator('[data-day-select=task1]').check();
+    await page.locator('[data-day-bulk]').click();
+    await page.getByRole('button', {name:'책임을 나에게', exact:true}).click();
+    await page.getByRole('combobox', {name:'일괄 보조', exact:true}).selectOption('me');
+    await page.getByRole('button', {name:'선택 업무에 적용', exact:true}).click();
+    await page.getByText(/책임과 보조가 같은 업무 2개/).waitFor();
+    assert.equal(await page.evaluate(() => routineFixture.day.items.task0.responsible), '');
+    await page.getByRole('combobox', {name:'일괄 보조', exact:true}).selectOption('other');
+    await page.getByRole('button', {name:'선택 업무에 적용', exact:true}).click();
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.deepEqual(await page.evaluate(() => ['task0','task1'].map(id => [routineFixture.day.items[id].responsible,routineFixture.day.items[id].assistant])), [['me','other'],['me','other']]);
+    await page.locator('[data-day-select=task0]').check();
+    await page.locator('[data-day-bulk]').click();
+    await page.getByRole('combobox', {name:'일괄 보조', exact:true}).selectOption('');
+    await page.getByRole('button', {name:'선택 업무에 적용', exact:true}).click();
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.equal(await page.evaluate(() => routineFixture.day.items.task0.responsible), 'me');
+    assert.equal(await page.evaluate(() => routineFixture.day.items.task0.assistant), '');
+    await page.locator('[data-day-all]').check();
+    await page.locator('[data-search]').fill('출결');
+    assert.equal(await page.locator('[data-day-select]:checked').count(), 0);
+    await page.locator('[data-search]').fill('');
+
     await page.waitForFunction(
       () => routineFixture.day.items.task0.responsible === "me",
     );
+    await page.locator('[data-day-select=task2]').check();
+    await page.locator('[data-day-select=task3]').check();
+    await page.evaluate(() => { window.failDayId = 'task3'; });
+    await page.locator('[data-day-bulk]').click();
+    await page.getByRole('button',{name:'책임을 나에게',exact:true}).click();
+    await page.getByRole('button',{name:'선택 업무에 적용',exact:true}).click();
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    await page.getByText(/처리를 중단했습니다/).waitFor();
+    assert.equal(await page.locator('[data-day-select]:checked').count(),1);
+    assert.equal(await page.evaluate(() => routineFixture.day.items.task2.responsible),'me');
+    assert.equal(await page.evaluate(() => routineFixture.day.items.task3.responsible),'');
+    await page.evaluate(() => { window.failDayId = null; });
+    await page.locator('[data-day-bulk]').click();
+    await page.getByRole('button',{name:'취소',exact:true}).click();
+    await page.locator('[data-day-clear]').click();
     await page.locator("[data-state=task0]").click();
     await page
       .locator(".rd-dialog select[name=status]")

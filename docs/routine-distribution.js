@@ -34,6 +34,7 @@
     };
   function mount(root, { api, uid, badge, infer }) {
     const selected = new Set();
+    const daySelected = new Set();
     let gradeFilter = "",
       typeFilter = "",
       workerFilter = "",
@@ -58,7 +59,7 @@
       input = root.querySelector("input");
     input.value = date;
     const searchInput = root.querySelector('[data-search]');
-    searchInput.oninput = () => { selected.clear(); search = searchInput.value.trim().toLocaleLowerCase('ko'); if (data) render(); };
+    searchInput.oninput = () => { selected.clear(); daySelected.clear(); search = searchInput.value.trim().toLocaleLowerCase('ko'); if (data) render(); };
     const matches = (t) => !search || (t.title + " " + (t.description || "")).toLocaleLowerCase('ko').includes(search);
     const tell = (s) => (message.textContent = s);
     const items = () => Object.values(data?.day.items || {});
@@ -112,6 +113,7 @@
           if (disposed || e !== epoch) return;
           data.day = p.day;
         }
+        for (const id of daySelected) if (!data.day.items?.[id]) daySelected.delete(id);
         render();
         tell("");
         return true;
@@ -210,6 +212,7 @@
           );
         box.innerHTML =
           stats +
+          `<div class="rd-bulk" role="region" aria-label="오늘 업무 일괄 배정"><label><input type="checkbox" data-day-all ${shown.length && shown.every(t => daySelected.has(t.id)) ? "checked" : ""} ${shown.length ? "" : "disabled"}>현재 목록 전체 선택 (${shown.length})</label><strong>${daySelected.size}개 선택</strong><button data-day-clear ${daySelected.size ? "" : "disabled"}>선택 해제</button><button data-day-bulk ${daySelected.size ? "" : "disabled"}>책임·보조 일괄 지정</button><small>검색·필터 변경 시 선택이 해제됩니다. 선택한 날짜의 담당자만 변경합니다.</small></div>` +
           '<div class="rd-filters">' +
           [
             ["all", "전체"],
@@ -236,7 +239,7 @@
           shown
             .map(
               (t) =>
-                `<article class="rd-task" data-status="${t.status}" data-id="${t.id}"><div class="rd-task-main"><button class="rd-grade" data-level="${t.grade}" data-day-grade="${t.id}" aria-label="${esc(t.title)} 등급 변경">${t.grade}</button><strong>${esc(t.title)}</strong><small>${esc(t.type)}</small><details><summary>수행 방법·변경 이력</summary><p>${esc(t.description)}</p><p>작성 ${badge(t.creator.name)}</p>${(t.history || []).map((h) => `<p>${esc(timeLabel(h.at))} · ${esc(h.actor.name)} · ${esc(historyText(h))}</p>`).join("")}</details></div>${["responsible", "assistant"].map((r, i) => `<div class="rd-assignment"><label>${i ? "보조" : "책임"}</label>${t[r] ? `<button class="rd-assignee" data-role="${r}" data-task="${t.id}" aria-label="${esc(t.title)} ${i ? "보조" : "책임"} 변경">${identity(t[r])}<span class="rd-change">변경</span></button>` : `<button class="rd-self" data-self="${r}" data-task="${t.id}">＋ 내가 맡기</button><button data-role="${r}" data-task="${t.id}">근무자 선택</button>${t[i ? "defaultAssistant" : "defaultResponsible"] ? "<small>기본 담당 비근무 · 재배정 필요</small>" : ""}`}</div>`).join("")}<div class="rd-state"><label>진행 상태</label><button data-state="${t.id}" ${data.canManage || [t.responsible, t.assistant].includes(uid) ? "" : 'disabled title="책임·보조 담당자가 상태를 변경합니다"'}>${labels[t.status]}</button>${t.status === "done" && t.completed ? `<small>${esc(t.completed.actor.name)} · ${t.completed.role}</small>` : ""}${t.reason ? `<small>${esc(t.reason)}</small>` : ""}</div></article>`,
+                `<article class="rd-task" data-status="${t.status}" data-id="${t.id}"><div class="rd-task-main"><label class="rd-select"><input type="checkbox" data-day-select="${t.id}" ${daySelected.has(t.id) ? "checked" : ""} aria-label="${esc(t.title)} 선택">선택</label><button class="rd-grade" data-level="${t.grade}" data-day-grade="${t.id}" aria-label="${esc(t.title)} 등급 변경">${t.grade}</button><strong>${esc(t.title)}</strong><small>${esc(t.type)}</small><details><summary>수행 방법·변경 이력</summary><p>${esc(t.description)}</p><p>작성 ${badge(t.creator.name)}</p>${(t.history || []).map((h) => `<p>${esc(timeLabel(h.at))} · ${esc(h.actor.name)} · ${esc(historyText(h))}</p>`).join("")}</details></div>${["responsible", "assistant"].map((r, i) => `<div class="rd-assignment"><label>${i ? "보조" : "책임"}</label>${t[r] ? `<button class="rd-assignee" data-role="${r}" data-task="${t.id}" aria-label="${esc(t.title)} ${i ? "보조" : "책임"} 변경">${identity(t[r])}<span class="rd-change">변경</span></button>` : `<button class="rd-self" data-self="${r}" data-task="${t.id}">＋ 내가 맡기</button><button data-role="${r}" data-task="${t.id}">근무자 선택</button>${t[i ? "defaultAssistant" : "defaultResponsible"] ? "<small>기본 담당 비근무 · 재배정 필요</small>" : ""}`}</div>`).join("")}<div class="rd-state"><label>진행 상태</label><button data-state="${t.id}" ${data.canManage || [t.responsible, t.assistant].includes(uid) ? "" : 'disabled title="책임·보조 담당자가 상태를 변경합니다"'}>${labels[t.status]}</button>${t.status === "done" && t.completed ? `<small>${esc(t.completed.actor.name)} · ${t.completed.role}</small>` : ""}${t.reason ? `<small>${esc(t.reason)}</small>` : ""}</div></article>`,
             )
             .join("") +
           (shown.length
@@ -248,6 +251,8 @@
         const checks = [...box.querySelectorAll("[data-select]:not(:disabled)")];
         selectAll.indeterminate = checks.some(c => c.checked) && !checks.every(c => c.checked);
       }
+      const dayAll = box.querySelector("[data-day-all]");
+      if (dayAll) { const checks = [...box.querySelectorAll("[data-day-select]")]; dayAll.indeterminate = checks.some(c => c.checked) && !checks.every(c => c.checked); }
       if (undo) {
         const b = document.createElement("button");
         b.textContent = "방금 변경 실행 취소";
@@ -266,6 +271,44 @@
       dialog.querySelector(".rd-close").onclick = () => dialog.close();
       dialog.showModal();
     };
+    function bulkAssign() {
+      const targets = items().filter(t => daySelected.has(t.id));
+      if (!targets.length) return;
+      show(`<h3 id="rd-day-bulk-title">${targets.length}개 업무 담당 지정</h3><p>${esc(date)} 배정만 변경합니다. ‘변경 안 함’을 선택하면 기존 담당자가 유지됩니다.</p><ul class="rd-bulk-preview">${targets.map(t => `<li>${esc(t.title)}<small>책임 ${esc(name(t.responsible))} · 보조 ${esc(name(t.assistant))}</small></li>`).join('')}</ul><form>${[['responsible','책임'],['assistant','보조']].map(([r,l]) => `<label>${l}<select name="${r}" aria-label="일괄 ${l}"><option value="keep" selected>변경 안 함</option>${choices()}</select></label><button type="button" data-day-me="${r}">${l}을 나에게</button>`).join('')}<p role="alert" class="rd-error"></p><div class="rd-delete-actions"><button type="button" data-day-cancel>취소</button><button class="rd-primary">선택 업무에 적용</button></div></form>`);
+      dialog.setAttribute('aria-labelledby','rd-day-bulk-title');
+      const form = dialog.querySelector('form');
+      dialog.querySelector('[data-day-cancel]').onclick = () => dialog.close();
+      dialog.querySelectorAll('[data-day-me]').forEach(b => b.onclick = () => { form.elements[b.dataset.dayMe].value = uid; });
+      form.onsubmit = async e => {
+        e.preventDefault();
+        if (busy) return;
+        const responsible = form.elements.responsible.value, assistant = form.elements.assistant.value;
+        const changes = targets.map(t => ({t, responsible: responsible === 'keep' ? t.responsible : responsible, assistant: assistant === 'keep' ? t.assistant : assistant}));
+        const conflicts = changes.filter(c => c.responsible && c.responsible === c.assistant);
+        if (conflicts.length || (responsible === 'keep' && assistant === 'keep')) {
+          form.querySelector('.rd-error').textContent = conflicts.length ? `책임과 보조가 같은 업무 ${conflicts.length}개: ${conflicts.map(c => c.t.title).join(', ')}. 담당자를 다르게 지정해 주세요.` : '변경할 책임 또는 보조를 선택해 주세요.';
+          return;
+        }
+        dialog.close(); busy = true; undo = null;
+        root.classList.add('rd-saving'); input.disabled = searchInput.disabled = true; box.inert = true;
+        let count = 0, version = data.day.version, failure = '';
+        try {
+          for (const c of changes) {
+            if (disposed) break;
+            if (c.responsible === c.t.responsible && c.assistant === c.t.assistant) { daySelected.delete(c.t.id); continue; }
+            tell(`${changes.length}개 업무 담당 지정 중… ${count}개 완료`);
+            try {
+              const result = await api('updateDeskRoutineDay', {date, id:c.t.id, version, action:'assign', responsible:c.responsible, assistant:c.assistant});
+              version = result.day.version;
+              count++; daySelected.delete(c.t.id);
+            } catch (err) { failure = err.message; break; }
+          }
+          if (disposed) return;
+          const refreshed = await load();
+          tell(`${count}개 업무 담당자를 변경했습니다.${failure ? ` 처리를 중단했습니다: ${failure} 남은 선택 업무를 확인한 뒤 다시 적용해 주세요.` : ''}${refreshed ? '' : ' 화면 갱신에 실패했습니다. 새로고침해 주세요.'}`);
+        } finally { busy = false; root.classList.remove('rd-saving'); input.disabled = searchInput.disabled = false; box.inert = false; }
+      };
+    }
     function confirmBulk(action) {
       const targets = data.templates.filter(t => selected.has(t.id) && canEdit(t) && (action === "delete" || !t.active));
       if (!targets.length) return;
@@ -495,12 +538,14 @@
     root.onclick = (e) => {
       const b = e.target.closest("button");
       if (!b || busy || loading || !data) return;
+      if (b.hasAttribute("data-day-bulk")) bulkAssign();
+      if (b.hasAttribute("data-day-clear")) { daySelected.clear(); render(); }
       if (b.dataset.bulk) confirmBulk(b.dataset.bulk);
       if (b.hasAttribute("data-clear-selection")) { selected.clear(); render(); }
       if (b.hasAttribute("data-add")) editor();
-      if (b.hasAttribute("data-reset")) { selected.clear(); search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
+      if (b.hasAttribute("data-reset")) { selected.clear(); daySelected.clear(); search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
       if (b.dataset.tab) {
-        selected.clear();
+        selected.clear(); daySelected.clear();
         tab = b.dataset.tab;
         undo = null;
         load();
@@ -510,6 +555,7 @@
         load();
       }
       if (b.dataset.filter) {
+        daySelected.clear();
         filter = b.dataset.filter;
         render();
       }
@@ -585,6 +631,8 @@
     };
     root.onchange = (e) => {
       if (busy || loading || !data) return;
+      if (e.target.dataset.daySelect) { if (e.target.checked) daySelected.add(e.target.dataset.daySelect); else daySelected.delete(e.target.dataset.daySelect); render(); }
+      if (e.target.hasAttribute("data-day-all")) { for (const c of box.querySelectorAll("[data-day-select]")) { if (e.target.checked) daySelected.add(c.dataset.daySelect); else daySelected.delete(c.dataset.daySelect); } render(); }
       if (e.target.dataset.select) {
         const t = data.templates.find(t => t.id === e.target.dataset.select);
         if (t && canEdit(t)) { if (e.target.checked) selected.add(t.id); else selected.delete(t.id); render(); }
@@ -595,6 +643,7 @@
       }
       if (e.target.hasAttribute("data-library-state")) { selected.clear(); libraryState = e.target.value; render(); }
       if (e.target.dataset.query) {
+        daySelected.clear();
         const q = e.target.dataset.query;
         if (q === "grade") gradeFilter = e.target.value;
         if (q === "type") typeFilter = e.target.value;
@@ -603,6 +652,7 @@
       }
     };
     input.onchange = () => {
+      daySelected.clear();
       date = input.value;
       undo = null;
       load();
