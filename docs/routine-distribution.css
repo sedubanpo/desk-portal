@@ -164,3 +164,15 @@
 .rd-bulk-preview small { display: block; }
 .rd-bulk button:disabled { opacity: .5; cursor: default; }
 @media (max-width: 600px) { .rd-bulk { position: static; } .rd-bulk button { flex: 1 1 auto; } }
+
+/* Compact library: grade belongs to the column, identity remains in history. */
+.rd, .rd * { font-weight: 700 !important; }
+.rd-columns article { padding: 12px; margin-bottom: 8px; }
+.rd-columns article h4 { margin: 6px 0; font-size: 14px; line-height: 1.4; }
+.rd-columns .rd-select { margin: 0 8px 0 0; font-size: 12px; }
+.rd-columns .rd-grip { padding: 4px; min-height: 30px; width: 30px; vertical-align: middle; }
+.rd-columns .rd-meta { margin: 6px 0; gap: 6px; font-size: 11px; }
+.rd-columns .rd-defaults { margin: 6px 0; padding: 6px 0; font-size: 11px; }
+.rd-card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
+.rd-card-actions button { display: inline-flex; align-items: center; justify-content: center; width: 34px; min-height: 34px; padding: 6px; }
+.rd-card-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

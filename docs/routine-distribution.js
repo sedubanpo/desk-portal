@@ -179,7 +179,7 @@
                   .filter((t) => t.grade === g)
                   .map(
                     (t) =>
-                      `<article data-id="${t.id}" class="${selected.has(t.id) ? "rd-selected" : ""}"><label class="rd-select"><input type="checkbox" data-select="${t.id}" ${selected.has(t.id) ? "checked" : ""} ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 선택">선택</label><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3h1m4 0h1M5 8h1m4 0h1M5 13h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${g} 등급</button><h4>${esc(t.title)}</h4><div class="rd-meta"><span>${esc(t.type)}</span><span>${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</span>${!t.active ? "<span>일시 중지</span>" : ""}</div><dl class="rd-defaults"><div><dt>기본 책임</dt><dd>${identity(t.responsible)}</dd></div><div><dt>기본 보조</dt><dd>${identity(t.assistant)}</dd></div></dl><p class="rd-creator">작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
+                      `<article data-id="${t.id}" class="${selected.has(t.id) ? "rd-selected" : ""}"><label class="rd-select"><input type="checkbox" data-select="${t.id}" ${selected.has(t.id) ? "checked" : ""} ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 선택">선택</label><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3h1m4 0h1M5 8h1m4 0h1M5 13h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><h4>${esc(t.title)}</h4><div class="rd-meta"><span>${esc(t.type)}</span><span>${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</span>${!t.active ? "<span>일시 중지</span>" : ""}</div><dl class="rd-defaults"><div><dt>기본 책임</dt><dd>${identity(t.responsible)}</dd></div><div><dt>기본 보조</dt><dd>${identity(t.assistant)}</dd></div></dl><div class="rd-card-actions"><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 수정" title="수정"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 12-12 4 4L8 20H4zM14 6l4 4"/></svg></button><button data-toggle-active="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} ${t.active ? "중지" : "다시 사용"}" title="${t.active ? "중지" : "다시 사용"}"><svg viewBox="0 0 24 24" aria-hidden="true">${t.active ? '<path d="M8 5v14M16 5v14"/>' : '<path d="m8 5 11 7-11 7z"/>'}</svg></button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제" title="삭제"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7"/></svg></button></div></article>`,
                   )
                   .join("")}${library.some(t=>t.grade===g) ? "" : '<p class="rd-column-empty">이 등급의 루틴이 없습니다.<br>손잡이를 끌어 옮길 수 있어요.</p>'}</section>`,
             )
@@ -305,6 +305,18 @@
           searchInput.disabled = false;
           box.inert = false;
         }
+      };
+    }
+    function confirmActive(t) {
+      if (!t || !canEdit(t)) return;
+      const label = t.active ? "중지" : "다시 사용";
+      show(`<h3 id="rd-active-title">이 루틴을 ${label}할까요?</h3><p>${esc(t.title)}</p><p>${t.active ? "앞으로 자동 배정되지 않습니다." : `저장된 반복 요일(${t.weekdays.map(d => "일월화수목금토"[d]).join("·")})에 따라 배정됩니다.`} 기존 날짜별 배정·완료 이력은 유지됩니다.</p><div class="rd-delete-actions"><button data-active-cancel>취소</button><button class="rd-primary" data-active-confirm>${label}</button></div>`);
+      dialog.setAttribute('aria-labelledby', 'rd-active-title');
+      dialog.querySelector('[data-active-cancel]').onclick = () => dialog.close();
+      dialog.querySelector('[data-active-cancel]').focus();
+      dialog.querySelector('[data-active-confirm]').onclick = async () => {
+        dialog.close();
+        await save('saveDeskRoutineTemplate', {...t, active: !t.active}, `루틴을 ${label}했습니다.`);
       };
     }
     function confirmDelete(t) {
@@ -501,6 +513,7 @@
         filter = b.dataset.filter;
         render();
       }
+      if (b.dataset.toggleActive) confirmActive(data.templates.find(t => t.id === b.dataset.toggleActive));
       if (b.dataset.delete)
         confirmDelete(data.templates.find((t) => t.id === b.dataset.delete));
       if (b.dataset.edit)

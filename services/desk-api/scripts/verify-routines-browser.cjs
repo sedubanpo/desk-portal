@@ -165,6 +165,20 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
       ),
       fullPage: true,
     });
+    assert.equal(await page.locator('.rd-columns .rd-creator').count(), 0);
+    assert.equal((await page.locator('[data-move=task0]').innerText()).trim(), '');
+    await page.locator('[data-toggle-active=task0]').click();
+    await page.locator('[data-active-cancel]').click();
+    assert.equal(await page.evaluate(() => routineFixture.templates[0].active), true);
+    await page.locator('[data-toggle-active=task0]').click();
+    await page.locator('[data-active-confirm]').click();
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    await page.locator('[data-library-state]').selectOption('all');
+    assert.equal(await page.evaluate(() => routineFixture.templates[0].active), false);
+    await page.locator('[data-toggle-active=task0]').click();
+    await page.locator('[data-active-confirm]').click();
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.equal(await page.evaluate(() => routineFixture.templates[0].active), true);
     // Selection is scoped to visible editable cards and clears when filtering.
     await page.locator('[data-select=task0]').check();
     await page.locator('[data-select=task2]').check();
