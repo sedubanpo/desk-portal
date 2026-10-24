@@ -176,3 +176,33 @@
 .rd-card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 6px; }
 .rd-card-actions button { display: inline-flex; align-items: center; justify-content: center; width: 34px; min-height: 34px; padding: 6px; }
 .rd-card-actions svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Daily allocation board shares the routine surface's compact operational palette. */
+.rd-board-heading { display:flex; justify-content:space-between; gap:16px; align-items:start; margin:20px 0 12px; flex-wrap:wrap; }
+.rd-board-heading h3,.rd-board-pool h3,.rd-person h3 { margin:0; font-size:16px; }
+.rd-board-heading p,.rd-board-pool > p { margin:6px 0; color:var(--rd-muted); font-size:12px; }
+.rd-board-heading > span,.rd-person header > span { font-size:12px; color:var(--rd-muted); }
+.rd-board-selection { padding:10px 12px; margin-bottom:16px; background:var(--rd-soft); border-radius:8px; font-size:13px; }
+.rd-board-selection button { margin-left:8px; }
+.rd-board-layout { display:grid; grid-template-columns:minmax(240px, .8fr) minmax(0,2fr); gap:20px; align-items:start; }
+.rd-board-pool { min-width:0; padding:12px; background:var(--rd-soft); border-radius:12px; }
+.rd-people { display:grid; grid-template-columns:1fr; gap:20px; min-width:0; }
+.rd-person { min-width:0; border-top:1px solid var(--rd-line); padding-top:12px; }
+.rd-person header { gap:4px; margin-bottom:10px; }
+.rd-person h3 small { font-size:12px; color:var(--rd-muted); }
+.rd-person-roles { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.rd-person-role { min-width:0; padding:6px; border:1px dashed var(--rd-line); border-radius:8px; min-height:110px; }
+.rd-person-role > button { width:100%; text-align:left; padding:6px; font-size:12px; background:var(--rd-soft); }
+.rd-person-role > button small { display:block; font-size:11px; }
+.rd-board-task { padding:8px 0; border-bottom:1px solid var(--rd-line); }
+.rd-board-task > button { display:flex; align-items:start; gap:6px; text-align:left; width:100%; padding:7px; border-color:transparent; border-radius:6px; cursor:grab; font-size:12px; overflow-wrap:anywhere; }
+.rd-board-task > button > span:nth-child(2) { flex:1; min-width:0; }
+.rd-board-task .rd-grade { flex:none; padding:2px 5px; min-width:22px; font-size:11px; }
+.rd-board-task small { font-size:10px; white-space:nowrap; }
+.rd-board-names { display:flex; gap:3px 8px; flex-wrap:wrap; margin-top:4px; color:var(--rd-muted); font-size:11px; }
+.rd-board-empty { color:var(--rd-muted); font-size:12px; padding:8px 0; }
+.rd-person-role.rd-drop { background:var(--rd-accent); border-color:#627e35; }
+@media(max-width:1200px) { .rd-people { grid-template-columns:1fr; } }
+@media(max-width:650px) { .rd-board-layout { grid-template-columns:1fr; } .rd-board-pool { max-height:360px; overflow:auto; } .rd-tabs { flex-wrap:wrap; } .rd-tabs button { padding-inline:10px; } }
+
+@media(min-width:1600px) { .rd-people { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(min-width:651px) { .rd-board-pool { max-height:70vh; overflow:auto; position:sticky; top:12px; } }

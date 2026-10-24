@@ -85,3 +85,11 @@
 ## Daily bulk assignment (2026-10-24)
 Select visible daily tasks and assign responsible/helper together. Each role supports keeping its current value, clearing it, choosing any active worker, and a self shortcut. Preflight validates distinct roles against each task's retained role. Updates are sequential using each response's day version; the batch stops on conflict/error, retains remaining selection and refreshes once. Date/filter/search changes clear selection. Only dated assignments change; templates and status/history are preserved by the existing API.
 Mock browser checks cover self/other assignment, one-role preservation, duplicate-role rejection, filtered selection, partial failure stop and cancel. No real worker assignments were altered for QA.
+
+## Today allocation board (2026-10-24)
+
+**오늘 업무 배치** is a separate submenu beside **오늘의 배정**, using the selected date's existing snapshot. The left pool contains tasks missing either responsible or helper; a partially assigned task remains there until both roles are filled. Staff sections show separate 책임/보조 drop zones, sorted with scheduled staff first. Search narrows task cards; 오늘 제외 tasks are omitted, with their count retained in the heading.
+
+Drag a task into a staff role zone, or select its title button and activate the destination role button with pointer or keyboard. Cards keep grade, title and status together, with a compact 입력·책임·보조 identity line. Assignment changes only the destination role for the selected date, preserves the other role, rejects assigning one person to both roles, and reuses the existing date-version guard and immediate undo. Templates are unchanged.
+
+The pool stays left and scrolls independently on desktop; at 650px and below it stacks above the staff sections. Each staff section keeps its two labelled role zones. Existing lime/olive surfaces, borders and focus states carry the interaction; no raster assets ship with this board. This section records behavior and layout, not an additional verification claim.

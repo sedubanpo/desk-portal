@@ -35,6 +35,7 @@
   function mount(root, { api, uid, badge, infer }) {
     const selected = new Set();
     const daySelected = new Set();
+    let boardPicked = "";
     let gradeFilter = "",
       typeFilter = "",
       workerFilter = "",
@@ -52,7 +53,7 @@
       disposed = false,
       undo = null;
     root.innerHTML =
-      '<div class="rd"><header><div><h2>루틴 업무 분배</h2><p>함께 할 일을 모으고, 책임과 보조를 나눠요.</p></div><button class="rd-primary" data-add>루틴 등록</button></header><nav aria-label="루틴 보기"><div class="rd-tabs"><button data-tab="today">오늘의 배정</button><button data-tab="library">루틴 보관함</button></div><input type="date" aria-label="배정 날짜"><button data-reload>새로고침</button></nav><div class="rd-searchbar"><label>업무 검색<input type="search" data-search placeholder="업무명이나 수행 방법 검색" autocomplete="off"></label><button data-reset>검색·필터 초기화</button></div><p role="status" class="rd-message"></p><div class="rd-content"></div><dialog class="rd-dialog"></dialog></div>';
+      '<div class="rd"><header><div><h2>루틴 업무 분배</h2><p>함께 할 일을 모으고, 책임과 보조를 나눠요.</p></div><button class="rd-primary" data-add>루틴 등록</button></header><nav aria-label="루틴 보기"><div class="rd-tabs"><button data-tab="today">오늘의 배정</button><button data-tab="board">오늘 업무 배치</button><button data-tab="library">루틴 보관함</button></div><input type="date" aria-label="배정 날짜"><button data-reload>새로고침</button></nav><div class="rd-searchbar"><label>업무 검색<input type="search" data-search placeholder="업무명이나 수행 방법 검색" autocomplete="off"></label><button data-reset>검색·필터 초기화</button></div><p role="status" class="rd-message"></p><div class="rd-content"></div><dialog class="rd-dialog"></dialog></div>';
     const box = root.querySelector(".rd-content"),
       message = root.querySelector(".rd-message"),
       dialog = root.querySelector("dialog"),
@@ -108,7 +109,7 @@
         if (disposed || e !== epoch) return;
         data = d;
         for (const id of selected) if (!data.templates.some(t => t.id === id && canEdit(t))) selected.delete(id);
-        if (tab === "today") {
+        if (tab !== "library") {
           const p = await api("prepareDeskRoutineDay", { date });
           if (disposed || e !== epoch) return;
           data.day = p.day;
@@ -187,6 +188,8 @@
             )
             .join("") +
           "</div>";
+      } else if (tab === "board") {
+        box.innerHTML = renderBoard(all);
       } else {
         const shown = all.filter(matches)
           .filter(
@@ -263,6 +266,30 @@
         };
         box.prepend(b);
       }
+    }
+    function renderBoard(all) {
+      const live = all.filter(t => t.status !== 'excluded');
+      const visible = live.filter(matches);
+      const pending = visible.filter(t => !t.responsible || !t.assistant);
+      const working = workNames();
+      const staff = [...data.staff].sort((a,b) => Number(working.has(b.name))-Number(working.has(a.name)) || a.name.localeCompare(b.name,'ko'));
+      const picked = live.find(t => t.id === boardPicked);
+      if (!picked) boardPicked = '';
+      const card = t => `<article class="rd-board-task"><button draggable="true" data-board-pick="${esc(t.id)}" aria-pressed="${boardPicked===t.id}" aria-label="${esc(t.title)} 배치 선택"><span class="rd-grade" data-level="${esc(t.grade)}">${esc(t.grade)}</span><span>${esc(t.title)}</span><small>${esc(labels[t.status])}</small></button><div class="rd-board-names"><span>입력 ${esc(t.creator?.name || name(t.creator?.uid))}</span><span>책임 ${esc(name(t.responsible))}</span><span>보조 ${esc(name(t.assistant))}</span></div></article>`;
+      const zone = (s,r,label) => {
+        const tasks = visible.filter(t => t[r]===s.uid);
+        return `<div class="rd-person-role" data-board-person="${esc(s.uid)}" data-board-role="${r}"><button data-board-target="${esc(s.uid)}" data-board-role="${r}" aria-label="${esc(s.name)} ${label}로 배정" ${picked?'':'disabled'}>${label} <span>${tasks.length}</span><small>${picked?'선택 업무 배정':'업무를 여기로 끌어 놓기'}</small></button>${tasks.map(card).join('')}${tasks.length?'':'<p class="rd-board-empty">배정된 업무가 없습니다.</p>'}</div>`;
+      };
+      return `<section aria-label="오늘 업무 배치"><div class="rd-board-heading"><div><h3>오늘 업무 배치</h3><p>업무를 근무자의 책임·보조 칸으로 끌어 놓으세요. 업무를 선택한 뒤 배정 버튼을 눌러도 됩니다.</p></div><span>${live.length}개 업무 · 두 역할 배정 ${live.filter(t=>t.responsible&&t.assistant).length}개 · 오늘 제외 ${all.length-live.length}개</span></div><div class="rd-board-selection" role="status">${picked?`선택: ${esc(picked.title)} <button data-board-clear>선택 해제</button>`:'배정할 업무를 선택하세요.'}</div><div class="rd-board-layout"><aside class="rd-board-pool" aria-label="미배정 업무"><h3>담당자가 필요한 업무 <span>${pending.length}</span></h3><p>책임 또는 보조가 비어 있는 업무입니다.</p>${pending.map(card).join('') || (search ? '<p>검색 조건에 맞는 미배정 업무가 없습니다.</p>' : '<p>모든 업무의 책임·보조가 배정됐습니다.</p>')}</aside><div class="rd-people">${staff.map(s=>`<section class="rd-person" aria-label="${esc(s.name)} 업무"><header><h3>${esc(s.name)} <small>${esc(s.staffPosition || '')}${s.uid===uid?' · 나':''}</small></h3><span>${working.has(s.name)?'오늘 근무':'근무표 없음'}</span></header><div class="rd-person-roles">${zone(s,'responsible','책임')}${zone(s,'assistant','보조')}</div></section>`).join('')}</div></div></section>`;
+    }
+    async function boardAssign(id, personId, roleName) {
+      if (busy || loading || tab !== 'board' || !['responsible','assistant'].includes(roleName)) return;
+      const t = items().find(t=>t.id===id);
+      if (!t || t.status==='excluded' || !data.staff.some(s=>s.uid===personId)) return;
+      if (t[roleName]===personId) { tell('이미 해당 역할을 맡고 있습니다.'); return; }
+      boardPicked = id;
+      await assign(t,roleName,personId);
+      [...box.querySelectorAll('[data-board-target]')].find(b=>b.dataset.boardTarget===personId && b.dataset.boardRole===roleName)?.focus({preventScroll:true});
     }
     const show = (html) => {
       dialog.removeAttribute("aria-labelledby");
@@ -538,6 +565,9 @@
     root.onclick = (e) => {
       const b = e.target.closest("button");
       if (!b || busy || loading || !data) return;
+      if (b.dataset.boardPick) { boardPicked = boardPicked===b.dataset.boardPick ? '' : b.dataset.boardPick; render(); box.querySelector('[data-board-target]:not(:disabled)')?.focus({preventScroll:true}); }
+      if (b.hasAttribute('data-board-clear')) { boardPicked=''; render(); }
+      if (b.dataset.boardTarget) boardAssign(boardPicked,b.dataset.boardTarget,b.dataset.boardRole);
       if (b.hasAttribute("data-day-bulk")) bulkAssign();
       if (b.hasAttribute("data-day-clear")) { daySelected.clear(); render(); }
       if (b.dataset.bulk) confirmBulk(b.dataset.bulk);
@@ -546,7 +576,7 @@
       if (b.hasAttribute("data-reset")) { selected.clear(); daySelected.clear(); search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
       if (b.dataset.tab) {
         selected.clear(); daySelected.clear();
-        tab = b.dataset.tab;
+        tab = b.dataset.tab; boardPicked = "";
         undo = null;
         load();
       }
@@ -653,11 +683,13 @@
     };
     input.onchange = () => {
       daySelected.clear();
-      date = input.value;
+      date = input.value; boardPicked = "";
       undo = null;
       load();
     };
     root.ondragstart = (e) => {
+      const task = e.target.closest('[data-board-pick]');
+      if (task && tab==='board' && !busy && !loading) { e.dataTransfer.setData('application/x-desk-routine',task.dataset.boardPick); e.dataTransfer.effectAllowed='move'; return; }
       const b = e.target.closest("[data-move]");
       if (!b || b.disabled) {
         e.preventDefault();
@@ -671,7 +703,7 @@
         .forEach((c) => c.classList.remove("rd-drop"));
     root.ondragend = clearDrop;
     root.ondragover = (e) => {
-      const col = e.target.closest("[data-grade]");
+      const col = e.target.closest(tab==='board' ? "[data-board-person]" : "[data-grade]");
       if (col && !busy && !loading) {
         e.preventDefault();
         clearDrop();
@@ -681,6 +713,11 @@
     root.ondrop = (e) => {
       clearDrop();
       if (busy || loading) return;
+      if (tab==='board') {
+        const zone=e.target.closest('[data-board-person]');
+        if (zone) { e.preventDefault(); boardAssign(e.dataTransfer.getData('application/x-desk-routine'),zone.dataset.boardPerson,zone.dataset.boardRole); }
+        return;
+      }
       const col = e.target.closest("[data-grade]");
       if (!col) return;
       e.preventDefault();
