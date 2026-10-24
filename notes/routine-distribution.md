@@ -88,8 +88,10 @@ Mock browser checks cover self/other assignment, one-role preservation, duplicat
 
 ## Today allocation board (2026-10-24)
 
-**오늘 업무 배치** is a separate submenu beside **오늘의 배정**, using the selected date's existing snapshot. The left pool contains tasks missing either responsible or helper; a partially assigned task remains there until both roles are filled. Staff sections show separate 책임/보조 drop zones, sorted with scheduled staff first. Search narrows task cards; 오늘 제외 tasks are omitted, with their count retained in the heading.
+**오늘 업무 배치** is a separate submenu beside **오늘의 배정**, using the selected date's existing snapshot. The left pool contains tasks missing either responsible or helper; a partially assigned task remains there until both roles are filled. Staff sections show separate 책임/보조 drop zones, limited to staff scheduled on the selected date. Search narrows task cards; 오늘 제외 tasks are omitted, with their count retained in the heading.
 
-Drag a task into a staff role zone, or select its title button and activate the destination role button with pointer or keyboard. Cards keep grade, title and status together, with a compact 입력·책임·보조 identity line. Assignment changes only the destination role for the selected date, preserves the other role, rejects assigning one person to both roles, and reuses the existing date-version guard and immediate undo. Templates are unchanged.
+Drag a task into a staff role zone, or select its title button and activate the destination role button with pointer or keyboard. Cards keep grade, title and status together, with a compact 배치·책임·보조 identity line. Assignment changes only the destination role for the selected date, preserves the other role, rejects assigning one person to both roles, and reuses the existing date-version guard and immediate undo. Templates are unchanged.
 
 The pool stays left and scrolls independently on desktop; at 650px and below it stacks above the staff sections. Each staff section keeps its two labelled role zones. Existing lime/olive surfaces, borders and focus states carry the interaction; no raster assets ship with this board. This section records behavior and layout, not an additional verification claim.
+
+Board 배치 names come from the latest assignment history actor, never the template creator. When assignment history is absent, show 기록 없음. Status changes do not replace this attribution. Non-working staff are hidden only on this board; saved assignments and historical records remain intact.

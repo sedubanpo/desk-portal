@@ -272,20 +272,24 @@
       const visible = live.filter(matches);
       const pending = visible.filter(t => !t.responsible || !t.assistant);
       const working = workNames();
-      const staff = [...data.staff].sort((a,b) => Number(working.has(b.name))-Number(working.has(a.name)) || a.name.localeCompare(b.name,'ko'));
+      const staff = data.staff.filter(s => working.has(s.name)).sort((a,b) => a.name.localeCompare(b.name,'ko'));
+      const allocator = t => {
+        const assignment = [...(t.history || [])].reverse().find(h => h.action === 'assign');
+        return assignment ? (assignment.actor?.name || (assignment.actor?.uid ? name(assignment.actor.uid) : '기록 없음')) : '기록 없음';
+      };
       const picked = live.find(t => t.id === boardPicked);
       if (!picked) boardPicked = '';
-      const card = t => `<article class="rd-board-task"><button draggable="true" data-board-pick="${esc(t.id)}" aria-pressed="${boardPicked===t.id}" aria-label="${esc(t.title)} 배치 선택"><span class="rd-grade" data-level="${esc(t.grade)}">${esc(t.grade)}</span><span>${esc(t.title)}</span><small>${esc(labels[t.status])}</small></button><div class="rd-board-names"><span>입력 ${esc(t.creator?.name || name(t.creator?.uid))}</span><span>책임 ${esc(name(t.responsible))}</span><span>보조 ${esc(name(t.assistant))}</span></div></article>`;
+      const card = t => `<article class="rd-board-task"><button draggable="true" data-board-pick="${esc(t.id)}" aria-pressed="${boardPicked===t.id}" aria-label="${esc(t.title)} 배치 선택"><span class="rd-grade" data-level="${esc(t.grade)}">${esc(t.grade)}</span><span>${esc(t.title)}</span><small>${esc(labels[t.status])}</small></button><div class="rd-board-names"><span>배치 ${esc(allocator(t))}</span><span>책임 ${esc(name(t.responsible))}</span><span>보조 ${esc(name(t.assistant))}</span></div></article>`;
       const zone = (s,r,label) => {
         const tasks = visible.filter(t => t[r]===s.uid);
         return `<div class="rd-person-role" data-board-person="${esc(s.uid)}" data-board-role="${r}"><button data-board-target="${esc(s.uid)}" data-board-role="${r}" aria-label="${esc(s.name)} ${label}로 배정" ${picked?'':'disabled'}>${label} <span>${tasks.length}</span><small>${picked?'선택 업무 배정':'업무를 여기로 끌어 놓기'}</small></button>${tasks.map(card).join('')}${tasks.length?'':'<p class="rd-board-empty">배정된 업무가 없습니다.</p>'}</div>`;
       };
-      return `<section aria-label="오늘 업무 배치"><div class="rd-board-heading"><div><h3>오늘 업무 배치</h3><p>업무를 근무자의 책임·보조 칸으로 끌어 놓으세요. 업무를 선택한 뒤 배정 버튼을 눌러도 됩니다.</p></div><span>${live.length}개 업무 · 두 역할 배정 ${live.filter(t=>t.responsible&&t.assistant).length}개 · 오늘 제외 ${all.length-live.length}개</span></div><div class="rd-board-selection" role="status">${picked?`선택: ${esc(picked.title)} <button data-board-clear>선택 해제</button>`:'배정할 업무를 선택하세요.'}</div><div class="rd-board-layout"><aside class="rd-board-pool" aria-label="미배정 업무"><h3>담당자가 필요한 업무 <span>${pending.length}</span></h3><p>책임 또는 보조가 비어 있는 업무입니다.</p>${pending.map(card).join('') || (search ? '<p>검색 조건에 맞는 미배정 업무가 없습니다.</p>' : '<p>모든 업무의 책임·보조가 배정됐습니다.</p>')}</aside><div class="rd-people">${staff.map(s=>`<section class="rd-person" aria-label="${esc(s.name)} 업무"><header><h3>${esc(s.name)} <small>${esc(s.staffPosition || '')}${s.uid===uid?' · 나':''}</small></h3><span>${working.has(s.name)?'오늘 근무':'근무표 없음'}</span></header><div class="rd-person-roles">${zone(s,'responsible','책임')}${zone(s,'assistant','보조')}</div></section>`).join('')}</div></div></section>`;
+      return `<section aria-label="오늘 업무 배치"><div class="rd-board-heading"><div><h3>오늘 업무 배치</h3><p>업무를 근무자의 책임·보조 칸으로 끌어 놓으세요. 업무를 선택한 뒤 배정 버튼을 눌러도 됩니다.</p></div><span>${live.length}개 업무 · 두 역할 배정 ${live.filter(t=>t.responsible&&t.assistant).length}개 · 오늘 제외 ${all.length-live.length}개</span></div><div class="rd-board-selection" role="status">${picked?`선택: ${esc(picked.title)} <button data-board-clear>선택 해제</button>`:'배정할 업무를 선택하세요.'}</div><div class="rd-board-layout"><aside class="rd-board-pool" aria-label="미배정 업무"><h3>담당자가 필요한 업무 <span>${pending.length}</span></h3><p>책임 또는 보조가 비어 있는 업무입니다.</p>${pending.map(card).join('') || (search ? '<p>검색 조건에 맞는 미배정 업무가 없습니다.</p>' : '<p>모든 업무의 책임·보조가 배정됐습니다.</p>')}</aside><div class="rd-people">${staff.length ? '' : '<p class="rd-board-empty">선택한 날짜에 근무자가 없습니다. 월별 근무표를 확인해 주세요.</p>'}${staff.map(s=>`<section class="rd-person" aria-label="${esc(s.name)} 업무"><header><h3>${esc(s.name)} <small>${esc(s.staffPosition || '')}${s.uid===uid?' · 나':''}</small></h3><span>${working.has(s.name)?'오늘 근무':'근무표 없음'}</span></header><div class="rd-person-roles">${zone(s,'responsible','책임')}${zone(s,'assistant','보조')}</div></section>`).join('')}</div></div></section>`;
     }
     async function boardAssign(id, personId, roleName) {
       if (busy || loading || tab !== 'board' || !['responsible','assistant'].includes(roleName)) return;
       const t = items().find(t=>t.id===id);
-      if (!t || t.status==='excluded' || !data.staff.some(s=>s.uid===personId)) return;
+      if (!t || t.status==='excluded' || !data.staff.some(s=>s.uid===personId && workNames().has(s.name))) return;
       if (t[roleName]===personId) { tell('이미 해당 역할을 맡고 있습니다.'); return; }
       boardPicked = id;
       await assign(t,roleName,personId);

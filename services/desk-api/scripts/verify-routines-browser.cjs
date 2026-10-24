@@ -60,8 +60,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
         staff: [
           { uid: "me", name: "가상직원", staffPosition: "주임" },
           { uid: "other", name: "검증직원", staffPosition: "대리" },
+          { uid: "off", name: "비근무직원", staffPosition: "주임" },
         ],
-        schedule: {},
+        schedule: {entries: {a:{date:new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date()),worker:"가상직원"},b:{date:new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date()),worker:"검증직원"}}},
         canManage: false,
       };
       for (const [i, g] of ["S", "A", "B", "C"].entries()) {
@@ -99,6 +100,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
           if (window.failDayId === p.id) throw Error("다른 근무자가 변경했습니다.");
           if (p.version !== d.day.version) throw Error("버전 충돌");
           Object.assign(d.day.items[p.id], p);
+          d.day.items[p.id].history.push({at:new Date().toISOString(), action:p.action, actor:{uid:"admin-test",name:"배치관리자"}});
           d.day.version++;
           return { success: true, day: d.day };
         }
@@ -128,9 +130,14 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     await page.locator('[data-tab=board]').click();
     await page.locator('.rd-board-pool [data-board-pick]').first().waitFor();
     assert.equal(await page.locator('.rd-board-pool [data-board-pick]').count(),4);
+    assert.equal(await page.locator('.rd-person').count(),2);
+    assert.equal(await page.getByRole('region',{name:'비근무직원 업무',exact:true}).count(),0);
+    assert.match(await page.locator('.rd-board-pool').innerText(),/배치 기록 없음/);
     await page.locator('.rd-board-pool [data-board-pick=task0]').dragTo(page.locator('[data-board-person=me][data-board-role=responsible]'));
     await page.locator('.rd-saving').waitFor({state:'detached'});
     assert.equal(await page.evaluate(()=>routineFixture.day.items.task0.responsible),'me');
+    assert.match(await page.locator('.rd-board-pool').innerText(),/배치 배치관리자/);
+    assert.equal((await page.locator('.rd-board-names').allTextContents()).some(t=>t.includes('입력 가상직원')),false);
     await page.locator('[data-board-clear]').click();
     await page.locator('.rd-board-pool [data-board-pick=task0]').click();
     assert.equal(await page.evaluate(()=>document.activeElement?.dataset.boardTarget),'me');
