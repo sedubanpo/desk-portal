@@ -48,6 +48,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
       state.firebaseUser = { uid: "me", getIdToken: async () => "synthetic" };
       state.cloudIdentity = { uid: "me", name: "가상직원", role: "STAFF" };
       state.cloudApiReady = true;
+      for (const method of ["getDeskRoutineBoard", "saveDeskRoutineTemplate", "deleteDeskRoutineTemplate", "prepareDeskRoutineDay", "updateDeskRoutineDay"]) {
+        if (!canUseDeskCloudApi_(method)) throw new Error("Routine API route missing: " + method);
+      }
       state.activeModule = "expense";
       entryGateEl.style.display = "none";
       document.body.classList.remove("entry-locked");
