@@ -2,12 +2,17 @@
   'use strict';
   function parse(rows, students, selectedMonth) {
     var required = ['결제상태','결제일시','이름','품목','승인번호','금액(원)'];
-    var start = rows.findIndex(function(row) { return required.every(function(h) { return row.includes(h); }); });
+    // New exports distinguish billed and paid amounts; only the paid amount is imported.
+    function header(v) { return String(v == null ? '' : v).normalize('NFKC').replace(/\s/g, ''); }
+    var start = rows.findIndex(function(row) { var keys = row.map(header); return required.every(function(h) { return keys.includes(h) || (h === '품목' && keys.includes('품목(청구사유)')) || (h === '금액(원)' && keys.includes('결제금액(원)')); }); });
     if (start < 0) throw new Error('결제링크 엑셀의 필수 열을 찾을 수 없습니다. 결제내역 파일을 선택해 주세요.');
-    var headers = rows[start], seen = new Set();
+    var headers = rows[start].map(header);
+    var itemHeader = headers.includes('품목(청구사유)') ? '품목(청구사유)' : '품목';
+    var amountHeader = headers.includes('결제금액(원)') ? '결제금액(원)' : '금액(원)';
+    var seen = new Set();
     return rows.slice(start + 1).filter(function(row) { return row.some(function(v) { return v !== '' && v != null; }); }).flatMap(function(row, index) {
       function get(key) { return String(row[headers.indexOf(key)] == null ? '' : row[headers.indexOf(key)]).trim(); }
-      var name = get('이름'), item = get('품목'), paidAt = get('결제일시').slice(0,10);
+      var name = get('이름'), item = get(itemHeader), paidAt = get('결제일시').slice(0,10);
       function normalized(v) { return String(v || '').normalize('NFKC').trim(); }
       function mentions(text, n) {
         var at = -1;
@@ -27,7 +32,7 @@
       var normalizedItem = normalized(item);
       var itemMonths = Array.from(normalizedItem.matchAll(/(?:^|[^0-9])(1[0-2]|[1-9])월/g)).map(function(m) { return m[1].padStart(2,'0'); });
       var month = itemMonths.length === 1 ? selectedMonth.slice(0,3) + itemMonths[0] + 's' : '';
-      var amount = Number(get('금액(원)').replace(/,/g,''));
+      var amount = Number(get(amountHeader).replace(/,/g,''));
       var status = get('결제상태'), cancelledAt = get('취소일시');
       var cancelled = ['취소','결제취소','전체취소'].includes(status) || (status === '결제' && !!cancelledAt);
       var issue = !['결제','취소','결제취소','전체취소'].includes(status) ? '결제상태 확인 필요' : combined ? '합산 결제 · 학생별 배분 필요' : !Number.isSafeInteger(amount) || amount <= 0 ? '금액 확인 필요' : !/^\d{4}-\d{2}-\d{2}$/.test(paidAt) ? '결제일 확인 필요' : '';

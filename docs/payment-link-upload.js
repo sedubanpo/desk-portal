@@ -6,7 +6,7 @@
   dialog.setAttribute('aria-labelledby', 'paymentLinkTitle');
   dialog.innerHTML = '<header><div><h2 id="paymentLinkTitle">결제링크 업로드</h2><p>결제내역을 대조하고 새 수납만 입력합니다.</p></div><button type="button" data-close aria-label="팝업 닫기">✕</button></header>' +
     '<nav aria-label="결제링크 메뉴"><button type="button" data-tab="upload" aria-pressed="true">엑셀 업로드</button><button type="button" data-tab="history" aria-pressed="false">입력·수정·삭제 이력</button></nav>' +
-    '<section data-pane="upload"><label class="payment-link-file"><span class="payment-link-upload-icon" aria-hidden="true">⇧</span><strong>결제링크 파일 업로드</strong><span>파일을 끌어 놓거나 아래에서 선택하세요.</span><small>.xlsx · 최대 5MB</small><input type="file" accept=".xlsx" aria-label="결제내역 엑셀 파일"></label><p class="payment-link-help">학생·귀속 월을 확인한 뒤 중복 검사를 실행하세요. 취소 건은 원결제와 환불로 나누어 표시됩니다. 각각 확인하고 입력하세요.</p><div class="payment-link-summary" data-counts aria-live="polite"></div><div class="payment-link-result-filter"><label>대조 결과 <select data-result-filter><option value="all">전체</option><option value="review">확인 필요</option><option value="ready">입력 가능</option><option value="duplicate">중복 제외</option><option value="saved">입력 완료</option><option value="excluded">선택 제외</option></select></label><span data-file-name></span></div><div class="payment-link-table" data-preview></div><footer><button type="button" data-reset>초기화</button><button type="button" data-stop hidden>현재 작업 후 중지</button><button type="button" data-check disabled>중복 검사</button><button type="button" data-save disabled>새 수납 입력</button></footer></section>' +
+    '<section data-pane="upload"><label class="payment-link-file"><span class="payment-link-upload-icon" aria-hidden="true">⇧</span><strong>결제링크 파일 업로드</strong><span>파일을 끌어 놓거나 아래에서 선택하세요.</span><small>.xlsx · 최대 5MB</small><input type="file" accept=".xlsx" aria-label="결제내역 엑셀 파일"></label><p class="payment-link-help">학생·귀속 월을 확인한 뒤 중복 검사를 실행하세요. 취소 건은 원결제와 환불로 나누어 표시됩니다. 각각 확인하고 입력하세요.</p><div class="payment-link-summary" data-counts aria-live="polite"></div><div class="payment-link-result-filter"><label>대조 결과 <select data-result-filter><option value="all">전체</option><option value="review">확인 필요</option><option value="ready">입력 가능</option><option value="duplicate">중복 제외</option><option value="saved">입력 완료</option><option value="excluded">선택 제외</option></select></label><span data-file-name></span></div><div class="payment-link-table" data-preview></div><footer><button type="button" data-reset>초기화</button><button type="button" data-clear-selection disabled>전체 선택해제</button><button type="button" data-stop hidden>현재 작업 후 중지</button><button type="button" data-check disabled>중복 검사</button><button type="button" data-save disabled>새 수납 입력</button></footer></section>' +
     '<section data-pane="history" hidden><div class="payment-link-history-controls"><label>귀속 월 <select data-month></select></label><label>변경 유형 <select data-action><option value="">전체</option><option value="created">입력</option><option value="updated">수정</option><option value="deleted">삭제</option></select></label><button type="button" data-reload>이력 새로고침</button></div><div data-history></div></section><p class="payment-link-message" role="status" aria-live="polite"></p>';
   document.body.appendChild(dialog);
   var rows = [], roster = [], busy = false, events = [], fileName = '', monthAtOpen = '', stopRequested = false, filter = 'all', processing = false;
@@ -23,7 +23,8 @@
     if (!value) {
       dialog.querySelectorAll('[data-include],[data-pick]').forEach(function(el){el.disabled=rows[Number(el.dataset.include || el.dataset.pick)].result==='saved';});
       dialog.querySelectorAll('[data-row]').forEach(function(el) { var r = rows[Number(el.dataset.row)]; el.disabled = r.result === 'saved'; });
-      $('[data-check]').disabled = !rows.some(eligible);
+      $('[data-clear-selection]').disabled = !rows.some(function(r) { return !r.excluded && r.result !== 'saved'; });
+      $('[data-check]').disabled = !rows.some(function(r) { return eligible(r) && r.result !== 'saved'; });
       $('[data-save]').disabled = !rows.some(function(r) { return eligible(r) && r.result === 'ready'; });
     }
   }
@@ -142,6 +143,7 @@
   picker.addEventListener('click',function(e){var button=e.target.closest('[data-student]');if(!button)return;var r=rows[pickIndex];r.studentName=button.dataset.student;r.result='';r.message='';picker.close();render();setBusy(false);});
   picker.addEventListener('close',function(){var button=$('[data-pick="'+pickIndex+'"]');if(button)button.focus();});
   $('[data-reset]').onclick=function(){if(busy)return;rows=[];fileName='';filter='all';$('[data-result-filter]').value='all';$('input[type=file]').value='';render();setBusy(false);message('미리보기를 초기화했습니다. 이미 저장된 수납 이력은 유지됩니다.');};
+  $('[data-clear-selection]').onclick=function(){if(busy)return;var count=0;rows.forEach(function(r){if(r.result !== 'saved' && !r.excluded){r.excluded=true;count++;}});render();setBusy(false);message(count+'건의 선택을 해제했습니다. 대조 결과를 전체로 두고 필요한 결제건만 다시 선택하세요. 이미 입력된 수납은 유지됩니다.');};
   $('[data-check]').addEventListener('click',function() { process(false); });
   $('[data-save]').addEventListener('click',function() { process(true); });
   $('[data-reload]').addEventListener('click',history);

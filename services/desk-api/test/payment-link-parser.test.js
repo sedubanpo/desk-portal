@@ -24,3 +24,11 @@ test('item student takes precedence over recipient siblings, suffixes and fullwi
   assert.deepEqual(Array.from(result,r=>r.studentName),['백시은','박시언','강민재','최시영b','']);
   assert.equal(result[0].monthName,'26-09s');assert.match(result[4].issue,/합산/);assert.equal(result[0].approvalNo,'0000');
 });
+
+test('current export accepts item alias and paid amount, never billed amount', () => {
+  const header=['결제상태','결제일시','취소일시','청구금액(원)',' 결제금액(원) ','승인번호','이름','품목(청구사유)'];
+  const result=parse([['결제내역'],header,['결제','2026-10-24 17:00:00','',900000,300000,'00123','가상학생','10월 수강료'],['취소','2026-10-20','2026-10-24',900000,200000,'00456','가상학생','10월 수강료']],[{studentName:'가상학생'}],'26-10s');
+  assert.equal(result.length,3);assert.equal(result[0].amount,-300000);assert.equal(result[0].approvalNo,'00123');assert.equal(result[0].monthName,'26-10s');assert.equal(result[0].rowNumber,3);
+  assert.equal(result[1].amount,-200000);assert.equal(result[2].amount,200000);
+  assert.throws(()=>parse([header.filter(h=>!h.includes('결제금액'))],[],'26-10s'),/필수 열/);
+});
