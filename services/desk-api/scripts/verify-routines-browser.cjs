@@ -98,6 +98,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
           return { success: true, day: d.day };
         }
         if (m === "deleteDeskRoutineTemplate") {
+          if (window.failRoutineId === p.id) throw Error("다른 근무자가 변경했습니다.");
           d.templates = d.templates.filter(t => t.id !== p.id);
           return { success: true };
         }
@@ -164,6 +165,41 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
       ),
       fullPage: true,
     });
+    // Selection is scoped to visible editable cards and clears when filtering.
+    await page.locator('[data-select=task0]').check();
+    await page.locator('[data-select=task2]').check();
+    assert.equal(await page.locator('[data-select-all]').evaluate(e => e.indeterminate), true);
+    await page.locator('[data-search]').fill('출결');
+    assert.equal(await page.locator('[data-select]:checked').count(), 0);
+    await page.locator('[data-select-all]').check();
+    assert.equal(await page.locator('[data-select]:checked').count(), 1);
+    await page.locator('[data-search]').fill('');
+    await page.evaluate(() => {
+      routineFixture.templates.forEach(t => t.active = false);
+      routineFixture.templates.find(t => t.id === 'task3').creator.uid = 'other';
+    });
+    await page.locator('.rd [data-reload]').click();
+    await page.locator('[data-library-state]').selectOption('all');
+    await page.locator('[data-select-all]').check();
+    assert.equal(await page.locator('[data-select]:checked').count(), 3);
+    assert.equal(await page.locator('[data-select=task3]').isDisabled(), true);
+    await page.locator('[data-bulk=activate]').click();
+    await page.locator('[data-bulk-cancel]').click();
+    assert.equal(await page.evaluate(() => routineFixture.templates.filter(t => t.active).length), 0);
+    await page.locator('[data-bulk=activate]').click();
+    await page.locator('[data-bulk-confirm]').click();
+    await page.waitForFunction(() => routineFixture.templates.filter(t => t.active).length === 3);
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.equal(await page.locator('[data-select]:checked').count(), 0);
+    // Keep the rest of the original regression fixture editable.
+    await page.evaluate(() => { routineFixture.templates.find(t => t.id === 'task3').creator.uid = 'me'; });
+    await page.locator('.rd [data-reload]').click();
+    await page.locator('[data-select=task0]').check();
+    await page.locator('[data-select=task2]').check();
+    await page.locator('[data-bulk=delete]').click();
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(() => routineFixture.templates.length), 4);
+    await page.locator('[data-clear-selection]').click();
     // Deletion requires confirmation; cancellation/Escape never mutate data.
     await page.locator('[data-delete=task1]').click();
     await page.getByText('기존 날짜별 배정·완료 이력은 그대로 유지됩니다.', {exact:true}).waitFor();
@@ -182,6 +218,20 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright"),
     assert.equal(await page.locator('.rd-task').count(), 4);
     await page.locator('[data-tab=library]').click();
     await page.locator('[data-delete=task0]').waitFor();
+    await page.evaluate(() => { window.failRoutineId = 'task2'; });
+    await page.locator('[data-select-all]').check();
+    await page.locator('[data-bulk=delete]').click();
+    await page.locator('[data-bulk-confirm]').click();
+    await page.waitForFunction(() => routineFixture.templates.length === 1);
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.equal(await page.locator('[data-select]:checked').count(), 1);
+    await page.getByText(/1개 처리 실패/).waitFor();
+    await page.evaluate(() => { window.failRoutineId = null; });
+    await page.locator('[data-bulk=delete]').click();
+    await page.locator('[data-bulk-confirm]').click();
+    await page.waitForFunction(() => routineFixture.templates.length === 0);
+    await page.locator('.rd-saving').waitFor({state:'detached'});
+    assert.equal(await page.evaluate(() => Object.keys(routineFixture.day.items).length), 4);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({
       path: path.join(

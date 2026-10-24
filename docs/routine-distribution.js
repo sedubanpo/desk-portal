@@ -33,6 +33,7 @@
       excluded: "오늘 제외",
     };
   function mount(root, { api, uid, badge, infer }) {
+    const selected = new Set();
     let gradeFilter = "",
       typeFilter = "",
       workerFilter = "",
@@ -57,7 +58,7 @@
       input = root.querySelector("input");
     input.value = date;
     const searchInput = root.querySelector('[data-search]');
-    searchInput.oninput = () => { search = searchInput.value.trim().toLocaleLowerCase('ko'); if (data) render(); };
+    searchInput.oninput = () => { selected.clear(); search = searchInput.value.trim().toLocaleLowerCase('ko'); if (data) render(); };
     const matches = (t) => !search || (t.title + " " + (t.description || "")).toLocaleLowerCase('ko').includes(search);
     const tell = (s) => (message.textContent = s);
     const items = () => Object.values(data?.day.items || {});
@@ -105,6 +106,7 @@
         const d = await api("getDeskRoutineBoard", { date });
         if (disposed || e !== epoch) return;
         data = d;
+        for (const id of selected) if (!data.templates.some(t => t.id === id && canEdit(t))) selected.delete(id);
         if (tab === "today") {
           const p = await api("prepareDeskRoutineDay", { date });
           if (disposed || e !== epoch) return;
@@ -166,8 +168,10 @@
       const stats = `<div class="rd-summary"><div><strong>${completed}<span> / ${all.length}</span></strong><span>업무 완료</span></div><div class="rd-completion"><progress value="${completed}" max="${all.length || 1}" aria-label="전체 업무 완료 현황"></progress><span>${all.length ? Math.round(completed / all.length * 100) : 0}% 완료 · ${all.filter(t => t.status === "doing").length}건 진행 중</span></div><button data-filter="unassigned">담당 배정 필요 <b>${unassigned}</b><small>책임 ${all.filter(t => !t.responsible).length} · 보조 ${all.filter(t => !t.assistant).length}</small></button></div>`;
       if (tab === "library") {
         const library = data.templates.filter(matches).filter(t => libraryState === "all" || (libraryState === "active" ? t.active : !t.active));
+        const selectable = library.filter(canEdit);
+        const picked = data.templates.filter(t => selected.has(t.id) && canEdit(t));
         box.innerHTML =
-          `<div class="rd-library-tools"><div><strong>반복 업무 보관함</strong><p>등급 손잡이를 끌어 이동하세요. 버튼으로도 변경할 수 있습니다.</p><small>원본 변경은 다음 생성분부터 적용됩니다.</small></div><label>표시<select data-library-state aria-label="보관함 표시">${[['active','사용 중'],['paused','일시 중지'],['all','전체 루틴']].map(([v,l])=>`<option value="${v}" ${libraryState===v?'selected':''}>${l}</option>`).join('')}</select></label></div><div class="rd-columns">` +
+          `<div class="rd-bulk" role="region" aria-label="루틴 일괄 정리"><label><input type="checkbox" data-select-all ${selectable.length && selectable.every(t => selected.has(t.id)) ? "checked" : ""} ${selectable.length ? "" : "disabled"}>현재 목록 전체 선택 (${selectable.length})</label><strong>${picked.length}개 선택</strong><button data-clear-selection ${picked.length ? "" : "disabled"}>선택 해제</button><button data-bulk="activate" ${picked.some(t => !t.active) ? "" : "disabled"}>선택 업무 사용 중으로</button><button class="rd-danger" data-bulk="delete" ${picked.length ? "" : "disabled"}>선택 업무 삭제</button><small>검색·표시 조건을 바꾸면 선택이 해제됩니다. 수정 권한이 있는 업무만 선택할 수 있습니다.</small></div><div class="rd-library-tools"><div><strong>반복 업무 보관함</strong><p>등급 손잡이를 끌어 이동하세요. 버튼으로도 변경할 수 있습니다.</p><small>원본 변경은 다음 생성분부터 적용됩니다.</small></div><label>표시<select data-library-state aria-label="보관함 표시">${[['active','사용 중'],['paused','일시 중지'],['all','전체 루틴']].map(([v,l])=>`<option value="${v}" ${libraryState===v?'selected':''}>${l}</option>`).join('')}</select></label></div><div class="rd-columns">` +
           Object.entries(grades)
             .map(
               ([g, label]) =>
@@ -175,7 +179,7 @@
                   .filter((t) => t.grade === g)
                   .map(
                     (t) =>
-                      `<article data-id="${t.id}"><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3h1m4 0h1M5 8h1m4 0h1M5 13h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${g} 등급</button><h4>${esc(t.title)}</h4><div class="rd-meta"><span>${esc(t.type)}</span><span>${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</span>${!t.active ? "<span>일시 중지</span>" : ""}</div><dl class="rd-defaults"><div><dt>기본 책임</dt><dd>${identity(t.responsible)}</dd></div><div><dt>기본 보조</dt><dd>${identity(t.assistant)}</dd></div></dl><p class="rd-creator">작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
+                      `<article data-id="${t.id}" class="${selected.has(t.id) ? "rd-selected" : ""}"><label class="rd-select"><input type="checkbox" data-select="${t.id}" ${selected.has(t.id) ? "checked" : ""} ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 선택">선택</label><button class="rd-grip" draggable="${canEdit(t)}" data-move="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 등급 변경"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5 3h1m4 0h1M5 8h1m4 0h1M5 13h1m4 0h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${g} 등급</button><h4>${esc(t.title)}</h4><div class="rd-meta"><span>${esc(t.type)}</span><span>${t.weekdays.map((d) => "일월화수목금토"[d]).join("·")}</span>${!t.active ? "<span>일시 중지</span>" : ""}</div><dl class="rd-defaults"><div><dt>기본 책임</dt><dd>${identity(t.responsible)}</dd></div><div><dt>기본 보조</dt><dd>${identity(t.assistant)}</dd></div></dl><p class="rd-creator">작성 ${badge(t.creator.name)}</p><button data-edit="${t.id}" ${canEdit(t) ? "" : "disabled"}>${t.active ? "수정 · 일시 중지" : "중지됨 · 다시 사용"}</button><button class="rd-danger" data-delete="${t.id}" ${canEdit(t) ? "" : "disabled"} aria-label="${esc(t.title)} 삭제">삭제</button></article>`,
                   )
                   .join("")}${library.some(t=>t.grade===g) ? "" : '<p class="rd-column-empty">이 등급의 루틴이 없습니다.<br>손잡이를 끌어 옮길 수 있어요.</p>'}</section>`,
             )
@@ -239,6 +243,11 @@
             ? ""
             : `<div class="rd-empty"><strong>${all.length ? '조건에 맞는 업무가 없습니다.' : '이 날짜에 배정된 루틴이 없습니다.'}</strong><p>${all.length ? '검색어나 필터를 바꾸어 확인해 주세요.' : '보관함에서 반복 요일을 확인하거나 새 루틴을 등록하세요.'}</p><button ${all.length ? 'data-reset' : 'data-tab="library"'}>${all.length ? '검색·필터 초기화' : '보관함 열기'}</button></div>`);
       }
+      const selectAll = box.querySelector("[data-select-all]");
+      if (selectAll) {
+        const checks = [...box.querySelectorAll("[data-select]:not(:disabled)")];
+        selectAll.indeterminate = checks.some(c => c.checked) && !checks.every(c => c.checked);
+      }
       if (undo) {
         const b = document.createElement("button");
         b.textContent = "방금 변경 실행 취소";
@@ -257,6 +266,47 @@
       dialog.querySelector(".rd-close").onclick = () => dialog.close();
       dialog.showModal();
     };
+    function confirmBulk(action) {
+      const targets = data.templates.filter(t => selected.has(t.id) && canEdit(t) && (action === "delete" || !t.active));
+      if (!targets.length) return;
+      const deleting = action === "delete";
+      show(`<h3 id="rd-bulk-title">${targets.length}개 업무를 ${deleting ? "삭제할까요?" : "사용 중으로 전환할까요?"}</h3><ul class="rd-bulk-preview">${targets.map(t => `<li>${esc(t.title)}${deleting ? "" : `<small>반복: ${t.weekdays.map(d => "일월화수목금토"[d]).join("·")}</small>`}</li>`).join("")}</ul><p>${deleting ? "보관함에서 삭제되며 앞으로 자동 배정되지 않습니다. 기존 날짜별 배정·완료 이력은 유지됩니다. 삭제 후에는 새로 등록해야 합니다." : "저장된 반복 요일과 기본 담당자가 적용됩니다. 기존 날짜별 배정·완료 이력은 바뀌지 않습니다."}</p><div class="rd-delete-actions"><button data-bulk-cancel>취소</button><button data-bulk-confirm class="${deleting ? "rd-danger" : "rd-primary"}">${targets.length}개 ${deleting ? "삭제" : "사용 중으로 전환"}</button></div>`);
+      dialog.setAttribute("aria-labelledby", "rd-bulk-title");
+      dialog.querySelector('[data-bulk-cancel]').onclick = () => dialog.close();
+      dialog.querySelector('[data-bulk-cancel]').focus();
+      dialog.querySelector('[data-bulk-confirm]').onclick = async () => {
+        if (busy) return;
+        dialog.close();
+        busy = true;
+        root.classList.add('rd-saving');
+        input.disabled = true;
+        searchInput.disabled = true;
+        box.inert = true;
+        undo = null;
+        let succeeded = 0;
+        const failed = [];
+        try {
+          for (const t of targets) {
+            if (disposed) break;
+            tell(`${targets.length}개 중 ${succeeded + failed.length + 1}번째 처리 중…`);
+            try {
+              await api(deleting ? 'deleteDeskRoutineTemplate' : 'saveDeskRoutineTemplate', deleting ? {id:t.id, version:t.version} : {...t, active:true});
+              selected.delete(t.id);
+              succeeded++;
+            } catch (e) { failed.push(`${t.title}: ${e.message}`); }
+          }
+          if (disposed) return;
+          const refreshed = await load();
+          tell(`${succeeded}개 ${deleting ? '삭제' : '사용 중 전환'} 완료.${failed.length ? ` ${failed.length}개 처리 실패. 실패한 업무는 선택 상태로 남겼습니다. ${failed.join(' / ')}` : ''}${refreshed ? '' : ' 목록 갱신에 실패했습니다. 새로고침해 주세요.'}`);
+        } finally {
+          busy = false;
+          root.classList.remove('rd-saving');
+          input.disabled = false;
+          searchInput.disabled = false;
+          box.inert = false;
+        }
+      };
+    }
     function confirmDelete(t) {
       if (!t || !canEdit(t)) return;
       show(`<h3 id="rd-delete-title">루틴을 삭제할까요?</h3><p>${esc(t.title)}</p><p>보관함에서 삭제되며 앞으로 자동 배정되지 않습니다. <strong>기존 날짜별 배정·완료 이력은 그대로 유지됩니다.</strong></p><p>삭제 후에는 새 루틴으로 다시 등록해야 합니다.</p><div class="rd-delete-actions"><button type="button" data-cancel-delete>취소</button><button type="button" class="rd-danger" data-confirm-delete>루틴 삭제</button></div>`);
@@ -433,9 +483,12 @@
     root.onclick = (e) => {
       const b = e.target.closest("button");
       if (!b || busy || loading || !data) return;
+      if (b.dataset.bulk) confirmBulk(b.dataset.bulk);
+      if (b.hasAttribute("data-clear-selection")) { selected.clear(); render(); }
       if (b.hasAttribute("data-add")) editor();
-      if (b.hasAttribute("data-reset")) { search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
+      if (b.hasAttribute("data-reset")) { selected.clear(); search = ""; searchInput.value = ""; gradeFilter = typeFilter = workerFilter = ""; filter = "all"; libraryState = "active"; render(); }
       if (b.dataset.tab) {
+        selected.clear();
         tab = b.dataset.tab;
         undo = null;
         load();
@@ -518,7 +571,16 @@
       }
     };
     root.onchange = (e) => {
-      if (e.target.hasAttribute("data-library-state")) { libraryState = e.target.value; render(); }
+      if (busy || loading || !data) return;
+      if (e.target.dataset.select) {
+        const t = data.templates.find(t => t.id === e.target.dataset.select);
+        if (t && canEdit(t)) { if (e.target.checked) selected.add(t.id); else selected.delete(t.id); render(); }
+      }
+      if (e.target.hasAttribute("data-select-all")) {
+        for (const t of data.templates.filter(matches).filter(t => canEdit(t) && (libraryState === "all" || (libraryState === "active" ? t.active : !t.active)))) { if (e.target.checked) selected.add(t.id); else selected.delete(t.id); }
+        render();
+      }
+      if (e.target.hasAttribute("data-library-state")) { selected.clear(); libraryState = e.target.value; render(); }
       if (e.target.dataset.query) {
         const q = e.target.dataset.query;
         if (q === "grade") gradeFilter = e.target.value;

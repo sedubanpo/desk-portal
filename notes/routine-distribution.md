@@ -75,3 +75,9 @@
 - `deleteDeskRoutineTemplate`는 원본 버전을 검사한 뒤 원본을 최소 삭제 표식(id, creator, version, active:false, deletedAt, deletedBy)으로 바꾼다. 이전 화면에서 수정/실행 취소로 되살리는 것을 방지한다. 원본 목록과 이후 날짜 생성에서 삭제 표식을 제외한다. 날짜별 items, 완료 정보, 변경 이력은 수정하지 않는다.
 - Node 테스트 417건 및 실제 HTML 브라우저 검증 통과: 확인창 취소/Escape, 삭제 확인, 원본 제거, 기존 날짜 업무 유지, 드래그, 모바일. 서버 테스트는 작성자/관리자 권한, 오래된 버전 충돌, 완료 스냅샷 동일성, 이후 날짜 미생성, 삭제 원본 재저장 거절을 포함한다.
 - `npm test`가 독립 브라우저 스크립트까지 자동 실행해 런타임 경로/작업 디렉터리 오류를 내던 점을 고쳐 단위·HTTP 테스트 폴더만 실행한다. 브라우저 검사는 저장소 루트에서 PLAYWRIGHT_MODULE을 지정해 별도로 실행한다.
+
+## Library bulk cleanup (2026-10-24)
+- Select individual editable templates or all editable results in the current search/state filter. Changing search, state or tab clears selection.
+- Confirm selected titles before deleting or enabling. Activation previews stored repeat weekdays; no weekday/default-role changes are implied.
+- Sequential existing version-checked APIs preserve creator/manager permissions and dated snapshots. Refresh once after the batch instead of once per item. Successful items leave selection; failed items remain for review/retry. An auth disposal stops further requests.
+- Local browser regression covers filtered selection, permissions, activation/cancel, bulk deletion/cancel, partial failure/retry, snapshot preservation and mobile overflow. Production business records are not mutated for QA.

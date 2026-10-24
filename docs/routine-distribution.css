@@ -151,3 +151,16 @@
 @media (prefers-reduced-motion: reduce) { .rd button { transition: none; } }
 
 .rd input::placeholder { color: var(--rd-muted); opacity: 1; }
+
+/* Library multi-selection uses the existing quiet operations palette. */
+.rd-bulk { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px; margin-bottom: 16px; background: var(--ds-bg-panel, #fff); border: 1px solid var(--ds-border, #dce3d4); border-radius: 12px; }
+.rd-bulk label, .rd-select { display: inline-flex; align-items: center; gap: 8px; }
+.rd-bulk small { flex-basis: 100%; color: var(--ds-muted, #5e6b80); }
+.rd-select { margin-bottom: 8px; cursor: pointer; }
+.rd input[type=checkbox] { width: 18px; height: 18px; accent-color: #526c35; }
+.rd-columns article.rd-selected { outline: 2px solid #809c49; outline-offset: -2px; }
+.rd-bulk-preview { max-height: 35vh; overflow: auto; padding-left: 24px; }
+.rd-bulk-preview li { margin-bottom: 10px; overflow-wrap: anywhere; }
+.rd-bulk-preview small { display: block; }
+.rd-bulk button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 600px) { .rd-bulk { position: static; } .rd-bulk button { flex: 1 1 auto; } }
