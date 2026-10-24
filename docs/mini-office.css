@@ -130,3 +130,5 @@ body.desk-daily-journal-mode .journal-context-grid:empty{display:none;}
 @media(max-width:760px){.mo-head-tools{width:100%;max-width:none}.mo-head-tools .mo-sync{flex-basis:auto}.mo-shift small{display:none}.mo-shift{left:calc(50% + 20px)}.mini-office .mo-drag-character{width:44px;left:calc(50% - 22px);height:65px}.mo-director .mo-shift small,.mo-classroom .mo-shift small{display:block}}
 .mo-drag-character{user-select:none;-webkit-user-select:none}
 @media(max-width:760px){.mo-shift small{display:block;font-size:8px;max-width:25px}.mo-shift{max-width:calc(50% - 21px)}}
+
+.mo-board-read{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:12px}.mo-board-read button{background:#f3f4df;color:#294e40;border:1px solid #bec9a5;border-radius:6px;padding:7px 12px;font:inherit;font-weight:700;cursor:pointer}.mo-board-read button[aria-pressed="true"]{background:#d8e6bc}.mo-board-read button:disabled{opacity:.6;cursor:wait}

@@ -9,10 +9,21 @@ const keyFor=name=>createHash('sha256').update(workerKey(name)).digest('hex').sl
 const fail=message=>({success:false,message});
 const attendancePath=date=>'desk_portal/staff_attendance/'+date.slice(0,7)+'/'+date;
 // Checkout releases only the seat. Tasks and their audit history remain intact.
-function visibleWorkers(workers={},attendance={}){
+function visibleWorkers(workers={},attendance={},people=[],date='',stamp=''){
+ const nowMs=Date.parse(stamp);
+ const shiftEnd=w=>{
+  const shifts=people.find(p=>p.uid===w.uid)?.shifts||[];
+  const ends=shifts.flatMap(s=>{
+   if(!/^\d{2}:\d{2}$/.test(s.start)||!/^\d{2}:\d{2}$/.test(s.end))return [];
+   const start=Date.parse(date+'T'+s.start+':00+09:00');let end=Date.parse(date+'T'+s.end+':00+09:00');
+   if(end<=start)end+=86400000;
+   return Number.isFinite(end)?[end]:[];
+  });
+  const end=Math.max(...ends);return end<=nowMs?end:NaN;
+ };
  return Object.fromEntries(Object.entries(workers).map(([key,w])=>{
-  const out=attendance?.[w.uid]?.clockOut;
-  const released=Number.isFinite(Date.parse(out))&&!(Date.parse(w.seatSelectedAt)>Date.parse(out));
+  const out=Math.max(Date.parse(attendance?.[w.uid]?.clockOut)||0,shiftEnd(w)||0);
+  const released=out>0&&!(Date.parse(w.seatSelectedAt)>out);
   return [key,released?{...w,seat:'',checkedOut:true}:w];
  }));
 }
@@ -40,7 +51,7 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
   if(!validOfficeDate(date))return fail('날짜를 확인해 주세요.');
   const previous=previousDate(date);
   const [people,office,prior,attendance]=await Promise.all([roster(date),store.get(ROOT+'/'+date+'/office'),store.get(ROOT+'/'+previous+'/office/workers'),store.get(attendancePath(date))]);
-  return {success:true,managementUids:await managementUids(),previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:visibleWorkers(office?.workers,attendance),updatedAt:office?.updatedAt||'',serverTime:now()};
+  return {success:true,managementUids:await managementUids(),previousDate:previous,previousPending:Object.values(prior||{}).filter(w=>w.task),dateKey:date,today:officeToday(now()),people,workers:visibleWorkers(office?.workers,attendance,people,date,now()),updatedAt:office?.updatedAt||'',serverTime:now()};
  }
  async function history({dateKey:date,workerKey:key,before=''}={}){
   if(!validOfficeDate(date)||!/^\w{24}$/.test(key||'')||typeof before!=='string'||before.length>120)return fail('조회 정보를 확인해 주세요.');
@@ -80,7 +91,7 @@ export function createOffice({store,loadStaffDirectory,now=()=>new Date().toISOS
    if(!person&&!['complete','cancel'].includes(p.action)&&!(p.action==='seat'&&p.seat===''))return reject('현재 근무표에 없는 근무자입니다.');
    const next={...(before||{}),...target,version:p.version+1,updatedAt:stamp,updatedBy:actor.name||actor.nickname||'근무자',updatedByUid:actor.uid};
    if(['seat','move'].includes(p.action)||(p.action==='start'&&p.seat!==undefined)){
-    const visible=visibleWorkers(office.workers,attendance);
+    const visible=visibleWorkers(office.workers,attendance,people,date,stamp);
     const occupied=p.seat?Object.entries(visible).find(([key,w])=>key!==p.workerKey&&w.seat===p.seat):null;
     if(p.action==='move'){
      if(!visible[p.workerKey]?.seat)return reject('자리가 변경되었습니다. 다시 선택해 주세요.');

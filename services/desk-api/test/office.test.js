@@ -157,3 +157,23 @@ test('a newly started task history begins at zero regardless of the previously s
  const f=fixture();await f.mutate({action:'start',text:'첫 업무',progress:67});await f.mutate({action:'start',text:'새 업무',version:1});
  const key=(await f.office.snapshot('2026-10-16')).people[0].key,h=await f.office.history({dateKey:'2026-10-16',workerKey:key});assert.equal(h.events.find(e=>e.after==='새 업무').progress,0);
 });
+
+test('scheduled end releases seats, preserves tasks and allows another worker to occupy them',async()=>{
+ const f=fixture();f.records['desk_portal/monthly_schedule/2026-10'].entries.a={date:'2026-10-16',worker:'안종성',start:'09:00',end:'18:00'};
+ await f.mutate({action:'start',text:'진행 업무',seat:'main-1'});
+ const key=(await f.office.snapshot('2026-10-16')).people[0].key;
+ f.tick('2026-10-16T09:00:00.000Z');
+ const s=await f.office.snapshot('2026-10-16');assert.equal(s.workers[key].seat,'');assert.equal(s.workers[key].task.text,'진행 업무');
+ assert.equal(f.records['desk_portal/daily_journal/2026-10-16'].office.workers[key].seat,'main-1');
+ assert.equal((await f.mutate({action:'seat',workerKey:s.people[1].key,seat:'main-1'},f.admin)).success,true);
+ f.tick('2026-10-16T09:01:00.000Z');await f.mutate({action:'seat',seat:'annex-2',version:1});
+ assert.equal((await f.office.snapshot('2026-10-16')).workers[key].seat,'annex-2');
+});
+test('overnight and split shifts remain seated until the final shift ends',async()=>{
+ const f=fixture(),entries=f.records['desk_portal/monthly_schedule/2026-10'].entries;
+ entries.a={date:'2026-10-16',worker:'안종성',start:'09:00',end:'12:00'};
+ entries.e={date:'2026-10-16',worker:'안종성',start:'20:00',end:'02:00'};
+ await f.mutate({action:'seat',seat:'main-1'});const key=(await f.office.snapshot('2026-10-16')).people[0].key;
+ f.tick('2026-10-16T16:59:00.000Z');assert.equal((await f.office.snapshot('2026-10-16')).workers[key].seat,'main-1');
+ f.tick('2026-10-16T17:00:00.000Z');assert.equal((await f.office.snapshot('2026-10-16')).workers[key].seat,'');
+});

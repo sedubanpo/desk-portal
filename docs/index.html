@@ -17757,7 +17757,7 @@
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
-<link rel="stylesheet" href="./mini-office.css?v=20261021-office-interactions">
+<link rel="stylesheet" href="./mini-office.css?v=20261024-notice-read">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -31016,7 +31016,9 @@
             text: item.title || item.note || "공동 업무",
             note: item.note || "",
             updatedAt: item.updatedAt || item.createdAt || "",
-            author: item.createdByName || item.updatedByName || "기록자 미상"
+            author: item.createdByName || item.updatedByName || "기록자 미상",
+            ackWorkers: getDeskSharedAckWorkers_(item),
+            saving: item.syncState === "saving"
           };
         });
     }
@@ -31248,7 +31250,7 @@
         return !isSameDeskWorkerName_(item, name);
       });
       if (next.length === getDeskSharedAckWorkers_(task).length) next.push(name);
-      upsertDeskDailyTask_(Object.assign({}, task, { ackWorkers: next }));
+      return upsertDeskDailyTask_(Object.assign({}, task, { ackWorkers: next }));
     }
 
     function getNextDeskSharedSortOrder_(dateKey) {
@@ -33727,19 +33729,21 @@
             mode: item.completed ? "record" : "report",
             worker: item.worker || "-",
             content: content || "-",
-            stamp: item.updatedAt || item.createdAt || "",
+            stamp: item.createdAt || item.updatedAt || "",
             style: getDeskLiveFeedCardStyle_(item.worker || "-", meta.important ? "important" : "task")
           });
         });
       });
       var combined = memoItems.concat(taskItems);
       combined = combined.sort(function(a, b) {
-        var aDate = String((a.displayStamp || a.stamp || "")).slice(0, 10);
-        var bDate = String((b.displayStamp || b.stamp || "")).slice(0, 10);
-        if (aDate !== bDate) return bDate.localeCompare(aDate);
         var aStamp = String(a.displayStamp || a.stamp || "");
         var bStamp = String(b.displayStamp || b.stamp || "");
-        if (aStamp !== bStamp) return aStamp.localeCompare(bStamp);
+        var aTime = Date.parse(aStamp) || 0, bTime = Date.parse(bStamp) || 0;
+        // Group by Seoul calendar day, then order by actual input instant.
+        var aDate = aTime ? getDeskDateKey_(new Date(aTime)) : "";
+        var bDate = bTime ? getDeskDateKey_(new Date(bTime)) : "";
+        if (aDate !== bDate) return bDate.localeCompare(aDate);
+        if (aTime !== bTime) return aTime - bTime;
         var aOrder = normalizeDeskDailyMemoClientOrder_(a.clientOrder, aStamp);
         var bOrder = normalizeDeskDailyMemoClientOrder_(b.clientOrder, bStamp);
         if (aOrder !== bOrder) return aOrder - bOrder;
@@ -46129,7 +46133,7 @@ window.SeduHubAdapter={
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
 <script src="./journal-layout.js?v=20261017-tabs"></script>
-<script src="./mini-office.js?v=20261023-office-drag-stability"></script>
+<script src="./mini-office.js?v=20261024-notice-read"></script>
 <script>
 DeskMiniOffice.init({
  base: DESK_CLOUD_API_BASE,
@@ -46137,6 +46141,8 @@ DeskMiniOffice.init({
  token: function() { return state.firebaseUser.getIdToken(); },
  badge: function(name) { return getDeskWorkerBadgeHtml_(name); },
  notices: function() { return getDeskGlobalNoticeItems_(); },
+ acknowledge: function(id) { return toggleDeskSharedTaskAck_(id, getDeskIdentityName_()); },
+ readerName: function() { return getDeskIdentityName_(); },
  save: function(payload) { return runServer('saveDeskOffice',payload); },
  history: function(payload) { return runServer('getDeskOfficeHistory',payload); },
  refreshJournal: function(date) { if(state.cloudApiReady) ensureDeskDailyJournalLoaded_(date,true).catch(function(){}); }
