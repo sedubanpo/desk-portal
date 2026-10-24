@@ -74,3 +74,13 @@ test('save endpoint cannot bypass administrator deletion by setting deleted in t
  assert.equal((await f.save({id:'hidden-create',worker:staff.name,title:'숨겨진 업무',deleted:true})).success,false);
  assert.deepEqual(f.dump(),before);
 });
+
+test('notice readers can record and undo only their own acknowledgment without changing content',async()=>{
+ const f=fixture();let r=await f.save({id:'notice-read',worker:'공동업무',title:'전체 공지'},admin);
+ assert.equal(r.success,true);
+ r=await f.save({...r.task,ackWorkers:[staff.name]});assert.equal(r.success,true);
+ r=await f.save({...r.task,ackWorkers:[staff.name,other.name]},other);assert.equal(r.success,true);
+ assert.equal((await f.save({...r.task,ackWorkers:[]})).success,false);
+ r=await f.save({...r.task,ackWorkers:[other.name]});assert.equal(r.success,true);
+ assert.deepEqual(r.task.ackWorkers,[other.name]);assert.equal(r.task.title,'전체 공지');assert.equal(r.task.createdByUid,admin.uid);
+});
