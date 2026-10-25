@@ -178,7 +178,7 @@ function showRoutineStatus(id,worker,error=''){
    if(!result?.success)throw Error(result?.message||'상태를 저장하지 못했습니다. 다시 시도해 주세요.');
    if(!routineContextMatches(key))return;
    if(!routineData)return;
-   if(result.day.version>=routineData.day.version)routineData.day=result.day;routineFetchedAt=Date.now();routineStatusMessage=`${task.title} · 상태를 ${routineStatus({status:next})}로 저장했습니다.`;
+   if(result.day.version>=routineData.day.version)routineData.day=result.day;routineFetchedAt=Date.now();routineStatusMessage=`${task.title} · ${routineStatus({status:next})} 상태로 저장했습니다.`;
    window.dispatchEvent(new CustomEvent('desk:routine-day-changed',{detail:{date,uid:bridge.context().identity.uid,day:result.day}}));
    routineStatusDialog.close();
   }catch(e){failure=e.message||'상태를 저장하지 못했습니다. 다시 시도해 주세요.';}
