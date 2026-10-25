@@ -216,3 +216,9 @@ body.desk-daily-journal-mode .mo-scene>.journal-worker-picker{grid-column:2/4;gr
 .mo-routine-state-options button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:1px solid #d1dcc2;border-radius:8px;background:#fff;color:#405736;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 .mo-routine-state-options button[aria-pressed=true]{background:#e7efd5;border-color:#859d61}.mo-routine-state-options button:disabled{opacity:.55;cursor:default}
 .mo-routine-state-feedback{font-size:12px;line-height:1.6;color:#945039;min-height:20px;overflow-wrap:anywhere}
+
+.mo-routine-bulk-status{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;padding:10px 12px;margin:12px 0;background:#f0f4e7;border-radius:8px;font-size:12px}
+.mo-routine-bulk-status>div{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.mo-routine-bulk-status label{display:flex;align-items:center;gap:6px;min-height:40px;cursor:pointer}.mo-routine-bulk-status strong{font-variant-numeric:tabular-nums}.mo-routine-bulk-status small{flex-basis:100%;font-size:11px;color:#526345}
+.mini-office .mo-routine-bulk-status button{min-height:40px;font-size:12px}.mini-office .mo-routine-bulk-status .mo-routine-bulk-done{background:#dceaa4;border-color:#c5d78e;color:#354f2a}
+.mo-routine-person li:has(.mo-routine-state-pick){display:flex;align-items:flex-start;gap:2px}.mo-routine-state-pick{display:flex;flex:none;align-items:center;justify-content:center;width:40px;min-height:40px;cursor:pointer}.mo-routine-state-pick input,.mo-routine-bulk-status input{width:16px;height:16px;accent-color:#66853c}.mo-routine-person li:has(.mo-routine-state-pick) .mo-routine-task{flex:1;min-width:0}.mo-routine-person li:has(.mo-routine-state-pick input:checked){background:#eef4df}
+@media(max-width:500px){.mo-routine-bulk-status{padding:8px}.mo-routine-bulk-status>div{width:100%}.mo-routine-bulk-status>div:nth-child(2)>button{flex:1}}

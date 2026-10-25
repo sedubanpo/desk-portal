@@ -71,7 +71,7 @@ function paint(){if(!data||drag)return;
  if(!list.length)root.querySelector('.mo-unseated').innerHTML='<span>오늘의 근무자가 없습니다.</span><small>월별 근무표에 등록된 활성 근무자가 표시됩니다.</small>';
 }
 let routinePanel,routineKey='',routineData=null,routineFetchedAt=0,routineLoading=false,routineEpoch=0,routineError='';
-const routineSelected=new Set();
+const routineSelected=new Set(),routineStatusSelected=new Set();
 let routineAssigning=false,routineResponsible='',routineAssistant='',routineMessage='';
 let routineStatusDialog,routineStatusSaving=false,routineStatusMessage='';
 const routineContextMatches=key=>{const c=bridge.context();return c.active&&c.identity&&c.identity.uid+':'+c.dateKey===key;};
@@ -88,22 +88,27 @@ function routineView(){
  for(const uid of assignedIds)if(!workers.some(s=>s.uid===uid))workers.push({uid,name:'이전 근무자',offSchedule:true});
  return {date,items,staff,due,working,targets,workers,pending:items.filter(t=>!t.responsible||!t.assistant)};
 }
+const isOwnRoutine=t=>!!t&&['waiting','doing','done'].includes(t.status)&&!!bridge.context().identity?.uid&&[t.responsible,t.assistant].includes(bridge.context().identity.uid);
 const routineStatus=t=>({registered:'배정 전',waiting:'대기',doing:'진행 중',done:'완료'})[t.status]||'확인 필요';
 function renderRoutines(){
  if(!routinePanel)return;
  const {date,items,staff,due,working,targets,workers,pending}=routineView();
+ const ownTasks=items.filter(isOwnRoutine);
+ for(const id of routineStatusSelected)if(!ownTasks.some(t=>t.id===id))routineStatusSelected.delete(id);
  for(const id of routineSelected)if(!pending.some(t=>t.id===id))routineSelected.delete(id);
  const name=id=>staff.find(p=>p.uid===id)?.name||(id?'이전 근무자':'미배정');
  const count=status=>items.filter(t=>t.status===status).length;
  const counts={registered:count('registered'),waiting:count('waiting'),doing:count('doing'),done:count('done')};
  const scrolls=[...routinePanel.querySelectorAll('[data-routine-scroll]')].map(n=>[n.dataset.routineScroll,n.scrollTop]);
  const focused=document.activeElement?.closest('[data-routine-select]')?.dataset.routineSelect;
+ const statusFocus=document.activeElement?.closest('[data-routine-status-select]');const statusFocusId=statusFocus?.dataset.routineStatusSelect,statusFocusWorker=statusFocus?.dataset.routineWorker;
  const options=selected=>'<option value="">변경 안 함</option>'+targets.map(s=>`<option value="${escape(s.uid)}" ${selected===s.uid?'selected':''}>${escape(s.name)}${s.uid===bridge.context().identity?.uid?' · 나':''}</option>`).join('');
  const disabled=routineAssigning||routineLoading||routineStatusSaving;
  routinePanel.innerHTML=`<header><div><h4>${date===dateNow()?'오늘':'선택일'} 루틴 현황</h4><p>${escape(date||'')} · ${items.length}개 업무 · 책임 미배정 ${items.filter(t=>!t.responsible).length}개</p></div><button data-routine-open>업무 분배 열기 <span aria-hidden="true">↗</span></button></header>${routineError?`<p class="mo-routine-error" role="alert">${escape(routineError)} <button data-routine-refresh>다시 불러오기</button></p>`:!routineData?'<p class="mo-routine-empty" role="status">오늘 루틴을 불러오는 중입니다…</p>':`<div class="mo-routine-overview"><div class="mo-routine-counts">${[...(counts.registered?[['registered','배정 전']]:[]),['waiting','대기'],['doing','진행 중'],['done','완료']].map(([key,label])=>`<span><i class="mo-state-dot ${key}" aria-hidden="true"></i>${label} <b>${counts[key]}</b></span>`).join('')}<button data-routine-refresh aria-label="루틴 현황 새로고침" ${disabled?'disabled':''}>${routineLoading?'갱신 중…':'새로고침'}</button></div></div>
+ <section class="mo-routine-bulk-status" aria-label="내 루틴 상태 일괄 변경"><div><label><input type="checkbox" data-routine-status-all ${ownTasks.length&&routineStatusSelected.size===ownTasks.length?'checked':''} ${disabled||!ownTasks.length?'disabled':''}>내 업무 전체 선택</label><strong>${routineStatusSelected.size}개 선택</strong><button type="button" data-routine-status-clear ${disabled||!routineStatusSelected.size?'disabled':''}>상태 선택 해제</button></div><div><button type="button" data-routine-bulk-status="doing" ${disabled||!routineStatusSelected.size?'disabled':''}>진행 중으로 변경</button><button type="button" class="mo-routine-bulk-done" data-routine-bulk-status="done" ${disabled||!routineStatusSelected.size?'disabled':''}>완료로 변경</button></div><small>${routineStatusSaving?'상태를 저장하고 있습니다…':'본인이 책임·보조로 맡은 업무만 선택할 수 있습니다.'}</small></section>
  <div class="mo-routine-workers" aria-label="근무자별 루틴 진행 현황">${workers.map(s=>{
   const tasks=items.filter(t=>t.responsible===s.uid||t.assistant===s.uid),done=tasks.filter(t=>t.status==='done').length,percent=tasks.length?Math.round(done/tasks.length*100):0;
-  return `<section class="mo-routine-person" aria-label="${escape(s.name)} 루틴 현황"><header><h5>${escape(s.name)}${s.uid===bridge.context().identity?.uid?'<small>나</small>':''}</h5><span>${tasks.length?`완료율 <b>${percent}%</b>`:'배정 없음'}</span></header><div class="mo-person-progress"><progress max="${tasks.length||1}" value="${done}" aria-label="${escape(s.name)} 루틴 완료율 ${percent}%"></progress><small>${done}/${tasks.length} 완료</small></div><p>책임 ${tasks.filter(t=>t.responsible===s.uid).length} · 보조 ${tasks.filter(t=>t.assistant===s.uid).length} · 진행 ${tasks.filter(t=>t.status==='doing').length}${!working.has(s.name)?' · 근무표 외 기존 배정':''}</p><ul data-routine-scroll="${escape(s.uid)}">${tasks.map(t=>`<li><button type="button" class="mo-routine-task" data-routine-status="${escape(t.id)}" data-routine-worker="${escape(s.uid)}" aria-label="${escape(t.title)} 상태 변경" aria-haspopup="dialog" ${disabled?'disabled':''}><span class="mo-role-label">${t.responsible===s.uid?'책임':'보조'}</span><span>${escape(t.title)}</span><small class="mo-routine-status ${escape(t.status)}">${routineStatus(t)} <span aria-hidden="true">›</span></small></button></li>`).join('')||'<li class="mo-routine-person-empty">아직 맡은 루틴이 없습니다.</li>'}</ul></section>`;
+  return `<section class="mo-routine-person" aria-label="${escape(s.name)} 루틴 현황"><header><h5>${escape(s.name)}${s.uid===bridge.context().identity?.uid?'<small>나</small>':''}</h5><span>${tasks.length?`완료율 <b>${percent}%</b>`:'배정 없음'}</span></header><div class="mo-person-progress"><progress max="${tasks.length||1}" value="${done}" aria-label="${escape(s.name)} 루틴 완료율 ${percent}%"></progress><small>${done}/${tasks.length} 완료</small></div><p>책임 ${tasks.filter(t=>t.responsible===s.uid).length} · 보조 ${tasks.filter(t=>t.assistant===s.uid).length} · 진행 ${tasks.filter(t=>t.status==='doing').length}${!working.has(s.name)?' · 근무표 외 기존 배정':''}</p><ul data-routine-scroll="${escape(s.uid)}">${tasks.map(t=>`<li>${isOwnRoutine(t)?`<label class="mo-routine-state-pick"><input type="checkbox" data-routine-status-select="${escape(t.id)}" data-routine-worker="${escape(s.uid)}" aria-label="${escape(t.title)} 상태 선택" ${routineStatusSelected.has(t.id)?'checked':''} ${disabled?'disabled':''}></label>`:''}<button type="button" class="mo-routine-task" data-routine-status="${escape(t.id)}" data-routine-worker="${escape(s.uid)}" aria-label="${escape(t.title)} 상태 변경" aria-haspopup="dialog" ${disabled?'disabled':''}><span class="mo-role-label">${t.responsible===s.uid?'책임':'보조'}</span><span>${escape(t.title)}</span><small class="mo-routine-status ${escape(t.status)}">${routineStatus(t)} <span aria-hidden="true">›</span></small></button></li>`).join('')||'<li class="mo-routine-person-empty">아직 맡은 루틴이 없습니다.</li>'}</ul></section>`;
  }).join('')||'<p class="mo-routine-empty">이 날짜에 등록된 근무자가 없습니다. 월별 근무표를 확인해 주세요.</p>'}</div>
  <p class="mo-routine-progress-note">업무를 눌러 상태 변경 · 책임·보조 담당자 또는 관리자만 변경할 수 있습니다.<br>완료율 = 완료 업무 ÷ 맡은 업무 · 책임·보조 중복 제외</p><p class="mo-routine-status-message" role="status">${escape(routineStatusMessage)}</p>
  <section class="mo-routine-allocation" aria-label="미배정 루틴 바로 지정"><div class="mo-routine-pool-heading"><h5>담당 배정 필요 <span>${pending.length}</span></h5><label><input type="checkbox" data-routine-all ${pending.length&&routineSelected.size===pending.length?'checked':''} ${disabled||!pending.length?'disabled':''}>전체 선택</label></div><div class="mo-routine-assign-grid"><div class="mo-routine-list" data-routine-scroll="pool" tabindex="0" aria-label="미배정 루틴 업무">${pending.map(t=>`<article><label class="mo-routine-pick"><input type="checkbox" data-routine-select="${escape(t.id)}" aria-label="${escape(t.title)} 배정 선택" ${routineSelected.has(t.id)?'checked':''} ${disabled?'disabled':''}><span class="mo-routine-grade grade-${escape(t.grade)}">${escape(t.grade)}</span><span><strong>${escape(t.title)}</strong><small>책임 ${escape(name(t.responsible))} · 보조 ${escape(name(t.assistant))}</small></span></label><span class="mo-routine-status ${escape(t.status)}">${routineStatus(t)}</span></article>`).join('')||'<p class="mo-routine-empty">모든 업무의 책임·보조가 배정됐습니다.</p>'}</div>
@@ -111,13 +116,15 @@ function renderRoutines(){
  <footer>보관함 사용 중 ${(routineData.templates||[]).filter(t=>t.active&&!t.deletedAt).length}개 · 당일 반복 ${due.length}개 <span>오늘 제외 업무는 집계하지 않습니다.</span></footer>`}`;
  for(const [key,top]of scrolls){const el=[...routinePanel.querySelectorAll('[data-routine-scroll]')].find(n=>n.dataset.routineScroll===key);if(el)el.scrollTop=top;}
  const all=routinePanel.querySelector('[data-routine-all]');if(all)all.indeterminate=routineSelected.size>0&&routineSelected.size<pending.length;
+ const statusAll=routinePanel.querySelector('[data-routine-status-all]');if(statusAll)statusAll.indeterminate=routineStatusSelected.size>0&&routineStatusSelected.size<ownTasks.length;
+ if(statusFocusId)[...routinePanel.querySelectorAll('[data-routine-status-select]')].find(n=>n.dataset.routineStatusSelect===statusFocusId&&n.dataset.routineWorker===statusFocusWorker)?.focus({preventScroll:true});
  if(focused)[...routinePanel.querySelectorAll('[data-routine-select]')].find(n=>n.dataset.routineSelect===focused)?.focus({preventScroll:true});
 }
 async function syncRoutines(force=false){
  if(!routinePanel||!bridge.routines)return;
  const c=bridge.context(),key=c.active&&c.identity?c.identity.uid+':'+c.dateKey:'';
- if(key!==routineKey){routineKey=key;routineEpoch++;routineData=null;routineError='';routineFetchedAt=0;routineLoading=false;routineSelected.clear();routineResponsible='';routineAssistant='';routineMessage='';routineStatusMessage='';if(routineStatusDialog?.open)routineStatusDialog.close();renderRoutines();}
- if(!key||document.hidden||routineLoading||routineAssigning||routineStatusSaving||(!force&&(routineStatusDialog?.open||routineSelected.size||Date.now()-routineFetchedAt<60000)))return;
+ if(key!==routineKey){routineKey=key;routineEpoch++;routineData=null;routineError='';routineFetchedAt=0;routineLoading=false;routineSelected.clear();routineStatusSelected.clear();routineResponsible='';routineAssistant='';routineMessage='';routineStatusMessage='';if(routineStatusDialog?.open)routineStatusDialog.close();renderRoutines();}
+ if(!key||document.hidden||routineLoading||routineAssigning||routineStatusSaving||(!force&&(routineStatusDialog?.open||routineSelected.size||routineStatusSelected.size||Date.now()-routineFetchedAt<60000)))return;
  const epoch=++routineEpoch;routineLoading=true;renderRoutines();
  try{const result=await bridge.routines(c.dateKey);if(epoch!==routineEpoch)return;if(!result?.success)throw Error(result?.message||'루틴을 불러오지 못했습니다.');routineData=result;routineError='';}
  catch(e){if(epoch!==routineEpoch)return;routineError=e.message||'루틴을 불러오지 못했습니다.';}
@@ -193,8 +200,45 @@ function showRoutineStatus(id,worker,error=''){
  });
  if(!routineStatusDialog.open)routineStatusDialog.showModal();
 }
+async function changeRoutineSelectionStatus(next){
+ if(!['doing','done'].includes(next)||routineStatusSaving||routineAssigning||routineLoading||!routineStatusSelected.size)return;
+ const key=routineKey,date=bridge.context().dateKey,ids=[...routineStatusSelected];
+ if(!routineContextMatches(key))return;
+ routineStatusSaving=true;routineStatusMessage='선택한 업무의 최신 배정을 확인하고 있습니다…';renderRoutines();
+ let saved=0,unchanged=0,unavailable=0,failure='';
+ try{
+  const fresh=await bridge.routines(date);
+  if(!routineContextMatches(key))return;
+  if(!fresh?.success)throw Error(fresh?.message||'최신 배정을 확인하지 못했습니다.');
+  routineData=fresh;
+  for(const id of ids){
+   if(!routineContextMatches(key))return;
+   const task=routineData.day?.items?.[id];
+   // Bulk status never uses the manager override: each task must still belong to this worker.
+   if(!isOwnRoutine(task)){unavailable++;routineStatusSelected.delete(id);continue;}
+   if(task.status===next){unchanged++;routineStatusSelected.delete(id);continue;}
+   const result=await bridge.updateRoutineStatus({date,id,version:routineData.day.version,action:'status',status:next});
+   if(!result?.success)throw Error(result?.message||'저장하지 못했습니다. 다시 시도해 주세요.');
+   if(!routineContextMatches(key))return;
+   saved++;routineData.day=result.day;routineStatusSelected.delete(id);
+   routineStatusMessage=`${saved}개 저장 완료 · 나머지 업무를 처리하고 있습니다…`;
+   window.dispatchEvent(new CustomEvent('desk:routine-day-changed',{detail:{date,uid:bridge.context().identity.uid,day:result.day}}));
+   renderRoutines();
+  }
+ }catch(e){failure=e.message||'저장하지 못했습니다. 다시 시도해 주세요.';}
+ finally{
+  routineStatusSaving=false;
+  if(routineContextMatches(key)){
+   routineStatusMessage=`${saved}개 업무를 ${routineStatus({status:next})} 상태로 저장했습니다.${unchanged?` 이미 같은 상태인 ${unchanged}개는 유지했습니다.`:''}${unavailable?` 담당 변경·제외된 ${unavailable}개는 건너뛰었습니다.`:''}${failure?` ${failure} 남은 선택 업무를 확인한 뒤 다시 시도해 주세요.`:''}`;
+   routineFetchedAt=Date.now();renderRoutines();
+   if(failure)await syncRoutines(true);
+  }
+ }
+}
 function routineChange(e){
- const target=e.target;if(routineAssigning)return;
+ const target=e.target;if(routineAssigning||routineLoading||routineStatusSaving)return;
+ if(target.hasAttribute('data-routine-status-select')){const id=target.dataset.routineStatusSelect;if(isOwnRoutine(routineData?.day?.items?.[id])){target.checked?routineStatusSelected.add(id):routineStatusSelected.delete(id);}routineStatusMessage='';renderRoutines();return;}
+ if(target.hasAttribute('data-routine-status-all')){routineStatusSelected.clear();if(target.checked)routineView().items.filter(isOwnRoutine).forEach(t=>routineStatusSelected.add(t.id));routineStatusMessage='';renderRoutines();return;}
  if(target.hasAttribute('data-routine-select')){target.checked?routineSelected.add(target.dataset.routineSelect):routineSelected.delete(target.dataset.routineSelect);routineMessage='';renderRoutines();}
  else if(target.hasAttribute('data-routine-all')){routineSelected.clear();if(target.checked)routineView().pending.forEach(t=>routineSelected.add(t.id));routineMessage='';renderRoutines();}
  else if(target.dataset.routineRole){routineMessage='';const message=routinePanel.querySelector('.mo-routine-message');if(message)message.textContent='';if(target.dataset.routineRole==='responsible')routineResponsible=target.value;else routineAssistant=target.value;}
@@ -355,7 +399,7 @@ function init(b){bridge=b;root=document.getElementById('deskMiniOffice');if(!roo
  const picker=document.querySelector('.journal-worker-picker');if(picker){root.querySelector('.mo-scene').append(picker);const old=document.querySelector('.journal-context-grid');if(old)old.style.display='none';}
  routineStatusDialog=document.createElement('dialog');routineStatusDialog.className='mo-dialog mo-routine-state-dialog';document.body.append(routineStatusDialog);
  dialog=document.createElement('dialog');dialog.className='mo-dialog';dialog.setAttribute('aria-label','자리와 진행 업무');document.body.append(dialog);
- const handleClick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.routineStatus){showRoutineStatus(b.dataset.routineStatus,b.dataset.routineWorker);return;}if(b.hasAttribute('data-routine-clear')){if(!routineAssigning){routineSelected.clear();routineMessage='';renderRoutines();}return;}if(b.dataset.routineMe){if(!routineAssigning){routineMessage='';if(b.dataset.routineMe==='responsible')routineResponsible=bridge.context().identity.uid;else routineAssistant=bridge.context().identity.uid;renderRoutines();}return;}if(b.hasAttribute('data-routine-open')){bridge.openRoutines?.();return;}if(b.hasAttribute('data-routine-refresh')){routineFetchedAt=0;syncRoutines(true);return;}if(b.dataset.noticeAck){b.disabled=true;Promise.resolve(bridge.acknowledge?.(b.dataset.noticeAck)).then(r=>{if(!r?.success)alert('읽음 기록을 저장하지 못했습니다. 다시 시도해 주세요.');}).catch(()=>alert('읽음 기록을 저장하지 못했습니다. 다시 시도해 주세요.')).finally(()=>{noticeSignature='';paintBoard();});return;}if(b.dataset.progress){const p=listPerson(b.dataset.progress);if(p)showProgress(p);return;}if(b.dataset.dragWorker){if(Date.now()<suppressClickUntil)return;openPerson(b.dataset.dragWorker);return;}if(b.hasAttribute('data-collapse')){collapsed=!collapsed;const picker=root.querySelector('.journal-worker-picker');if(picker){if(collapsed)root.querySelector('.mo-content').before(picker);else root.querySelector('.mo-scene').append(picker);}root.querySelector('.mo-content').hidden=collapsed;b.textContent=collapsed?'펼치기':'접기';b.setAttribute('aria-expanded',String(!collapsed));return;}if(b.dataset.roomTab){currentRoom=b.dataset.roomTab;root.querySelectorAll('[data-room-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));paint();return;}if(b.dataset.previous){const p=data.previousPending.find(p=>p.key===b.dataset.previous);if(p)show(p,null,null,data.previousDate);return;}if(b.dataset.history){const p=listPerson(b.dataset.history);if(p)showHistory(p);return;}if(b.hasAttribute('data-my')){const p=people().find(p=>p.uid===bridge.context().identity.uid)||people().find(allowed);if(p)openPerson(p.key);return;}if(b.hasAttribute('data-worker'))openPerson(b.dataset.worker,b.dataset.seat);};
+ const handleClick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.routineBulkStatus){changeRoutineSelectionStatus(b.dataset.routineBulkStatus);return;}if(b.hasAttribute('data-routine-status-clear')){if(!routineStatusSaving){routineStatusSelected.clear();routineStatusMessage='';renderRoutines();}return;}if(b.dataset.routineStatus){showRoutineStatus(b.dataset.routineStatus,b.dataset.routineWorker);return;}if(b.hasAttribute('data-routine-clear')){if(!routineAssigning){routineSelected.clear();routineMessage='';renderRoutines();}return;}if(b.dataset.routineMe){if(!routineAssigning){routineMessage='';if(b.dataset.routineMe==='responsible')routineResponsible=bridge.context().identity.uid;else routineAssistant=bridge.context().identity.uid;renderRoutines();}return;}if(b.hasAttribute('data-routine-open')){bridge.openRoutines?.();return;}if(b.hasAttribute('data-routine-refresh')){routineFetchedAt=0;syncRoutines(true);return;}if(b.dataset.noticeAck){b.disabled=true;Promise.resolve(bridge.acknowledge?.(b.dataset.noticeAck)).then(r=>{if(!r?.success)alert('읽음 기록을 저장하지 못했습니다. 다시 시도해 주세요.');}).catch(()=>alert('읽음 기록을 저장하지 못했습니다. 다시 시도해 주세요.')).finally(()=>{noticeSignature='';paintBoard();});return;}if(b.dataset.progress){const p=listPerson(b.dataset.progress);if(p)showProgress(p);return;}if(b.dataset.dragWorker){if(Date.now()<suppressClickUntil)return;openPerson(b.dataset.dragWorker);return;}if(b.hasAttribute('data-collapse')){collapsed=!collapsed;const picker=root.querySelector('.journal-worker-picker');if(picker){if(collapsed)root.querySelector('.mo-content').before(picker);else root.querySelector('.mo-scene').append(picker);}root.querySelector('.mo-content').hidden=collapsed;b.textContent=collapsed?'펼치기':'접기';b.setAttribute('aria-expanded',String(!collapsed));return;}if(b.dataset.roomTab){currentRoom=b.dataset.roomTab;root.querySelectorAll('[data-room-tab]').forEach(t=>t.setAttribute('aria-pressed',String(t===b)));paint();return;}if(b.dataset.previous){const p=data.previousPending.find(p=>p.key===b.dataset.previous);if(p)show(p,null,null,data.previousDate);return;}if(b.dataset.history){const p=listPerson(b.dataset.history);if(p)showHistory(p);return;}if(b.hasAttribute('data-my')){const p=people().find(p=>p.uid===bridge.context().identity.uid)||people().find(allowed);if(p)openPerson(p.key);return;}if(b.hasAttribute('data-worker'))openPerson(b.dataset.worker,b.dataset.seat);};
  routinePanel.addEventListener('change',routineChange);routinePanel.addEventListener('submit',e=>{if(e.target.matches('.mo-routine-assign-form')){e.preventDefault();assignRoutineSelection();}});
  root.onclick=handleClick;toolbar.onclick=e=>{e.stopPropagation();handleClick(e);};installDrag();
  document.addEventListener('visibilitychange',sync);window.addEventListener('offline',sync);window.addEventListener('online',sync);timer=setInterval(()=>{sync();const minute=Math.floor((Date.now()+serverOffset)/60000);if(minute!==lastShiftMinute){lastShiftMinute=minute;root.querySelectorAll('[data-shift-worker]').forEach(el=>{const p=listPerson(el.dataset.shiftWorker);if(p)el.innerHTML=shiftMarkup(p);});}},1000);sync();
