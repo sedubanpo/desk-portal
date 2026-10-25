@@ -17757,7 +17757,7 @@
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
 <link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
-<link rel="stylesheet" href="./mini-office.css?v=20261024-notice-read">
+<link rel="stylesheet" href="./mini-office.css?v=20261025-office-dashboard">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
 <link rel="stylesheet" href="./training.css?v=20260926-five">
@@ -46133,7 +46133,7 @@ window.SeduHubAdapter={
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
 <script src="./journal-layout.js?v=20261017-tabs"></script>
-<script src="./mini-office.js?v=20261024-notice-read"></script>
+<script src="./mini-office.js?v=20261025-office-dashboard"></script>
 <script>
 DeskMiniOffice.init({
  base: DESK_CLOUD_API_BASE,
@@ -46143,6 +46143,8 @@ DeskMiniOffice.init({
  notices: function() { return getDeskGlobalNoticeItems_(); },
  acknowledge: function(id) { return toggleDeskSharedTaskAck_(id, getDeskIdentityName_()); },
  readerName: function() { return getDeskIdentityName_(); },
+ routines: function(date) { return runDeskCloudApi_('getDeskRoutineBoard', {date:date}); },
+ openRoutines: function() { state.desk.activeTab='routines';renderDeskLayout_(); },
  save: function(payload) { return runServer('saveDeskOffice',payload); },
  history: function(payload) { return runServer('getDeskOfficeHistory',payload); },
  refreshJournal: function(date) { if(state.cloudApiReady) ensureDeskDailyJournalLoaded_(date,true).catch(function(){}); }
