@@ -730,9 +730,20 @@
       );
       if (t && canEdit(t)) grade(t, col.dataset.grade);
     };
+    const onRoutineDayChanged = ({ detail }) => {
+      if (disposed || busy || !data || detail?.uid !== uid || detail.date !== date || !detail.day || detail.day.version < data.day.version) return;
+      epoch++;
+      loading = false;
+      box.inert = false;
+      data.day = detail.day;
+      render();
+      tell("루틴 진행 상태를 반영했습니다.");
+    };
+    window.addEventListener("desk:routine-day-changed", onRoutineDayChanged);
     return {
       load,
       dispose() {
+        window.removeEventListener("desk:routine-day-changed", onRoutineDayChanged);
         disposed = true;
         epoch++;
         dialog.close();
