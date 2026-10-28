@@ -1,0 +1,63 @@
+# 데스크 포털 비용 검토와 구현 — 2026-10-28
+
+## 범위와 상태
+
+첨부 문서 00(공통 지침), 02(데스크 포털)를 기준으로 검토했다. 문서의 검토 전용 제한은 사용자의 후속 요청인 “코드 수정까지 진행”으로 확대되었다. 이번 작업은 코드 수정과 로컬 서버/브라우저 검증까지 수행했다. 운영 배포, 데이터 수정, 스케줄·요금제·인스턴스 설정 변경은 수행하지 않았다.
+
+- 저장소: https://github.com/sedubanpo/desk-portal.git
+- 작업 브랜치: `codex/desk-cost-optimization`, 시작 커밋 `9bb7ceb416ca9cf20ee5747ff7bf447f2eec4025`. 새 checkout은 깨끗한 상태였음. 다른 작업 폴더의 변경은 수정하지 않음.
+- 이전 임시 작업 폴더가 없어 원격 최신 코드를 별도 checkout했다.
+- 운영 관측 확인: Cloud Run 프로젝트 `fir-lms-prod`, 서비스 `desk-portal-api`, 리전 `asia-northeast3`, 운영 리비전 `desk-portal-api-00106-z8k`. Functions codebase가 아닌 Cloud Run 서비스임.
+- 운영 이미지: `sha256:2928c444950aea3e9ac2ed750f6bd2fec4af85179ed499aa67289fb1a36c1854`.
+- 운영 소스 확인: 리비전 annotation의 GCS 소스 ZIP을 내려받아 기준 커밋의 서버 `src/` 49개 파일과 비교, 모두 일치. 공개 mini-office.js도 기준 커밋과 일치.
+- 운영 설정 확인: timeout 30초, concurrency 8. 이번 변경으로 조정하지 않음.
+
+## 호출 경로와 기존 최적화
+
+| 화면/동작 | API/서비스와 원본 | 반복/비용 특성 | 근거 구분 |
+|---|---|---|---|
+| 일일 업무일지 작은 사무실 | `/v1/office/stream` → `officeStream` → `createOffice.snapshot/watch` → RTDB `desk_portal/daily_journal/{오늘·전날}/office`, `monthly_schedule/{월}`, `staff_attendance/{월}/{일}` | SSE 연결 22초, heartbeat 8초는 DB 조회 없음. snapshot마다 RTDB get 4회(근무표·오늘 사무실·전날 근무자·출퇴근), 별도 직원 디렉터리 조회는 5초 캐시와 진행 중 요청 공유 | 운영 배포 소스 일치 + 로컬 소스 확인 |
+| 루틴 현황 | bridge.routines → getDeskRoutineBoard → RTDB templates/day/monthly_schedule와 staff directory | 활성 화면에서 60초 주기, 선택/저장 중 조회 억제. 숨김 중 조회 억제 존재, 이번에 offline 조건도 추가 | 로컬 소스 확인 |
+| 신규문의 목록 | `/v1/inquiries` → `createInquiryService.list/sync` → Firestore `deskInquiryMirror/main/items`, meta, contactSummaries, queueVisibility + Notion | 목록마다 items 전체 및 요약·숨김 목록 조회. 45초 sync TTL·lease, 10분 전체/나머지 last_edited_time 증분(1분 중첩), 전체 동기화 시 삭제 확인. 따라서 items 목록 크기 N에 따라 최소 N개 문서 읽기, 전체 sync 추가 읽기 가능 | 운영 배포 소스 일치 + 로컬 소스 확인 |
+| 상담 상세/변경 | sourcePage/cache/summarize/change → Notion, mirror, operations/locks | 재시도 requestId, 버전 충돌 검사, 변경 비교 Notion PATCH 생략, observedAt 순서 보호 존재. cache/summary는 같은 내용에도 관측 watermark 갱신 쓰기 가능 | 로컬 소스 확인 |
+
+사무실 stream은 상담 미러를 읽지 않는다. 문서의 276회·182,320읽기를 stream에 귀속할 근거가 없다. RTDB 전송/조회 절감과 Firestore 문서 읽기 절감을 혼동하지 않는다. Firestore/Cloud Run 월 비용은 프로젝트 공유 수치이며 데스크 단독 비용이 아니다.
+
+프런트는 이미 visibilitychange, offline/online, 화면 활성·날짜·계정 변경에서 AbortController와 generation으로 SSE를 정리한다. 구독은 서버 응답 close 때 해제한다. 이번 작업은 이 경계를 유지한다.
+
+## 수정 및 개선 후보
+
+| 개선안 | 구분/파일 | 효과 | 최신성·정확성 | 검증/롤백 |
+|---|---|---|---|---|
+| 같은 날짜의 활성 SSE가 서버 인스턴스 내 구독/조회 공유 | 적용: `src/desk/office-stream.js` | 연결 수에 비례하던 4개 RTDB 구독을 날짜당 4개로 축소, snapshot 중복 감소 | 50ms 알림 병합. 조회 도중 변경은 후속 조회. 신규 접속은 새 조회, 마지막 접속 종료 시 캐시 없이 모두 폐기 | 동일/다른 날짜, 오류, 중간 변경, 재접속, slow client 테스트. 파일 되돌리기 |
+| 초기 4개 구독 알림과 명시적 초기 요청 병합 | 적용: 같은 파일 | 초기/연속 알림 중복 조회 감소 | 중간 상태 전체를 이력으로 보내는 API가 아닌 최신 snapshot API. 원본 업무·감사 이력 저장은 그대로 유지 | 이전/이후 동일 fixture 비교 |
+| 오프라인 루틴 자동 조회 억제 | 적용: `docs/mini-office.js` | 실패가 예상되는 background 요청 방지 | 복귀 시 기존 60초 기준과 수동 새로고침 유지. 저장 API는 변경 없음 | 전체 브라우저의 offline/reconnect 회귀 |
+| 상담 목록 날짜 쿼리/페이지네이션 | 보류: 앱 단독이지만 화면 계약·인덱스 추가 검토 | 화면이 실제 일부 범위만 요구할 때만 읽기 절감 가능 | 전체 분석, 이전 날짜 이동, 삭제·복원, 재연락 대상 누락 없이 설계해야 함. 전 페이지 순회는 절감 아님 | 화면별 범위/요청량부터 계측 |
+| 상담 동일 내용 쓰기 제거 | 보류: `inquiries/service.js` | watermark만 변하는 쓰기 축소 가능 | observedAt은 오래된 동기화가 새 저장을 덮지 못하게 하는 경계. 무조건 생략하지 않음 | 같은 editedAt·동시 저장·삭제 복원 재현 후 분리 설계 |
+| 탭 간 브라우저 리더 선출 / 연결시간 연장 | 보류 | 중복 요청 또는 재인증 요청 절감 가능 | 계정/관/권한/날짜 분리, 리더 종료·복귀·인증 철회 및 CPU 활성시간 검토 필요 | 이번에 인증 주기/timeout 변경 안 함 |
+
+공유 범위는 `officeStream(office)` 인스턴스와 날짜다. 현재 API는 동일 데스크 서비스의 모든 승인된 직원에게 같은 snapshot을 제공하며 사용자별 필터가 없다. 라우터의 requireStaff는 모든 연결에서 그대로 실행한다. 22초마다 재연결하여 기존 재인증을 유지한다. 사용자별 반환 범위가 추가되면 채널 키에 관/권한 범위를 추가하거나 공유를 해제해야 한다. 인스턴스 간 공유는 없고 콜드스타트 시 초기화된다. 응답 결과를 장기 캐시하지 않으며 다른 날짜 응답을 섞지 않는다. 느린 클라이언트는 연결을 종료하여 무한 버퍼 누적을 막고 기존 재연결 로직으로 최신 상태를 받는다.
+
+## 측정과 검증
+
+2026-10-28 로컬 비교, 동일 날짜 클라이언트 2개 + 각 4개 초기 구독 알림:
+
+| 측정 | 이전 | 이후 |
+|---|---:|---:|
+| snapshot 호출 | 4 | 1 |
+| RTDB 구독 등록 | 8 | 4 |
+
+이 결과는 초기 알림이 모인 테스트 조건이다. 운영의 네트워크 타이밍과 인스턴스 분산에 따라 달라진다. 비용/월 절감률 또는 Firestore 읽기 절감률로 환산하지 않는다. SSE가 유지되는 시간과 요청 횟수는 유지하므로 Cloud Run CPU 청구가 같은 비율로 줄어든다고 주장하지 않는다.
+
+- 서버 전체 테스트 428개 통과(추가 stream 테스트 6개 포함).
+- stream: 두 사용자 공유, 다른 날짜 분리, 신규 접속 fresh read, 조회 중 변경의 후속 반영, 마지막 종료 취소, 늦은 응답 폐기, 조회/구독 오류 복구, 느린 사용자 격리.
+- 실제 Chrome 로컬 fixture: 두 인증 사용자 업무 시작/완료 및 일지 기록, 권한, 자리 이동/교환, 읽음 등록/취소, 모바일, 재접속, 화면 종료 구독 해제 통과. document.hidden과 visibilitychange로 숨김/복귀를 재현하여 구독 0개/4개 전환도 확인.
+- 테스트는 메모리 저장소와 합성 사용자 데이터 사용. 운영 업무·수납·배정·완료·감사 이력에 쓰기 없음.
+
+## 배포 후 확인할 사항과 공동 작업 경계
+
+이번 코드는 데스크 전용이며 다른 앱 공유 함수나 권한 엔진 수정이 필요 없다. 기존 응답/이벤트 스키마는 그대로라 구버전 프런트와 호환된다. 배포할 경우 mini-office.js 자산 버전을 갱신하고 서버 source 배포를 별도로 진행해야 한다. 롤백은 해당 코드 커밋을 되돌리고 서버 traffic을 기존 `00106-z8k`로 복귀한다. 데이터 마이그레이션은 없다.
+
+실제 운영 비용 절감액은 미확인이다. 배포 전후 유사 트래픽의 최소 24시간에 대해 서비스/리비전별 요청 수·연결 시간·인스턴스/CPU 시간·RTDB 전송량을 기존 지표로 비교해야 한다. 상담은 list/sync/detail 호출 빈도와 목록 규모를 구분하고 Query Insights 기간을 맞춘다. 청구 집계 지연·크레딧을 별도로 본다. 개인정보/토큰 로그, 운영 전체 스캔, 신규 유료 관측은 필요하지 않다.
+
+현재 사용자 결정이 필요한 데이터 삭제/스케줄 중단/공통 엔진 변경은 없다. 50ms는 코드가 추가하는 병합 지연이며 네트워크/DB 응답 시간을 포함한 운영 SLA를 보장하는 수치는 아니다.

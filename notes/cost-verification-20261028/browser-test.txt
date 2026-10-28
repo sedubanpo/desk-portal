@@ -1,0 +1,1 @@
+PASS two authenticated clients: duplicate snapshot focus retention, three consecutive seat moves/swaps, realtime start, admin completion, atomic journal, own-only controls, mobile, reconnect, unsubscribe

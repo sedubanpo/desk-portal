@@ -124,7 +124,7 @@ async function syncRoutines(force=false){
  if(!routinePanel||!bridge.routines)return;
  const c=bridge.context(),key=c.active&&c.identity?c.identity.uid+':'+c.dateKey:'';
  if(key!==routineKey){routineKey=key;routineEpoch++;routineData=null;routineError='';routineFetchedAt=0;routineLoading=false;routineSelected.clear();routineStatusSelected.clear();routineResponsible='';routineAssistant='';routineMessage='';routineStatusMessage='';if(routineStatusDialog?.open)routineStatusDialog.close();renderRoutines();}
- if(!key||document.hidden||routineLoading||routineAssigning||routineStatusSaving||(!force&&(routineStatusDialog?.open||routineSelected.size||routineStatusSelected.size||Date.now()-routineFetchedAt<60000)))return;
+ if(!key||document.hidden||!navigator.onLine||routineLoading||routineAssigning||routineStatusSaving||(!force&&(routineStatusDialog?.open||routineSelected.size||routineStatusSelected.size||Date.now()-routineFetchedAt<60000)))return;
  const epoch=++routineEpoch;routineLoading=true;renderRoutines();
  try{const result=await bridge.routines(c.dateKey);if(epoch!==routineEpoch)return;if(!result?.success)throw Error(result?.message||'루틴을 불러오지 못했습니다.');routineData=result;routineError='';}
  catch(e){if(epoch!==routineEpoch)return;routineError=e.message||'루틴을 불러오지 못했습니다.';}
