@@ -9,6 +9,11 @@ function tuitionNoticeAgeHtml_(value) {
   return '<span class="tg-age' + (days >= 7 ? ' late' : '') + '">D+' + days + '</span><small>최초 안내 ' + date + '</small>';
 }
 function tuitionSchoolGroup_(row) {
+  var category = [row.school, row.grade].map(function(value) { return String(value || '').replace(/\s/g, ''); });
+  var otherSenior = category.some(function(value) {
+    return /^(?:재수|삼수|사수|오수|육수|칠수|팔수|구수|장수|반수|N수|[2-9]\d*수)(?:생|$|[·/,(（])/i.test(value) || /교육청|검정고시/.test(value) || /^기타(?:학생|$|[·/,(（])/.test(value);
+  });
+  if (otherSenior) return { level: '고등', grade: 3 };
   var school = String(row.school || '').replace(/\s|\([^)]*\)/g, '');
   var level = /초등학교$|초$/.test(school) ? '초등' : /중학교$|중$/.test(school) ? '중등' : /고등학교$|고$/.test(school) ? '고등' : '';
   var grade = Number((String(row.grade || '').match(/\d+/) || [0])[0]);
@@ -54,7 +59,7 @@ function tuitionGroupStatus_(row) {
       return String(a.studentName).localeCompare(String(b.studentName),'ko');
     });
     var target = detailDialog;
-    target.innerHTML = '<header class="tg-detail-head"><div><h3 id="tgDetailTitle">'+level+' '+(selection.grade?selection.grade+'학년':'전체')+' · '+kinds[selection.kind]+'</h3><strong>'+selected.length+'명</strong></div><button type="button" data-detail-close aria-label="학생 명단 닫기">닫기</button></header>'+
+    target.innerHTML = '<header class="tg-detail-head"><div><h3 id="tgDetailTitle">'+level+' '+(selection.grade?selection.grade+'학년'+(level==='고등'&&selection.grade===3?' · 기타 포함':''):'전체')+' · '+kinds[selection.kind]+'</h3><strong>'+selected.length+'명</strong></div><button type="button" data-detail-close aria-label="학생 명단 닫기">닫기</button></header>'+
       '<p class="tg-hint">최초 안내일이 오래된 순 · 학생 이름을 누르면 정산 상세가 열립니다.</p>'+
       (selected.length ? '<div class="tg-student-list">'+selected.map(function(row,i){
         var s=tuitionGroupStatus_(row),out=Math.max(0,Number(row.outstandingAmount)||0);
@@ -72,11 +77,11 @@ function tuitionGroupStatus_(row) {
     dialog.innerHTML='<header class="tg-head"><div><h2 id="tgTitle">그룹별 수납 현황</h2><p>'+esc(formatTuitionMonthLabel_(month))+' · 학년별 안내와 수납 진행을 확인하세요.</p></div><button type="button" data-close aria-label="그룹별 수납 현황 닫기">닫기</button></header>'+
       '<div class="tg-tabs" role="tablist" aria-label="학교급">'+['초등','중등','고등'].map(function(v){return '<button type="button" role="tab" aria-selected="'+(v===level)+'" tabindex="'+(v===level?0:-1)+'" data-level="'+v+'" aria-controls="tgPanel">'+v+'</button>';}).join('')+'</div>'+
       '<section id="tgPanel" role="tabpanel" aria-label="'+level+' 수납 현황"><div class="tg-overview"><div><strong>'+level+' <b>'+total+'</b>명</strong><span>안내 '+informed+'명 · 납부 완료 '+paid+'명</span></div><div><span>학생 기준 수납 완료율</span><strong>'+(total?Math.round(paid/total*100):0)+'<small>%</small></strong></div></div>'+
-      (level==='고등'?'<div class="tg-priority"><i data-lucide="alarm-clock" aria-hidden="true"></i><div><strong>고3 수납 우선 확인</strong><span>안내 여부와 남은 수납 대상을 함께 확인하세요.</span></div><button type="button" data-priority>고3 수납 확인 '+groupRows(3).filter(function(r){return matches(r,'due');}).length+'명 보기</button></div>':'')+
+      (level==='고등'?'<div class="tg-priority"><i data-lucide="alarm-clock" aria-hidden="true"></i><div><strong>고3 수납 우선 확인 · 기타 포함</strong><span>재수·삼수·사수·N수·교육청·검정고시·기타 학생을 함께 확인하세요.</span></div><button type="button" data-priority>고3 수납 확인 '+groupRows(3).filter(function(r){return matches(r,'due');}).length+'명 보기</button></div>':'')+
       '<div class="tg-chart-head"><h3>학년별 진행 현황</h3><span>막대 또는 범례를 눌러 명단 확인</span></div><div class="tg-grades">'+
       Array.from({length:level==='초등'?6:3},function(_,i){var grade=i+1,list=groupRows(grade),n=list.length;
         function bar(types) {return '<div class="tg-bar-row"><span>'+ (types[0]==='informed'?'안내':'수납')+'</span><div class="tg-bar">'+types.map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return count?'<button type="button" class="'+kind+'" style="flex:'+count+'" data-grade="'+grade+'" data-kind="'+kind+'" aria-label="'+grade+'학년 '+kinds[kind]+' '+count+'명">'+(count/n>=.15?count:'')+'</button>':'';}).join('')+(n?'':'<span class="tg-no-data">학생 없음</span>')+'</div></div>';}
-        return '<section class="tg-grade'+(level==='고등'&&grade===3?' priority':'')+'"><header><button type="button" data-grade="'+grade+'" data-kind="all">'+grade+'학년</button><strong>'+n+'명</strong></header>'+bar(['informed','waiting'])+bar(['paid','partial','unpaid'])+'<div class="tg-legend">'+['informed','waiting','paid','partial','unpaid'].map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return '<button type="button" data-grade="'+grade+'" data-kind="'+kind+'"'+(count?'':' disabled')+'><i class="'+kind+'"></i>'+kinds[kind]+' <b>'+count+'</b></button>';}).join('')+'</div></section>';
+        return '<section class="tg-grade'+(level==='고등'&&grade===3?' priority':'')+'"><header><button type="button" data-grade="'+grade+'" data-kind="all">'+grade+'학년'+(level==='고등'&&grade===3?' · 기타 포함':'')+'</button><strong>'+n+'명</strong></header>'+bar(['informed','waiting'])+bar(['paid','partial','unpaid'])+'<div class="tg-legend">'+['informed','waiting','paid','partial','unpaid'].map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return '<button type="button" data-grade="'+grade+'" data-kind="'+kind+'"'+(count?'':' disabled')+'><i class="'+kind+'"></i>'+kinds[kind]+' <b>'+count+'</b></button>';}).join('')+'</div></section>';
       }).join('')+'</div><p class="tg-basis">선택 월의 숨김 학생 제외 · 납부 완료는 이월금·납부완료 상태 또는 안내금액 전액 수납한 학생입니다. 일부 수납은 수납액이 있으나 전액 수납 전인 상태입니다. 안내는 안내 기록 또는 등록된 안내 상태 기준입니다.'+(unclassified?' 학교·학년 미분류 '+unclassified+'명은 학년 그래프에서 제외됩니다.':'')+'</p></section>';
     dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
     var tabs=Array.from(dialog.querySelectorAll('[data-level]'));

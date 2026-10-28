@@ -1060,7 +1060,14 @@ test('group report classifies school suffixes and splits payments without double
   ['tuitionSchoolGroup_', 'tuitionGroupStatus_', 'tuitionNoticeAgeHtml_'].forEach(name => vm.runInContext(extractFunction(source, name), context));
   assert.equal(context.tuitionSchoolGroup_({school:'중경고',grade:'3학년'}).level, '고등');
   assert.equal(context.tuitionSchoolGroup_({school:'신반포중학교',grade:'2'}).level, '중등');
-  assert.equal(context.tuitionSchoolGroup_({school:'재수',grade:'1'}).level, '');
+  for (const value of ['재수','재수생','삼수','사수','N수','5수','교육청','서울교육청','검정고시','기타','기타 학생']) {
+    for (const row of [{school:value,grade:'1'},{school:'중경고',grade:value}]) {
+      const group=context.tuitionSchoolGroup_(row);assert.equal(group.level,'고등',value);assert.equal(group.grade,3,value);
+    }
+  }
+  for (const [school,grade,level,expected] of [['중경고','1','고등',1],['중경고','2','고등',2],['반포초','6','초등',6],['신반포중','3','중등',3],['','','',0],['미입력','', '',0]]) {
+    const group=context.tuitionSchoolGroup_({school,grade});assert.equal(group.level,level);assert.equal(group.grade,expected);
+  }
   assert.equal(context.tuitionGroupStatus_({guideAmount:100, collectedAmount:40, unpaidStatus:'안내완료'}).payment, 'partial');
   assert.equal(context.tuitionGroupStatus_({guideAmount:100, collectedAmount:100}).payment, 'paid');
   assert.equal(context.tuitionGroupStatus_({guideAmount:0, collectedAmount:0}).payment, 'unpaid');
