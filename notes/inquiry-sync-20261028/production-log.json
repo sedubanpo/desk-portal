@@ -1,0 +1,20 @@
+[
+  {
+    "jsonPayload": {
+      "durationMs": 14670,
+      "event": "inquiry_sync",
+      "full": true,
+      "pageCount": 662,
+      "status": "completed",
+      "summaryCount": 3
+    },
+    "timestamp": "2026-10-28T07:25:18.276576Z"
+  },
+  {
+    "httpRequest": {
+      "latency": "14.746875367s",
+      "status": 200
+    },
+    "timestamp": "2026-10-28T07:25:03.550792Z"
+  }
+]
