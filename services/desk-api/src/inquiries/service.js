@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { ApiError } from '../http.js';
+import { mapSyncWork, SYNC_BUDGET_MS, syncTimeout } from './sync-work.js';
 import { cleanId, sameId, normalize, validatePatch, notionProperties, richText, RESULTS, METHODS, textValue, pageVersion } from './model.js';
 
-export function createInquiryService({ notion, firestore, sourceId, historySourceId, now = () => new Date() }) {
+export function createInquiryService({ notion, firestore, sourceId, historySourceId, now = () => new Date(), syncBudgetMs = SYNC_BUDGET_MS, log = event => console.log(JSON.stringify(event)) }) {
  const equivalent=(k,a,b)=>JSON.stringify(k==='subjects'?[...(a||[])].sort():a)===JSON.stringify(k==='subjects'?[...(b||[])].sort():b);
  const root = firestore.collection('deskInquiryMirror');
  const items = root.doc('main').collection('items');
@@ -12,27 +13,28 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
  const visibility = meta.collection('queueVisibility');
  const methodOf=p=>textValue(p.properties['연락 방법']) || ({'통화 완료':'전화','부재':'전화','문자 보냄':'문자','카톡 보냄':'카톡'}[textValue(p.properties['연락 결과'])] || '');
  const timeOf=p=>textValue(p.properties['기록 시각 원본'])||textValue(p.properties['연락 시각']);
- async function summarize(id,entries,observedAt){
+ async function summarize(id,entries,observedAt,context){
   const valid=entries.filter(p=>!p.in_trash&&!p.archived&&textValue(p.properties['기록 상태'])!=='취소').sort((a,b)=>timeOf(b).localeCompare(timeOf(a)));
   const counts=Object.fromEntries(METHODS.map(m=>[m,valid.filter(p=>methodOf(p)===m).length]));
   const value={contactCounts:counts,lastActor:valid[0]?textValue(valid[0].properties['기록자']):'',historyLastContact:valid[0]?timeOf(valid[0]):'',observedAt};
-  await firestore.runTransaction(async tx=>{const ref=summaries.doc(cleanId(id)),old=(await tx.get(ref)).data();if(!old || old.observedAt<=observedAt)tx.set(ref,value);});return value;
+  await firestore.runTransaction(async tx=>{await context?.guard(tx);const ref=summaries.doc(cleanId(id)),old=(await tx.get(ref)).data();if(!old || old.observedAt<=observedAt)tx.set(ref,value);});return value;
  }
  const locks = root.doc('main').collection('locks');
  const configured = () => { if (!sourceId) throw new ApiError(503,'notion_not_configured','신규문의 노션 DB 연결 설정이 필요합니다.'); };
  const schema = () => notion(`/data_sources/${sourceId}`);
- async function queryAll(id, body = {}) {
+ async function queryAll(id, body = {}, context) {
   const rows = []; let cursor;
-  do { const readStartedAt=now().getTime();const result = await notion(`/data_sources/${id}/query`, 'POST', { ...body, page_size:100, ...(cursor ? {start_cursor:cursor} : {}) }); rows.push(...result.results.map(p=>({...p,_mirrorReadStartedAt:readStartedAt}))); cursor = result.has_more ? result.next_cursor : null; } while (cursor);
+  do { context?.check(); const readStartedAt=now().getTime();const result = await notion(`/data_sources/${id}/query`, 'POST', { ...body, page_size:100, ...(cursor ? {start_cursor:cursor} : {}) }, context); rows.push(...result.results.map(p=>({...p,_mirrorReadStartedAt:readStartedAt}))); cursor = result.has_more ? result.next_cursor : null; } while (cursor);
   return rows;
  }
- async function sourcePage(id) {
+ async function sourcePage(id, context) {
+  context?.check();
   const readStartedAt=now().getTime();
-  const page = await notion(`/pages/${cleanId(id)}`);page._mirrorReadStartedAt=readStartedAt;
+  const page = await notion(`/pages/${cleanId(id)}`, 'GET', undefined, context);page._mirrorReadStartedAt=readStartedAt;
   if (!sameId(page.parent?.data_source_id,sourceId)) throw new ApiError(403,'wrong_source','신규문의 DB의 자료만 관리할 수 있습니다.');
   return page;
  }
- async function cache(page) { const row={...normalize(page),observedAt:page._mirrorReadStartedAt || now().getTime()}; await firestore.runTransaction(async tx=>{const ref=items.doc(row.id),old=(await tx.get(ref)).data();if(!old?.editedAt || old.editedAt<row.editedAt || (old.editedAt===row.editedAt && (old.observedAt||0)<=row.observedAt))tx.set(ref,row);}); return row; }
+ async function cache(page,context) { const row={...normalize(page),observedAt:page._mirrorReadStartedAt || now().getTime()}; await firestore.runTransaction(async tx=>{await context?.guard(tx);const ref=items.doc(row.id),old=(await tx.get(ref)).data();if(!old?.editedAt || old.editedAt<row.editedAt || (old.editedAt===row.editedAt && (old.observedAt||0)<=row.observedAt))tx.set(ref,row);}); return row; }
  async function sync(force = false) {
   configured();
   const owner = randomUUID(), start = now().toISOString();
@@ -41,30 +43,59 @@ export function createInquiryService({ notion, firestore, sourceId, historySourc
    if (old.syncLeaseUntil > now().getTime() || (!force && old.projectionVersion===2 && old.syncedAt && now().getTime()-Date.parse(old.syncedAt)<45000)) return null;
    tx.set(meta,{syncOwner:owner,syncLeaseUntil:now().getTime()+300000},{merge:true});return old;
   });
-  if (!state) return;
+  if (!state) return {status:'skipped',reason:'lease_or_fresh'};
+  const started = performance.now(), controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(syncTimeout()), syncBudgetMs);
+  const check = () => { if(controller.signal.aborted || performance.now()-started>=syncBudgetMs) throw syncTimeout(); };
+  const context = {signal:controller.signal,check,async guard(tx){
+   check(); const held=(await tx.get(meta)).data();
+   if(held?.syncOwner!==owner || held.syncLeaseUntil<=now().getTime())throw new ApiError(503,'inquiry_sync_lease_lost','문의 동기화 실행 권한이 만료되었습니다.');
+  }};
+  let phase='query', pageCount=0, summaryCount=0;
+  const full=force || state.projectionVersion!==2 || !state.fullSyncedAt || now().getTime()-Date.parse(state.fullSyncedAt)>600000;
   try {
-   const full=force || state.projectionVersion!==2 || !state.fullSyncedAt || now().getTime()-Date.parse(state.fullSyncedAt)>600000;
    const query=full ? {} : {filter:{timestamp:'last_edited_time',last_edited_time:{on_or_after:new Date(Date.parse(state.syncedAt)-60000).toISOString()}}};
-   const pages=await queryAll(sourceId,query);
-   for(const page of pages) await cache(page);
+   const pages=await queryAll(sourceId,query,context);pageCount=pages.length;
+   phase='mirror';await mapSyncWork(pages,page=>cache(page,context),check);
    if(full){
-    const seen=new Set(pages.map(p=>cleanId(p.id)));
+    phase='reconcile';const seen=new Set(pages.map(p=>cleanId(p.id)));
     const previous=await items.get();
+    // Notion calls stay serialized/rate-limited by the client.
     for(const doc of previous.docs) if(!seen.has(doc.id)) {
-     try {await cache(await sourcePage(doc.id));}
-     catch(e){ if(e.code==='notion_access_required' || e.code==='wrong_source') await doc.ref.set({unavailable:true},{merge:true}); else throw e; }
+     check();const observedAt=now().getTime();
+     try {await cache(await sourcePage(doc.id,context),context);}
+     catch(e){
+      if(e.code!=='notion_access_required' && e.code!=='wrong_source')throw e;
+      await firestore.runTransaction(async tx=>{
+       await context.guard(tx);const old=(await tx.get(doc.ref)).data();
+       if((old?.observedAt||0)<=observedAt)tx.set(doc.ref,{unavailable:true,observedAt},{merge:true});
+      });
+     }
     }
    }
    if(historySourceId){
-    const observedAt=now().getTime(), logs=await queryAll(historySourceId), grouped=new Map();
+    phase='history_query';const observedAt=now().getTime(), logs=await queryAll(historySourceId,{},context), grouped=new Map();
     for(const entry of logs) for(const rel of entry.properties['문의']?.relation||[]){const key=cleanId(rel.id);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(entry);}
     const previous=await summaries.get();for(const doc of previous.docs)if(!grouped.has(doc.id))grouped.set(doc.id,[]);
-    for(const [id,entries] of grouped)await summarize(id,entries,observedAt);
+    phase='summaries';summaryCount=grouped.size;
+    await mapSyncWork([...grouped],([id,entries])=>summarize(id,entries,observedAt,context),check);
    }
-   await meta.set({projectionVersion:2,syncedAt:start,...(full?{fullSyncedAt:start}:{}),syncError:''},{merge:true});
-  }catch(e){await meta.set({syncError:e.message},{merge:true});throw e;}
-  finally{await firestore.runTransaction(async tx=>{const d=(await tx.get(meta)).data();if(d?.syncOwner===owner)tx.set(meta,{syncLeaseUntil:0},{merge:true});});}
+   phase='commit';await firestore.runTransaction(async tx=>{
+    await context.guard(tx);
+    tx.set(meta,{projectionVersion:2,syncedAt:start,...(full?{fullSyncedAt:start}:{}),syncError:''},{merge:true});
+   });
+   log({event:'inquiry_sync',status:'completed',full,pageCount,summaryCount,durationMs:Math.round(performance.now()-started)});
+   return {status:'completed',full};
+  }catch(e){
+   await firestore.runTransaction(async tx=>{const held=(await tx.get(meta)).data();if(held?.syncOwner===owner)tx.set(meta,{syncError:e.message},{merge:true});});
+   log({event:'inquiry_sync',status:'failed',phase,code:e.code||'unknown',full,pageCount,summaryCount,durationMs:Math.round(performance.now()-started)});
+   throw e;
+  }finally{
+   clearTimeout(timer);
+   await firestore.runTransaction(async tx=>{const d=(await tx.get(meta)).data();if(d?.syncOwner===owner)tx.set(meta,{syncLeaseUntil:0},{merge:true});});
+  }
  }
+
  async function list(force=false){
   let warning='';try{await sync(force);}catch(e){warning=e.message;}
   const [data,status,summaryDocs,visibilityDocs]=await Promise.all([items.get(),meta.get(),summaries.get(),visibility.get()]);

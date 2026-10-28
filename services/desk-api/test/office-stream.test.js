@@ -41,3 +41,8 @@ test('snapshot and listener errors release channels; reconnect recovers',async t
 test('slow clients disconnect without stopping healthy peers',async t=>{
  const f=fixture();t.after(f.close);const slow=f.connect(),healthy=f.connect();slow.write=()=>false;await wait();assert.ok(slow.closed);assert.ok(!healthy.closed);assert.equal(healthy.events.length,1);assert.equal(f.stats().stops,0);
 });
+test('stream lifetime remains 22 seconds independently of Cloud Run timeout',async t=>{
+ t.mock.timers.enable({apis:['setTimeout','setInterval']});const f=fixture();t.after(f.close);const a=f.connect();
+ t.mock.timers.tick(21999);assert.equal(a.closed,false);t.mock.timers.tick(1);assert.equal(a.closed,true);assert.equal(f.stats().stops,1);
+ const b=f.connect();assert.equal(b.closed,false);assert.equal(f.stats().watches,2);b.end();assert.equal(f.stats().stops,2);
+});

@@ -8,7 +8,7 @@ import { createInquiryRouter } from '../src/inquiries/router.js';
 import { errorHandler } from '../src/http.js';
 const source='11111111111111111111111111111111', history='22222222222222222222222222222222', id='33333333333333333333333333333333';
 const actor={uid:'worker',name:'테스트 실무자'};
-function fixture(){
+function fixture(options={}){
  const data=new Map();
  const ref=path=>({path,id:path.split('/').at(-1),collection:name=>collection(path+'/'+name),async get(){return snapshot(path);},async set(value,options){data.set(path,options?.merge?{...data.get(path),...value}:structuredClone(value));}});
  const snapshot=path=>({id:path.split('/').at(-1),ref:ref(path),exists:data.has(path),data:()=>structuredClone(data.get(path))});
@@ -26,7 +26,7 @@ function fixture(){
   if(method==='PATCH'){for(const [k,v] of Object.entries(body.properties||{}))p.properties[k]={...v,type:Object.keys(v)[0]};if('in_trash' in body)p.in_trash=body.in_trash;p.last_edited_time=new Date(Date.parse(p.last_edited_time)+1000).toISOString();}
   return structuredClone(p);
  }
- const service=createInquiryService({notion,firestore,sourceId:source,historySourceId:history,now:()=>new Date('2026-09-27T00:00:00.000Z')});
+ const service=createInquiryService({notion,firestore,sourceId:source,historySourceId:history,now:()=>new Date('2026-09-27T00:00:00.000Z'),log:()=>{},...options});
  return {service,notion,firestore,pages,calls,data};
 }
 const command=(row,action,extra={})=>({action,version:row.version,requestId:crypto.randomUUID(),...extra});
@@ -88,4 +88,62 @@ test('inquiry school and visibility routes require staff and use the trusted act
  assert.equal(result.status,200);assert.equal(result.body.queueVisibilityActorUid,'worker');assert.notEqual(result.body.queueVisibilityActor,'위조 실행자');
  f.data.set('sharedIconAssets/legacy',{category:'school',lookupKey:'school:옛학교',downloadURL:'https://example.org/legacy.svg'});
  assert.equal((await f.service.schoolIcons()).icons[0].imageUrl,'https://example.org/legacy.svg');
+});
+
+test('sync failure retains watermarks, releases lease, and next attempt repairs projection',async()=>{
+ const f=fixture();await f.service.sync(true);const meta='deskInquiryMirror/main';const before=f.data.get(meta).syncedAt;
+ let fail=true;const service=createInquiryService({firestore:f.firestore,sourceId:source,historySourceId:history,log:()=>{},notion:async(...args)=>{if(fail&&args[0].includes(history))throw Error('synthetic outage');return f.notion(...args);}});
+ await assert.rejects(service.sync(true),/synthetic outage/);assert.equal(f.data.get(meta).syncedAt,before);assert.equal(f.data.get(meta).syncLeaseUntil,0);assert.match(f.data.get(meta).syncError,/outage/);
+ fail=false;await service.sync(true);assert.equal(f.data.get(meta).syncError,'');assert.notEqual(f.data.get(meta).syncedAt,before);
+});
+test('held lease skips without source reads; expired lease can recover',async()=>{
+ const f=fixture();const meta='deskInquiryMirror/main';f.data.set(meta,{syncOwner:'other',syncLeaseUntil:Date.parse('2026-09-28')});
+ assert.equal((await f.service.sync(true)).status,'skipped');assert.equal(f.calls.length,0);
+ f.data.set(meta,{syncOwner:'other',syncLeaseUntil:1});assert.equal((await f.service.sync(true)).status,'completed');assert.equal(f.data.get(meta).syncLeaseUntil,0);
+});
+test('lost lease cannot commit, clear error or release replacement owner lease',async()=>{
+ const f=fixture();const meta='deskInquiryMirror/main';const service=createInquiryService({firestore:f.firestore,sourceId:source,log:()=>{},notion:async(...args)=>{const result=await f.notion(...args);f.data.set(meta,{syncOwner:'replacement',syncLeaseUntil:Date.now()+300000,syncError:'replacement error'});return result;}});
+ await assert.rejects(service.sync(true),e=>e.code==='inquiry_sync_lease_lost');assert.equal(f.data.get(meta).syncError,'replacement error');assert.ok(f.data.get(meta).syncLeaseUntil>Date.now());assert.equal(f.data.has(meta+'/items/'+id),false);
+});
+test('incremental query keeps overlap and full cadence; force still performs full reconciliation',async()=>{
+ const f=fixture();const meta='deskInquiryMirror/main';f.data.set(meta,{projectionVersion:2,syncedAt:'2026-09-26T23:58:00.000Z',fullSyncedAt:'2026-09-26T23:55:00.000Z'});
+ assert.equal((await f.service.sync()).full,false);assert.equal(f.calls[0].body.filter.last_edited_time.on_or_after,'2026-09-26T23:57:00.000Z');
+ f.calls.length=0;assert.equal((await f.service.sync(true)).full,true);assert.equal(f.calls[0].body.filter,undefined);
+});
+test('older sync page and summary cannot overwrite concurrent newer observations',async()=>{
+ const f=fixture();const meta='deskInquiryMirror/main';const observedAt=Date.parse('2026-09-27')+10000;
+ f.data.set(meta+'/items/'+id,{...normalize(f.pages.get(id)),name:'newer',observedAt});
+ f.data.set(meta+'/contactSummaries/'+id,{contactCounts:{전화:9},observedAt});await f.service.sync(true);
+ assert.equal(f.data.get(meta+'/items/'+id).name,'newer');assert.equal(f.data.get(meta+'/contactSummaries/'+id).contactCounts.전화,9);
+});
+test('move reconciliation cannot hide newer concurrent page; returning page restores visibility',async()=>{
+ const f=fixture();await f.service.sync(true);const key='deskInquiryMirror/main/items/'+id;
+ f.pages.get(id).parent.data_source_id=history;
+ const service=createInquiryService({firestore:f.firestore,sourceId:source,log:()=>{},now:()=>new Date('2026-09-27'),notion:async(...args)=>{
+  if(args[0]==='/pages/'+id)f.data.set(key,{...f.data.get(key),observedAt:Date.parse('2026-09-28'),unavailable:false});return f.notion(...args);
+ }});
+ await service.sync(true);assert.equal(f.data.get(key).unavailable,false);
+ f.data.set(key,{...f.data.get(key),observedAt:1});await f.service.sync(true);assert.equal(f.data.get(key).unavailable,true);
+ f.pages.get(id).parent.data_source_id=source;await f.service.sync(true);assert.equal(Boolean(f.data.get(key).unavailable),false);
+});
+test('time budget failure never advances watermark and releases lease',async()=>{
+ const f=fixture({syncBudgetMs:0});await assert.rejects(f.service.sync(true),e=>e.code==='inquiry_sync_timeout');const meta=f.data.get('deskInquiryMirror/main');assert.equal(meta.syncedAt,undefined);assert.equal(meta.syncLeaseUntil,0);assert.ok(meta.syncError);
+});
+test('sync-job exposes failure and skip distinctly; key required before any sync',async()=>{
+ let calls=0,mode='fail';const app=express();app.use('/i',createInquiryRouter({verifyIdToken:async()=>({}),loadAccount:async()=>({}),syncKey:'fixture-key',service:{async sync(){calls++;if(mode==='fail')throw Object.assign(new Error('budget'),{ });return {status:'skipped',reason:'lease_or_fresh'};}}}));app.use(errorHandler);
+ assert.equal((await request(app).post('/i/sync-job')).status,401);assert.equal(calls,0);
+ assert.equal((await request(app).post('/i/sync-job').set('x-inquiry-sync-key','fixture-key')).status,500);
+ mode='skip';const result=await request(app).post('/i/sync-job').set('x-inquiry-sync-key','fixture-key');assert.equal(result.body.status,'skipped');assert.equal(result.status,200);
+});
+test('partial mirror failure drains writes before lease release and retry fills missing rows',async()=>{
+ const f=fixture();for(let n=4;n<24;n++){const key=String(n).padStart(32,'0');f.pages.set(key,{...structuredClone(f.pages.get(id)),id:key});}
+ const original=f.firestore.runTransaction;let active=0,failed=false,failOnce=true;
+ f.firestore.runTransaction=async fn=>{
+  let item=false;
+  try{return await original(async tx=>fn({get:async ref=>{if(ref.path.includes('/items/')){item=true;active++;await new Promise(r=>setTimeout(r,2));if(failOnce&&!failed){failed=true;throw Error('write failure');}}return tx.get(ref);},set:(ref,value,options)=>{if(value.syncLeaseUntil===0)assert.equal(active,0);return tx.set(ref,value,options);}}));}
+  finally{if(item)active--;}
+ };
+ await assert.rejects(f.service.sync(true),/write failure/);assert.equal(active,0);assert.equal(f.data.get('deskInquiryMirror/main').syncedAt,undefined);
+ assert.ok([...f.data.keys()].filter(k=>k.includes('/items/')).length>0);
+ failOnce=false;await f.service.sync(true);assert.equal([...f.data.keys()].filter(k=>k.includes('/items/')).length,21);
 });
