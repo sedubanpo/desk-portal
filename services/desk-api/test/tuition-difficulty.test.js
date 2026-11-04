@@ -38,7 +38,7 @@ test('January compares December tuition and published schedules, respects draft 
   const api=createTuitionHandlers({store});
   const data=await api.getTuitionDifficulty({monthName:'27-01s'});
   assert.equal(data.success,true, data.message);
-  assert.deepEqual(data.grades['학생'],{grade:'C'});
+  assert.deepEqual(data.grades['학생'],{grade:'C', amount:1000000, changePercent:0, score:20});
   assert.match(data.grades['신규'].reason,/전월 수강료/);
   assert.deepEqual(new Set(reads),new Set(['2026-12','2027-01']));
 });

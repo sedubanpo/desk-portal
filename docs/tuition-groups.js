@@ -19,6 +19,22 @@ function tuitionSchoolGroup_(row) {
   var grade = Number((String(row.grade || '').match(/\d+/) || [0])[0]);
   return { level: level, grade: grade >= 1 && grade <= (level === '초등' ? 6 : 3) ? grade : 0 };
 }
+function tuitionGradeLabel_(row) {
+  var g = tuitionSchoolGroup_(row);
+  return g.level && g.grade ? g.level[0] + g.grade : '미분류';
+}
+function tuitionGradeRevenue_(rows) {
+  var groups = new Map();
+  rows.forEach(function(row) {
+    var label = tuitionGradeLabel_(row);
+    if (!groups.has(label)) groups.set(label, {label:label, amount:0, students:[]});
+    var group = groups.get(label);
+    group.students.push(row);
+    group.amount += Math.max(0, Number(row.collectedAmount) || 0);
+  });
+  var order = ['초1','초2','초3','초4','초5','초6','중1','중2','중3','고1','고2','고3','미분류'];
+  return order.filter(function(label){return groups.has(label);}).map(function(label){return groups.get(label);});
+}
 function tuitionGroupStatus_(row) {
   var guide = Math.max(0, Number(row.guideAmount) || 0), paid = Math.max(0, Number(row.collectedAmount) || 0);
   var informed = !!row.firstGuideAt || ['안내완료','납부예정','일부완료','납부완료','연락두절','이월금'].indexOf(row.unpaidStatus) >= 0;
@@ -70,6 +86,41 @@ function tuitionGroupStatus_(row) {
     target.querySelector('[data-detail-close]').focus();
     target.querySelectorAll('[data-student]').forEach(function(btn){btn.onclick=function(){var name=selected[Number(btn.dataset.student)].studentName;detailDialog.close();dialog.close();openTuitionStudentHistoryModal_(name);};});
   }
+  function renderRevenue() {
+    var groups = tuitionGradeRevenue_(rows);
+    var total = groups.reduce(function(sum,g){return sum + g.amount;},0);
+    var palette = ['#397d68','#8f6133','#606aa0','#ae6479','#537991','#8b703e','#377d8a','#9271a0','#67854f','#aa6747','#457097','#9c5068','#717982'];
+    var angle = -Math.PI/2;
+    function point(a){return (100+90*Math.cos(a))+' '+(100+90*Math.sin(a));}
+    var slices = groups.map(function(g,i){
+      if (!g.amount) return '';
+      var fraction=g.amount/total, end=angle+2*Math.PI*fraction;
+      var attrs=' fill="'+palette[i]+'" data-revenue="'+i+'"';
+      var shape = fraction===1 ? '<circle cx="100" cy="100" r="90"'+attrs+'/>' :
+        '<path d="M100 100 L'+point(angle)+' A90 90 0 '+(fraction>.5?1:0)+' 1 '+point(end)+' Z"'+attrs+'/>';
+      angle=end;
+      return shape;
+    }).join('');
+    var panel = dialog.querySelector('.tg-revenue');
+    panel.innerHTML='<h3>학년별 수납액과 매출 비중</h3><p>선택 월 전체 순수납액 <strong>'+formatWon(total)+'</strong> 기준 · 조각이나 학년을 눌러 학생별 금액을 확인하세요.</p><div class="tg-revenue-layout">'+
+      (total?'<svg viewBox="0 0 200 200" role="img" aria-label="전체 매출 대비 학년별 순수납액">'+slices+'</svg>':'<p>집계된 수납액이 없습니다.</p>')+
+      '<div class="tg-revenue-key">'+groups.map(function(g,i){
+        var share=total?(100*g.amount/total).toFixed(1)+'%':'—';
+        return '<button type="button" data-revenue="'+i+'"><i style="background:'+palette[i]+'"></i><b>'+g.label+'</b><span>'+formatWon(g.amount)+'</span><small>'+share+'</small></button>';
+      }).join('')+'</div></div>';
+    panel.onclick=function(event){
+      var target=event.target.closest('[data-revenue]');
+      if(!target)return;
+      var g=groups[Number(target.dataset.revenue)];
+      detailOpener=panel.querySelector('button[data-revenue="'+target.dataset.revenue+'"]');
+      detailDialog.innerHTML='<header class="tg-detail-head"><div><h3 id="tgDetailTitle">'+g.label+' 수납 내역</h3><strong>'+formatWon(g.amount)+' · '+g.students.length+'명</strong></div><button type="button" data-close>닫기</button></header><div class="tg-student-list">'+
+        g.students.slice().sort(function(a,b){return b.collectedAmount-a.collectedAmount;}).map(function(row){
+          return '<article><strong>'+esc(row.studentName)+'</strong><span>'+esc(row.school||'')+'</span><b>'+formatWon(Math.max(0,Number(row.collectedAmount)||0))+'</b></article>';
+        }).join('')+'</div>';
+      detailDialog.querySelector('[data-close]').onclick=function(){detailDialog.close();};
+      detailDialog.showModal();
+    };
+  }
   function render() {
     var subset=groupRows(0),total=subset.length,paid=subset.filter(function(r){return matches(r,'paid');}).length;
     var informed=subset.filter(function(r){return matches(r,'informed');}).length;
@@ -82,7 +133,8 @@ function tuitionGroupStatus_(row) {
       Array.from({length:level==='초등'?6:3},function(_,i){var grade=i+1,list=groupRows(grade),n=list.length;
         function bar(types) {return '<div class="tg-bar-row"><span>'+ (types[0]==='informed'?'안내':'수납')+'</span><div class="tg-bar">'+types.map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return count?'<button type="button" class="'+kind+'" style="flex:'+count+'" data-grade="'+grade+'" data-kind="'+kind+'" aria-label="'+grade+'학년 '+kinds[kind]+' '+count+'명">'+(count/n>=.15?count:'')+'</button>':'';}).join('')+(n?'':'<span class="tg-no-data">학생 없음</span>')+'</div></div>';}
         return '<section class="tg-grade'+(level==='고등'&&grade===3?' priority':'')+'"><header><button type="button" data-grade="'+grade+'" data-kind="all">'+grade+'학년'+(level==='고등'&&grade===3?' · 기타 포함':'')+'</button><strong>'+n+'명</strong></header>'+bar(['informed','waiting'])+bar(['paid','partial','unpaid'])+'<div class="tg-legend">'+['informed','waiting','paid','partial','unpaid'].map(function(kind){var count=list.filter(function(r){return matches(r,kind);}).length;return '<button type="button" data-grade="'+grade+'" data-kind="'+kind+'"'+(count?'':' disabled')+'><i class="'+kind+'"></i>'+kinds[kind]+' <b>'+count+'</b></button>';}).join('')+'</div></section>';
-      }).join('')+'</div><p class="tg-basis">선택 월의 숨김 학생 제외 · 납부 완료는 이월금·납부완료 상태 또는 안내금액 전액 수납한 학생입니다. 일부 수납은 수납액이 있으나 전액 수납 전인 상태입니다. 안내는 안내 기록 또는 등록된 안내 상태 기준입니다.'+(unclassified?' 학교·학년 미분류 '+unclassified+'명은 학년 그래프에서 제외됩니다.':'')+'</p></section>';
+      }).join('')+'</div><p class="tg-basis">선택 월의 숨김 학생 제외 · 납부 완료는 이월금·납부완료 상태 또는 안내금액 전액 수납한 학생입니다. 일부 수납은 수납액이 있으나 전액 수납 전인 상태입니다. 안내는 안내 기록 또는 등록된 안내 상태 기준입니다.'+(unclassified?' 학교·학년 미분류 '+unclassified+'명은 학년 그래프에서 제외됩니다.':'')+'</p></section><section class="tg-revenue"></section>';
+    renderRevenue();
     dialog.querySelector('[data-close]').onclick=function(){dialog.close();};
     var tabs=Array.from(dialog.querySelectorAll('[data-level]'));
     tabs.forEach(function(btn,i){btn.onclick=function(){level=btn.dataset.level;selection={grade:level==='고등'?3:1,kind:'all'};render();dialog.querySelector('[data-level="'+level+'"]').focus();};btn.onkeydown=function(e){var k=e.key,n=k==='ArrowRight'?(i+1)%3:k==='ArrowLeft'?(i+2)%3:k==='Home'?0:k==='End'?2:-1;if(n>=0){e.preventDefault();tabs[n].click();}};});

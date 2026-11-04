@@ -34,7 +34,7 @@ export function gradeDifficulty(amount, previous, current) {
   }
   const change = 1 - common / total;
   const score = 40 * Math.min(amount / 2000000, 1) + 60 * change;
-  return {grade:score >= 75 ? 'S' : score >= 50 ? 'A' : score >= 25 ? 'B' : 'C'};
+  return {amount, changePercent: change * 100, score, grade:score >= 75 ? 'S' : score >= 50 ? 'A' : score >= 25 ? 'B' : 'C'};
 }
 
 export function createScheduleProfiles(store) {

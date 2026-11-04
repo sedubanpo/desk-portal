@@ -30,3 +30,19 @@ body #tuitionCalendarModal .tuition-cal-day-line{justify-content:flex-start}body
 .tg-detail-dialog .tg-student-list article{padding:10px 4px;gap:12px;grid-template-columns:1fr 1.3fr auto}
 .tg-detail-dialog .tg-student-money strong{font-size:14px}
 @media(max-width:650px){.tg-detail-dialog{padding:16px}.tg-detail-head>div{display:block}.tg-detail-head strong{font-size:12px}.tg-detail-dialog .tg-student-list article{grid-template-columns:1fr auto}.tg-detail-dialog .tg-student-state{grid-column:1;grid-row:2}.tg-detail-dialog .tg-student-money{grid-column:2;grid-row:1/3}}
+
+.tg-list-tabs { display:flex; flex-wrap:wrap; gap:4px; margin:12px 0; }
+.tg-list-tabs button,.tg-revenue-key button { background:#fff; color:#273e48; border:1px solid #d5e0dd; border-radius:6px; padding:6px 10px; cursor:pointer; }
+.tg-list-tabs button[aria-pressed=true] { background:#e5edc4; border-color:#849953; color:#324412; font-weight:700; }
+.tg-revenue { margin-top:24px; border-top:1px solid #d5e0dd; padding-top:12px; }
+.tg-revenue h3 { margin-bottom:4px; }
+.tg-revenue p { font-size:13px; color:#536471; }
+.tg-revenue-layout { display:grid; grid-template-columns:minmax(110px,190px) 1fr; align-items:center; gap:16px; }
+.tg-revenue svg { width:100%; }
+.tg-revenue svg [data-revenue] { cursor:pointer; stroke:white; stroke-width:1; }
+.tg-revenue svg [data-revenue]:hover { opacity:.78; }
+.tg-revenue-key { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:4px; }
+.tg-revenue-key button { display:flex; align-items:center; gap:6px; font-variant-numeric:tabular-nums; }
+.tg-revenue-key i { width:9px; height:9px; border-radius:50%; }
+.tg-revenue-key span { margin-left:auto; }
+@media(max-width:640px){.tg-revenue-layout{grid-template-columns:1fr}.tg-revenue svg{max-width:160px;justify-self:center}}

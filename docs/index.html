@@ -7586,7 +7586,7 @@
     .tuition-difficulty[data-level="A"] { background:#ffebd6; color:#85440d; }
     .tuition-difficulty[data-level="B"] { background:#dfebfa; color:#254e82; }
     .tuition-difficulty[data-level="C"] { background:#e1eee5; color:#315e42; }
-    .tuition-difficulty > span { display:none; position:absolute; left:100%; top:50%; transform:translateY(-50%); z-index:5; background:#243542; color:white; padding:5px 8px; border-radius:5px; font-size:11px; font-weight:500; white-space:nowrap; pointer-events:none; }
+    .tuition-difficulty > span { display:none; position:absolute; left:100%; top:50%; transform:translateY(-50%); z-index:5; background:#243542; color:white; padding:5px 8px; border-radius:5px; font-size:11px; font-weight:500; white-space:pre; text-align:left; line-height:1.5; pointer-events:none; }
     @media (hover:hover) { .tuition-difficulty:hover > span { display:block; } }
     .tuition-student-hide-btn,
     .tuition-hidden-toggle-btn {
@@ -17763,7 +17763,7 @@
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
-<link rel="stylesheet" href="./tuition-groups.css?v=20261010-2">
+<link rel="stylesheet" href="./tuition-groups.css?v=20261104-grade">
 <link rel="stylesheet" href="./mini-office.css?v=20261025-routine-bulk-status">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
@@ -40104,11 +40104,17 @@
 
     function renderTuitionStudentRows() {
       var rows = state.tuition.rows || [];
-      tuitionRowsPillEl.textContent = rows.length + " rows";
+      if (window.TuitionRedesign) rows = TuitionRedesign.gradeRows(rows);
+      tuitionRowsPillEl.textContent = rows.length + "명";
       if (!rows.length) {
         if (state.tuition.pendingSummary) {
           tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">월별 수강료 요약을 백그라운드에서 준비 중입니다.</td></tr>';
         } else {
+          if (window.TuitionRedesign && TuitionRedesign.hasGradeFilter()) {
+            tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">이 학년에 해당하는 학생이 없습니다.</td></tr>';
+            TuitionRedesign.afterRows();
+            return;
+          }
           tuitionStudentBodyEl.innerHTML = renderTuitionInactiveSearchRow_() || '<tr><td colspan="10">표시할 수강료 데이터가 없습니다.</td></tr>';
           bindTuitionInactiveSearchActions_();
           if (state.tuition.keyword) loadTuitionInactiveStudentMatches_(state.tuition.keyword);
@@ -40642,6 +40648,9 @@
       var item = (entry.grades || {})[formatStudentName(name)] || {};
       var grade = item.grade || "–";
       var label = item.grade ? "수강료 난이도 " + grade : "등급 미책정 · " + (item.reason || entry.reason || "자료 조회 중");
+      if (item.grade && Number.isFinite(item.score)) {
+        label += "\n전월 수강료 " + formatWon(item.amount) + "\n시간표 변동률 " + item.changePercent.toFixed(2) + "%\n최종 점수 " + item.score.toFixed(2) + "점";
+      }
       return '<span role="img" class="tuition-difficulty" data-level="' + grade + '" data-difficulty-name="' + escapeHtml(name) + '" aria-label="' + escapeHtml(label) + '">' + grade + '<span aria-hidden="true">' + escapeHtml(label) + '</span></span>';
     }
 
@@ -46164,8 +46173,8 @@ window.SeduHubAdapter={
   </script>
 <script src="./payment-link-parser.js?v=20261024-payment-headers"></script>
 <script src="./payment-link-upload.js?v=20261024-payment-selection"></script>
-<script src="./tuition-redesign.js?v=20260916-metrics"></script>
-<script src="./tuition-groups.js?v=20261028-senior"></script>
+<script src="./tuition-redesign.js?v=20261104-grade"></script>
+<script src="./tuition-groups.js?v=20261104-grade"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>
 <script src="./journal-layout.js?v=20261017-tabs"></script>
