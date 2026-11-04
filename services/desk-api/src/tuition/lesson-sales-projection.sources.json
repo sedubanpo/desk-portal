@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-11-04T12:23:36.040Z",
+  "sourceHashes": {
+    "functions/carriedFees.js": "2202113084d23cef9184fe9243eda54bae3b530ff0360824bfbbb69865a737d9",
+    "functions/contracts.js": "f0af59c04245d80fc5d95412d971eab356f184178b4842a4c073ce915219e092",
+    "functions/feeApplications.js": "5284c34a390f31a84daeef730c7db42c43856a4d617461ec2445d27b90a9edce",
+    "functions/feeHistory.js": "d3801f88df2dd612bc2cff879f97b69bd21879dfd0e4c3aa1cdec2ec30938cfb",
+    "functions/feeMerge.js": "4f257048b2ecb04e1858aeca3a67c23152fdad87e732c0ae653307b3651ee2d8",
+    "functions/feeScope.js": "baabc6bc02df1efe11e88bff0df65f7b5a25f3238a336eac90e936390f707e17",
+    "functions/feecalcBilling.generated.js": "a4133f850340f8977e6f1f544869c0c81534fe965b304c390dfed84e0a6fcbd3",
+    "functions/historicalFeeAssignment.js": "42405a21d0ff1378a0a779c21327edff6c2815c2f3d21b04fff9b5fdc7593a66",
+    "functions/lateBillingRecovery.js": "a19d3421afccb7a7c052bba10bd2d00cbf7f3168b30cbc0612c2b1ab087740ea",
+    "functions/lateFeeRecovery.js": "481e0a5c412e75525f009331f1404b911baa49151beabb73eed6bae76a357c9f",
+    "functions/lessonTime.js": "8c17c8361456e933c5cde64857ecb05a0b9ad246291293e1ea525845307431fb",
+    "functions/makeupHours.js": "9428f3331062eeab33ca0f3f7fb26ecac405dd7dcc69c58dac1f7a82fe68bce2",
+    "functions/portalChanges.js": "bc0666a6718659df2efea9718210d80f73fdea93a493dacf7d483d9f5eb69fd8",
+    "functions/publishedView.js": "b028f988f6fd3cfddb07e6d9e0f9c67062e7d6368bbc05751d8d6b392e0820cd",
+    "functions/savedBillingLessons.js": "64b68e025d39f28ed0db46582ab21ace59ab8998e118d5e6996ca5923c3f5035",
+    "functions/singleIndividual.js": "b667f89f326a80be2855ed55e4a35435699c822da18f137e727d240d47eea8e7",
+    "src/attendanceNames.ts": "c7b43b3ddd659f64db2d3a939c1b8e8e3398419a7d5dbe35ac2842828ed8536a",
+    "src/automaticCourseFees.ts": "2e405c5ca0374cbdff1711908cb269891ca7fc19d10895c4a6abe2c0a76ca4b8",
+    "src/billingTime.ts": "1c4db5ad918692e03c992893203789d6fb9f31c218be8b304f7ffad1d5236805",
+    "src/continuousLessons.ts": "b4e1e40f970c7e6188d518d2d60405103e20bdd5d7a26c675b7d272186aa9d6a",
+    "src/domain.ts": "23504f3b85211b2762d65db0bb05769b23daf107807b5c92500198ff380cc613",
+    "src/fees.ts": "a5393258bb93dcfb9e7b39651f3717782740a70c2158d6b02d4c177016a2a3ba",
+    "src/presentation.ts": "b64fe4e1c4346e6f0d4316df0c93b3dc7f8a885d6214085b5a485776f8dab61c",
+    "src/projectMonthlyLessons.ts": "72b59c103c44be157b71e1631e93425f611329f14878ae9bd11ba5f7af7558f4",
+    "src/savedFeeView.ts": "c249343d685b5e20d2454585364956eb602d07552e34f86f84150046e7407982",
+    "src/sessionFees.ts": "b9c0cf4e7fdb3d2cfefe064560134af4ee632fcc2c547c87b8995f3cc676cf47",
+    "src/studentDiscounts.ts": "c81a992802575d83bab9438e826604ae57228df5b4d4692bf861648899dc9efd"
+  }
+}

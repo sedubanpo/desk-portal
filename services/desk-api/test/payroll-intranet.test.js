@@ -314,13 +314,15 @@ test('linked cancellation makeup uses original price when its own charge is unre
   assert.equal(rows([{...makeup, payMinutes: null}])[0].sourcePending, true);
 });
 
-test('tuition teacher report includes discounted charges and pending counts without salary fields',async()=>{
- const input=rows([lesson,{...lesson,id:'pending',rate:null},{...lesson,id:'other',teacher:'강사2',studentDiscount:{base:60000,amount:54000,percent:10}}]);
- const handlers=createPayrollHandlers({store:{},sheets:{listPayrollMonths:async()=>[]},intranet:{readMonth:async()=>({rows:input})},now:()=>new Date('2026-09-10')});
- const report=await handlers.getTuitionTeacherSales({monthName:'26-09'});
- assert.equal(report.success,true);
- assert.equal(report.teachers.length,2);
- const first=report.teachers.find(t=>t.name==='강사');
- assert.deepEqual(first,{name:'강사',count:1,gross:60000,discount:0,net:60000,pendingCount:1});
- assert.equal(report.teachers.find(t=>t.name==='강사2').net,54000);
+test('tuition teacher report counts published charges with saved corrections independently of payroll eligibility',async()=>{
+ const {studentLessonSales}=await import('../src/tuition/lesson-sales.js');
+ const unpublished={...lesson,id:'unsent',rate:100000};
+ const history=[{month:'2026-09',studentId:'student',lessons:[lesson,{...lesson,id:'missing',teacher:'강사2',className:'영어-1:1-강사2',date:'2026-09-05',rate:null}]}];
+ const current=[{month:'2026-09',studentId:'student',lessons:[unpublished]}];
+ const drafts=[{month:'2026-09',revision:1,lesson:{...lesson,rate:40000,rateOverride:40000,payMinutes:120}}];
+ const teachers=studentLessonSales({month:'2026-09',history,current,drafts,periods:{},decisions:{},linked:new Set(['student'])});
+ assert.deepEqual(teachers,[{name:'강사',count:1,gross:80000,discount:0,net:80000,pendingCount:0},{name:'강사2',count:0,gross:0,discount:0,net:0,pendingCount:1}]);
+ const intranet={readMonth:async(_month,options)=>{assert.equal(options.tuitionSales,true);return {teachers};}};
+ const handlers=createPayrollHandlers({store:{},sheets:{listPayrollMonths:async()=>[]},intranet,now:()=>new Date('2026-09-10')});
+ assert.deepEqual(await handlers.getTuitionTeacherSales({monthName:'26-09'}),{success:true,teachers});
 });

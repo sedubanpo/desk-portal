@@ -55,7 +55,7 @@ const TuitionSalesReport = (() => {
         return sum;
       },{count:0,gross:0,discount:0,net:0,pendingCount:0});
       const cells=r=>['<strong>'+won(r.net)+'</strong>',share(r.net,totals.net),r.count+'건',won(r.gross),won(r.discount),r.pendingCount+'건'];
-      body.innerHTML=headline('할인 후 수업 청구액',totals.net,'수업일 기준입니다. 당일취소는 포함하고 결석예고·당취보충·금액 확인 필요 건은 제외합니다.')+
+      body.innerHTML=headline('할인 후 수업 청구액',totals.net,'학생별 수업 내역의 할인 후 금액을 수업일 기준으로 합산합니다. 금액 미확인 건은 별도로 표시합니다.')+
         table(['강사','할인 후 청구액','비중','수업 건수','할인 전 청구액','할인액','확인 필요'],rows.map(r=>line(r.name,cells(r))).join(''),line('전체',cells(totals)));
     } catch (error) {
       if (version!==generation) return;

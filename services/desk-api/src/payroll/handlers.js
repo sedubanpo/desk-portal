@@ -82,6 +82,10 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
       if (!parsePayrollMonthName(monthName) || !(await listMonths()).includes(monthName)) {
         return successFailure('이 달의 수업 원장이 없습니다.');
       }
+      if (isIntranetMonth(monthName) && intranet) {
+        const {value}=await sourceCache.read('tuition-sales:'+monthName,()=>intranet.readMonth(monthName,{tuitionSales:true}));
+        return {success:true,teachers:value.teachers};
+      }
       const source = await readSource(monthName, {reuse:true});
       const groups = new Map();
       for (const row of source.rows) {

@@ -135,7 +135,7 @@ export function createIntranetPayrollReader(db) {
     const snap = await pendingReads.get(key);
     return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
   };
-  return {async readMonth(name, { forceRefresh = false } = {}) {
+  return {async readMonth(name, { forceRefresh = false, tuitionSales = false } = {}) {
     const started=performance.now();
     const read = forceRefresh ? async (collection, month, limit = 5000) => {
       const snap = await load(collection, month, limit);
@@ -143,25 +143,32 @@ export function createIntranetPayrollReader(db) {
     } : sharedRead;
     const meta=parsePayrollMonthName(name), month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
     const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks]=await Promise.all([
-      read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),read('intranetMakeupLinks')
+      read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),tuitionSales?[]:read('intranetMakeupLinks')
     ]);
     const readMs=Math.round(performance.now()-started);
     const fingerprint=createHash('sha256').update(JSON.stringify([month,current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks])).digest('hex');
-    const calculation=await calculations.read(fingerprint,async()=>{
-    let lessons=combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
+    const calculation=await calculations.read((tuitionSales?'sales:':'payroll:')+fingerprint,async()=>{
+    let lessons=tuitionSales?[]:combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
     const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLessonDrafts:drafts,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
     const periods={};
     const rosterIndex=new Map();
     for(const student of roster) for(const id of [student._documentId,student.canonicalId]) if(id&&!rosterIndex.has(id)) rosterIndex.set(id,student);
     const canonicalId=id=>{const student=rosterIndex.get(id);return student?.canonicalId||student?._documentId||id;};
-    for(const id of new Set(lessons.map(l=>canonicalId(l.studentId)))) {
+    const salesProjection=tuitionSales?await import('../tuition/lesson-sales-projection.js'):null;
+    const readFees=salesProjection?.readCarriedFees || readCarriedFees;
+    const ids=tuitionSales?[...current,...past].filter(p=>p.month===month).map(p=>p.studentId):lessons.map(l=>canonicalId(l.studentId));
+    for(const id of new Set(ids)) {
       const saved=fees.find(p=>p.studentId===id&&p.month===month)||{};
-      const period=inheritFees(await readCarriedFees(feeDatabase,id,month,{...saved,assignments:[...(saved.assignments||[])]}),baselines.find(p=>p._documentId===id),month);
+      const period=inheritFees(await readFees(feeDatabase,id,month,{...saved,assignments:[...(saved.assignments||[])]}),baselines.find(p=>p._documentId===id),month);
       period.assignments.push(...recoverIssueFees(issues.filter(i=>i.studentId===id).map(i=>({...i,id:i._documentId})),month,period));
       periods[id]={...period,discountPolicy:discountPolicyFor(discounts.find(p=>p._documentId===id),month)};
     }
     const students=roster.map(s=>({...s,id:s._documentId}));
     const decisions=Object.fromEntries((sessionDocs.find(s=>s._documentId===month)?.records||[]).map(r=>[r.key,r.decision]));
+    if(tuitionSales) {
+      const {studentLessonSales}=await import('../tuition/lesson-sales.js');
+      return {teachers:studentLessonSales({month,current,history:past,drafts,periods,decisions,linked:new Set(roster.flatMap(s=>[s._documentId,s.canonicalId]).filter(Boolean))})};
+    }
     const project=rows=>projectedPayrollFeeRows(rows,students,{periods},month,decisions).map(r=>r.lesson);
     const hypothetical=lessons.some(l=>l.kind==='absence') ? project(lessons.map(l=>l.kind==='absence'?{...l,kind:'regular',billMinutes:l.sourceMinutes}:l)) : [];
     const absentRates=new Map(hypothetical.map(l=>[`${l.studentId}|${l.id}`,l]));
@@ -193,6 +200,7 @@ export function createIntranetPayrollReader(db) {
     const version=createHash('sha256').update(JSON.stringify(rows)).digest('hex');
     return {rows,version};
     });
+    if(tuitionSales) return calculation.value;
     const {rows,version}=calculation.value;
     const timings={calculationCacheHit:calculation.hit,readMs,calculationMs:Math.round(performance.now()-started-readMs),totalMs:Math.round(performance.now()-started)};
     console.info(JSON.stringify({event:'payroll-source-timing',month,rows:rows.length,...timings}));
