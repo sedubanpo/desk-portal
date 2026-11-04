@@ -11079,6 +11079,9 @@
       flex: 1;
     }
 
+    #payrollDetailPager:not([hidden]) { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; }
+    #payrollPageLabel { font-variant-numeric: tabular-nums; }
+
     .table-panel.collapsed .table-tools,
     .table-panel.collapsed .table-tabs,
     .table-panel.collapsed .payroll-amount-bulk-tool,
@@ -18133,6 +18136,11 @@
             <tbody id="detailBody"></tbody>
           </table>
         </div>
+        <nav id="payrollDetailPager" aria-label="출결 상세 페이지" hidden>
+          <button type="button" id="payrollPrevPage" class="refresh-btn">이전</button>
+          <span id="payrollPageLabel" aria-live="polite"></span>
+          <button type="button" id="payrollNextPage" class="refresh-btn">다음</button>
+        </nav>
         </div>
         <div class="tab-pane hidden" id="trackerTabPane">
           <div class="tracker-wrap">
@@ -21194,6 +21202,8 @@
       rateAdjustments: {},
       tableCollapsed: true,
       detailTab: "detail",
+      detailPage: 0,
+      detailPageKey: "",
       activeModule: "expense",
       desk: {
         activeTab: "dailyJournal",
@@ -38595,23 +38605,33 @@
         saveSelectedPayrollSetting_();
       });
 
+      for (const [id, delta] of [['payrollPrevPage', -1], ['payrollNextPage', 1]]) {
+        document.getElementById(id).onclick = function() {
+          state.detailPage += delta;
+          renderPayrollDetailPage(applyTableFilters(state.currentRows || []));
+        };
+      }
       tableCollapseBtnEl.addEventListener("click", function() {
         state.tableCollapsed = !state.tableCollapsed;
         renderTablePanelState();
+        renderDerivedViews();
       });
 
       tableHintBubbleEl.addEventListener("click", function() {
         state.tableCollapsed = false;
         renderTablePanelState();
+        renderDerivedViews();
       });
 
       detailTabBtnEl.addEventListener("click", function() {
         state.detailTab = "detail";
         renderDetailTabs();
+        renderDerivedViews();
       });
       trackerTabBtnEl.addEventListener("click", function() {
         state.detailTab = "tracker";
         renderDetailTabs();
+        renderDerivedViews();
       });
 
       printPayslipBtnEl.addEventListener("click", function() {
@@ -43712,8 +43732,6 @@ window.SeduHubAdapter={
       renderSettingsTeacherFilterOptions();
       renderSettingsSuspicionRules();
       state.pcSuspicionInitial=JSON.stringify(collectSettingsSuspicionRules());
-      renderSettingsReports();
-      renderSettingsWeekdayReport();
     }
 
     function getTeacherSubjectMap() {
@@ -43749,9 +43767,11 @@ window.SeduHubAdapter={
       var rule=(cfg.monthlyRules||{})[state.selectedMonth]||{};
       var label=function(v){return v==null?'기본 방식':v===100?'올페이 (100%)':v+'%';};
       var fields=[['single','1명 개별정규'],['private','1:1']].map(function(pair){
-        return '<label>'+pair[1]+' <select class="modal-select" data-f-key="'+pair[0]+'">'+['',70,100].map(function(v){return '<option value="'+v+'"'+(String(rule[pair[0]]??'')===String(v)?' selected':'')+'>'+label(v===''?null:v)+'</option>';}).join('')+'</select></label>';
+        const key = pair[0];
+        const value = escapeHtml(String(rule[key] ?? ''));
+        return '<label>'+pair[1]+' <input type="number" class="modal-input" style="width:7em" min="0" max="100" step="0.01" placeholder="기본 방식" data-f-key="'+key+'" value="'+value+'"> %</label>';
       }).join(' ');
-      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button> <button class="modal-action ghost" type="button" data-clear-month-rule>이 달의 예외 삭제</button></p>':'')+'</details>';
+      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary><p>빈칸은 기본 방식, 100%는 올페이입니다.</p>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button> <button class="modal-action ghost" type="button" data-clear-month-rule>이 달의 예외 삭제</button></p>':'')+'</details>';
     }
 
     function buildSettingsTeacherRowHtml(name, subject) {
@@ -43881,6 +43901,8 @@ window.SeduHubAdapter={
 
     function setSettingsTab(tab) {
       state.settingsTab = tab || "profile";
+      if (tab === "monthly") renderSettingsReports();
+      if (tab === "weekly") renderSettingsWeekdayReport();
       document.querySelector('[data-settings-tab="history"]').hidden=!canEditPayrollRates_();
       if(state.settingsTab==='history'&&!canEditPayrollRates_())state.settingsTab='suspicion';
       document.getElementById('pcHistory').classList.toggle('active',state.settingsTab==='history');
@@ -44116,7 +44138,7 @@ window.SeduHubAdapter={
         const teacher=row.dataset.teacherRow,detail=row.nextElementSibling,patch={teacher};
         const fields=[...row.querySelectorAll('[data-f-key]'),...detail.querySelectorAll('[data-f-key]')];
         for(const el of fields){
-          if(el.value===el.dataset.original)continue;
+          if(el.value===el.dataset.original && !el.validity?.badInput)continue;
           if(el.checkValidity&&!el.checkValidity()){document.getElementById('pcSearch').value='';filterPayrollProfiles_();if(detail.contains(el)&&detail.hidden)row.querySelector('.pc-more').click();el.reportValidity();return;}
           const key=el.dataset.fKey;
           if(key==='single'||key==='private'){
@@ -44554,6 +44576,9 @@ window.SeduHubAdapter={
         if(teacher!==state.selectedTeacher||month!==state.selectedMonth)return;
         var rule=(cfg.monthlyRules||{})[month]||{};
         var rate=function(key){var val=ruleBox.querySelector('[data-f-key="'+key+'"]').value;return val===''?null:Number(val);};
+        for (const input of ruleBox.querySelectorAll('input[data-f-key]')) {
+          if (!input.reportValidity()) return;
+        }
         var single=rate('single'),priv=rate('private');
         if(single===(rule.single??null)&&priv===(rule.private??null))return;
         this.disabled=true;
@@ -44568,7 +44593,7 @@ window.SeduHubAdapter={
         clear.disabled=!(cfg.monthlyRules?.[month]?.single!=null || cfg.monthlyRules?.[month]?.private!=null);
         clear.onclick=function(){
           if(!window.confirm(teacher+' 강사의 '+month+'월 예외를 삭제하고 기본 비율을 적용할까요?'))return;
-          ruleBox.querySelectorAll('select').forEach(el=>el.value='');
+          ruleBox.querySelectorAll('input[data-f-key]').forEach(el=>el.value='');
           ruleBox.querySelector('[data-save-month-rule]').click();
         };
       }
@@ -44623,11 +44648,18 @@ window.SeduHubAdapter={
 
     function renderDerivedViews() {
       var rows = applyTableFilters(state.currentRows || []);
-      renderPayrollAmountBulkTool_();
-      renderTable(rows);
-      applyColumnVisibility();
+      const viewKey = JSON.stringify([state.selectedMonth, state.selectedTeacher, state.selectedSubject, state.attendanceFilter, state.recognizedFilter, state.classTypeFilter, state.detailStudentKeyword, state.suspectOnly]);
+      if (state.detailPageKey !== viewKey) state.detailPage = 0;
+      state.detailPageKey = viewKey;
+      if (!state.tableCollapsed && state.detailTab !== "tracker") {
+        renderPayrollAmountBulkTool_();
+        renderPayrollDetailPage(rows);
+      } else {
+        document.getElementById("detailBody").replaceChildren();
+      }
       renderDayDetail(state.currentRows || []);
-      renderRecoveryTracker(state.currentRows || []);
+      if (!state.tableCollapsed && state.detailTab === "tracker") renderRecoveryTracker(state.currentRows || []);
+      else document.getElementById("trackerBody").replaceChildren();
       document.getElementById("detailCountPill").textContent = rows.length + " rows";
     }
 
@@ -44754,7 +44786,7 @@ window.SeduHubAdapter={
     }
 
     function applyColumnVisibility() {
-      var allCols = document.querySelectorAll("[data-col]");
+      var allCols = document.querySelectorAll("#detailTabPane [data-col]");
       Array.prototype.forEach.call(allCols, function(el) {
         var key = el.getAttribute("data-col");
         var visible = !!state.columnVisibility[key];
@@ -44863,7 +44895,7 @@ window.SeduHubAdapter={
         cell.addEventListener("click", function() {
           var restoreFocus = document.activeElement === cell;
           state.selectedDateKey = cell.dataset.dateKey || "";
-          renderDerivedViews();
+          renderDayDetail(state.currentRows || []);
           renderCalendar(calendarData);
           if (restoreFocus) {
             var selectedCell = grid.querySelector('.day-cell.active');
@@ -45473,8 +45505,7 @@ window.SeduHubAdapter={
     }
 
     function formatPayrollPercent(value) {
-      var num = Math.round(toNumber(value, 0) * 10) / 10;
-      return num.toLocaleString("ko-KR").replace(/\.0$/, "");
+      return roundToTwo(value).toLocaleString("ko-KR");
     }
 
     function buildPayrollDiscountCell(row) {
@@ -45497,7 +45528,7 @@ window.SeduHubAdapter={
       if (value == null || value === "") value = row.settlementPercentApplied;
       var badge = row.settlementPercentOverridden ? '<span class="rate-adjust-badge">수동</span>' : "";
       return '<span class="settlement-percent-wrap">' +
-        '<input class="settlement-percent-input" type="number" min="0" max="200" step="0.5" data-settlement-row-key="' + escapeHtml(row.rowKey) + '" data-base-percent="' + escapeHtml(String(row.settlementPercentApplied || 0)) + '" value="' + escapeHtml(String(formatPayrollPercent(value || 0))) + '">' +
+        '<input class="settlement-percent-input" type="number" min="0" max="200" step="0.01" data-settlement-row-key="' + escapeHtml(row.rowKey) + '" data-base-percent="' + escapeHtml(String(row.settlementPercentApplied || 0)) + '" value="' + escapeHtml(String(formatPayrollPercent(value || 0))) + '">' +
         '<span>%</span>' +
         badge +
       '</span>';
@@ -45549,6 +45580,19 @@ window.SeduHubAdapter={
 
     function hidePayrollTooltip() {
       if (payrollTooltipEl) payrollTooltipEl.style.display = "none";
+    }
+
+    function renderPayrollDetailPage(rows) {
+      const pageSize = 100;
+      const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+      const page = Math.max(0, Math.min(state.detailPage || 0, pages - 1));
+      state.detailPage = page;
+      renderTable(rows.slice(page * pageSize, (page + 1) * pageSize));
+      applyColumnVisibility();
+      document.getElementById("payrollDetailPager").hidden = pages === 1;
+      document.getElementById("payrollPageLabel").textContent = (page + 1) + " / " + pages + "페이지";
+      document.getElementById("payrollPrevPage").disabled = page === 0;
+      document.getElementById("payrollNextPage").disabled = page === pages - 1;
     }
 
     function renderTable(rows) {

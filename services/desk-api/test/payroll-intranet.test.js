@@ -286,6 +286,22 @@ test('monthly exception rates use verified single-individual status and preserve
  }
 });
 
+test('pending hourly pay keeps monthly percentages including fractional rates and zero', () => {
+  const input = rows([
+    {...lesson, id:'solo', rateUnit:'perHour', billMinutes:180, payMinutes:180, singleIndividual:{bookedMinutes:180}},
+    {...lesson, id:'private', className:'사회-1:1-강사', rateUnit:'perClass', rate:250000}
+  ]);
+  const apply = single => applyPayrollSettingsUpdates({}, {monthName:'26-09', updates:[{
+    teacher:'강사', salaryMode:'hourly', hourlyRate:null, expectedRuleAt:'', monthRule:{single, private:100}
+  }]}, '2026-09-01T00:00:00Z', {name:'담당자', uid:'u'});
+  for (const single of [0, 64.25, 70, 100]) {
+    const summary = buildPayrollSummary(input, meta, {teacherSettings:apply(single)});
+    assert.equal(summary.rows.find(row => row.lessonId === 'solo').settlementPercentApplied, single);
+    assert.equal(summary.kpi.estimatedPay, 250000 + Math.round(90000 * single / 100));
+  }
+  for (const single of [-1, 100.01, 70.001]) assert.throws(() => apply(single), /예외 비율/);
+});
+
 test('linked cancellation makeup uses original price when its own charge is unresolved', async () => {
   const { priceCancellationMakeups } = await import('../src/payroll/makeup.js');
   const original = {...lesson, kind: 'cancel', payMinutes: 0};

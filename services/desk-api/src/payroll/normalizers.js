@@ -153,7 +153,9 @@ export function applyPayrollSettingsUpdates(current, payload, nowIso, identity =
       const rates={};
       for(const key of ['single','private']){
         const v=item.monthRule[key]??null;
-        if(v!==null && ![70,100].includes(v))throw Error('예외 비율을 확인하세요.');
+        if (v !== null && (!Number.isFinite(v) || v < 0 || v > 100 || Number(v.toFixed(2)) !== v)) {
+          throw Error('예외 비율은 0~100 사이로 소수 둘째 자리까지 입력하세요.');
+        }
         rates[key]=v;
       }
       if(rates.single!==(before.single??null)||rates.private!==(before.private??null)){
