@@ -34,6 +34,18 @@ export function createPayrollStore(firestore) {
   const legacyAuditRef = requestId => firestore.collection(COLLECTIONS.audits).doc(String(requestId || '').replace(/[^\w:.-]/g, '_').slice(0, 200));
 
   return {
+    async centerHistory() {
+      const snap=await firestore.collection('payrollCenterHistory').orderBy('at','desc').limit(40).get();
+      return snap.docs.map(d=>d.data());
+    },
+    async saveCenterVisit(requestId,identity,at,month) {
+      const id=payrollWriteAuditDocumentId({requestId,method:'visit',uid:identity.uid});
+      const ref=firestore.collection('payrollCenterHistory').doc(id);
+      return firestore.runTransaction(async tx=>{
+        if(!(await tx.get(ref)).exists) tx.set(ref,{kind:'visit',at,month,by:identity.name,uid:identity.uid});
+        return {success:true};
+      });
+    },
     async getFinalizations(monthName) {
       const snapshot=await firestore.collection('payrollFinalizations').doc(monthName).collection('versions').orderBy('createdAt','desc').limit(12).get();
       return snapshot.docs.map(d=>({id:d.id,...d.data()}));
@@ -70,6 +82,22 @@ export function createPayrollStore(firestore) {
         if (previous) return { ...previous, duplicate: true };
         const current = normalizePayrollSettings(settingsSnapshot.exists ? settingsSnapshot.data()?.settings : {});
         const settings = mutate(current);
+        const changes=[];
+        for(const [name, cfg] of Object.entries(settings)){
+          const before=current[name]||{};
+          if(name==='__suspicionRules'){
+            if(JSON.stringify(before)!==JSON.stringify(cfg))changes.push('의심 기준 변경');
+            continue;
+          }
+          const labels={salaryMode:'급여 방식',ratioPercent:'기본 비율',hourlyRate:'시급',oneToOneSettlementMode:'1:1 방식',oneToOneRatioPercent:'1:1 비율',firstWorkDate:'근무 시작일',monthlyRules:'월별 예외',bankName:'은행',accountNumber:'계좌번호',accountHolder:'예금주',paidByMonth:'지급 상태'};
+          const show=v=>v==null?'미정':v==='hourly'?'시급제':v==='ratio'?'비율제':String(v);
+          for(const [key,label] of Object.entries(labels)) if(JSON.stringify(before[key])!==JSON.stringify(cfg[key])){
+            if(!current[name] && !payload.updates?.some(u=>u.teacher===name && Object.hasOwn(u,key==="monthlyRules"?"monthRule":key)))continue;
+            changes.push(name+' · '+label+(['salaryMode','ratioPercent','hourlyRate','oneToOneSettlementMode','oneToOneRatioPercent','firstWorkDate'].includes(key)?' '+show(before[key])+' → '+show(cfg[key]):' 변경'));
+          }
+        }
+        if(changes.length)transaction.set(firestore.collection('payrollCenterHistory').doc(audit.id),{kind:'change',at:nowIso,by:identity.name||'',uid:identity.uid||'',month:payload.monthName||'',changes});
+
         const result = { success: true, settings };
         transaction.set(settingsRef, { settings, updatedAt: nowIso, updatedBy: identity.uid || '', updatedByName: identity.name || '' });
         transaction.set(audit, { requestId, method, payload, actorUid: identity.uid || '', actorName: identity.name || '', createdAt: nowIso, result });

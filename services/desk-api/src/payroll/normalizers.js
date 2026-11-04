@@ -122,7 +122,7 @@ export function normalizePayrollSettings(input = {}) {
     result[name] = {
       salaryMode: salaryMode(raw.salaryMode),
       ...(raw.ratioPercent != null ? {ratioPercent:clamp(raw.ratioPercent,0,100,50)} : {}),
-      hourlyRate: Math.max(0, number(raw.hourlyRate)),
+      hourlyRate: raw.hourlyRate === null ? null : Math.max(0, number(raw.hourlyRate)),
       oneToOneSettlementMode: text(raw.oneToOneSettlementMode).toLowerCase() === 'ratio' ? 'ratio' : 'hourly',
       oneToOneRatioPercent: clamp(raw.oneToOneRatioPercent, 0, 100, 50),
       bankName: text(raw.bankName).slice(0, 80),
@@ -167,7 +167,7 @@ export function applyPayrollSettingsUpdates(current, payload, nowIso, identity =
     next[teacher] = {
       salaryMode: salaryMode(item.salaryMode),
       ratioPercent: clamp(item.ratioPercent, 0, 100, 50),
-      hourlyRate: Math.max(0, number(item.hourlyRate)),
+      hourlyRate: item.hourlyRate === null ? null : Math.max(0, number(item.hourlyRate)),
       oneToOneSettlementMode: text(item.oneToOneSettlementMode).toLowerCase() === 'ratio' ? 'ratio' : 'hourly',
       oneToOneRatioPercent: clamp(item.oneToOneRatioPercent, 0, 100, 50),
       bankName: text(item.bankName).slice(0, 80),
@@ -382,7 +382,7 @@ export function buildPayrollSummary(rows, monthMeta, input = {}) {
     let effectiveRate = row.rate; let amount = row.amount; let adjusted = false;
     if (hasAmountOverride) { amount = Math.round(manualAmount); effectiveRate = row.hours > 0 ? round(amount / row.hours, 2) : row.rate; adjusted = amount !== Math.round(row.amount); }
     else if (recognized.recognized && makeup) { const selected = manualRate || proposed || row.rate; if (selected > 0) { effectiveRate = selected; amount = Math.round(selected * row.hours); adjusted = Math.round(amount) !== Math.round(row.amount); } } else if (manualRate > 0) { effectiveRate = manualRate; amount = Math.round(manualRate * row.hours); adjusted = true; }
-    const teacherConfig = settings[row.teacher] || {}; const effectiveMode = settings[row.teacher] ? salaryMode(teacherConfig.salaryMode) : mode; const effectiveHourlyRate = settings[row.teacher] ? Math.max(0, number(teacherConfig.hourlyRate, hourlyRate)) : hourlyRate; const effectiveRatio = number(teacherConfig.ratioPercent,ratioPercent);
+    const teacherConfig = settings[row.teacher] || {}; const effectiveMode = settings[row.teacher] ? salaryMode(teacherConfig.salaryMode) : mode; const effectiveHourlyRate = settings[row.teacher] ? Math.max(0, number(teacherConfig.hourlyRate, 0)) : hourlyRate; const effectiveRatio = number(teacherConfig.ratioPercent,ratioPercent);
     const monthRule=teacherConfig.monthlyRules?.[monthMeta.sheetName]||{};
     const exceptionPercent=row.singleIndividual ? monthRule.single : isOneToOne(row.classType) ? monthRule.private : null;
     const specialRatio=exceptionPercent!=null;

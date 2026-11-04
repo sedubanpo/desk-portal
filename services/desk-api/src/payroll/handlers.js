@@ -20,9 +20,11 @@ export const PAYROLL_METHODS = Object.freeze([
   'getPayrollBootstrapData',
   'getPayrollMonthSummary',
   'getPayrollMonthlyAnalysis',
+  'getPayrollCenterHistory',
   'getPayrollSettings',
   'getPayrollFinalizations',
   'savePayrollFinalization',
+  'savePayrollCenterVisit',
   'savePayrollSettings',
   'savePayrollOverrides'
 ]);
@@ -30,6 +32,7 @@ export const PAYROLL_METHODS = Object.freeze([
 export const PAYROLL_WRITE_METHODS = Object.freeze([
   'savePayrollFinalization',
   ...WORKFORCE_WRITES,
+  'savePayrollCenterVisit',
   'savePayrollSettings',
   'savePayrollOverrides'
 ]);
@@ -81,6 +84,14 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
         : successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
     },
 
+    async savePayrollCenterVisit(payload={}, identity={}) {
+      const id=requestId(payload);
+      if(!id) return successFailure('열람 기록 식별자가 없습니다.');
+      return store.saveCenterVisit(id, identity, now().toISOString(), String(payload.monthName||'').slice(0,7));
+    },
+    async getPayrollCenterHistory() {
+      return {success:true,events:await store.centerHistory()};
+    },
     async getPayrollSettings() {
       return { success: true, settings: await store.getSettings(), source: 'firestore' };
     },

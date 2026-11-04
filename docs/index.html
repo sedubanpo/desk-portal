@@ -17774,6 +17774,7 @@
   <link rel="stylesheet" href="./desk-refinements.css">
 <link rel="stylesheet" href="./message-templates.css?v=20261003">
 <link rel="stylesheet" href="./payroll-settlement.css?v=20261009">
+<link rel="stylesheet" href="./payroll-center.css?v=20261104">
 </head>
 <body>
   <div class="gate-overlay" id="entryGate">
@@ -20615,42 +20616,32 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="settingsModal">
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="payCenterTitle">
     <div class="modal-box">
       <div class="modal-head">
         <div>
-          <h3 class="modal-title">설정 센터</h3>
-          <div class="modal-sub">강사 급여/계좌 + 월급/시수 분석 + 주차/요일 리포트를 한 번에 관리합니다.</div>
+          <h3 class="modal-title" id="payCenterTitle">강사 급여 설정 센터</h3>
+          <div class="modal-sub">강사별 급여 기준과 월별 예외를 관리합니다.</div>
         </div>
         <button class="modal-action ghost" id="closeSettingsBtn" type="button">닫기</button>
       </div>
       <div class="modal-tabbar">
         <button class="modal-tab-btn active" type="button" data-settings-tab="profile">강사 급여/계좌</button>
         <button class="modal-tab-btn" type="button" data-settings-tab="suspicion">의심 기준</button>
-        <button class="modal-tab-btn" type="button" data-settings-tab="monthly">년도-월 급여/시수</button>
+        <button class="modal-tab-btn" type="button" data-settings-tab="monthly">월별 급여·시수</button>
         <button class="modal-tab-btn" type="button" data-settings-tab="weekly">주차별 수강 요일</button>
+        <button class="modal-tab-btn" type="button" data-settings-tab="history">사용·변경 이력</button>
       </div>
 
       <section class="modal-section active" id="settingsSectionProfile">
-        <div class="modal-table-wrap">
-          <table class="modal-table">
-            <thead>
-              <tr>
-                <th>강사</th>
-                <th>과목</th>
-                <th>급여 방식</th>
-                <th>시급(원)</th>
-                <th>1:1 정산</th>
-                <th>1:1 비율(%)</th>
-                <th>계좌 정보</th>
-                <th>이번달 지급</th>
-              </tr>
-            </thead>
+        <div class="pc-toolbar"><label>강사 검색 <input type="search" id="pcSearch" placeholder="강사 이름 입력" autocomplete="off"></label><span id="pcCount" role="status"></span></div>
+        <div class="modal-table-wrap"><table class="modal-table"><thead><tr><th>강사</th><th>급여 방식</th><th>기본 지급 기준</th><th>상세 설정</th></tr></thead>
             <tbody id="settingsProfileBody"></tbody>
           </table>
         </div>
       </section>
 
+      <section class="modal-section" id="pcHistory" aria-live="polite"></section>
       <section class="modal-section" id="settingsSectionSuspicion">
         <div class="settings-suspicion-grid">
           <div class="field">
@@ -20715,7 +20706,7 @@
                 <th>1:1 비율 정산액</th>
                 <th>순매출</th>
                 <th>예상 월급</th>
-                <th>이번달 지급</th>
+
               </tr>
             </thead>
             <tbody id="settingsMonthlyBody"></tbody>
@@ -20748,7 +20739,7 @@
       </section>
 
       <div class="modal-foot">
-        <div class="message">저장 시 강사별 급여 방식/시급/계좌/지급상태가 바로 적용됩니다.</div>
+        <div class="message">변경한 항목만 저장합니다.</div>
         <div style="display:flex; gap:8px;">
           <button class="modal-action ghost" id="closeSettingsBtn2" type="button">닫기</button>
           <button class="modal-action primary" id="saveSettingsBtn" type="button">설정 저장</button>
@@ -21025,7 +21016,7 @@
       getDeskOfficeHistory: true, getDeskOffice: true, saveDeskOffice: true, getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
       getTuitionDifficulty: true, getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
-      getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
+      savePayrollCenterVisit: true, getPayrollCenterHistory: true, getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
     var DESK_SCHEDULE_RT_PATH = "desk_portal/monthly_schedule";
     var DESK_DAILY_JOURNAL_RT_PATH = "desk_portal/daily_journal";
@@ -38686,22 +38677,31 @@
       openSettingsBtnEl.addEventListener("click", function() {
         requestPrivilegedAccess_("설정 센터", async function() {
           if (!(await ensurePayrollLoaded_()) && !state.payroll.loaded) return;
+          document.getElementById('pcSearch').value='';
+          try { const visit=await runServer('savePayrollCenterVisit',{clientRequestId:buildClientRequestId_('center'),monthName:state.selectedMonth}); if(!visit.success)throw Error(visit.message); }
+          catch(err){showClientMessage('설정 센터 열람 기록을 저장하지 못했습니다: '+err.message);return;}
           renderSettingsModal();
           setSettingsTab(state.settingsTab || "profile");
           settingsModalEl.style.display = "flex";
+          (state.settingsTab==="profile"?document.getElementById("pcSearch"):closeSettingsBtnEl).focus();
         });
       });
-      closeSettingsBtnEl.addEventListener("click", function() {
-        settingsModalEl.style.display = "none";
-      });
-      closeSettingsBtn2El.addEventListener("click", function() {
-        settingsModalEl.style.display = "none";
-      });
+      function closePayrollCenter_() {
+        if(saveSettingsBtnEl.disabled)return;
+        const dirty=Array.from(document.querySelectorAll('#settingsProfileBody [data-f-key]')).some(el=>el.value!==el.dataset.original) ||
+          state.pcSuspicionInitial!==JSON.stringify(collectSettingsSuspicionRules());
+        if(dirty&&!confirm('저장하지 않은 변경 사항을 버리고 닫을까요?'))return;
+        settingsModalEl.style.display='none';
+        openSettingsBtnEl.focus();
+      }
+      closeSettingsBtnEl.addEventListener('click', closePayrollCenter_);
+      closeSettingsBtn2El.addEventListener('click', closePayrollCenter_);
+      settingsModalEl.addEventListener('keydown', e=>{if(e.key==='Escape')closePayrollCenter_();});
       saveSettingsBtnEl.addEventListener("click", function() {
         saveSettings();
       });
       settingsModalEl.addEventListener("click", function(event) {
-        if (event.target === settingsModalEl) settingsModalEl.style.display = "none";
+        if (event.target === settingsModalEl) closePayrollCenter_();
       });
 
       Array.prototype.forEach.call(settingsTabBtnEls, function(btn) {
@@ -43670,8 +43670,9 @@ window.SeduHubAdapter={
       state.ratioPercent = toNumber(preset.ratioPercent,50);
       ratioInputEl.value = state.ratioPercent;
       var mode = String(preset.salaryMode || "").toLowerCase();
-      state.hourlyRate = toNumber(preset.hourlyRate,30000);
-      hourlyInputEl.value = String(Math.round(state.hourlyRate));
+      state.hourlyRate = toNumber(preset.hourlyRate,0);
+      hourlyInputEl.value = state.hourlyRate ? String(Math.round(state.hourlyRate)) : '';
+      hourlyInputEl.placeholder = '미정';
       if (mode === "hourly") {
         state.salaryMode = "hourly";
       } else if (mode === "ratio") {
@@ -43687,14 +43688,14 @@ window.SeduHubAdapter={
       var teachers = (state.teachers || []).slice().sort(function(a, b) { return a.localeCompare(b, "ko"); });
       if (!canEditPayrollRates_()) body.innerHTML="";
       else if (!teachers.length) {
-        body.innerHTML = '<tr><td colspan="8">강사 데이터가 없습니다.</td></tr>';
+        body.innerHTML = '<tr><td colspan="4">강사 데이터가 없습니다.</td></tr>';
       } else {
         var html = "";
         if (groups.length) {
           groups.forEach(function(group) {
             var list = (group.teachers || []).slice().sort(function(a, b) { return a.localeCompare(b, "ko"); });
             if (!list.length) return;
-            html += '<tr class="settings-group-row"><td colspan="8">' + renderPayrollIdentity_(group.subject || "기타", true) + ' · ' + list.length + '명</td></tr>';
+            html += '<tr class="settings-group-row"><td colspan="4">' + renderPayrollIdentity_(group.subject || "기타", true) + ' · ' + list.length + '명</td></tr>';
             list.forEach(function(name) {
               html += buildSettingsTeacherRowHtml(name, teacherSubjectMap[name] || (group.subject || "기타"));
             });
@@ -43710,6 +43711,7 @@ window.SeduHubAdapter={
       renderSettingsMonthFilterOptions();
       renderSettingsTeacherFilterOptions();
       renderSettingsSuspicionRules();
+      state.pcSuspicionInitial=JSON.stringify(collectSettingsSuspicionRules());
       renderSettingsReports();
       renderSettingsWeekdayReport();
     }
@@ -43754,57 +43756,50 @@ window.SeduHubAdapter={
 
     function buildSettingsTeacherRowHtml(name, subject) {
       var cfg = (state.teacherSettings || {})[name] || {};
-      var paidMap = cfg.paidByMonth || {};
-      var paid = !!paidMap[state.selectedMonth];
-      var mode = String(cfg.salaryMode || "ratio").toLowerCase() === "hourly" ? "hourly" : "ratio";
-      var oneToOneMode = String(cfg.oneToOneSettlementMode || "hourly").toLowerCase() === "ratio" ? "ratio" : "hourly";
-      var oneToOneRatio = clampNumber(toNumber(cfg.oneToOneRatioPercent, 50), 0, 100);
-      var hourlyValue = String(Math.round(toNumber(cfg.hourlyRate, 0)));
-      var bankSummary = [cfg.bankName || "-", cfg.accountNumber || "-", cfg.accountHolder || "-"].join(" / ");
-
-      return '' +
-      '<tr data-teacher-row="' + escapeHtml(name) + '">' +
-        '<td>' + renderPayrollIdentity_(name, false) + '</td>' +
-        '<td>' + renderPayrollIdentity_(subject || "기타", true) + '</td>' +
-        '<td><select class="modal-select" data-f-key="salaryMode"><option value="ratio"' + (mode === "ratio" ? " selected" : "") + '>비율제</option><option value="hourly"' + (mode === "hourly" ? " selected" : "") + '>시급제</option></select></td>' +
-        '<td><div class="settings-hourly-wrap" style="' + (mode === "hourly" ? "" : "display:none;") + '"><input class="modal-input" data-f-key="hourlyRate" type="number" min="0" step="1000" value="' + escapeHtml(hourlyValue) + '"><div class="settings-inline-note">시급제 선택 시만 사용</div></div></td>' +
-        '<td><select class="modal-select" data-f-key="oneToOneSettlementMode"><option value="hourly"' + (oneToOneMode === "hourly" ? " selected" : "") + '>시급 포함</option><option value="ratio"' + (oneToOneMode === "ratio" ? " selected" : "") + '>비율 전환</option></select></td>' +
-        '<td><input class="modal-input" data-f-key="oneToOneRatioPercent" type="number" min="0" max="100" step="0.5" value="' + escapeHtml(String(oneToOneRatio)) + '">' + monthlyPayrollFields(cfg) + '</td>' +
-        '<td><button class="account-toggle-btn" data-account-toggle="' + escapeHtml(name) + '" type="button">계좌 펼치기</button><div class="settings-inline-note">' + escapeHtml(bankSummary) + '</div><label>최초 근무 시작일 <input type="date" data-f-key="firstWorkDate" value="'+escapeHtml(cfg.firstWorkDate||'')+'"></label></td>' +
-        '<td><label class="check-inline"><input type="checkbox" data-f-key="paid" ' + (paid ? "checked" : "") + '>지급완료</label></td>' +
-      '</tr>' +
-      '<tr class="settings-account-row hidden" data-account-row="' + escapeHtml(name) + '">' +
-        '<td colspan="8">' +
-          '<div class="settings-account-grid">' +
-            '<div class="field"><label>은행명</label><input class="modal-input" data-f-key="bankName" type="text" value="' + escapeHtml(cfg.bankName || "") + '"></div>' +
-            '<div class="field"><label>계좌번호</label><input class="modal-input" data-f-key="accountNumber" type="text" value="' + escapeHtml(cfg.accountNumber || "") + '"></div>' +
-            '<div class="field"><label>예금주</label><input class="modal-input" data-f-key="accountHolder" type="text" value="' + escapeHtml(cfg.accountHolder || "") + '"></div>' +
-          '</div>' +
-        '</td>' +
-      '</tr>';
+      var h=escapeHtml, hourly=cfg.salaryMode==='hourly', nameHtml=h(name);
+      var input=(key,type,value,attrs='')=>'<input class="modal-input" data-f-key="'+key+'" type="'+type+'" value="'+h(String(value??''))+'" '+attrs+'>';
+      return '<tr data-teacher-row="'+nameHtml+'"><td><strong>'+nameHtml+'</strong></td>'+
+        '<td><button type="button" class="pc-switch" role="switch" aria-label="'+nameHtml+' 시급제" aria-checked="'+hourly+'" data-f-key="salaryMode" value="'+(hourly?'hourly':'ratio')+'"><span>비율제</span><span>시급제</span></button></td>'+
+        '<td><label class="pc-hour">'+input('hourlyRate','number',cfg.hourlyRate || '', 'min="1" step="1" placeholder="미정" aria-label="시간당 지급액"')+' 원 / 시간</label><label class="pc-ratio">'+input('ratioPercent','number',cfg.ratioPercent??50,'min="0" max="100" step="0.5" aria-label="기본 정산 비율"')+' %</label></td>'+
+        '<td><button type="button" class="pc-more" aria-expanded="false">상세 보기</button></td></tr>'+
+        '<tr data-account-row="'+nameHtml+'" hidden><td colspan="4"><div class="pc-details">'+
+        '<label>1:1 정산 방식<select class="modal-select" data-f-key="oneToOneSettlementMode"><option value="hourly">시급 포함</option><option value="ratio" '+(cfg.oneToOneSettlementMode==='ratio'?'selected':'')+'>비율 적용</option></select></label>'+
+        '<label>1:1 정산 비율 (%)'+input('oneToOneRatioPercent','number',cfg.oneToOneRatioPercent??50,'min="0" max="100" step="0.5"')+'</label>'+
+        '<label>최초 근무 시작일'+input('firstWorkDate','date',cfg.firstWorkDate)+'</label>'+
+        '<label>은행명'+input('bankName','text',cfg.bankName)+'</label><label>계좌번호'+input('accountNumber','text',cfg.accountNumber)+'</label><label>예금주'+input('accountHolder','text',cfg.accountHolder)+'</label>'+
+        '</div>'+monthlyPayrollFields(cfg)+'</td></tr>';
     }
-
+    function filterPayrollProfiles_(){
+      const body=document.getElementById('settingsProfileBody'), q=document.getElementById('pcSearch').value.trim().replace(/\s/g,'');
+      let count=0,group=null;
+      for(const row of body.rows){
+        if(row.classList.contains('settings-group-row')){group=row;group.hidden=true;continue;}
+        if(!row.hasAttribute('data-teacher-row'))continue;
+        const match=row.dataset.teacherRow.replace(/\s/g,'').includes(q);
+        row.hidden=!match;
+        row.nextElementSibling.hidden=!match || row.querySelector('.pc-more').getAttribute('aria-expanded')!=='true';
+        if(match){count++;if(group)group.hidden=false;}
+      }
+      document.getElementById('pcCount').textContent=count?'강사 '+count+'명':'검색 결과가 없습니다.';
+    }
     function bindSettingsProfileEvents() {
-      Array.prototype.forEach.call(document.querySelectorAll('#settingsProfileBody [data-account-toggle]'), function(btn) {
-        btn.addEventListener("click", function() {
-          var name = btn.getAttribute("data-account-toggle");
-          var row = document.querySelector('#settingsProfileBody [data-account-row="' + name + '"]');
-          if (!row) return;
-          row.classList.toggle("hidden");
-          btn.textContent = row.classList.contains("hidden") ? "계좌 펼치기" : "계좌 접기";
-        });
-      });
-      Array.prototype.forEach.call(document.querySelectorAll('#settingsProfileBody tr[data-teacher-row]'), function(row) {
-        var modeEl = row.querySelector('[data-f-key="salaryMode"]');
-        var hourlyWrap = row.querySelector(".settings-hourly-wrap");
-        if (!modeEl || !hourlyWrap) return;
-        var applyMode = function() {
-          var hourly = modeEl.value === "hourly";
-          hourlyWrap.style.display = hourly ? "" : "none";
-        };
-        modeEl.addEventListener("change", applyMode);
-        applyMode();
-      });
+      document.getElementById('pcSearch').oninput=filterPayrollProfiles_;
+      for(const row of document.querySelectorAll('#settingsProfileBody [data-teacher-row]')){
+        const mode=row.querySelector('.pc-switch'),more=row.querySelector('.pc-more'),detail=row.nextElementSibling;
+        const show=()=>{const hourly=mode.value==='hourly';mode.setAttribute('aria-checked',String(hourly));row.querySelector('.pc-hour').hidden=!hourly;row.querySelector('.pc-ratio').hidden=hourly;};
+        show();mode.onclick=()=>{mode.value=mode.value==='hourly'?'ratio':'hourly';show();};
+        more.onclick=()=>{detail.hidden=!detail.hidden;more.setAttribute('aria-expanded',String(!detail.hidden));more.textContent=detail.hidden?'상세 보기':'상세 닫기';};
+        for(const el of [...row.querySelectorAll('[data-f-key]'),...detail.querySelectorAll('[data-f-key]')])el.dataset.original=el.value;
+      }
+      filterPayrollProfiles_();
+    }
+    async function showPayrollCenterHistory_(){
+      const pane=document.getElementById('pcHistory');pane.textContent='이력을 불러오는 중…';
+      try {
+        const result=await runServer('getPayrollCenterHistory',{});
+        if(!result.success)throw Error(result.message);
+        pane.innerHTML='<h4>최근 사용·변경 이력</h4>'+((result.events||[]).map(e=>'<article><strong>'+escapeHtml(e.by)+' · '+(e.kind==='visit'?'설정 센터 열람':'급여 설정 변경')+'</strong><time>'+escapeHtml(new Date(e.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}))+'</time>'+(e.changes||[]).map(c=>'<div>'+escapeHtml(c)+'</div>').join('')+'</article>').join('')||'<p>저장된 이력이 없습니다.</p>');
+      } catch(err){pane.textContent='이력 조회 실패: '+err.message;}
     }
 
     function getPayrollSuspicionSettings_() {
@@ -43886,6 +43881,10 @@ window.SeduHubAdapter={
 
     function setSettingsTab(tab) {
       state.settingsTab = tab || "profile";
+      document.querySelector('[data-settings-tab="history"]').hidden=!canEditPayrollRates_();
+      if(state.settingsTab==='history'&&!canEditPayrollRates_())state.settingsTab='suspicion';
+      document.getElementById('pcHistory').classList.toggle('active',state.settingsTab==='history');
+      if(state.settingsTab==='history')showPayrollCenterHistory_();
       if (!canEditPayrollRates_() && state.settingsTab === "profile") state.settingsTab="suspicion";
       Array.prototype.forEach.call(settingsTabBtnEls, function(btn) {
         if(btn.dataset.settingsTab==="profile") btn.style.display=canEditPayrollRates_()?"":"none";
@@ -43943,7 +43942,7 @@ window.SeduHubAdapter={
 
       var bodyEl = document.getElementById("settingsMonthlyBody");
       if (!monthlyRows.length) {
-        bodyEl.innerHTML = '<tr><td colspan="8">표시할 월급/시수 데이터가 없습니다.</td></tr>';
+        bodyEl.innerHTML = '<tr><td colspan="7">표시할 월급/시수 데이터가 없습니다.</td></tr>';
         return;
       }
       bodyEl.innerHTML = monthlyRows.map(function(item) {
@@ -43955,7 +43954,6 @@ window.SeduHubAdapter={
           '<td>' + formatWon(item.oneToOneRatioSettlement || 0) + '</td>' +
           '<td>' + formatWon(item.netSales) + '</td>' +
           '<td>' + formatWon(item.estimatedPay) + '</td>' +
-          '<td>' + (item.paid ? '<span class="track-status track-ok">지급완료</span>' : '<span class="track-status track-miss">미지급</span>') + '</td>' +
         '</tr>';
       }).join("");
     }
@@ -44114,42 +44112,25 @@ window.SeduHubAdapter={
     function saveSettings() {
       var rows = document.querySelectorAll("#settingsProfileBody tr[data-teacher-row]");
       var updates = [];
-      Array.prototype.forEach.call(rows, function(row) {
-        var teacher = row.getAttribute("data-teacher-row") || "";
-        var accountRow = document.querySelector('#settingsProfileBody [data-account-row="' + teacher + '"]');
-        var getField = function(key) {
-          return row.querySelector('[data-f-key="' + key + '"]') ||
-            (accountRow ? accountRow.querySelector('[data-f-key="' + key + '"]') : null);
-        };
-        var modeEl = getField("salaryMode");
-        var hourlyEl = getField("hourlyRate");
-        var oneToOneModeEl = getField("oneToOneSettlementMode");
-        var oneToOneRatioEl = getField("oneToOneRatioPercent");
-        var bankEl = getField("bankName");
-        var accountEl = getField("accountNumber");
-        var holderEl = getField("accountHolder");
-        var paidEl = getField("paid");
-        var cfg=(state.teacherSettings||{})[teacher]||{},rule=(cfg.monthlyRules||{})[state.selectedMonth]||{};
-        var monthlyPatch={};
-        var selectedRate=function(key){var v=getField(key).value;return v===''?null:Number(v);};
-        if(selectedRate('single')!==(rule.single??null)||selectedRate('private')!==(rule.private??null)){
-          monthlyPatch={monthRule:{single:selectedRate('single'),private:selectedRate('private')},expectedRuleAt:rule.at||''};
+      for(const row of rows){
+        const teacher=row.dataset.teacherRow,detail=row.nextElementSibling,patch={teacher};
+        const fields=[...row.querySelectorAll('[data-f-key]'),...detail.querySelectorAll('[data-f-key]')];
+        for(const el of fields){
+          if(el.value===el.dataset.original)continue;
+          if(el.checkValidity&&!el.checkValidity()){document.getElementById('pcSearch').value='';filterPayrollProfiles_();if(detail.contains(el)&&detail.hidden)row.querySelector('.pc-more').click();el.reportValidity();return;}
+          const key=el.dataset.fKey;
+          if(key==='single'||key==='private'){
+            const rate=k=>{const v=detail.querySelector('[data-f-key="'+k+'"]').value;return v===''?null:Number(v);};
+            patch.monthRule={single:rate('single'),private:rate('private')};patch.expectedRuleAt=state.teacherSettings[teacher]?.monthlyRules?.[state.selectedMonth]?.at||'';
+          }else patch[key]=el.type==='number'?(el.value===''?null:Number(el.value)):el.value;
         }
-        if(getField('firstWorkDate').value!==(cfg.firstWorkDate||''))monthlyPatch.firstWorkDate=getField('firstWorkDate').value;
-        updates.push({ ...monthlyPatch,
-          teacher: teacher,
-          salaryMode: modeEl ? modeEl.value : "ratio",
-          hourlyRate: hourlyEl ? toNumber(hourlyEl.value, 0) : 0,
-          oneToOneSettlementMode: oneToOneModeEl ? oneToOneModeEl.value : "hourly",
-          oneToOneRatioPercent: oneToOneRatioEl ? clampNumber(toNumber(oneToOneRatioEl.value, 50), 0, 100) : 50,
-          bankName: bankEl ? bankEl.value : "",
-          accountNumber: accountEl ? accountEl.value : "",
-          accountHolder: holderEl ? holderEl.value : "",
-          paid: paidEl ? !!paidEl.checked : false
-        });
-      });
-      var suspicionRules = collectSettingsSuspicionRules();
-
+        if(patch.salaryMode==='hourly' && !row.querySelector('[data-f-key="hourlyRate"]').value)patch.hourlyRate=null;
+        if(Object.keys(patch).length>1)updates.push(patch);
+      }
+      var suspicionRules=collectSettingsSuspicionRules();
+      if(state.pcSuspicionInitial===JSON.stringify(suspicionRules))suspicionRules=undefined;
+      if(!updates.length&&!suspicionRules){settingsModalEl.style.display='none';return;}
+      saveSettingsBtnEl.disabled=true;
       savePayrollSettingsRequest_(updates, suspicionRules)
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
@@ -44160,7 +44141,7 @@ window.SeduHubAdapter={
         })
         .catch(function(err) {
           alert("설정 저장 오류: " + (err.message || String(err)));
-        });
+        }).finally(function(){saveSettingsBtnEl.disabled=false;});
     }
 
     function savePayrollSettingsRequest_(updates, suspicionRules) {

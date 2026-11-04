@@ -120,6 +120,8 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     if (['savePayrollStaffTimes','savePayrollStaffFinalization','savePayrollFinalization'].includes(method) && req.identity.role !== 'ADMIN') return next(new ApiError(403, 'payroll_admin_required', '관리자만 수정 및 확정할 수 있습니다.'));
     const payload = req.body?.payload ?? req.body ?? {};
     const rateManager = req.identity.permissions.canManagePayrollRates;
+    if ((method==='getPayrollCenterHistory' && !rateManager) || (method==='savePayrollCenterVisit' && !rateManager && req.identity.role!=='ADMIN'))
+      return next(new ApiError(403,'payroll_rate_access_required','설정 센터 권한이 없습니다.'));
     const settingsMethod = ['getPayrollSettings','savePayrollSettings'].includes(method);
     if (settingsMethod && !rateManager && !(method === 'savePayrollSettings' && req.identity.role === 'ADMIN' && payload.suspicionRules && Array.isArray(payload.updates) && !payload.updates.length)) {
       return next(new ApiError(403,'payroll_rate_access_required','강사 정산 비율 설정 권한이 없습니다.'));

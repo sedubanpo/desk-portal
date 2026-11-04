@@ -83,3 +83,19 @@ test('stale second browser cannot overwrite saved amount and percentage', async(
  assert.equal(first.success,true);assert.equal(second.success,false);assert.equal(second.conflict,true);
  assert.equal(db.documents.get('payrollOverrides/po_26-09').overrides.amountOverrides[0].amount,50000);
 });
+
+test('center visit retries and profile edits preserve payment history and redact account values', async () => {
+  const {applyPayrollSettingsUpdates}=await import('../src/payroll/normalizers.js');
+  const db=fakeFirestore(),store=createPayrollStore(db),at='2026-11-04T09:00:00.000Z';
+  db.documents.set('payrollSettings/global',{settings:{테스트:{salaryMode:'ratio',paidByMonth:{'26-10':true}}}});
+  await store.saveCenterVisit('open',identity,at,'26-11');
+  await store.saveCenterVisit('open',identity,at,'26-11');
+  const payload={monthName:'26-11',updates:[{teacher:'테스트',salaryMode:'hourly',hourlyRate:null,accountNumber:'secret-bank-value'}]};
+  const result=await store.saveSettings({requestId:'edit',identity,nowIso:at,payload,mutate:s=>applyPayrollSettingsUpdates(s,payload,at,identity)});
+  assert.equal(result.settings.테스트.hourlyRate,null);
+  assert.deepEqual(result.settings.테스트.paidByMonth,{'26-10':true});
+  const events=[...db.documents].filter(([k])=>k.startsWith('payrollCenterHistory/')).map(([,v])=>v);
+  assert.deepEqual(events.map(e=>[e.kind,e.by,e.at]),[['visit',identity.name,at],['change',identity.name,at]]);
+  assert.match(events[1].changes.join(' '),/비율제 → 시급제/);
+  assert.doesNotMatch(JSON.stringify(events),/secret-bank-value/);
+});
