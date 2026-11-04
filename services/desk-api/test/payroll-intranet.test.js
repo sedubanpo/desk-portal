@@ -270,3 +270,18 @@ test('calculation reuse rereads source on force refresh and invalidates on edits
  data.intranetLegacyPeriods=[];
  const deleted=await reader.readMonth('26-09',{forceRefresh:true});assert.equal(deleted.timings.calculationCacheHit,false);assert.equal(deleted.rows.length,0);
 });
+
+test('monthly exception rates use verified single-individual status and preserve other months',()=>{
+ const input=rows([lesson,{...lesson,id:'solo',billMinutes:180,payMinutes:180,rateUnit:'perHour',singleIndividual:{bookedMinutes:180}},
+   {...lesson,id:'private',className:'사회-1:1-강사',rateUnit:'perClass',rate:250000}]);
+ for(const salaryMode of ['ratio','hourly']){
+   const patch={monthName:'26-09',updates:[{teacher:'강사',salaryMode,ratioPercent:50,hourlyRate:20000,monthRule:{private:100,single:70},expectedRuleAt:''}]};
+   const settings=applyPayrollSettingsUpdates({},patch,'2026-09-01',{name:'담당자',uid:'u'});
+   const s=buildPayrollSummary(input,meta,{teacherSettings:settings});
+   assert.equal(s.kpi.estimatedPay,250000+63000+(salaryMode==='hourly'?40000:30000));
+   assert.equal(s.calendar.weeks.flat().find(d=>d?.day===3).settlementAmount,s.kpi.estimatedPay);
+   assert.equal(settings['강사'].monthlyRules['26-09'].history[0].by,'담당자');
+   assert.throws(()=>applyPayrollSettingsUpdates(settings,{...patch,updates:[{...patch.updates[0],monthRule:{private:null,single:null}}]},'later'),/다른 근무자/);
+   assert.equal(buildPayrollSummary(input,parsePayrollMonthName('26-10'),{teacherSettings:settings}).rows.find(r=>r.lessonId==='private').settlementPercentApplied,salaryMode==='ratio'?50:0);
+ }
+});

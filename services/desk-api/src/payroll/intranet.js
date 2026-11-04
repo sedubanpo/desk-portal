@@ -38,9 +38,10 @@ export function snapshotDatabase(collections) {
     if (!indexes.has(key)) {
       const index = new Map();
       for (const row of collections[name] || []) {
-        const bucket = index.get(row[field]) || [];
+        const value=field.split(".").reduce((item,key)=>item?.[key],row);
+        const bucket = index.get(value) || [];
         bucket.push(row);
-        index.set(row[field], bucket);
+        index.set(value, bucket);
       }
       indexes.set(key, index);
     }
@@ -83,7 +84,7 @@ export function intranetRows(lessons, students, meta) {
     const day=Number(l.date.slice(8));
     const source={values:[[student.name||student.studentName||l.studentName||'이름 확인 필요',`${meta.month}/${day}`,l.className,code,'반포',l.teacher,l.start,l.end,l.sourceMinutes/60,l.rateUnit==='perClass'?0:l.rate,amount??0,l.note,discount/100]]};
     const row=parsePayrollRows(source,meta)[0];
-    return {...row,lessonKind:l.kind,billingAmount:absent?0:(amount??0),billingHours:l.billMinutes/60,legacyZeroMakeup:l.kind==='cancelMakeup'&&l.source==='access-history'&&l.sourceMinutes===0&&l.payMinutes===0,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',discountReason:l.studentDiscount?.reason || '',studentSpecialRate:!!l.studentDiscount?.special,studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(!absent&&payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!absent&&!pending&&l.payMinutes>0,sourcePendingReason:pending?pendingReason(l,amount,payValid):'',amount:absent?0:(amount??0)};
+    return {...row,singleIndividual:validSingleIndividual(l),lessonKind:l.kind,billingAmount:absent?0:(amount??0),billingHours:l.billMinutes/60,legacyZeroMakeup:l.kind==='cancelMakeup'&&l.source==='access-history'&&l.sourceMinutes===0&&l.payMinutes===0,rateUnit:l.rateUnit || 'perHour',absenceRate:l.absenceRate ?? l.rate,absenceRateUnit:l.absenceRateUnit || l.rateUnit || 'perHour',rowNumber:index+2,rowKey:'intranet:'+createHash('sha256').update(`${l.studentId}|${l.id}`).digest('hex'),source:'intranet',discountReason:l.studentDiscount?.reason || '',studentSpecialRate:!!l.studentDiscount?.special,studentId:l.studentId,lessonId:l.id,hours:l.sourceMinutes/60,payHours:(!absent&&payValid?l.payMinutes:0)/60,sourcePending:pending,sourceRecognized:!absent&&!pending&&l.payMinutes>0,sourcePendingReason:pending?pendingReason(l,amount,payValid):'',amount:absent?0:(amount??0)};
   });
 }
 
@@ -146,7 +147,7 @@ export function createIntranetPayrollReader(db) {
     const fingerprint=createHash('sha256').update(JSON.stringify([month,current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks])).digest('hex');
     const calculation=await calculations.read(fingerprint,async()=>{
     let lessons=combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
-    const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
+    const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLessonDrafts:drafts,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});
     const periods={};
     const rosterIndex=new Map();
     for(const student of roster) for(const id of [student._documentId,student.canonicalId]) if(id&&!rosterIndex.has(id)) rosterIndex.set(id,student);
@@ -178,7 +179,12 @@ export function createIntranetPayrollReader(db) {
       const projected=projectedPayrollFeeRows(historicLessons,students,{periods:historicPeriods},historicMonth,{}).map(r=>r.lesson);
       historicRows.push(...intranetRows(projected,studentMap,parsePayrollMonthName(historicMonth.slice(2))));
     }
-    const currentRows=intranetRows(lessons,studentMap,meta);
+    const firstDates=new Map();
+    for(const lesson of combineLessons(current,past,drafts)){
+      if(!lesson.teacher||!/^\d{4}-\d{2}-\d{2}$/.test(lesson.date)||!(lesson.payMinutes>0)||['absence','cancel','study'].includes(lesson.kind))continue;
+      if(!firstDates.has(lesson.teacher)||lesson.date<firstDates.get(lesson.teacher))firstDates.set(lesson.teacher,lesson.date);
+    }
+    const currentRows=intranetRows(lessons,studentMap,meta).map(row=>({...row,firstRecordedWorkDate:firstDates.get(row.teacher)||''}));
     const links=makeupLinks.flatMap(d=>(d.links||[]).map(l=>({...l,studentId:d.studentId})));
     const rows=priceCancellationMakeups(currentRows,[...historicRows,...currentRows],links);
     const version=createHash('sha256').update(JSON.stringify(rows)).digest('hex');

@@ -43746,6 +43746,15 @@ window.SeduHubAdapter={
       return '<span class="payroll-hours">' + formatHours(hours) + 'h</span>';
     }
 
+    function monthlyPayrollFields(cfg) {
+      var rule=(cfg.monthlyRules||{})[state.selectedMonth]||{};
+      var label=function(v){return v==null?'기본 방식':v===100?'올페이 (100%)':v+'%';};
+      var fields=[['single','1명 개별정규'],['private','1:1']].map(function(pair){
+        return '<label>'+pair[1]+' <select class="modal-select" data-f-key="'+pair[0]+'">'+['',70,100].map(function(v){return '<option value="'+v+'"'+(String(rule[pair[0]]??'')===String(v)?' selected':'')+'>'+label(v===''?null:v)+'</option>';}).join('')+'</select></label>';
+      }).join(' ');
+      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+'</details>';
+    }
+
     function buildSettingsTeacherRowHtml(name, subject) {
       var cfg = (state.teacherSettings || {})[name] || {};
       var paidMap = cfg.paidByMonth || {};
@@ -43763,8 +43772,8 @@ window.SeduHubAdapter={
         '<td><select class="modal-select" data-f-key="salaryMode"><option value="ratio"' + (mode === "ratio" ? " selected" : "") + '>비율제</option><option value="hourly"' + (mode === "hourly" ? " selected" : "") + '>시급제</option></select></td>' +
         '<td><div class="settings-hourly-wrap" style="' + (mode === "hourly" ? "" : "display:none;") + '"><input class="modal-input" data-f-key="hourlyRate" type="number" min="0" step="1000" value="' + escapeHtml(hourlyValue) + '"><div class="settings-inline-note">시급제 선택 시만 사용</div></div></td>' +
         '<td><select class="modal-select" data-f-key="oneToOneSettlementMode"><option value="hourly"' + (oneToOneMode === "hourly" ? " selected" : "") + '>시급 포함</option><option value="ratio"' + (oneToOneMode === "ratio" ? " selected" : "") + '>비율 전환</option></select></td>' +
-        '<td><input class="modal-input" data-f-key="oneToOneRatioPercent" type="number" min="0" max="100" step="0.5" value="' + escapeHtml(String(oneToOneRatio)) + '"></td>' +
-        '<td><button class="account-toggle-btn" data-account-toggle="' + escapeHtml(name) + '" type="button">계좌 펼치기</button><div class="settings-inline-note">' + escapeHtml(bankSummary) + '</div></td>' +
+        '<td><input class="modal-input" data-f-key="oneToOneRatioPercent" type="number" min="0" max="100" step="0.5" value="' + escapeHtml(String(oneToOneRatio)) + '">' + monthlyPayrollFields(cfg) + '</td>' +
+        '<td><button class="account-toggle-btn" data-account-toggle="' + escapeHtml(name) + '" type="button">계좌 펼치기</button><div class="settings-inline-note">' + escapeHtml(bankSummary) + '</div><label>최초 근무 시작일 <input type="date" data-f-key="firstWorkDate" value="'+escapeHtml(cfg.firstWorkDate||'')+'"></label></td>' +
         '<td><label class="check-inline"><input type="checkbox" data-f-key="paid" ' + (paid ? "checked" : "") + '>지급완료</label></td>' +
       '</tr>' +
       '<tr class="settings-account-row hidden" data-account-row="' + escapeHtml(name) + '">' +
@@ -44037,12 +44046,12 @@ window.SeduHubAdapter={
         }
         if (!row.recognized) return;
         var t = byTeacher[teacher];
-        t.recognizedHours += toNumber(row.hours, 0);
+        t.recognizedHours += toNumber(row.recognizedHours, 0);
         t.netSales += toNumber(row.netAmount, 0);
-        var isOneToOne = String(row.classType || "").replace(/\s+/g, "") === "1:1";
-        var useOneToOneRatio = t.salaryMode === "hourly" && t.oneToOneSettlementMode === "ratio" && isOneToOne;
-        if (useOneToOneRatio) {
-          t.oneToOneRatioSettlement += toNumber(row.netAmount, 0) * (t.oneToOneRatioPercent / 100);
+        var useOneToOneRatio = row.oneToOneRatioRuleApplied || row.settlementPercentOverridden;
+        if (useOneToOneRatio || t.salaryMode==="ratio") {
+          t.variablePay=(t.variablePay||0)+toNumber(row.netAmount,0)*row.settlementPercentApplied/100;
+          if(t.salaryMode==="hourly")t.oneToOneRatioSettlement=t.variablePay;
         }
         var s = parseDisplayTimeToMinutes(row.start);
         var e = parseDisplayTimeToMinutes(row.end);
@@ -44061,7 +44070,7 @@ window.SeduHubAdapter={
         item.oneToOneRatioSettlement = Math.round(item.oneToOneRatioSettlement || 0);
         item.estimatedPay = item.salaryMode === "hourly"
           ? Math.round((item.pureHours * item.hourlyRate) + item.oneToOneRatioSettlement)
-          : Math.round(item.netSales * (toNumber(state.ratioPercent, 50) / 100));
+          : Math.round(item.variablePay || 0);
         return item;
       }).sort(function(a, b) { return a.teacher.localeCompare(b.teacher, "ko"); });
     }
@@ -44121,7 +44130,14 @@ window.SeduHubAdapter={
         var accountEl = getField("accountNumber");
         var holderEl = getField("accountHolder");
         var paidEl = getField("paid");
-        updates.push({
+        var cfg=(state.teacherSettings||{})[teacher]||{},rule=(cfg.monthlyRules||{})[state.selectedMonth]||{};
+        var monthlyPatch={};
+        var selectedRate=function(key){var v=getField(key).value;return v===''?null:Number(v);};
+        if(selectedRate('single')!==(rule.single??null)||selectedRate('private')!==(rule.private??null)){
+          monthlyPatch={monthRule:{single:selectedRate('single'),private:selectedRate('private')},expectedRuleAt:rule.at||''};
+        }
+        if(getField('firstWorkDate').value!==(cfg.firstWorkDate||''))monthlyPatch.firstWorkDate=getField('firstWorkDate').value;
+        updates.push({ ...monthlyPatch,
           teacher: teacher,
           salaryMode: modeEl ? modeEl.value : "ratio",
           hourlyRate: hourlyEl ? toNumber(hourlyEl.value, 0) : 0,
@@ -44549,7 +44565,12 @@ window.SeduHubAdapter={
       var kpi = data.kpi || {};
       state.currentRows = data.rows || [];
       document.getElementById("kpiHours").textContent = formatHours(kpi.recognizedHours || 0) + "h";
-      document.getElementById("kpiWorkingDays").textContent = "근무일 " + (kpi.workingDays || 0) + "일";
+      document.getElementById("kpiWorkingDays").textContent = "이달 근무 " + (kpi.workingDays || 0) + "일";
+      if(state.selectedTeacher && kpi.firstWorkDate){
+        var today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
+        var days=Math.floor((Date.parse(today)-Date.parse(kpi.firstWorkDate))/86400000)+1;
+        document.getElementById("kpiWorkingDays").textContent+=' · '+(kpi.firstWorkDateRecorded?'첫 수업 기록 ':'최초 근무 ')+kpi.firstWorkDate+(days>0?' · 오늘로 '+days+'일째':'');
+      }
       document.getElementById("kpiNetSales").textContent = formatWon(kpi.netSales || 0);
       document.getElementById("kpiGrossDiscount").innerHTML =
         '할인 전 ' + formatWon(kpi.grossSales || 0) + '<br><strong class="payroll-minus">− 할인 ' + formatWon(kpi.discount || 0) + '</strong><br><strong>위 금액은 할인을 이미 차감했습니다.</strong><br>당취 제외 · 인정 보충 포함';
@@ -44923,8 +44944,8 @@ window.SeduHubAdapter={
         dayRows.slice(0, 8).map(function(row) {
           var badgeClass = getAttendanceBadgeClass(row.attendanceCode);
           var settleText = row.recognized
-            ? (state.salaryMode === "ratio"
-              ? formatWon(Math.round(toNumber(row.netAmount, 0) * (toNumber(state.ratioPercent, 50) / 100)))
+            ? (row.effectiveSalaryMode === "ratio" || row.oneToOneRatioRuleApplied || row.settlementPercentOverridden
+              ? formatWon(Math.round(toNumber(row.netAmount, 0) * row.settlementPercentApplied / 100))
               : "일자 순수시수 기준")
             : "0원";
           return '' +
@@ -44934,7 +44955,7 @@ window.SeduHubAdapter={
                 '<div class="day-detail-main">' + escapeHtml(row.className) + "</div>" +
                 '<div class="day-detail-sub">' +
                   '학생: ' + renderStudentIdentityHtml_(row.name || '-') +
-                  ' · 매출: ' + escapeHtml(formatWon(row.amount)) +
+                  ' · 매출: ' + escapeHtml(row.sourcePending ? '확인 필요' : formatWon(row.amount)) +
                   ' · 정산: ' + escapeHtml(settleText) +
                   ' · 당취: ' + escapeHtml(row.attendanceCode === "당일취소" ? formatWon(row.amount) : "0원") +
                 '</div>' +

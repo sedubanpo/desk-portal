@@ -71,6 +71,10 @@ function scopeMatches(scope, lesson) {
   if (scope?.protectedThrough && lesson.date <= scope.protectedThrough) return false;
   if (scope?.protectedLessonIds?.includes(lesson.id)) return false;
   if (!scope || scope.version !== 1 || scope.studentId !== lesson.studentId || lesson.date < scope.effectiveFrom || scope.effectiveThrough && lesson.date > scope.effectiveThrough) return false;
+  if (scope.repairSnapshots) {
+    const snapshot = scope.repairSnapshots[lesson.id];
+    if (!snapshot || Object.entries(snapshot).some(([k, v]) => lesson[k] !== v)) return false;
+  }
   if (scope.allocation) return Object.entries(scope.allocation.snapshot).every(([k, v]) => lesson[k] === v);
   const identity = automaticCourseIdentity(lesson);
   if (!identity || ["teacher", "type", "actualMinutes"].some((k) => identity[k] !== scope.identity[k]) || mergeCourse(lesson) !== scope.identity.course) return false;
@@ -128,6 +132,7 @@ function accessCharge(l) {
   return l.source === "access-history" && l.access?.billingAuthoritative === true && typeof l.access.amount === "number" && Number.isFinite(l.access.amount) && l.access.amount >= 0 ? Math.round(l.access.amount * 100) / 100 : null;
 }
 function charge(l) {
+  if (l.kind === "absence" && l.billMinutes === 0 && l.payMinutes === 0) return 0;
   if (l.scopedFee?.review) return null;
   if (l.scopedFee && !l.studentDiscount) return scopedAmount(l.scopedFee.scope, l);
   if (l.studentDiscount) {
@@ -148,6 +153,7 @@ function charge(l) {
 }
 function estimatedCharge(l) {
   if (l.deletedAt) return 0;
+  if (l.kind === "absence" && l.billMinutes === 0 && l.payMinutes === 0) return 0;
   if (l.scopedFee?.review) return null;
   if (l.scopedFee && !l.studentDiscount) return scopedAmount(l.scopedFee.scope, l);
   if (l.studentDiscount) {
@@ -190,10 +196,14 @@ function automaticCourseFees(rows, studentId, month) {
     const shared = individualKey(row);
     if (shared) groups.set(shared, [...groups.get(shared) || [], row]);
   }
+  const confirmedReusable = (row) => {
+    const saved = row.scopedFee;
+    return !!saved && !saved.review && saved.scope.reuseMatchingRate === true && !saved.scope.allocation && !row.feeAllocation && !row.singleIndividual && !row.studentDiscount && scopeMatches(saved.scope, row);
+  };
   const resolved = /* @__PURE__ */ new Map();
   for (const [key, members] of groups) {
     const full = members.filter((row) => ["regular", "late", "cancel"].includes(row.kind) && row.billMinutes !== null && row.billMinutes > 0 && row.billMinutes === actualLessonMinutes(row));
-    const evidence = full.filter((row) => reusableLegacyEvidence(row) && row.kind === "regular" && !Number(row.access?.discount || 0) && !/할인|무료|금액\s*예외|보강|보충/.test([row.note, row.reason].join(" "))).map(estimatedCharge).filter((value) => value !== null);
+    const evidence = full.filter((row) => (reusableLegacyEvidence(row) || !key.startsWith('["student-individual"') && confirmedReusable(row)) && row.kind === "regular" && !Number(row.access?.discount || 0) && !/할인|무료|금액\s*예외|보강|보충/.test([row.note, row.reason].join(" "))).map(estimatedCharge).filter((value) => value !== null);
     const amounts = [...new Set(evidence)];
     resolved.set(key, { count: evidence.length, amount: amounts.length === 1 && Number.isSafeInteger(amounts[0]) && amounts[0] > 0 ? amounts[0] : void 0, conflict: amounts.length > 1 });
   }
@@ -489,11 +499,15 @@ function recoverIssueFees(issues, month, period) {
 function singleIndividualMinutes(l) {
   const minutes = (t) => Number(String(t).slice(0, 2)) * 60 + Number(String(t).slice(3));
   const actual = minutes(l.end) - minutes(l.start);
-  return !l.deletedAt && ["regular", "late"].includes(l.kind) && /개별/.test(l.className) && !/\d+\s*:\s*\d+|특강|수행평가|자습|보충/.test(l.className) && [120, 180].includes(actual) && l.sourceMinutes === actual ? actual + 60 : null;
+  return !l.deletedAt && ["regular", "late", "cancelMakeup", "absenceMakeup", "lateMakeup"].includes(l.kind) && /개별/.test(l.className) && !/\d+\s*:\s*\d+|특강|수행평가|자습/.test(l.className) && [120, 180].includes(actual) && l.sourceMinutes === actual ? actual + 60 : null;
+}
+function singleIndividualBillMinutes(l) {
+  const booked = singleIndividualMinutes(l);
+  return booked === null ? null : ["cancelMakeup", "lateMakeup"].includes(l.kind) ? 0 : booked;
 }
 function validSingleIndividual(l) {
   const expected = singleIndividualMinutes(l);
-  return !!l.singleIndividual && expected !== null && l.singleIndividual.bookedMinutes === expected && l.billMinutes === expected && l.payMinutes === expected && l.rateUnit === "perHour";
+  return !!l.singleIndividual && expected !== null && l.singleIndividual.bookedMinutes === expected && l.billMinutes === singleIndividualBillMinutes(l) && l.payMinutes === expected && ["perHour", "perClass"].includes(l.rateUnit);
 }
 
 // functions/portalChanges.js
@@ -503,7 +517,7 @@ var sameField = (before, after, key) => {
   if (key === "note") return String(before?.note || "") === String(after?.note || "");
   return before?.[key] === after?.[key];
 };
-var changed = (a, b) => !!b.deletedAt || fields.some((k) => !sameField(a, b, k));
+var changed = (a, b) => !(a.kind === "study" && (b.kind === "study" || b.deletedAt)) && (!!b.deletedAt || fields.some((k) => !sameField(a, b, k)));
 
 // src/studentDiscounts.ts
 var discountCourseKey = (l) => {
@@ -666,10 +680,9 @@ function applySessionFees(rows, decisions, _linkedStudentIds = [], periodFor) {
     let scopedSource;
     let values = evidence.get(automaticCourseKey(virtual));
     const period = periodFor?.(virtual);
-    if (period?.assignments.some((a) => a.feeScope?.protectedLessonIds?.some((id) => s.rows.some((l) => l.id === id)))) continue;
     if (!values && period && s.rows.length > 1) {
       const whole = { ...virtual, id: "session:" + s.key, kind: "regular", status: "\uCD9C\uC11D", sourceMinutes: minutes, billMinutes: minutes, payMinutes: minutes, rate: null, rateUnit: "perHour", feeProjection: void 0, access: void 0, rateOverride: void 0 };
-      const priced = applyFees({ ...emptyStore(), lessons: [whole] }, whole.studentId, whole.date.slice(0, 7), period.assignments, period.merges || []).lessons[0];
+      const priced = applyFees({ ...emptyStore(), lessons: [whole] }, whole.studentId, whole.date.slice(0, 7), period.assignments.filter((a) => !a.feeScope?.protectedLessonIds?.some((id) => s.rows.some((l) => l.id === id))), period.merges || []).lessons[0];
       const total2 = estimatedCharge(priced);
       if (total2 !== null && total2 > 0 && Number.isSafeInteger(total2) && !priced.automaticFeeConflict) {
         values = /* @__PURE__ */ new Set([total2]);
@@ -744,27 +757,47 @@ function automaticBillingTime(rows) {
 
 // src/feeReview.ts
 function projectedFeeRows(lessons, students, data, month, decisions = {}) {
+  const studentIndex = /* @__PURE__ */ new Map();
+  for (const student of students) for (const key of [student.id, student.canonicalId]) if (key && !studentIndex.has(key)) studentIndex.set(key, student);
   const normalized = lessons.map((lesson) => {
-    const student = students.find((s) => s.id === lesson.studentId || s.canonicalId === lesson.studentId);
+    const student = studentIndex.get(lesson.studentId);
     return { ...lesson, studentId: student?.id || lesson.studentId };
   });
   let projected = removeFeeProjection({ ...emptyStore(), students, lessons: normalized });
   projected = { ...projected, lessons: automaticBillingTime(projected.lessons) };
   const context = (lesson) => {
-    const student = students.find((s) => s.id === lesson.studentId || s.canonicalId === lesson.studentId);
+    const student = studentIndex.get(lesson.studentId);
     const canonical = student?.canonicalId || student?.id || lesson.studentId;
     const period = data.periods[canonical] || { revision: 0, assignments: [] };
     return { student, canonical, period };
   };
-  for (const studentId of new Set(projected.lessons.filter((l) => l.date.startsWith(month + "-")).map((l) => l.studentId))) {
-    const { period } = context(projected.lessons.find((l) => l.studentId === studentId));
-    projected = applyFees(projected, studentId, month, period.assignments, period.merges || []);
+  const grouped = /* @__PURE__ */ new Map();
+  projected.lessons.forEach((l, index) => {
+    const indices = grouped.get(l.studentId) || [];
+    indices.push(index);
+    grouped.set(l.studentId, indices);
+  });
+  const priced = [...projected.lessons];
+  for (const [studentId, indices] of grouped) {
+    const own = indices.map((index) => projected.lessons[index]);
+    if (!own.some((l) => l.date.startsWith(month + "-"))) continue;
+    const { period } = context(own[0]);
+    const result = applyFees({ ...projected, lessons: own }, studentId, month, period.assignments, period.merges || []).lessons;
+    indices.forEach((index, i) => {
+      priced[index] = result[i];
+    });
   }
+  projected = { ...projected, lessons: priced };
   let rows = applySessionFees(projected.lessons, decisions, students.filter((s) => s.canonicalId).map((s) => s.id), (l) => context(l).period);
-  for (const studentId of new Set(rows.map((l) => l.studentId))) {
-    const { period } = context(rows.find((l) => l.studentId === studentId));
-    rows = applyStudentDiscounts(rows, studentId, month, period.discountPolicy);
+  const discounted = [...rows];
+  for (const [studentId, indices] of grouped) {
+    const own = indices.map((index) => rows[index]), { period } = context(own[0]);
+    const result = applyStudentDiscounts(own, studentId, month, period.discountPolicy);
+    indices.forEach((index, i) => {
+      discounted[index] = result[i];
+    });
   }
+  rows = discounted;
   return rows.filter((l) => !l.deletedAt && l.date.startsWith(month + "-")).map((l) => {
     const value = context(l);
     return { lesson: l, student: value.student, canonical: value.canonical, period: value.period, rate: l.rate };
@@ -838,6 +871,10 @@ function scopeMatches2(scope, lesson) {
   if (scope?.protectedThrough && lesson.date <= scope.protectedThrough) return false;
   if (scope?.protectedLessonIds?.includes(lesson.id)) return false;
   if (!scope || scope.version !== 1 || scope.studentId !== lesson.studentId || lesson.date < scope.effectiveFrom || scope.effectiveThrough && lesson.date > scope.effectiveThrough) return false;
+  if (scope.repairSnapshots) {
+    const snapshot = scope.repairSnapshots[lesson.id];
+    if (!snapshot || Object.entries(snapshot).some(([k, v]) => lesson[k] !== v)) return false;
+  }
   if (scope.allocation) return Object.entries(scope.allocation.snapshot).every(([k, v]) => lesson[k] === v);
   const identity = automaticCourseIdentity2(lesson);
   if (!identity || ["teacher", "type", "actualMinutes"].some((k) => identity[k] !== scope.identity[k]) || mergeCourse2(lesson) !== scope.identity.course) return false;
@@ -891,6 +928,7 @@ function accessCharge2(l) {
   return l.source === "access-history" && l.access?.billingAuthoritative === true && typeof l.access.amount === "number" && Number.isFinite(l.access.amount) && l.access.amount >= 0 ? Math.round(l.access.amount * 100) / 100 : null;
 }
 function charge2(l) {
+  if (l.kind === "absence" && l.billMinutes === 0 && l.payMinutes === 0) return 0;
   if (l.scopedFee?.review) return null;
   if (l.scopedFee && !l.studentDiscount) return scopedAmount2(l.scopedFee.scope, l);
   if (l.studentDiscount) {
@@ -911,6 +949,7 @@ function charge2(l) {
 }
 function estimatedCharge2(l) {
   if (l.deletedAt) return 0;
+  if (l.kind === "absence" && l.billMinutes === 0 && l.payMinutes === 0) return 0;
   if (l.scopedFee?.review) return null;
   if (l.scopedFee && !l.studentDiscount) return scopedAmount2(l.scopedFee.scope, l);
   if (l.studentDiscount) {
@@ -951,10 +990,14 @@ function automaticCourseFees2(rows, studentId, month) {
     const shared = individualKey(row);
     if (shared) groups.set(shared, [...groups.get(shared) || [], row]);
   }
+  const confirmedReusable = (row) => {
+    const saved = row.scopedFee;
+    return !!saved && !saved.review && saved.scope.reuseMatchingRate === true && !saved.scope.allocation && !row.feeAllocation && !row.singleIndividual && !row.studentDiscount && scopeMatches2(saved.scope, row);
+  };
   const resolved = /* @__PURE__ */ new Map();
   for (const [key, members] of groups) {
     const full = members.filter((row) => ["regular", "late", "cancel"].includes(row.kind) && row.billMinutes !== null && row.billMinutes > 0 && row.billMinutes === actualLessonMinutes2(row));
-    const evidence = full.filter((row) => reusableLegacyEvidence2(row) && row.kind === "regular" && !Number(row.access?.discount || 0) && !/할인|무료|금액\s*예외|보강|보충/.test([row.note, row.reason].join(" "))).map(estimatedCharge2).filter((value) => value !== null);
+    const evidence = full.filter((row) => (reusableLegacyEvidence2(row) || !key.startsWith('["student-individual"') && confirmedReusable(row)) && row.kind === "regular" && !Number(row.access?.discount || 0) && !/할인|무료|금액\s*예외|보강|보충/.test([row.note, row.reason].join(" "))).map(estimatedCharge2).filter((value) => value !== null);
     const amounts = [...new Set(evidence)];
     resolved.set(key, { count: evidence.length, amount: amounts.length === 1 && Number.isSafeInteger(amounts[0]) && amounts[0] > 0 ? amounts[0] : void 0, conflict: amounts.length > 1 });
   }
@@ -1401,10 +1444,9 @@ function applySessionFees2(rows, decisions, _linkedStudentIds = [], periodFor) {
     let scopedSource;
     let values = evidence.get(automaticCourseKey2(virtual));
     const period = periodFor?.(virtual);
-    if (period?.assignments.some((a) => a.feeScope?.protectedLessonIds?.some((id) => s.rows.some((l) => l.id === id)))) continue;
     if (!values && period && s.rows.length > 1) {
       const whole = { ...virtual, id: "session:" + s.key, kind: "regular", status: "\uCD9C\uC11D", sourceMinutes: minutes, billMinutes: minutes, payMinutes: minutes, rate: null, rateUnit: "perHour", feeProjection: void 0, access: void 0, rateOverride: void 0 };
-      const priced = applyFees2({ ...emptyStore2(), lessons: [whole] }, whole.studentId, whole.date.slice(0, 7), period.assignments, period.merges || []).lessons[0];
+      const priced = applyFees2({ ...emptyStore2(), lessons: [whole] }, whole.studentId, whole.date.slice(0, 7), period.assignments.filter((a) => !a.feeScope?.protectedLessonIds?.some((id) => s.rows.some((l) => l.id === id))), period.merges || []).lessons[0];
       const total2 = estimatedCharge2(priced);
       if (total2 !== null && total2 > 0 && Number.isSafeInteger(total2) && !priced.automaticFeeConflict) {
         values = /* @__PURE__ */ new Set([total2]);
@@ -1449,18 +1491,77 @@ function restoreImportedMakeupHours(lesson) {
   return { ...l, sourceMinutes: minutes, payMinutes: minutes };
 }
 
+// functions/savedBillingLessons.js
+function savedBillingLessons(current = {}, history = {}, drafts = [], studentId, month, { includeDeleted = false } = {}) {
+  const fail2 = (message) => {
+    throw Object.assign(Error(message), { status: 409 });
+  };
+  for (const period of [current, history]) {
+    if (period.studentId && period.studentId !== studentId) fail2("\uC218\uC5C5 \uBB38\uC11C\uC758 \uD559\uC0DD \uC815\uBCF4\uAC00 \uC77C\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+    for (const list of [period.lessons || [], period.publishedLessons || []]) {
+      if (!Array.isArray(list) || list.some((l) => !l || l.studentId && l.studentId !== studentId)) fail2("\uC218\uC5C5 \uAE30\uB85D\uC758 \uD559\uC0DD \uC815\uBCF4\uAC00 \uC77C\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+      if (list.length > 1e3) throw Object.assign(Error("\uD559\uC0DD \uC6D4 \uC218\uC5C5 \uC870\uD68C \uD55C\uB3C4\uB97C \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4."), { status: 413 });
+    }
+  }
+  const deleted = new Set(current.publishedDeletedIds || []);
+  const rows = new Map([...history.lessons || [], ...sentLessons(current), ...current.lessons || []].filter((l) => !deleted.has(l.id)).map((l) => [l.id, { ...l, studentId: l.studentId ?? studentId }]));
+  const publishedAt = current.updatedAt?.toMillis?.() || Date.parse(current.updatedAt || "") || 0;
+  for (const draft of drafts) {
+    const lesson = draft.lesson;
+    if (!lesson || lesson.studentId !== studentId || lesson.date?.slice(0, 7) !== month || draft.month && draft.month !== month) continue;
+    if (deleted.has(lesson.id) && !lesson.deletedAt && !(Date.parse(draft.updatedAt || "") > publishedAt)) continue;
+    const newer = !lesson.deletedAt && rows.has(lesson.id) && !changed(rows.get(lesson.id), lesson) && !["teacher-portal-history", "access-history"].includes(lesson.source) && publishedAt > Date.parse(draft.updatedAt || "");
+    rows.set(lesson.id, { ...newer ? rows.get(lesson.id) : lesson, inputBy: draft.createdBy, inputAt: draft.createdAt, draftRevision: draft.revision, dailyDirty: false });
+  }
+  return [...rows.values()].filter((l) => l.studentId === studentId && l.date?.slice(0, 7) === month && (includeDeleted || !l.deletedAt)).map(restoreImportedMakeupHours);
+}
+
 // functions/feeApplications.js
 var fail = (message) => {
   throw Object.assign(Error(message), { status: 409 });
 };
 async function attachFeeApplications(db, studentId, month, period, tx) {
+  return attachFeeApplicationRecords(period, await readFeeApplicationRecords(db, studentId, tx));
+}
+async function readFeeApplicationRecords(db, studentId, tx) {
   const query = db.collection("intranetFeeApplications").where("studentId", "==", studentId).limit(121);
   const docs = await (tx ? tx.get(query) : query.get());
+  return feeApplicationRecords(docs);
+}
+function feeApplicationRecords(docs) {
   if (docs.size > 120) fail("\uC57D\uC815 \uC801\uC6A9 \uC774\uB825\uC758 \uC870\uD68C \uAE30\uAC04 \uD55C\uB3C4\uB97C \uB118\uC5C8\uC2B5\uB2C8\uB2E4.");
   const records = docs.docs.flatMap((d) => d.data().records || []);
   if (records.length > 1e4) fail("\uC57D\uC815 \uC801\uC6A9 \uC774\uB825 \uC870\uD68C \uD55C\uB3C4\uB97C \uB118\uC5C8\uC2B5\uB2C8\uB2E4.");
+  return records;
+}
+function replacementOccurrence(record, period) {
+  const { scope, lessonId } = record;
+  if (scope.scope !== "occurrence" || scope.lessonId !== lessonId || record.allocation || scope.allocation || scope.withdrawn) return null;
+  const candidates = (period.assignments || []).filter((a2) => a2.kind === "lesson" && a2.target === lessonId);
+  if (candidates.length !== 1) return null;
+  const [a] = candidates, snapshot = a.lessonSnapshot;
+  if (a.feeScope || a.source !== "fee-bulk" || a.bulkMode !== "manual" || !snapshot || snapshot.kind !== "regular" || !(Date.parse(a.updatedAt) > Date.parse(record.recordedAt)) || !Number.isSafeInteger(snapshot.billMinutes) || snapshot.billMinutes <= 0 || !Number.isSafeInteger(a.amount) || a.amount <= 0 || !["perHour", "perClass"].includes(a.rateUnit)) return null;
+  const lesson = { ...snapshot, id: lessonId, studentId: period.studentId };
+  if (!scopeMatches(scope, lesson) || Object.entries(record.snapshot).some(([k, v]) => lesson[k] !== v)) return null;
+  const amount = a.rateUnit === "perClass" ? a.amount : Math.round(a.amount * snapshot.billMinutes / 60);
+  const merges = (period.merges || []).filter((m) => mergeMatches(m, lesson));
+  if (merges.some((m) => m.conflict || m.amount !== a.amount || m.rateUnit !== a.rateUnit)) return null;
+  const explicitlyCorrected = a.confirmedGroupPrice === true && a.bulkMerge && merges.some((m) => m.scope === "month" && m.updatedAt === a.updatedAt && m.lessonIds?.includes(lessonId));
+  if (!explicitlyCorrected && amount !== scopedAmount(scope, lesson)) return null;
+  return {
+    repairSnapshots: { ...scope.repairSnapshots, [lessonId]: snapshot },
+    reuseMatchingRate: false,
+    ...explicitlyCorrected ? { amount: a.amount, rateUnit: a.rateUnit, valueMode: "base" } : {}
+  };
+}
+function attachFeeApplicationRecords(period, records) {
   const assignments = (period.assignments || []).map((a) => a.feeScope ? { ...a, feeScope: { ...a.feeScope, agreementId: a.rateId, applications: records.filter((r) => r.agreementId === a.rateId) } } : a);
-  for (const r of records) if (!assignments.some((a) => a.rateId === r.agreementId)) assignments.push({ kind: "lesson", target: r.lessonId, rateId: r.agreementId, amount: r.scope.amount, rateUnit: r.scope.rateUnit, feeScope: { ...r.scope, agreementId: r.agreementId, applications: records.filter((x) => x.agreementId === r.agreementId), withdrawn: true } });
+  for (const r of records) {
+    if (assignments.some((a) => a.rateId === r.agreementId)) continue;
+    const restored = replacementOccurrence(r, period) || { withdrawn: true };
+    const feeScope = { ...r.scope, agreementId: r.agreementId, applications: records.filter((x) => x.agreementId === r.agreementId), ...restored };
+    assignments.push({ kind: "lesson", target: r.lessonId, rateId: r.agreementId, amount: feeScope.amount, rateUnit: feeScope.rateUnit, feeScope });
+  }
   return { ...period, assignments };
 }
 
@@ -1536,14 +1637,19 @@ function confirmedFeeHistory(studentId, month, periods, sources, baseline, issue
       const identity = automaticCourseIdentity2(l);
       return identity && ["regular", "special"].includes(l.kind) && l.billMinutes === identity.actualMinutes && !l.singleIndividual && l.rateOverride === void 0 && !l.studentDiscount && !l.feeProjection && (!l.access?.sessionMinutes || l.access.sessionMinutes === identity.actualMinutes || l.access.billingAuthoritative && (l.rateUnit || "perHour") === "perHour" && l.rate === l.access.hourlyRate && Number.isSafeInteger(l.access.amount) && l.access.amount > 0 && Math.abs(l.access.amount - l.rate * identity.actualMinutes / 60) <= 1) && !Number(l.access?.discount || 0) && !exceptionalTariff([l.note, l.reason].join(" ")) && !fees.assignments.some((a) => a.kind === "lesson" && a.target === l.id && !recurringLessonAssignment(a, l)) && !(stored.suppressedTargets || []).some((t) => [feeClassKey3(l.className), feeClassKey3(mergeCourse2(l))].includes(feeClassKey3(t)));
     }).map((l) => l.id));
+    if (!eligible.size) continue;
+    const originalById = new Map(originals.map((l) => [l.id, l]));
     const groups = /* @__PURE__ */ new Map();
     for (const l of projectMonthlyLessons(originals, studentId, source.month, { ...fees, discountPolicy: null }, {}, true)) {
-      if (!eligible.has(l.id) || l.scopedFee || l.billingDecision) continue;
+      if (!eligible.has(l.id) || l.scopedFee || l.billingDecision || ["session-course-rate", "contract-session-rate"].includes(l.feeProjection?.sourceType)) continue;
       const identity = automaticCourseIdentity2(l), amount = estimatedCharge2(l);
       if (!identity || !Number.isSafeInteger(amount) || amount <= 0) continue;
       const key = JSON.stringify([identity.type, identity.teacher, identity.actualMinutes]);
-      const group = groups.get(key) || { ...identity, course: feeClassKey3(l.className), amounts: /* @__PURE__ */ new Set() };
+      const group = groups.get(key) || { ...identity, course: feeClassKey3(l.className), amounts: /* @__PURE__ */ new Set(), evidence: [], reviewOnly: true };
       group.amounts.add(amount);
+      group.evidence.push({ studentId, date: l.date, amount, hourly: amount * 60 / identity.actualMinutes, lessonIds: [l.id] });
+      const original = originalById.get(l.id);
+      group.reviewOnly &&= fees.assignments.some((a) => a.kind === "lesson" && a.target === l.id && a.source === "fee-review") || original?.rate == null && !fees.assignments.some((a) => a.kind === "class" && feeClassKey3(a.target) === feeClassKey3(l.className));
       groups.set(key, group);
     }
     for (const [key, g] of groups) {
@@ -1559,6 +1665,8 @@ function confirmedFeeHistory(studentId, month, periods, sources, baseline, issue
         amount: g.amounts.size === 1 ? [...g.amounts][0] : 0,
         conflict: g.amounts.size > 1,
         rateUnit: "perClass",
+        evidence: g.evidence,
+        reviewOnly: g.reviewOnly,
         sourceType: "prior-confirmed-rate",
         sourceMonth: source.month,
         note: "\uD655\uC778\uB41C \uC774\uC804 \uB2EC \uD68C\uB2F9 \uB2E8\uAC00",
@@ -1568,11 +1676,32 @@ function confirmedFeeHistory(studentId, month, periods, sources, baseline, issue
     }
     if (!history.includes(stored)) history.push(stored);
   }
+  const ordered = [...history].sort((a, b) => b.month.localeCompare(a.month));
+  for (let i = 0; i < ordered.length; i++) for (const m of ordered[i].merges) {
+    if (m.sourceType !== "prior-confirmed-rate" || m.conflict) continue;
+    const previous = ordered.slice(i + 1).flatMap((p) => p.merges.map((v) => ({ ...v, sourceMonth: p.month }))).find((v) => v.identityVersion === 2 && v.type === m.type && v.teacher === m.teacher && v.actualMinutes === m.actualMinutes);
+    if (!previous || previous.conflict || previous.amount === m.amount) continue;
+    m.continuity = {
+      previousMonth: previous.sourceMonth,
+      previousAmount: previous.amount,
+      sourceMonth: ordered[i].month,
+      sourceAmount: m.amount,
+      evidence: previous.evidence || [],
+      blocked: !!m.reviewOnly
+    };
+    if (m.reviewOnly) m.conflict = true;
+  }
   return history;
 }
-async function readConfirmedFeeSources(db, studentId, month, tx) {
+async function readConfirmedFeeSources(db, studentId, month, tx, loaded) {
+  if (tx) loaded = void 0;
   const read = (query) => tx ? tx.get(query) : query.get();
-  const snapshots = await Promise.all(["intranetStudentPeriods", "intranetLegacyPeriods"].map((name) => read(db.collection(name).where("studentId", "==", studentId).limit(241))));
+  const [snapshots, draftSnapshot] = await Promise.all([
+    loaded?.snapshots || Promise.all(["intranetStudentPeriods", "intranetLegacyPeriods"].map((name) => read(db.collection(name).where("studentId", "==", studentId).limit(241)))),
+    loaded?.draftSnapshot || read(db.collection("intranetLessonDrafts").where("lesson.studentId", "==", studentId).limit(1001))
+  ]);
+  if (draftSnapshot.docs.length > 1e3) throw Object.assign(Error("\uB2E8\uAC00 \uC2B9\uACC4 \uC218\uC815\uBCF8 \uC870\uD68C \uD55C\uB3C4\uB97C \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4."), { status: 413 });
+  const drafts = draftSnapshot.docs.map((d) => d.data());
   if (snapshots.some((s) => s.docs.length > 240)) throw Object.assign(Error("\uD559\uC0DD\uC758 \uB2E8\uAC00 \uC2B9\uACC4 \uC870\uD68C \uD55C\uB3C4\uB97C \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4."), { status: 413 });
   const maps = snapshots.map((s) => new Map(s.docs.map((d) => d.data()).filter((p) => p.month && p.month < month).map((p) => [p.month, p])));
   const months = [...new Set(maps.flatMap((m) => [...m.keys()]))];
@@ -1582,19 +1711,43 @@ async function readConfirmedFeeSources(db, studentId, month, tx) {
       if (p.studentId && p.studentId !== studentId) throw Object.assign(Error("\uB2E8\uAC00 \uC2B9\uACC4 \uC218\uC5C5\uC758 \uD559\uC0DD \uC815\uBCF4\uAC00 \uC77C\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."), { status: 409 });
       if ((p.lessons || []).length > 1e3 || (p.publishedLessons || []).length > 1e3) throw Object.assign(Error("\uD559\uC0DD \uC6D4 \uC218\uC5C5 \uC870\uD68C \uD55C\uB3C4\uB97C \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4."), { status: 413 });
     }
-    return { month: m, lessons: publishedView(current, legacy.lessons || []).map((l) => ({ ...l, studentId: l.studentId ?? studentId })) };
+    const published = publishedView(current, legacy.lessons || []), ids = new Set(published.map((l) => l.id));
+    return { month: m, lessons: savedBillingLessons(
+      { ...current, lessons: published },
+      {},
+      drafts.filter((d) => ids.has(d.lesson?.id)),
+      studentId,
+      m
+    ) };
   });
 }
-async function readCarriedFees(db, studentId, month, current, tx) {
+var loadedHistories = /* @__PURE__ */ new WeakMap();
+async function readConfirmedHistory(db, studentId, month, tx, loaded) {
   const read = (query) => tx ? tx.get(query) : query.get();
   const [past, sources, baseline, issues] = await Promise.all([
-    read(db.collection("intranetStudentFees").where("studentId", "==", studentId).limit(241)),
-    readConfirmedFeeSources(db, studentId, month, tx),
-    read(db.doc(`intranetFeeBaselines/${studentId}`)),
-    read(db.collection("intranetIssues").where("studentId", "==", studentId).limit(1001))
+    loaded?.past || read(db.collection("intranetStudentFees").where("studentId", "==", studentId).limit(241)),
+    readConfirmedFeeSources(db, studentId, month, tx, loaded),
+    loaded?.baseline || read(db.doc(`intranetFeeBaselines/${studentId}`)),
+    loaded?.issues || read(db.collection("intranetIssues").where("studentId", "==", studentId).limit(1001))
   ]);
   if (past.docs.length > 240 || issues.docs.length > 1e3) throw Object.assign(Error("\uD559\uC0DD\uC758 \uB2E8\uAC00 \uC2B9\uACC4 \uC870\uD68C \uD55C\uB3C4\uB97C \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4."), { status: 413 });
-  return attachFeeApplications(db, studentId, month, carryMonthlyFees(current, confirmedFeeHistory(studentId, month, past.docs.map((d) => d.data()), sources, baseline.data(), issues.docs.map((d) => ({ ...d.data(), id: d.id }))), month), tx);
+  return confirmedFeeHistory(studentId, month, past.docs.map((d) => d.data()), sources, baseline.data(), issues.docs.map((d) => ({ ...d.data(), id: d.id })));
+}
+async function readCarriedFees(db, studentId, month, current, tx, loaded) {
+  if (tx) loaded = void 0;
+  let history;
+  if (loaded) {
+    let cache = loadedHistories.get(loaded);
+    if (!cache) {
+      cache = /* @__PURE__ */ new Map();
+      loadedHistories.set(loaded, cache);
+    }
+    const key = JSON.stringify([studentId, month]);
+    if (!cache.has(key)) cache.set(key, readConfirmedHistory(db, studentId, month, void 0, loaded));
+    history = await cache.get(key);
+  } else history = await readConfirmedHistory(db, studentId, month, tx);
+  const carried = carryMonthlyFees(current, history, month);
+  return loaded?.applications ? attachFeeApplicationRecords(carried, feeApplicationRecords(loaded.applications)) : attachFeeApplications(db, studentId, month, carried, tx);
 }
 
 // functions/studentDiscounts.js

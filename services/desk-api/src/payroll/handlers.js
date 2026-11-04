@@ -217,7 +217,7 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
         payload,
         identity,
         nowIso: timestamp,
-        mutate: current => applyPayrollSettingsUpdates(current, payload, timestamp)
+        mutate: current => applyPayrollSettingsUpdates(current, payload, timestamp, identity)
       });
     },
 
