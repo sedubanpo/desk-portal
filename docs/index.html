@@ -38591,7 +38591,7 @@
       });
 
       hourlyInputEl.addEventListener("change", function() {
-        state.hourlyRate = toNumber(hourlyInputEl.value, 30000);
+        state.hourlyRate = hourlyInputEl.value.trim() === "" ? null : toNumber(hourlyInputEl.value, 0);
         saveSelectedPayrollSetting_();
       });
 
@@ -43670,7 +43670,7 @@ window.SeduHubAdapter={
       state.ratioPercent = toNumber(preset.ratioPercent,50);
       ratioInputEl.value = state.ratioPercent;
       var mode = String(preset.salaryMode || "").toLowerCase();
-      state.hourlyRate = toNumber(preset.hourlyRate,0);
+      state.hourlyRate = preset.hourlyRate == null ? null : toNumber(preset.hourlyRate,0);
       hourlyInputEl.value = state.hourlyRate ? String(Math.round(state.hourlyRate)) : '';
       hourlyInputEl.placeholder = '미정';
       if (mode === "hourly") {
@@ -44357,7 +44357,7 @@ window.SeduHubAdapter={
       var analysis = state.payroll.monthlyAnalysis;
       var inputSignature = JSON.stringify({
         ratioPercent: toNumber(state.ratioPercent, 50),
-        hourlyRate: toNumber(state.hourlyRate, 30000),
+        hourlyRate: toNumber(state.hourlyRate, 0),
         teacherSettings: state.teacherSettings || {}
       });
       if (analysis.loadingPromise) return analysis.loadingPromise;
