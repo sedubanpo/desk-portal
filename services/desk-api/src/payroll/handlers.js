@@ -86,21 +86,28 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
     },
 
     async getPayrollMonthSummary(payload = {}) {
-      const months = await listMonths(Boolean(payload.forceRefresh));
+      const fresh = Boolean(payload.forceRefresh);
+      const currentMonths = intranet ? payrollMonths([],now()) : [];
+      const requested = String(payload.monthName || '').trim();
+      const candidate = requested || currentMonths[0];
+      const inputs = month => Promise.all([
+        readSource(month,{reuse:true,forceRefresh:fresh}), store.getSettings(), store.getOverrides(month)
+      ]);
+      // Intranet months exist by calendar; their source does not depend on the legacy sheet index.
+      const [months, prefetched] = await Promise.all([
+        listMonths(fresh), currentMonths.includes(candidate) ? inputs(candidate) : null
+      ]);
       if (!months.length) return successFailure('급여 정산 월 탭(예: 26-02)을 찾을 수 없습니다.');
-      const monthName = String(payload.monthName || months[0]).trim();
+      const monthName = requested || months[0];
       const monthMeta = parsePayrollMonthName(monthName);
       if (!monthMeta) return successFailure(`월 탭 이름 형식이 올바르지 않습니다: ${monthName}`);
       if (!months.includes(monthName)) return successFailure(`선택한 월 탭을 찾을 수 없습니다: ${monthName}`);
-      const [source, settings, savedOverrides] = await Promise.all([
-        readSource(monthName, { reuse: true, forceRefresh: Boolean(payload.forceRefresh) }),
-        store.getSettings(),
-        store.getOverrides(monthName)
-      ]);
+      const [source,settings,savedOverrides] = prefetched && candidate === monthName ? prefetched : await inputs(monthName);
       const requestedOverrides = normalizePayrollOverrideBundle(payload);
       const effectiveOverrides = mergePayrollOverrideBundles(savedOverrides, requestedOverrides);
       const rows = source.rows;
       const summary = buildPayrollSummary(rows, monthMeta, payrollOptions(payload, settings, effectiveOverrides));
+      if (payload.comparisonOnly === true) return {success:true,kpi:summary.kpi,rowCount:summary.rows.length};
       return {
         ...summary,
         success: true,

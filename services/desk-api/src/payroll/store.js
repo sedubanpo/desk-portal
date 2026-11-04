@@ -90,6 +90,8 @@ export function createPayrollStore(firestore) {
           return {success:false, conflict:true, message:'다른 PC에서 정산 내역을 수정했습니다. 새로고침 후 다시 수정해 주세요.'};
         }
         const normalized = { ...normalizePayrollOverrideBundle(overrides), updatedAt: nowIso };
+        if (identity.permissions?.canManagePayrollRates !== true && JSON.stringify(normalized.settlementPercentOverrides) !== JSON.stringify(current.settlementPercentOverrides))
+          return {success:false,message:'수업별 정산 비율 변경 권한이 없습니다.'};
         const result = { success: true, monthName, overrides: normalized };
         transaction.set(target, { monthName, overrides: normalized, updatedAt: nowIso, updatedBy: identity.uid || '', updatedByName: identity.name || '' });
         transaction.set(audit, { requestId, method, monthName, actorUid: identity.uid || '', actorName: identity.name || '', createdAt: nowIso, result });

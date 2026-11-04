@@ -16721,6 +16721,7 @@
       padding: 14px;
       grid-template-columns: minmax(180px, 1fr) minmax(140px, .75fr) minmax(150px, .8fr) minmax(260px, 1.5fr) auto;
     }
+    .payroll-salary-config:not(.can-edit-rates) > :is(.field,#selectedMonthRule) { display:none !important; }
     .payroll-salary-config .mode-wrap,
     .payroll-salary-config .field input,
     .payroll-salary-config .message {
@@ -30949,8 +30950,12 @@
       return hasDeskPermission_("canManageSchedules");
     }
 
+    function canEditPayrollRates_() {
+      return state.cloudIdentity?.permissions?.canManagePayrollRates === true;
+    }
+
     function canManageTeacherPayroll_() {
-      return hasDeskPermission_("canManagePayroll");
+      return canEditPayrollRates_() || hasDeskPermission_("canManagePayroll");
     }
 
     function requireDeskScheduleWrite_() {
@@ -31086,7 +31091,7 @@
         accountSettingsMetaEl.textContent = loginId + " · " + roleLabel + (position ? " · " + position : "");
       }
       if (openPasswordChangeBtnEl) openPasswordChangeBtnEl.style.display = state.firebaseUser ? "flex" : "none";
-      if (openSettingsBtnEl) openSettingsBtnEl.style.display = isDeskAdminAccount_() ? "flex" : "none";
+      if (openSettingsBtnEl) openSettingsBtnEl.style.display = (isDeskAdminAccount_() || canEditPayrollRates_()) ? "flex" : "none";
       if (teacherModuleTabEl) teacherModuleTabEl.style.display = canManageTeacherPayroll_() ? "" : "none";
       document.querySelectorAll('[data-attendance-admin-only="true"]').forEach(function(el) { el.classList.toggle("hidden", !isDeskAdminAccount_()); });
       document.querySelectorAll('[data-desk-view="editor"], [data-desk-view="fixedSchedule"]').forEach(function(el) { el.classList.toggle("hidden", !canManageDeskSchedule_()); });
@@ -38679,7 +38684,8 @@
       });
 
       openSettingsBtnEl.addEventListener("click", function() {
-        requestPrivilegedAccess_("설정 센터", function() {
+        requestPrivilegedAccess_("설정 센터", async function() {
+          if (!(await ensurePayrollLoaded_()) && !state.payroll.loaded) return;
           renderSettingsModal();
           setSettingsTab(state.settingsTab || "profile");
           settingsModalEl.style.display = "flex";
@@ -39009,26 +39015,12 @@
 
     function loadBootstrap() {
       setLoading(true, "초기 데이터를 불러오는 중입니다...");
-      state.payroll.loadingPromise = Promise.all([
-        runServer("getPayrollBootstrapData"),
-        ensureTeacherSettingsLoaded_().catch(function() {})
-      ])
-        .then(function(results) {
-          var res = results[0];
-          if (!res || !res.success) throw new Error(res && res.message ? res.message : "초기 로드 실패");
-          state.months = res.months || [];
-          state.selectedMonth = res.selectedMonth || (state.months[0] || "");
-          renderMonthOptions();
-          return Promise.resolve().then(function() {
-            renderModeState();
-            return refreshSummary(false, { settingsReady: true });
-          }).then(function(summaryRes) {
-            if (!summaryRes) return;
-            state.payroll.loaded = true;
-            setTimeout(function() {
-              loadTuitionBootstrap({ silent: true }).catch(function() {});
-            }, 0);
-          });
+      renderModeState();
+      state.payroll.loadingPromise = refreshSummary(false, {settingsReady:true})
+        .then(function(summaryRes) {
+          if (!summaryRes) return;
+          state.payroll.loaded = true;
+          setTimeout(function() { loadTuitionBootstrap({silent:true}).catch(function() {}); },0);
         })
         .catch(function(err) {
           showClientMessage(err.message || String(err));
@@ -43408,6 +43400,7 @@ window.SeduHubAdapter={
     function hasCloudPrivilegedAccess_(featureName) {
       var identity = state.cloudIdentity || {};
       var role = String(identity.role || "").toUpperCase();
+      if (["강사 시수 정산","설정 센터"].includes(featureName) && canEditPayrollRates_()) return true;
       if (role === "ADMIN") return true;
       return featureName === "강사 시수 정산"
         && !!(identity.permissions && identity.permissions.canManagePayroll === true);
@@ -43419,7 +43412,7 @@ window.SeduHubAdapter={
           showClientMessage(featureName + " 권한이 없습니다. 관리자에게 문의하세요.");
           return;
         }
-        if (featureName === "강사 시수 정산" && !isPayrollUnlocked_()) {
+        if (["강사 시수 정산","설정 센터"].includes(featureName) && !isPayrollUnlocked_()) {
           openPayrollPinGate_(featureName, onSuccess);
           return;
         }
@@ -43544,7 +43537,7 @@ window.SeduHubAdapter={
           state.months = res.months || state.months;
           state.selectedMonth = res.selectedMonth || state.selectedMonth;
           state.payroll.overrideSignature = res.overrideSignature;
-          if (res.teacherSettings) state.teacherSettings = res.teacherSettings;
+          if (res.teacherSettings) { state.teacherSettings = res.teacherSettings; state.payroll.settingsLoaded = true; }
           applyTeacherSettingPreset();
           applyPayrollSavedOverrides_(res.savedOverrides || {});
           if (isMonthRefresh) {
@@ -43588,6 +43581,7 @@ window.SeduHubAdapter={
       var previous = String(year).slice(-2) + '-' + String(month).padStart(2, '0');
       var payload = buildPayload({forceRefresh: options.forceRefresh});
       payload.monthName = previous;
+      payload.comparisonOnly = true;
       function show(previousData, message) {
         if (requestId !== state.requestSeq) return;
         metrics.forEach(function(metric) {
@@ -43612,7 +43606,7 @@ window.SeduHubAdapter={
         if (requestId !== state.requestSeq) return;
         document.querySelectorAll('.payroll-delta').forEach(function(el) { el.remove(); });
         if (!res || !res.success) { show(null, '전월 비교 불러오기 실패'); return; }
-        if (!res.rows || !res.rows.length) { show(null, '전월 수업 내역 없음'); return; }
+        if (!(res.rowCount ?? res.rows?.length)) { show(null, '전월 수업 내역 없음'); return; }
         show(res);
       }).catch(function() {
         if (requestId !== state.requestSeq) return;
@@ -43631,6 +43625,7 @@ window.SeduHubAdapter={
     }
 
     function ensureTeacherSettingsLoaded_() {
+      if (!canEditPayrollRates_()) return Promise.resolve();
       if (!isPayrollUnlocked_() && !canUseGoogleScript()) return Promise.resolve();
       if (state.payroll.settingsLoaded) return Promise.resolve();
       if (state.payroll.settingsLoadingPromise) return state.payroll.settingsLoadingPromise;
@@ -43690,7 +43685,8 @@ window.SeduHubAdapter={
       var groups = (state.teacherGroups || []).slice();
       var teacherSubjectMap = getTeacherSubjectMap();
       var teachers = (state.teachers || []).slice().sort(function(a, b) { return a.localeCompare(b, "ko"); });
-      if (!teachers.length) {
+      if (!canEditPayrollRates_()) body.innerHTML="";
+      else if (!teachers.length) {
         body.innerHTML = '<tr><td colspan="8">강사 데이터가 없습니다.</td></tr>';
       } else {
         var html = "";
@@ -43753,7 +43749,7 @@ window.SeduHubAdapter={
       var fields=[['single','1명 개별정규'],['private','1:1']].map(function(pair){
         return '<label>'+pair[1]+' <select class="modal-select" data-f-key="'+pair[0]+'">'+['',70,100].map(function(v){return '<option value="'+v+'"'+(String(rule[pair[0]]??'')===String(v)?' selected':'')+'>'+label(v===''?null:v)+'</option>';}).join('')+'</select></label>';
       }).join(' ');
-      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button></p>':'')+'</details>';
+      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button> <button class="modal-action ghost" type="button" data-clear-month-rule>이 달의 예외 삭제</button></p>':'')+'</details>';
     }
 
     function buildSettingsTeacherRowHtml(name, subject) {
@@ -43890,7 +43886,9 @@ window.SeduHubAdapter={
 
     function setSettingsTab(tab) {
       state.settingsTab = tab || "profile";
+      if (!canEditPayrollRates_() && state.settingsTab === "profile") state.settingsTab="suspicion";
       Array.prototype.forEach.call(settingsTabBtnEls, function(btn) {
+        if(btn.dataset.settingsTab==="profile") btn.style.display=canEditPayrollRates_()?"":"none";
         var on = (btn.getAttribute("data-settings-tab") || "") === state.settingsTab;
         btn.classList.toggle("active", on);
       });
@@ -44039,8 +44037,8 @@ window.SeduHubAdapter={
             paid: false
           };
           var cfg = (state.teacherSettings || {})[teacher] || {};
-          byTeacher[teacher].salaryMode = String(cfg.salaryMode || "ratio").toLowerCase() === "hourly" ? "hourly" : "ratio";
-          byTeacher[teacher].hourlyRate = toNumber(cfg.hourlyRate, byTeacher[teacher].hourlyRate);
+          byTeacher[teacher].salaryMode = String(row.effectiveSalaryMode || cfg.salaryMode || "ratio").toLowerCase() === "hourly" ? "hourly" : "ratio";
+          byTeacher[teacher].hourlyRate = toNumber(row.effectiveHourlyRate ?? cfg.hourlyRate, byTeacher[teacher].hourlyRate);
           byTeacher[teacher].oneToOneSettlementMode = String(cfg.oneToOneSettlementMode || "hourly").toLowerCase() === "ratio" ? "ratio" : "hourly";
           byTeacher[teacher].oneToOneRatioPercent = clampNumber(toNumber(cfg.oneToOneRatioPercent, byTeacher[teacher].oneToOneRatioPercent), 0, 100);
           byTeacher[teacher].paid = !!((cfg.paidByMonth || {})[monthName || state.selectedMonth || ""]);
@@ -44568,8 +44566,10 @@ window.SeduHubAdapter={
       document.getElementById("kpiHours").textContent = formatHours(kpi.recognizedHours || 0) + "h";
       var ruleBox=document.getElementById('selectedMonthRule');
       var teacher=state.selectedTeacher,month=state.selectedMonth,cfg=(state.teacherSettings||{})[teacher]||{};
-      ruleBox.innerHTML=teacher?monthlyPayrollFields(cfg,true):'';
-      if(teacher)ruleBox.querySelector('[data-save-month-rule]').onclick=async function(){
+      var editable=canEditPayrollRates_();
+      ruleBox.closest('section').classList.toggle('can-edit-rates',editable);
+      ruleBox.innerHTML=teacher&&editable?monthlyPayrollFields(cfg,true):'';
+      if(teacher&&editable)ruleBox.querySelector('[data-save-month-rule]').onclick=async function(){
         if(teacher!==state.selectedTeacher||month!==state.selectedMonth)return;
         var rule=(cfg.monthlyRules||{})[month]||{};
         var rate=function(key){var val=ruleBox.querySelector('[data-f-key="'+key+'"]').value;return val===''?null:Number(val);};
@@ -44582,6 +44582,15 @@ window.SeduHubAdapter={
           state.teacherSettings=res.settings;state.payroll.monthlyAnalysis.loaded=false;await refreshSummary(false);
         } catch(error){showClientMessage(error.message);} finally{this.disabled=false;}
       };
+      if (teacher && editable) {
+        const clear=ruleBox.querySelector('[data-clear-month-rule]');
+        clear.disabled=!(cfg.monthlyRules?.[month]?.single!=null || cfg.monthlyRules?.[month]?.private!=null);
+        clear.onclick=function(){
+          if(!window.confirm(teacher+' 강사의 '+month+'월 예외를 삭제하고 기본 비율을 적용할까요?'))return;
+          ruleBox.querySelectorAll('select').forEach(el=>el.value='');
+          ruleBox.querySelector('[data-save-month-rule]').click();
+        };
+      }
       document.getElementById("kpiWorkingDays").textContent = "이달 근무 " + (kpi.workingDays || 0) + "일";
       if(state.selectedTeacher && kpi.firstWorkDate){
         var today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
@@ -45502,6 +45511,7 @@ window.SeduHubAdapter={
     }
 
     function buildSettlementPercentCell(row) {
+      if (!canEditPayrollRates_()) return escapeHtml(formatPayrollPercent(row.settlementPercentApplied || 0))+"%";
       var value = state.settlementPercentOverrides[row.rowKey];
       if (value == null || value === "") value = row.settlementPercentApplied;
       var badge = row.settlementPercentOverridden ? '<span class="rate-adjust-badge">수동</span>' : "";

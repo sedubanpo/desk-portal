@@ -166,7 +166,8 @@ export function createIntranetPayrollReader(db) {
     lessons=project(lessons).map(l=>l.kind==='absence'?{...l,absenceRate:absentRates.get(`${l.studentId}|${l.id}`)?.rate,absenceRateUnit:absentRates.get(`${l.studentId}|${l.id}`)?.rateUnit}:l);
     const studentMap=new Map(roster.map(s=>[s._documentId,s]));
     const targets=new Set(lessons.filter(l=>l.kind==='cancelMakeup').map(l=>l.studentId));
-    const history=combineLessons(current,past,drafts).filter(l=>targets.has(l.studentId)&&l.date<month+'-01'&&['cancel','cancelMakeup'].includes(l.kind));
+    const allLessons=combineLessons(current,past,drafts);
+    const history=allLessons.filter(l=>targets.has(l.studentId)&&l.date<month+'-01'&&['cancel','cancelMakeup'].includes(l.kind));
     const historicRows=[];
     for(const historicMonth of new Set(history.map(l=>l.date.slice(0,7)))) {
       const historicLessons=history.filter(l=>l.date.startsWith(historicMonth));
@@ -180,7 +181,7 @@ export function createIntranetPayrollReader(db) {
       historicRows.push(...intranetRows(projected,studentMap,parsePayrollMonthName(historicMonth.slice(2))));
     }
     const firstDates=new Map();
-    for(const lesson of combineLessons(current,past,drafts)){
+    for(const lesson of allLessons){
       if(!lesson.teacher||!/^\d{4}-\d{2}-\d{2}$/.test(lesson.date)||!(lesson.payMinutes>0)||['absence','cancel','study'].includes(lesson.kind))continue;
       if(!firstDates.has(lesson.teacher)||lesson.date<firstDates.get(lesson.teacher))firstDates.set(lesson.teacher,lesson.date);
     }

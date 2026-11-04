@@ -1,3 +1,5 @@
+import {managesPayrollRates} from './payroll/rate-access.js';
+
 export const STAFF_ROLES = new Set(['ADMIN', 'STAFF', 'DESK', 'INSTRUCTOR']);
 
 export function normalizeRole(value) {
@@ -40,6 +42,6 @@ export function publicIdentity(decodedToken, account, access) {
     status: account.status,
     staffPosition: account.staffPosition || '',
     apps: publicBooleanMap(access?.apps),
-    permissions: publicBooleanMap(access?.permissions)
+    permissions: { ...publicBooleanMap(access?.permissions), canManagePayrollRates: managesPayrollRates(decodedToken.uid) }
   };
 }

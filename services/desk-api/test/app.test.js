@@ -79,7 +79,7 @@ test('me returns the normalized staff identity', async () => {
     status: 'ACTIVE',
     staffPosition: '대리',
     apps: { deskPortal: true, sLms: true },
-    permissions: { canManageSchedules: true, canManageAccounts: false }
+    permissions: { canManageSchedules: true, canManageAccounts: false, canManagePayrollRates:false }
   });
 });
 
@@ -236,9 +236,8 @@ test('payroll methods require admin or explicit payroll permission', async () =>
     deskHandlers: { getPayrollSettings: async (_payload, identity) => ({ success: true, role: identity.role }) }
   });
   const allowedResponse = await request(allowed).post('/v1/desk/getPayrollSettings')
-    .set('authorization', 'Bearer valid-token').set('x-payroll-unlock-token', 'unlock-staff-1').send({ payload: {} }).expect(200);
-  assert.equal(allowedResponse.body.success, true);
-  assert.equal(allowedResponse.body.role, 'STAFF');
+    .set('authorization', 'Bearer valid-token').set('x-payroll-unlock-token', 'unlock-staff-1').send({ payload: {} }).expect(403);
+  assert.equal(allowedResponse.body.error.code, 'payroll_rate_access_required');
 });
 
 test('payroll unlock requires permission and a valid six-digit PIN', async () => {

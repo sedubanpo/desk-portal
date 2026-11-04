@@ -47,7 +47,7 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
   });
 
   function hasPayrollPermission(identity) {
-    return identity.role === 'ADMIN' || identity.permissions?.canManagePayroll === true;
+    return identity.role === 'ADMIN' || identity.permissions?.canManagePayroll === true || identity.permissions?.canManagePayrollRates === true;
   }
 
   function hasSchedulePermission(identity) {
@@ -119,11 +119,27 @@ export function createApp({ config, verifyIdToken, loadAccount, deskHandlers = {
     }
     if (['savePayrollStaffTimes','savePayrollStaffFinalization','savePayrollFinalization'].includes(method) && req.identity.role !== 'ADMIN') return next(new ApiError(403, 'payroll_admin_required', '관리자만 수정 및 확정할 수 있습니다.'));
     const payload = req.body?.payload ?? req.body ?? {};
+    const rateManager = req.identity.permissions.canManagePayrollRates;
+    const settingsMethod = ['getPayrollSettings','savePayrollSettings'].includes(method);
+    if (settingsMethod && !rateManager && !(method === 'savePayrollSettings' && req.identity.role === 'ADMIN' && payload.suspicionRules && Array.isArray(payload.updates) && !payload.updates.length)) {
+      return next(new ApiError(403,'payroll_rate_access_required','강사 정산 비율 설정 권한이 없습니다.'));
+    }
     const execute = () => deskHandlers[method](payload, req.identity);
     try {
       const response = WRITE_METHODS.has(method)
         ? await runIdempotent({ uid: req.identity.uid, method, key: req.get('x-idempotency-key'), requestFingerprint: requestFingerprint(payload) }, execute)
         : await execute();
+      if (!rateManager && method === 'getPayrollMonthSummary' && response.teacherSettings) {
+        // Keep only fields used by payroll results and payslips; never send the settings directory or history.
+        const teacher = String(payload.teacherName || '');
+        const cfg = response.teacherSettings[teacher];
+        const operational = cfg ? Object.fromEntries(['salaryMode','hourlyRate','ratioPercent','oneToOneSettlementMode','oneToOneRatioPercent','bankName','accountNumber','accountHolder'].map(k=>[k,cfg[k]])) : {};
+        const suspicion = response.teacherSettings.__suspicionRules;
+        return res.json({...response, teacherSettings:{...(teacher && cfg ? {[teacher]:operational} : {}), ...(suspicion ? {__suspicionRules:suspicion} : {})}});
+      }
+      if (!rateManager && method === 'getPayrollFinalizations' && response.records)
+        return res.json({...response,records:response.records.map(({settings,...record})=>record)});
+      if (!rateManager && method === 'savePayrollSettings') return res.json({success:response.success,message:response.message});
       return res.json(response);
     } catch (error) {
       return next(error);
