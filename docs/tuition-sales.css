@@ -1,0 +1,28 @@
+#tuitionMonthlyModal .tuition-monthly-toolbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+#tuitionMonthlyModal .tuition-monthly-tabs { display: flex; flex-wrap: wrap; gap: 3px; padding: 4px; border-radius: 9px; background: #f4f6ef; }
+#tuitionMonthlyModal .tuition-monthly-tab-btn { border-radius: 6px; color: #44523c; }
+#tuitionMonthlyModal .tuition-monthly-tab-btn.active { background: #405c29; color: white; box-shadow: none; }
+#salesReportBar:not([hidden]) { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 8px 0; color: #455345; font-size: 13px; font-weight: 650; }
+#salesReportBar select, .sr-body button { font: inherit; color: #253724; background: white; padding: 6px 10px; border: 1px solid #bbc9b9; border-radius: 6px; }
+.sr-body { font-variant-numeric: tabular-nums; color: #273a32; }
+.sr-headline { display: flex; align-items: end; gap: 18px; justify-content: space-between; padding: 16px 0 18px; border-top: 1px solid #d6e0d3; }
+.sr-headline span, .sr-headline strong { display: block; }
+.sr-headline strong { font-size: 26px; line-height: 1.35; letter-spacing: -.02em; }
+.sr-headline span, .sr-headline p, .sr-note { color: #4b6050; font-size: 13px; line-height: 1.5; }
+.sr-headline p { max-width: 44ch; margin: 0; }
+.sr-scroll { max-width: 100%; overflow-x: auto; border: 1px solid #d9e2d8; border-radius: 8px; }
+.sr-scroll table { width: 100%; min-width: 0; border-collapse: collapse; white-space: nowrap; font-size: 13px; }
+.sr-scroll th, .sr-scroll td { padding: 9px 12px; text-align: right; border-bottom: 1px solid #e5ebe4; }
+.sr-scroll th:first-child { text-align: left; }
+.sr-scroll tbody th,.sr-scroll tfoot th { position: static; background: inherit; }
+.sr-scroll thead { color: #435843; background: #f2f5ef; }
+.sr-scroll tbody tr:hover { background: #f7f9f5; }
+.sr-scroll tfoot { background: #edf3e5; font-weight: bold; }
+.sr-days { margin-top: 14px; }
+.sr-days summary { padding: 8px 0; font-weight: 650; cursor: pointer; }
+.sr-days small { color: #53644f; }
+@media(max-width:640px){.sr-headline { align-items: flex-start; flex-direction:column; gap:6px; }.sr-scroll td,.sr-scroll th{padding:8px;}}
+.sr-share { display: inline-flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.sr-share i { width: 46px; height: 5px; background: #e6ece2; border-radius: 3px; overflow: hidden; }
+.sr-share b { display: block; height: 100%; background: #6a8751; }
+@media (max-width:640px) { .sr-share i { display: none; } }

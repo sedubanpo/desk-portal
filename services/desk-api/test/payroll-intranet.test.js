@@ -313,3 +313,14 @@ test('linked cancellation makeup uses original price when its own charge is unre
   assert.equal(result.billingAmount, 0);
   assert.equal(rows([{...makeup, payMinutes: null}])[0].sourcePending, true);
 });
+
+test('tuition teacher report includes discounted charges and pending counts without salary fields',async()=>{
+ const input=rows([lesson,{...lesson,id:'pending',rate:null},{...lesson,id:'other',teacher:'강사2',studentDiscount:{base:60000,amount:54000,percent:10}}]);
+ const handlers=createPayrollHandlers({store:{},sheets:{listPayrollMonths:async()=>[]},intranet:{readMonth:async()=>({rows:input})},now:()=>new Date('2026-09-10')});
+ const report=await handlers.getTuitionTeacherSales({monthName:'26-09'});
+ assert.equal(report.success,true);
+ assert.equal(report.teachers.length,2);
+ const first=report.teachers.find(t=>t.name==='강사');
+ assert.deepEqual(first,{name:'강사',count:1,gross:60000,discount:0,net:60000,pendingCount:1});
+ assert.equal(report.teachers.find(t=>t.name==='강사2').net,54000);
+});

@@ -20446,13 +20446,20 @@
       </div>
       <div class="tuition-monthly-toolbar">
         <div class="tuition-monthly-tabs">
-          <button class="tuition-monthly-tab-btn active" data-monthly-tab="chart" type="button">차트</button>
+          <button class="tuition-monthly-tab-btn" data-monthly-tab="grades" type="button">학년별 매출</button>
+          <button class="tuition-monthly-tab-btn" data-monthly-tab="closing" type="button">결제일 결산</button>
+          <button class="tuition-monthly-tab-btn" data-monthly-tab="teachers" type="button">강사별 매출</button>
+          <button class="tuition-monthly-tab-btn" data-monthly-tab="chart" type="button">월별 추이</button>
           <button class="tuition-monthly-tab-btn" data-monthly-tab="period" type="button">기간 분석</button>
           <button class="tuition-monthly-tab-btn" data-monthly-tab="top10" type="button">월별 납부액 TOP10</button>
         </div>
         <div class="panel-sub" id="tuitionMonthlyGuideText">같은 차트에서 두 기준을 겹쳐 비교합니다.</div>
       </div>
-      <div class="tuition-monthly-tab-panel active" data-monthly-panel="chart">
+      <label id="salesReportBar" hidden>조회 월 <select id="salesReportMonth"></select></label>
+      <section class="tuition-monthly-tab-panel sr-body" data-monthly-panel="grades" id="salesBody-grades" aria-label="학년별 매출" aria-live="polite"></section>
+      <section class="tuition-monthly-tab-panel sr-body" data-monthly-panel="closing" id="salesBody-closing" aria-label="결제일 결산" aria-live="polite"></section>
+      <section class="tuition-monthly-tab-panel sr-body" data-monthly-panel="teachers" id="salesBody-teachers" aria-label="강사별 매출" aria-live="polite"></section>
+      <div class="tuition-monthly-tab-panel" data-monthly-panel="chart">
         <div class="tuition-monthly-kpis" id="tuitionMonthlyKpis"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;">
           <div class="tuition-monthly-focus">
@@ -21022,7 +21029,7 @@
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getDeskOfficeHistory: true, getDeskOffice: true, saveDeskOffice: true, getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
-      getTuitionDifficulty: true, getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
+      getTuitionDifficulty: true, getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionTeacherSales: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       savePayrollCenterVisit: true, getPayrollCenterHistory: true, getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
@@ -21442,7 +21449,7 @@
         monthlyChart: null,
         periodChart: null,
         guideDashboard: null,
-        monthlyTab: "chart",
+        monthlyTab: "grades",
         monthlyTopMonth: "",
         monthlyFocus: "both",
         monthlyPeriodStart: "",
@@ -41975,8 +41982,8 @@
     function syncTuitionMonthlyState_(payload) {
       var res = payload || {};
       var labels = (res.labels || []).slice();
-      if (["chart", "period", "top10"].indexOf(state.tuition.monthlyTab) === -1) {
-        state.tuition.monthlyTab = "chart";
+      if (["grades", "closing", "teachers", "chart", "period", "top10"].indexOf(state.tuition.monthlyTab) === -1) {
+        state.tuition.monthlyTab = "grades";
       }
       if (labels.indexOf(state.tuition.monthlyTopMonth) === -1) {
         state.tuition.monthlyTopMonth = res.defaultTopMonth || (labels.length ? labels[labels.length - 1] : "");
@@ -41987,19 +41994,23 @@
       var res = state.tuition.monthlySales || { labels: [], dueTotals: [], paidTotals: [], paidTop10ByMonth: {} };
       syncTuitionMonthlyState_(res);
       Array.prototype.forEach.call(tuitionMonthlyTabBtnEls, function(btn) {
-        btn.classList.toggle("active", (btn.getAttribute("data-monthly-tab") || "chart") === state.tuition.monthlyTab);
+        const selected = btn.dataset.monthlyTab === state.tuition.monthlyTab;
+        btn.classList.toggle("active", selected);
+        btn.setAttribute("aria-pressed", String(selected));
       });
       Array.prototype.forEach.call(tuitionMonthlyPanelEls, function(panel) {
         panel.classList.toggle("active", (panel.getAttribute("data-monthly-panel") || "chart") === state.tuition.monthlyTab);
       });
       if (tuitionMonthlyGuideTextEl) {
-        tuitionMonthlyGuideTextEl.textContent = state.tuition.monthlyTab === "top10"
+        const guides = {grades:"결제일 기준으로 초1부터 고3, 기타까지 학년별 수납과 환불을 비교합니다.", closing:"실제 결제일 기준으로 카드와 현금을 결산합니다. 수강료 정정 전표는 제외합니다.",teachers:"강사별 수업 청구액을 비교합니다. 실제 수납액은 결제일 결산에서 확인하세요."};
+        tuitionMonthlyGuideTextEl.textContent = guides[state.tuition.monthlyTab] || (state.tuition.monthlyTab === "top10"
           ? "실제 납부일 기준으로 학생별 월 납부액 상위 10명을 보여줍니다."
           : state.tuition.monthlyTab === "period"
             ? "선택한 날짜 구간의 실제 수납액과 직전 동일 기간을 비교합니다."
-            : "월별 수납액, 증감률, 수납 학생 수를 함께 비교합니다.";
+            : "월별 수납액, 증감률, 수납 학생 수를 함께 비교합니다.");
       }
-      renderTuitionMonthlyTop10_();
+      TuitionSalesReport.render(res, state.tuition.monthlyTab);
+      if (state.tuition.monthlyTab === "top10") renderTuitionMonthlyTop10_();
       if (state.tuition.monthlyTab === "chart") {
         renderTuitionMonthlySummary_();
         renderTuitionMonthlyChart_();
@@ -46147,7 +46158,7 @@ window.SeduHubAdapter={
     function getRunServerTimeoutMs_(fnName) {
       var name = String(fnName || "");
       if (name === "getPayrollWorkbookExport") return 180000;
-      if (/^(getPayrollBootstrapData|getPayrollMonthSummary|getPayrollMonthlyAnalysis|getTuitionBootstrapData|getTuitionMonthSummary)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
+      if (/^(getPayrollBootstrapData|getPayrollMonthSummary|getPayrollMonthlyAnalysis|getTuitionBootstrapData|getTuitionMonthSummary|getTuitionMonthlySalesOverview|getTuitionTeacherSales)$/.test(name)) return RUN_SERVER_HEAVY_READ_TIMEOUT_MS;
       if (isRunServerWriteApi_(name)) return RUN_SERVER_WRITE_TIMEOUT_MS;
       return RUN_SERVER_DEFAULT_TIMEOUT_MS;
     }
@@ -46247,6 +46258,8 @@ window.SeduHubAdapter={
 <script src="./payment-link-parser.js?v=20261024-payment-headers"></script>
 <script src="./payment-link-upload.js?v=20261024-payment-selection"></script>
 <script src="./tuition-redesign.js?v=20261104-grade"></script>
+<link rel="stylesheet" href="./tuition-sales.css?v=20261104-1">
+<script src="./tuition-sales.js?v=20261104-1"></script>
 <script src="./tuition-groups.js?v=20261104-grade"></script>
 <script src="./subscription-details.js?v=20260925-chart"></script>
 <script src="./student-rewards.js?v=20261013"></script>

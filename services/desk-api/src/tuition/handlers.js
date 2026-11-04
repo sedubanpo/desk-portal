@@ -1,3 +1,4 @@
+import { salesBreakdown, settlementDate } from './sales.js';
 import { createScheduleProfiles, difficultyByName } from './difficulty.js';
 import { createHash } from 'node:crypto';
 import { paymentLinkKey, paymentLinkDuplicate, validatePaymentLink } from './payment-link.js';
@@ -56,7 +57,7 @@ const DAILY_LIMIT = 500;
 
 export const TUITION_READ_METHODS = new Set([
   'getTuitionDifficulty', 'getTuitionIdentityLinks', 'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
-  'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
+  'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview', 'getTuitionTeacherSales',
   'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory', 'getTuitionPaymentLinkHistory', 'previewTuitionPaymentLink'
 ]);
 
@@ -393,9 +394,10 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
     },
 
     async getTuitionMonthlySalesOverview() {
-      const snapshots = await loadSnapshots(store);
-      if (!snapshots.length) return failure('Firestore 수강료 월 인덱스가 비어 있습니다.');
-      const rows = mergePayments(snapshots.flatMap(snapshot => snapshot.payments || []));
+      const months = await loadMonths(store);
+      if (!months.length) return failure('수강료 월 자료가 없습니다.');
+      const { briefingPayments:rows, briefingRows:roster } = await loadTuitionMonthContext(store, months);
+      const breakdown = salesBreakdown(rows, roster);
       const dueMap = new Map();
       const paidMap = new Map();
       const students = new Map();
@@ -405,9 +407,10 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
         const delta = -number(row.amount);
         if (!delta) return;
         const due = monthLabel(row.sourceDueMonth || row.sourceMonth || row.originMonth);
-        const paid = paidMonthLabel(row);
-        const paidDate = paidDateKey(row);
+        const paidDate = settlementDate(row);
+        const paid = paidDate.slice(2, 7);
         if (due) dueMap.set(due, (dueMap.get(due) || 0) + delta);
+        if (row.countsAsPayment === false) return;
         if (paid) {
           paidMap.set(paid, (paidMap.get(paid) || 0) + delta);
           paymentCounts.set(paid, (paymentCounts.get(paid) || 0) + 1);
@@ -464,7 +467,9 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
         dailyPaid,
         paidTop10ByMonth,
         defaultTopMonth,
-        reportIndex: reportSource(snapshots)
+        breakdown,
+        availableMonths: months.map(monthLabel).sort(),
+        reportIndex: {source:"cloud-run-snapshots", version:months.join("|")}
       };
     },
 
@@ -1434,11 +1439,6 @@ function isActualPayment(row) {
 function monthLabel(value) {
   const normalized = monthName(value);
   return normalized ? normalized.replace(/s$/, '') : '';
-}
-
-function paidMonthLabel(row) {
-  const key = paidDateKey(row);
-  return key ? key.slice(2, 7) : monthLabel(row.sourceDueMonth || row.sourceMonth);
 }
 
 function errorLabel(name) {

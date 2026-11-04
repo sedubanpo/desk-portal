@@ -1,6 +1,8 @@
+import { paymentKind, settlementDate as paidDateKey } from '../tuition/sales.js';
+export { paymentKind };
 import ExcelJS from 'exceljs';
 import { readFile } from 'node:fs/promises';
-import { paidDateKey, mergePayments } from '../tuition/normalizers.js';
+import { mergePayments } from '../tuition/normalizers.js';
 
 const names=['매출현황보고','보고_신규양식','직원급여','전체결산','카드납부','현금납부','운영비_상세내역'];
 const money='#,##0;[Red]-#,##0';
@@ -12,12 +14,6 @@ const put=(s,cell,value)=>{s.getCell(cell).value=value;};
 function row(s,n,values,styleRow=2){
   values.forEach((value,i)=>{const c=s.getCell(n,i+1);if(n!==styleRow)c.style=structuredClone(s.getCell(styleRow,i+1).style);c.value=value===''?null:value;});
   s.getRow(n).height=s.getRow(styleRow).height||16;
-}
-export function paymentKind(p){
-  const method=String(p.paymentType||''),company=String(p.cardCompany||'');
-  if(/현금|현영|무통장|계좌|서울페이|제로페이/.test(method+' '+company))return 'cash';
-  if(/카드|card|결제링크/i.test(method)||company)return 'card';
-  return 'unknown';
 }
 export function selectExportPayments(payments,month){
   return mergePayments(payments).filter(p=>p.countsAsPayment!==false&&p.entryKind!=='adjustment'&&paidDateKey(p).startsWith(month+'-')).sort((a,b)=>paidDateKey(a).localeCompare(paidDateKey(b))||a.studentName.localeCompare(b.studentName,'ko'));

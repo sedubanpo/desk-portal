@@ -893,3 +893,27 @@ test('explicit refund requires positive amount and reason and persists in paymen
   const refund=Object.entries(store.dump()).filter(([k])=>k.startsWith('tuitionPayments/')).map(([,v])=>v).find(v=>v.itemName==='환불금액');
   assert.equal(refund.amount,20000);assert.equal(refund.issueMemo,'중도 퇴원');
 });
+
+test('closing groups match paid month across due dates, methods, refunds and grade levels', async () => {
+  const seed = tuitionSeed();
+  const snapshot = seed.documents['tuitionMonthSnapshots/tm_26-07s'];
+  snapshot.rows = [{studentName:'가',school:'서초고',grade:3},{studentName:'나',school:'서초중학교',grade:3}];
+  snapshot.payments = ['결제링크','현금','서울페이','계좌이체','제로페이','현장카드','미정'].map((type,i)=>({
+    ...seed.payment, requestId:'txn-'+i, studentName:i===0?'가':i<5?'나':'다', paidAt:'2026-08-01', paymentType:type, amount:i===5?300:-1000
+  }));
+  snapshot.payments.push({...snapshot.payments[0],requestId:'adjust',entryKind:'adjustment',amount:-500},
+    {...snapshot.payments[0],requestId:'undated',paidAt:'',inputAt:'2026-08-01',amount:-100});
+  const {breakdown,monthlyStats} = await createTuitionHandlers({store:memoryStore(seed.documents)}).getTuitionMonthlySalesOverview();
+  const report=breakdown.months['26-08'];
+  assert.equal(report.total.net,5700);
+  assert.equal(report.total.count,7);
+  assert.equal(report.methods.cash.net,4000);
+  assert.equal(report.methods.card.refunds,300);
+  assert.equal(report.methods.unknown.net,1000);
+  assert.equal(report.grades['고3'].net,1000);
+  assert.equal(report.grades['중3'].net,4000);
+  assert.equal(report.grades['기타'].net,700);
+  assert.equal(report.days['2026-08-01'].net,5700);
+  assert.equal(breakdown.undated,1);
+  assert.equal(monthlyStats.find(m=>m.monthName==='26-08').paidTotal,5700);
+});

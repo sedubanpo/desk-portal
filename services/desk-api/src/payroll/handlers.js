@@ -5,6 +5,7 @@ import { isIntranetMonth, payrollMonths } from './intranet.js';
 import {
   applyPayrollSettingsUpdates,
   buildPayrollSummary,
+  summarizeLessonCharges,
   mergePayrollOverrideBundles,
   normalizePayrollOverrideBundle,
   parsePayrollMonthName,
@@ -77,6 +78,24 @@ export function createPayrollHandlers({ store, sheets, intranet, now = () => new
       });
       return {summary,teachers};
     },
+    async getTuitionTeacherSales({monthName} = {}) {
+      if (!parsePayrollMonthName(monthName) || !(await listMonths()).includes(monthName)) {
+        return successFailure('이 달의 수업 원장이 없습니다.');
+      }
+      const source = await readSource(monthName, {reuse:true});
+      const groups = new Map();
+      for (const row of source.rows) {
+        const name = row.teacher || '강사 미입력';
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(row);
+      }
+      const teachers = [...groups].map(([name, rows]) => {
+        const {total, pendingCount} = summarizeLessonCharges(rows);
+        return {name, ...total, pendingCount};
+      }).sort((a,b) => b.net - a.net || a.name.localeCompare(b.name,'ko'));
+      return {success:true, teachers};
+    },
+
     async getPayrollBootstrapData() {
       const months = await listMonths();
       return months.length
