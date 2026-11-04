@@ -913,7 +913,11 @@ test('closing groups match paid month across due dates, methods, refunds and gra
   assert.equal(report.grades['고3'].net,1000);
   assert.equal(report.grades['중3'].net,4000);
   assert.equal(report.grades['기타'].net,700);
-  assert.equal(report.days['2026-08-01'].net,5700);
+  const day = report.days['2026-08-01'];
+  assert.equal(day.entries.length,7);
+  assert.equal(day.entries.reduce((sum, entry) => sum + entry.amount, 0), day.net);
+  assert.deepEqual(day.entries.find(entry => entry.amount < 0), {student:'다', method:'card', tender:'현장카드', amount:-300});
+  assert.equal(day.net,5700);
   assert.equal(breakdown.undated,1);
   assert.equal(monthlyStats.find(m=>m.monthName==='26-08').paidTotal,5700);
 });

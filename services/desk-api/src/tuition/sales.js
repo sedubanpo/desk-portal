@@ -56,13 +56,14 @@ export function salesBreakdown(rows, roster) {
     const label = date.slice(2,7), method = paymentKind(row);
     const report = months[label] ||= {total:bucket(), methods:{}, grades:{}, days:{}};
     const grade = grades.get(label + 's|' + row.studentName) || grades.get(monthName(row.sourceDueMonth || row.sourceMonth) + '|' + row.studentName) || '기타';
-    const day = report.days[date] ||= {card:0,cash:0,unknown:0,net:0};
+    const day = report.days[date] ||= {card:0,cash:0,unknown:0,net:0,entries:[]};
     const amount = -row.amount;
     add(report.total, amount);
     add(report.methods[method] ||= bucket(), amount);
     add(report.grades[grade] ||= bucket(), amount);
     day[method] += amount;
     day.net += amount;
+    day.entries.push({student:row.studentName, method, tender:row.paymentType, amount});
   }
   return {months, undated};
 }
