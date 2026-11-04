@@ -3,7 +3,8 @@ import { monthName } from './normalizers.js';
 export function paymentKind(row) {
   const method = (row.paymentType || '').replace(/\s/g, '');
   const company = (row.cardCompany || '').replace(/\s/g, '');
-  if (/현금|현영|무통장|계좌|이체|송금|입금|서울페이|서초페이|제로페이/.test(method + company)) return 'cash';
+  const cashMethod = /현금|현영|무통장|계좌|송금|입금|서울페이|서초페이|제로페이|^이체$/;
+  if (cashMethod.test(method) || cashMethod.test(company)) return 'cash';
   if (/카드|card|결[제재]링크/i.test(method) || (company && !/^(-|없음|기타|미입력)$/.test(company))) return 'card';
   return 'unknown';
 }

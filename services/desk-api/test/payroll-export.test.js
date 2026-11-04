@@ -35,5 +35,7 @@ test('abbreviated card brands and unclassified refunds are not counted as cash',
  assert.equal(paymentKind({paymentType:'결제링크',cardCompany:'비씨카'}),'card');
  assert.equal(paymentKind({paymentType:'기타',cardCompany:'신한'}),'card');
  assert.equal(paymentKind({paymentType:'계좌이체',cardCompany:'현금영수증'}),'cash');
+ assert.equal(paymentKind({paymentType:'결제링크',cardCompany:'네이버페이체크'}),'card');
+ assert.equal(paymentKind({paymentType:'이체'}),'cash');
  assert.equal(paymentKind({}),'unknown');
 });
