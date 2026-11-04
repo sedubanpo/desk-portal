@@ -7581,6 +7581,13 @@
       gap: 5px;
       min-width: 0;
     }
+    .tuition-difficulty { position:relative; display:inline-grid; place-items:center; flex:none; width:21px; height:21px; border-radius:6px; font-size:12px; font-weight:800; background:#edf1f3; color:#52606a; cursor:help; }
+    .tuition-difficulty[data-level="S"] { background:#f5ddeb; color:#85285d; }
+    .tuition-difficulty[data-level="A"] { background:#ffebd6; color:#85440d; }
+    .tuition-difficulty[data-level="B"] { background:#dfebfa; color:#254e82; }
+    .tuition-difficulty[data-level="C"] { background:#e1eee5; color:#315e42; }
+    .tuition-difficulty > span { display:none; position:absolute; left:100%; top:50%; transform:translateY(-50%); z-index:5; background:#243542; color:white; padding:5px 8px; border-radius:5px; font-size:11px; font-weight:500; white-space:nowrap; pointer-events:none; }
+    @media (hover:hover) { .tuition-difficulty:hover > span { display:block; } }
     .tuition-student-hide-btn,
     .tuition-hidden-toggle-btn {
       border: 1px solid #d4e1da;
@@ -21014,7 +21021,7 @@
       getDeskSuppliesData: true, adjustDeskSupplyConsumable: true, saveDeskSupplyConsumable: true, deleteDeskSupplyConsumable: true, saveDeskSupplyAsset: true, deleteDeskSupplyAsset: true, saveDeskSupplyPurchaseState: true, saveDeskSuppliesSnapshot: true,
       getDeskRecruitingApplicantsData: true, saveDeskRecruitingApplicant: true, addDeskRecruitingApplicantComment: true, deleteDeskRecruitingApplicant: true,
       getDeskOfficeHistory: true, getDeskOffice: true, saveDeskOffice: true, getDeskRewards: true, getDeskRewardStudents: true, saveDeskReward: true,
-      getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
+      getTuitionDifficulty: true, getTuitionIdentityLinks: true, saveTuitionIdentityLink: true, getTuitionBootstrapData: true, getTuitionMonthSummary: true, getTuitionStudentMonthlyHistory: true, getTuitionStudentMemoNotes: true, getTuitionGuideDashboard: true, getTuitionMonthlySalesOverview: true, getTuitionInactiveStudentCandidates: true, getTuitionPaymentHistory: true, previewTuitionPaymentLink: true, getTuitionPaymentLinkHistory: true, importTuitionPaymentLink: true,
       createTuitionMonth: true, saveTuitionStatusOnly: true, saveTuitionFollowup: true, saveTuitionStudentMemo: true, saveTuitionAmountAdjustment: true, appendTuitionPaymentEntry: true, updateTuitionPaymentEntry: true, deleteTuitionPaymentEntry: true,
       getPayrollStaffMonth: true, savePayrollStaffTimes: true, savePayrollStaffFinalization: true, getPayrollFinalizations: true, savePayrollFinalization: true, getPayrollBootstrapData: true, getPayrollMonthSummary: true, getPayrollWorkbookExport: true, getPayrollMonthlyAnalysis: true, getPayrollSettings: true, savePayrollSettings: true, savePayrollOverrides: true
     };
@@ -39145,6 +39152,7 @@
       }
       if (forceReload) {
         state.tuition.loaded = false;
+        state.tuition.difficulty = null;
         state.tuition.unpaidCacheByMonth = {};
         state.tuition.monthlySales = null;
         state.tuition.guideDashboard = null;
@@ -39456,7 +39464,8 @@
     }
 
 	    function renderTuitionSummary(data) {
-	      loadTuitionPreviousCard_();
+	      loadTuitionDifficulty_();
+      loadTuitionPreviousCard_();
       state.tuition.pendingSummary = !!(data && data.pendingSummary);
 	      state.tuition.indexStatus = data && data.indexStatus ? data.indexStatus : state.tuition.indexStatus;
       state.tuition.tuitionMemoWarnings = data && data.tuitionMemoWarnings ? data.tuitionMemoWarnings : {};
@@ -40586,7 +40595,7 @@
       return '<div class="tuition-student-cell">' +
         '<span class="tuition-student-dot"></span>' +
         '<div class="tuition-student-text">' +
-          '<div class="tuition-student-primary-line"><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button>' + buildTuitionPreviousMethod_(row.previousPaymentMethod) + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) +
+          '<div class="tuition-student-primary-line"><button type="button" class="tuition-student-name tuition-name-link" data-student-history="' + escapeHtml(formatStudentName(row.studentName)) + '">' + renderStudentIdentityHtml_(row.studentName) + '</button>' + tuitionDifficultyBadge_(row.studentName) + buildTuitionPreviousMethod_(row.previousPaymentMethod) + buildTuitionStudentMemoWarning_(row.studentName, row.tuitionMemoWarning) +
             '<button type="button" class="tuition-student-hide-btn" data-toggle-tuition-hidden="' + escapeHtml(formatStudentName(row.studentName)) + '" data-hidden-next="' + (row.hiddenFromTuition ? 'false' : 'true') + '" title="' + (row.hiddenFromTuition ? '정산 상세에 다시 표시' : '정산 상세에서 숨기기') + '" aria-label="' + escapeHtml(formatStudentName(row.studentName)) + (row.hiddenFromTuition ? ' 정산 상세에 다시 표시' : ' 정산 상세에서 숨기기') + '"><i data-lucide="' + (row.hiddenFromTuition ? 'eye' : 'eye-off') + '" aria-hidden="true"></i></button></div>' +
           carryHtml +
         '</div>' +
@@ -40607,6 +40616,33 @@
     function getTuitionPaymentMethodIcon_(value) {
       var method = normalizeTuitionPaymentMethod_(value);
       return { "결제링크": "link-2", "현장카드": "credit-card", "계좌이체": "landmark", "현금": "banknote", "서울페이": "scan-line", "기타": "ellipsis" }[method] || "wallet-cards";
+    }
+
+    function loadTuitionDifficulty_() {
+      var month = state.tuition.selectedMonth;
+      if (!month || (state.tuition.difficulty && state.tuition.difficulty.month === month)) return;
+      var entry = {month:month, grades:{}, reason:"등급 자료를 조회하고 있습니다."};
+      state.tuition.difficulty = entry;
+      runServer("getTuitionDifficulty", {monthName:month}).then(function(result) {
+        if (!result || !result.success) throw Error();
+        entry.grades = result.grades || {};
+        entry.reason = result.reason || "전월 수강료 기록이 없습니다.";
+      }).catch(function() {
+        entry.reason = "등급 자료를 불러오지 못했습니다. 새로고침해 주세요.";
+      }).finally(function() {
+        if (state.tuition.difficulty !== entry || state.tuition.selectedMonth !== month) return;
+        tuitionStudentBodyEl.querySelectorAll("[data-difficulty-name]").forEach(function(badge) {
+          badge.outerHTML = tuitionDifficultyBadge_(badge.dataset.difficultyName);
+        });
+      });
+    }
+
+    function tuitionDifficultyBadge_(name) {
+      var entry = state.tuition.difficulty || {};
+      var item = (entry.grades || {})[formatStudentName(name)] || {};
+      var grade = item.grade || "–";
+      var label = item.grade ? "수강료 난이도 " + grade : "등급 미책정 · " + (item.reason || entry.reason || "자료 조회 중");
+      return '<span role="img" class="tuition-difficulty" data-level="' + grade + '" data-difficulty-name="' + escapeHtml(name) + '" aria-label="' + escapeHtml(label) + '">' + grade + '<span aria-hidden="true">' + escapeHtml(label) + '</span></span>';
     }
 
     function buildTuitionPreviousMethod_(value) {

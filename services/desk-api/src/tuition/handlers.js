@@ -1,3 +1,4 @@
+import { createScheduleProfiles, difficultyByName } from './difficulty.js';
 import { createHash } from 'node:crypto';
 import { paymentLinkKey, paymentLinkDuplicate, validatePaymentLink } from './payment-link.js';
 import {
@@ -54,7 +55,7 @@ const MONTH_LIMIT = 1500;
 const DAILY_LIMIT = 500;
 
 export const TUITION_READ_METHODS = new Set([
-  'getTuitionIdentityLinks', 'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
+  'getTuitionDifficulty', 'getTuitionIdentityLinks', 'getTuitionBootstrapData', 'getTuitionMonthSummary', 'getTuitionStudentMonthlyHistory',
   'getTuitionStudentMemoNotes', 'getTuitionGuideDashboard', 'getTuitionMonthlySalesOverview',
   'getTuitionInactiveStudentCandidates', 'getTuitionPaymentHistory', 'getTuitionPaymentLinkHistory', 'previewTuitionPaymentLink'
 ]);
@@ -75,7 +76,22 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
   };
   const nowIso = () => nowDate().toISOString();
 
+  const scheduleProfiles = createScheduleProfiles(store);
   const handlers = {
+    async getTuitionDifficulty(payload = {}) {
+      const month = monthName(payload.monthName);
+      if (!month) return failure('정산 월을 확인해 주세요.');
+      const previous = previousMonthName(month);
+      const snapshot = await store.get(key(COLLECTIONS.snapshots, snapshotId(previous)));
+      if (!snapshot?.success || !Array.isArray(snapshot.rows)) return {success:true, grades:{}, reason:'전월 수강료 자료가 없습니다.'};
+      const isoMonth = value => '20' + value.slice(0, 5);
+      const [before, after, students, links] = await Promise.all([
+        scheduleProfiles(isoMonth(previous), payload.forceRefresh === true),
+        scheduleProfiles(isoMonth(month), payload.forceRefresh === true),
+        loadActiveStudentDocuments(store), store.list('tuitionIdentityLinks', 5000)
+      ]);
+      return {success:true, grades:difficultyByName(snapshot.rows, students, links, before, after)};
+    },
     async getTuitionIdentityLinks() {
       return {success:true,links:await store.list('tuitionIdentityLinks',5000)};
     },
