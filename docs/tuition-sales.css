@@ -26,3 +26,29 @@
 .sr-share i { width: 46px; height: 5px; background: #e6ece2; border-radius: 3px; overflow: hidden; }
 .sr-share b { display: block; height: 100%; background: #6a8751; }
 @media (max-width:640px) { .sr-share i { display: none; } }
+.sr-copy,.sr-calendar header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.sr-copy { justify-content:flex-end; margin-bottom:12px; }
+.sr-copy button { min-height:40px; font-weight:650; color:#36552b; cursor:pointer; }
+.sr-copy-status,.sr-calendar small,.sr-refund { font-size:12px; color:#506655; }
+.sr-refund { display:block; font-weight:500; margin-top:3px; }
+.sr-calendar { container-type:inline-size; margin-top:24px; }
+.sr-calendar header { padding-bottom:12px; }
+.sr-calendar h3,.sr-calendar h4 { margin:0 0 4px; color:#253c30; }
+.sr-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+.sr-grid > strong { padding:7px 0; font-size:12px; text-align:center; color:#56645a; }
+.sr-grid > :nth-child(7n+1),.sr-grid > :nth-child(7n+1) b { color:#9c4b47; }
+.sr-grid > :nth-child(7n),.sr-grid > :nth-child(7n) b { color:#405b87; }
+.sr-grid button { min-height:64px; padding:6px; display:flex; flex-direction:column; align-items:flex-start; gap:7px; border:1px solid #d9e2d8; border-radius:7px; font-size:12px; cursor:pointer; }
+.sr-grid button:hover { background:#f4f7ef; }
+.sr-grid button[aria-pressed=true] { background:#eaf2df; border-color:#597947; box-shadow:inset 0 0 0 1px #597947; }
+.sr-grid button:focus-visible,.sr-copy button:focus-visible { outline:3px solid #567a99; outline-offset:1px; }
+.sr-grid button span { color:#344c3d; }
+.sr-day-detail { margin:10px 0 16px; padding:14px; border:1px solid #d9e2d8; border-radius:8px; background:#f8faf6; }
+.sr-day-detail p { margin:4px 0 10px; font-size:13px; }
+.sr-short { display:none; }
+@container (max-width:620px) {
+  .sr-short { display:inline; }
+  .sr-full { display:none; }
+  .sr-grid { gap:2px; }
+  .sr-grid button { min-height:48px; padding:4px 2px; align-items:center; font-size:clamp(9px,2.6cqw,12px); }
+}
