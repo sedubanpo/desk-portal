@@ -78,7 +78,9 @@ export function intranetRows(lessons, students, meta) {
     const student=students.get(l.studentId) || {};
     const net=estimatedCharge(l), amount=net === null ? null : (l.studentDiscount?.base ?? net), payValid=Number.isInteger(l.payMinutes)&&l.payMinutes>=0&&(l.payMinutes<=l.sourceMinutes||validSingleIndividual(l));
     const absent=l.kind==='absence';
-    const pending=!absent && (amount===null || !payValid);
+    // A cancellation makeup gets its settlement amount from its original lesson.
+    const needsOwnPrice = l.kind !== 'cancelMakeup';
+    const pending=!absent && ((needsOwnPrice && amount===null) || !payValid);
     const discount=l.studentDiscount?.percent ?? 0;
     const code={regular:'출석',late:'지각',cancel:'당일취소',absence:'결석예고',absenceMakeup:'결석보강',cancelMakeup:'보강',lateMakeup:'보강',free:'프리'}[l.kind] || l.status;
     const day=Number(l.date.slice(8));

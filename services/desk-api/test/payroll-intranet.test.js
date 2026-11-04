@@ -285,3 +285,15 @@ test('monthly exception rates use verified single-individual status and preserve
    assert.equal(buildPayrollSummary(input,parsePayrollMonthName('26-10'),{teacherSettings:settings}).rows.find(r=>r.lessonId==='private').settlementPercentApplied,salaryMode==='ratio'?50:0);
  }
 });
+
+test('linked cancellation makeup uses original price when its own charge is unresolved', async () => {
+  const { priceCancellationMakeups } = await import('../src/payroll/makeup.js');
+  const original = {...lesson, kind: 'cancel', payMinutes: 0};
+  const makeup = {...lesson, id: 'replacement', date: '2026-09-04', kind: 'cancelMakeup', rate: null, reviewed: false};
+  const inputs = rows([original, makeup]);
+  const [result] = priceCancellationMakeups([inputs[1]], inputs);
+  assert.equal(result.sourcePending, false);
+  assert.equal(result.amount, 60000);
+  assert.equal(result.billingAmount, 0);
+  assert.equal(rows([{...makeup, payMinutes: null}])[0].sourcePending, true);
+});
