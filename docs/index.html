@@ -18018,6 +18018,7 @@
           <label>추가 정보</label>
           <div class="message" id="salaryGuide">비율제: 인정 순매출 x 50%</div>
         </div>
+        <div id="selectedMonthRule"></div>
         <button class="refresh-btn" id="printPayslipBtn" type="button"><i data-lucide="printer" aria-hidden="true"></i><span>급여 내역서 출력</span></button>
       </section>
 
@@ -43746,13 +43747,13 @@ window.SeduHubAdapter={
       return '<span class="payroll-hours">' + formatHours(hours) + 'h</span>';
     }
 
-    function monthlyPayrollFields(cfg) {
+    function monthlyPayrollFields(cfg, direct) {
       var rule=(cfg.monthlyRules||{})[state.selectedMonth]||{};
       var label=function(v){return v==null?'기본 방식':v===100?'올페이 (100%)':v+'%';};
       var fields=[['single','1명 개별정규'],['private','1:1']].map(function(pair){
         return '<label>'+pair[1]+' <select class="modal-select" data-f-key="'+pair[0]+'">'+['',70,100].map(function(v){return '<option value="'+v+'"'+(String(rule[pair[0]]??'')===String(v)?' selected':'')+'>'+label(v===''?null:v)+'</option>';}).join('')+'</select></label>';
       }).join(' ');
-      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+'</details>';
+      return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button></p>':'')+'</details>';
     }
 
     function buildSettingsTeacherRowHtml(name, subject) {
@@ -44565,6 +44566,22 @@ window.SeduHubAdapter={
       var kpi = data.kpi || {};
       state.currentRows = data.rows || [];
       document.getElementById("kpiHours").textContent = formatHours(kpi.recognizedHours || 0) + "h";
+      var ruleBox=document.getElementById('selectedMonthRule');
+      var teacher=state.selectedTeacher,month=state.selectedMonth,cfg=(state.teacherSettings||{})[teacher]||{};
+      ruleBox.innerHTML=teacher?monthlyPayrollFields(cfg,true):'';
+      if(teacher)ruleBox.querySelector('[data-save-month-rule]').onclick=async function(){
+        if(teacher!==state.selectedTeacher||month!==state.selectedMonth)return;
+        var rule=(cfg.monthlyRules||{})[month]||{};
+        var rate=function(key){var val=ruleBox.querySelector('[data-f-key="'+key+'"]').value;return val===''?null:Number(val);};
+        var single=rate('single'),priv=rate('private');
+        if(single===(rule.single??null)&&priv===(rule.private??null))return;
+        this.disabled=true;
+        try {
+          var res=await savePayrollSettingsRequest_([{teacher:teacher,monthRule:{single:single,private:priv},expectedRuleAt:rule.at||''}]);
+          if(!res||!res.success)throw Error(res?.message||'저장 실패');
+          state.teacherSettings=res.settings;state.payroll.monthlyAnalysis.loaded=false;await refreshSummary(false);
+        } catch(error){showClientMessage(error.message);} finally{this.disabled=false;}
+      };
       document.getElementById("kpiWorkingDays").textContent = "이달 근무 " + (kpi.workingDays || 0) + "일";
       if(state.selectedTeacher && kpi.firstWorkDate){
         var today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
