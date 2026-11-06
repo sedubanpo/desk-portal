@@ -15,3 +15,8 @@
 @media(max-width:620px){#settingsModal .modal-box{width:98vw;max-height:94dvh}#settingsModal .modal-head,#settingsModal .modal-section,#settingsModal .modal-foot{padding:12px}#settingsModal .modal-tabbar{padding:0 8px}#settingsSectionProfile thead{display:none}#settingsSectionProfile tr[data-teacher-row]{display:grid;grid-template-columns:1fr auto;align-items:center;padding:8px 0;border-bottom:1px solid #e1e7dc}#settingsSectionProfile tr[data-teacher-row] td{border:0;padding:4px}.pc-details{grid-template-columns:repeat(2,minmax(0,1fr))}#settingsSectionProfile :is(tbody,table,tr[data-account-row],tr[data-account-row]>td,.settings-group-row,.settings-group-row td){display:block}.pc-toolbar label{display:flex;align-items:center}.pc-toolbar input{max-width:56vw}}
 @media(prefers-reduced-motion:reduce){.pc-switch:before{transition:none}}
 @media(max-width:620px){#settingsSectionProfile details{white-space:normal}#settingsSectionProfile details label{display:flex;margin:8px 0;justify-content:space-between;max-width:100%}}
+
+.pc-type-rates { min-width:0; margin:12px 0; padding:12px; border:1px solid #d2ddcd; border-radius:8px; white-space:normal; }
+.pc-type-rates legend { font-weight:700; color:#354c37; padding:0 4px; }
+.pc-type-rates .pc-details { margin-bottom:7px; }
+.pc-type-rates small { color:#536358; }

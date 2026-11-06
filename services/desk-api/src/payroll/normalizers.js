@@ -108,6 +108,19 @@ export function normalizeSuspicionSettings(input = {}) {
 
 function salaryMode(value) { return text(value).toLowerCase() === 'hourly' ? 'hourly' : 'ratio'; }
 
+function updateTypeHourlyRates(current, patch) {
+  const rates = {...current};
+  if (patch === undefined) return rates;
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw Error('수업 유형별 시급을 확인하세요.');
+  for (const [type, rate] of Object.entries(patch)) {
+    if (!type || type.length > 40 || Object.hasOwn(Object.prototype, type) || suspicionClassType(type) !== type) throw Error('수업 유형을 확인하세요.');
+    if (rate === null) delete rates[type];
+    else if (Number.isSafeInteger(rate) && rate > 0) rates[type] = rate;
+    else throw Error('유형별 시급은 양의 정수로 입력하거나 비워 두세요.');
+  }
+  return rates;
+}
+
 export function normalizePayrollSettings(input = {}) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
   const result = {};
@@ -122,6 +135,7 @@ export function normalizePayrollSettings(input = {}) {
     result[name] = {
       salaryMode: salaryMode(raw.salaryMode),
       ...(raw.ratioPercent != null ? {ratioPercent:clamp(raw.ratioPercent,0,100,50)} : {}),
+      ...(raw.typeHourlyRates ? {typeHourlyRates: {...raw.typeHourlyRates}} : {}),
       hourlyRate: raw.hourlyRate === null ? null : Math.max(0, number(raw.hourlyRate)),
       oneToOneSettlementMode: text(raw.oneToOneSettlementMode).toLowerCase() === 'ratio' ? 'ratio' : 'hourly',
       oneToOneRatioPercent: clamp(raw.oneToOneRatioPercent, 0, 100, 50),
@@ -164,11 +178,13 @@ export function applyPayrollSettingsUpdates(current, payload, nowIso, identity =
         monthlyRules[monthName]={...rates,at:nowIso,history:[entry,...(before.history||[])].slice(0,10)};
       }
     }
+    const typeHourlyRates = updateTypeHourlyRates(previous.typeHourlyRates, item.typeHourlyRates);
     item = {...previous, ...item};
     if(item.firstWorkDate && (!/^\d{4}-\d{2}-\d{2}$/.test(item.firstWorkDate)||!Number.isFinite(Date.parse(item.firstWorkDate))||new Date(item.firstWorkDate).toISOString().slice(0,10)!==item.firstWorkDate))throw Error('근무 시작일을 확인하세요.');
     next[teacher] = {
       salaryMode: salaryMode(item.salaryMode),
       ratioPercent: clamp(item.ratioPercent, 0, 100, 50),
+      ...(Object.keys(typeHourlyRates).length ? {typeHourlyRates} : {}),
       hourlyRate: item.hourlyRate === null ? null : Math.max(0, number(item.hourlyRate)),
       oneToOneSettlementMode: text(item.oneToOneSettlementMode).toLowerCase() === 'ratio' ? 'ratio' : 'hourly',
       oneToOneRatioPercent: clamp(item.oneToOneRatioPercent, 0, 100, 50),
@@ -254,7 +270,54 @@ export function payrollSourceVersion(source) {
 
 function attendance(value, freeIncluded) { const raw = text(value).replace(/\s+/g, ''); if (/당일취소|당취/.test(raw)) return { recognized: false, freeEligible: false, label: '당일취소 미인정' }; if (/프리/.test(raw)) return { recognized: Boolean(freeIncluded), freeEligible: true, label: freeIncluded ? '프리 수동인정' : '프리 미인정' }; if (/결석보강/.test(raw)) return { recognized: true, freeEligible: false, label: '결석보강 인정' }; if (/보강|보충/.test(raw)) return { recognized: true, freeEligible: false, label: '보강 인정' }; if (/지각/.test(raw)) return { recognized: true, freeEligible: false, label: '지각 인정' }; if (/출석/.test(raw)) return { recognized: true, freeEligible: false, label: '출석 인정' }; return { recognized: false, freeEligible: false, label: '미인정' }; }
 function discountPercent(value) { let parsed = number(value); if (parsed <= 0) return 0; if (parsed <= 1) parsed *= 100; return clamp(parsed, 0, 100, 0); }
-function intervalHours(intervals = []) { if (!intervals.length) return 0; const sorted = [...intervals].sort((a, b) => a[0] - b[0] || a[1] - b[1]); let total = 0; let [start, end] = sorted[0]; for (const current of sorted.slice(1)) { if (current[0] <= end) end = Math.max(end, current[1]); else { total += end - start; [start, end] = current; } } return round((total + end - start) / 60, 2); }
+// Settle each time slice once. Contributions distribute that single payment across the
+// attendance rows for the class-type report and the calendar drilldown.
+function settleHourlyDay(group, rows, bucket) {
+  const edges = group.ranges.flatMap(range => [
+    {time:range.start, range, start:true}, {time:range.end, range, start:false}
+  ]).sort((a,b) => a.time-b.time);
+  const active = new Set();
+  let last = edges[0]?.time;
+  let minutes = 0, missingMinutes = 0, rawPay = 0;
+  const amounts = new Map();
+  for (const edge of edges) {
+    const duration = edge.time - last;
+    if (duration > 0 && active.size) {
+      minutes += duration;
+      if (group.hourlyEligible) {
+        const rates = new Set(Array.from(active, r => r.rate));
+        const rate = rates.size === 1 ? rates.values().next().value : group.baseRate;
+        if (!rate) missingMinutes += duration;
+        const pay = rate * duration / 60;
+        rawPay += pay;
+        for (const range of active) {
+          const row = rows[range.index];
+          row.hourlyPaidMinutes += duration / active.size;
+          if (!rate) row.hourlyRatePending = true;
+          amounts.set(range.index, (amounts.get(range.index) || 0) + pay / active.size);
+        }
+      }
+    }
+    if (edge.start) active.add(edge.range);
+    else active.delete(edge.range);
+    last = edge.time;
+  }
+  const hours = round(minutes / 60, 2);
+  // Legacy schedules pay on daily hours rounded to two decimal places.
+  const pay = group.hourlyEligible && !group.typed ? hours * group.baseRate : rawPay;
+  let cumulative = 0, assigned = 0;
+  for (const [index, amount] of amounts) {
+    const row = rows[index];
+    cumulative += rawPay ? amount * pay / rawPay : 0;
+    row.hourlyPayShare = Math.round(cumulative) - assigned;
+    assigned += row.hourlyPayShare;
+    const item = bucket(row.classType);
+    item.hourlySettlement += row.hourlyPayShare;
+    item.hourlyHoursEligible += row.hourlyPaidMinutes / 60;
+    row.hourlyPayUnrounded = rawPay ? amount * pay / rawPay : 0;
+  }
+  return {hours, pay, missingMinutes};
+}
 function oneToOneRule(settings, teacher, fallback) { const config = settings?.[teacher] || {}; return { useRatio: text(config.oneToOneSettlementMode).toLowerCase() === 'ratio', ratioPercent: clamp(config.oneToOneRatioPercent, 0, 100, fallback || 50) }; }
 function isOneToOne(value) { return text(value).replace(/\s+/g, '') === '1:1'; }
 function studentBaselines(rows) { const groups = new Map(); rows.forEach(row => { if (!row.name || row.rate <= 0 || row.amount <= 0) return; [[row.name, row.subject, row.classType], [row.name, '', row.classType], [row.name, row.subject, ''], [row.name, '', '']].forEach(parts => { const key = parts.join('|'); groups.set(key, [...(groups.get(key) || []), row.rate]); }); }); const result = new Map(); groups.forEach((rates, key) => { const counts = new Map(); rates.forEach(rate => counts.set(Math.round(rate), (counts.get(Math.round(rate)) || 0) + 1)); const best = [...counts].sort((a, b) => b[1] - a[1])[0]; if (best) result.set(key, best[0]); }); return result; }
@@ -384,7 +447,9 @@ export function buildPayrollSummary(rows, monthMeta, input = {}) {
     let effectiveRate = row.rate; let amount = row.amount; let adjusted = false;
     if (hasAmountOverride) { amount = Math.round(manualAmount); effectiveRate = row.hours > 0 ? round(amount / row.hours, 2) : row.rate; adjusted = amount !== Math.round(row.amount); }
     else if (recognized.recognized && makeup) { const selected = manualRate || proposed || row.rate; if (selected > 0) { effectiveRate = selected; amount = Math.round(selected * row.hours); adjusted = Math.round(amount) !== Math.round(row.amount); } } else if (manualRate > 0) { effectiveRate = manualRate; amount = Math.round(manualRate * row.hours); adjusted = true; }
-    const teacherConfig = settings[row.teacher] || {}; const effectiveMode = settings[row.teacher] ? salaryMode(teacherConfig.salaryMode) : mode; const effectiveHourlyRate = settings[row.teacher] ? Math.max(0, number(teacherConfig.hourlyRate, 0)) : hourlyRate; const effectiveRatio = number(teacherConfig.ratioPercent,ratioPercent);
+    const teacherConfig = settings[row.teacher] || {}; const effectiveMode = settings[row.teacher] ? salaryMode(teacherConfig.salaryMode) : mode; const baseHourlyRate = settings[row.teacher] ? Math.max(0, number(teacherConfig.hourlyRate, 0)) : hourlyRate; const effectiveRatio = number(teacherConfig.ratioPercent,ratioPercent);
+    const classRate = teacherConfig.typeHourlyRates?.[suspicionClassType(row.classType)];
+    const effectiveHourlyRate = classRate ?? baseHourlyRate;
     const monthRule=teacherConfig.monthlyRules?.[monthMeta.sheetName]||{};
     const exceptionPercent=row.singleIndividual ? monthRule.single : isOneToOne(row.classType) ? monthRule.private : null;
     const specialRatio=exceptionPercent!=null;
@@ -396,17 +461,33 @@ export function buildPayrollSummary(rows, monthMeta, input = {}) {
       const day = days[row.classDateKey]; const financial = bucket(row.classType); day.lessonCount += 1; day.recognizedHours += payHours; day.grossSales += amount; day.discount += discount; day.netSales += net; day.classTypeMap[row.classType] = (day.classTypeMap[row.classType] || 0) + 1; day.classTypeHourMap[row.classType] = (day.classTypeHourMap[row.classType] || 0) + payHours;
       financial.count += 1; financial.hours += payHours; financial.gross += amount; financial.net += net; workingDays.add(row.classDateKey); typeTotals[row.classType] = (typeTotals[row.classType] || 0) + 1; recognizedLessons += 1; recognizedHoursTotal += payHours; grossTotal += amount; discountTotal += discount; netTotal += net;
       const rule = oneToOneRule(settings, row.teacher, ratioPercent); const useOneToOneRatio = effectiveMode === 'hourly' && (specialRatio || rule.useRatio && isOneToOne(row.classType)); const basePercent = specialRatio ? exceptionPercent : effectiveMode === 'ratio' ? effectiveRatio : (useOneToOneRatio ? rule.ratioPercent : 0); settlementPercentApplied = hasSettlementOverride ? clamp(settlements.get(row.rowKey), 0, 200, basePercent) : basePercent;
-      if (effectiveMode === 'hourly') { if (hasSettlementOverride || useOneToOneRatio) { const settlement = net * settlementPercentApplied / 100; day.oneToOneRatioSettlement += settlement; financial.oneToOneRatioSettlement += settlement; financial.settlement += settlement; oneToOnePay += settlement; } else { financial.hourlyHoursEligible += payHours; financial.hourlySettlement += payHours * effectiveHourlyRate; } } else { const settlement = net * settlementPercentApplied / 100; day.ratioSettlement += settlement; financial.ratioSettlement += settlement; financial.settlement += settlement; ratioPay += settlement; }
-      if (!useOneToOneRatio && !hasSettlementOverride && row.startMinutes != null && row.endMinutes > row.startMinutes) { const intervalKey = `${row.teacher}\u0000${row.classDateKey}`; if (!intervals[intervalKey]) intervals[intervalKey] = { dateKey: row.classDateKey, hourlyRate: effectiveHourlyRate, hourlyEligible: effectiveMode === 'hourly', ranges: [] }; intervals[intervalKey].ranges.push([row.startMinutes, row.source === 'intranet' ? Math.min(row.endMinutes,row.startMinutes+payHours*60) : row.endMinutes]); }
+      if (effectiveMode === 'hourly') { if (hasSettlementOverride || useOneToOneRatio) { const settlement = net * settlementPercentApplied / 100; day.oneToOneRatioSettlement += settlement; financial.oneToOneRatioSettlement += settlement; financial.settlement += settlement; oneToOnePay += settlement; } } else { const settlement = net * settlementPercentApplied / 100; day.ratioSettlement += settlement; financial.ratioSettlement += settlement; financial.settlement += settlement; ratioPay += settlement; }
+      if (!useOneToOneRatio && !hasSettlementOverride && row.startMinutes != null && row.endMinutes > row.startMinutes) {
+        const key = JSON.stringify([row.teacher,row.classDateKey]);
+        const group = intervals[key] ||= {dateKey:row.classDateKey, baseRate:baseHourlyRate, hourlyEligible:effectiveMode === 'hourly', typed:false, ranges:[]};
+        const end = row.source === 'intranet' ? Math.min(row.endMinutes,row.startMinutes + payHours*60) : row.endMinutes;
+        if (end > row.startMinutes) {
+          group.typed ||= classRate != null;
+          group.ranges.push({start:row.startMinutes, end, rate:effectiveHourlyRate, index:detail.length});
+        }
+      }
     }
-    detail.push({ ...row, absenceEstimatedAmount: absenceEstimate, rate: effectiveRate, baseRate: row.rate, amount: Math.round(amount), originalAmount: row.amount, amountManuallyOverridden: hasAmountOverride, discount: Math.round(discount), discountPercent: percentDiscount, discountRaw: row.discount, netAmount: net, isFreeEligible: base.freeEligible, freeIncluded: base.freeEligible && free.has(row.rowKey), baseRecognized: base.recognized, recognized: recognized.recognized, isManuallyOverridden: recognition.has(row.rowKey), recognitionLabel: recognized.label, recognizedHours: recognized.recognized ? payHours : 0, recognizedNet: recognized.recognized ? net : 0, effectiveSalaryMode: effectiveMode, effectiveHourlyRate, oneToOneRatioRuleApplied: effectiveMode === 'hourly' && (specialRatio || isOneToOne(row.classType) && oneToOneRule(settings, row.teacher, ratioPercent).useRatio), settlementPercentApplied: round(settlementPercentApplied, 2), settlementPercentOverridden: hasSettlementOverride, suspectedRateMismatch: Boolean(suspicions[row.rowKey]), suspectedRateReason: suspicions[row.rowKey] || '', autoRepriceEligible: makeup && !hasAmountOverride, autoRepriced: (row.makeupAutoPriced || makeup && adjusted) && !hasAmountOverride, suggestedRate: proposed > 0 ? proposed : 0, rateManuallyAdjusted: manualRate > 0 && !hasAmountOverride });
+    detail.push({ ...row, hourlyPayShare:0, hourlyPayUnrounded:0, hourlyPaidMinutes:0, absenceEstimatedAmount: absenceEstimate, rate: effectiveRate, baseRate: row.rate, amount: Math.round(amount), originalAmount: row.amount, amountManuallyOverridden: hasAmountOverride, discount: Math.round(discount), discountPercent: percentDiscount, discountRaw: row.discount, netAmount: net, isFreeEligible: base.freeEligible, freeIncluded: base.freeEligible && free.has(row.rowKey), baseRecognized: base.recognized, recognized: recognized.recognized, isManuallyOverridden: recognition.has(row.rowKey), recognitionLabel: recognized.label, recognizedHours: recognized.recognized ? payHours : 0, recognizedNet: recognized.recognized ? net : 0, effectiveSalaryMode: effectiveMode, effectiveHourlyRate, oneToOneRatioRuleApplied: effectiveMode === 'hourly' && (specialRatio || isOneToOne(row.classType) && oneToOneRule(settings, row.teacher, ratioPercent).useRatio), settlementPercentApplied: round(settlementPercentApplied, 2), settlementPercentOverridden: hasSettlementOverride, suspectedRateMismatch: Boolean(suspicions[row.rowKey]), suspectedRateReason: suspicions[row.rowKey] || '', autoRepriceEligible: makeup && !hasAmountOverride, autoRepriced: (row.makeupAutoPriced || makeup && adjusted) && !hasAmountOverride, suggestedRate: proposed > 0 ? proposed : 0, rateManuallyAdjusted: manualRate > 0 && !hasAmountOverride });
   });
-  let pureHours = 0; Object.values(intervals).forEach(value => { const hours = intervalHours(value.ranges); const pay = value.hourlyEligible ? hours * value.hourlyRate : 0; days[value.dateKey].pureTeachingHours += hours; days[value.dateKey].hourlyBasePay += pay; pureHours += hours; hourlyBasePay += pay; });
+  let pureHours = 0, missingHourlyMinutes = 0;
+  for (const group of Object.values(intervals)) {
+    const {hours, pay, missingMinutes} = settleHourlyDay(group, detail, bucket);
+    days[group.dateKey].pureTeachingHours += hours;
+    days[group.dateKey].hourlyBasePay += pay;
+    pureHours += hours;
+    hourlyBasePay += pay;
+    missingHourlyMinutes += missingMinutes;
+  }
   Object.values(days).forEach(day => { day.pureTeachingHours = round(day.pureTeachingHours, 2); day.settlementAmount = Math.round(day.hourlyBasePay + day.oneToOneRatioSettlement + day.ratioSettlement); day.ratioSettlement = Math.round(day.ratioSettlement); day.oneToOneRatioSettlement = Math.round(day.oneToOneRatioSettlement); });
   Object.values(finance).forEach(item => { item.hours = round(item.hours, 2); item.hourlyHoursEligible = round(item.hourlyHoursEligible, 2); ['gross', 'net', 'canceled', 'canceledCount', 'ratioSettlement', 'oneToOneRatioSettlement', 'hourlySettlement'].forEach(key => { item[key] = Math.round(number(item[key])); }); item.settlement = Math.round(item.hourlySettlement + item.oneToOneRatioSettlement + item.ratioSettlement); });
   const estimatedPay = ratioPay + hourlyBasePay + oneToOnePay;
   return {
-    kpi: { lessonCharges: summarizeLessonCharges(filtered), absenceEstimatedAmount: absenceEstimatedTotal, absenceEstimatedCount, absenceUnknownCount, absenceEstimatedRatio: netTotal > 0 ? round(absenceEstimatedTotal / netTotal * 100, 1) : null, totalLessons: filtered.length, recognizedLessons, recognizedHours: round(recognizedHoursTotal, 2), pureTeachingHours: round(pureHours, 2), grossSales: Math.round(grossTotal), discount: Math.round(discountTotal), netSales: Math.round(netTotal), canceledAmount: Math.round(canceledTotal), oneToOneRatioSettlement: Math.round(oneToOnePay), firstWorkDate:settings[input.teacherName]?.firstWorkDate || (input.teacherName ? rows.find(r=>r.teacher===input.teacherName && r.firstRecordedWorkDate)?.firstRecordedWorkDate : null) || null, firstWorkDateRecorded:!settings[input.teacherName]?.firstWorkDate, workingDays: workingDays.size, estimatedPay: Math.round(estimatedPay), ratioPay: Math.round(ratioPay), hourlyPay: Math.round(hourlyBasePay + oneToOnePay), mixedTeacherModes },
+    kpi: { missingHourlyMinutes, lessonCharges: summarizeLessonCharges(filtered), absenceEstimatedAmount: absenceEstimatedTotal, absenceEstimatedCount, absenceUnknownCount, absenceEstimatedRatio: netTotal > 0 ? round(absenceEstimatedTotal / netTotal * 100, 1) : null, totalLessons: filtered.length, recognizedLessons, recognizedHours: round(recognizedHoursTotal, 2), pureTeachingHours: round(pureHours, 2), grossSales: Math.round(grossTotal), discount: Math.round(discountTotal), netSales: Math.round(netTotal), canceledAmount: Math.round(canceledTotal), oneToOneRatioSettlement: Math.round(oneToOnePay), firstWorkDate:settings[input.teacherName]?.firstWorkDate || (input.teacherName ? rows.find(r=>r.teacher===input.teacherName && r.firstRecordedWorkDate)?.firstRecordedWorkDate : null) || null, firstWorkDateRecorded:!settings[input.teacherName]?.firstWorkDate, workingDays: workingDays.size, estimatedPay: Math.round(estimatedPay), ratioPay: Math.round(ratioPay), hourlyPay: Math.round(hourlyBasePay + oneToOnePay), mixedTeacherModes },
     classTypeSummary: Object.entries(typeTotals).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count),
     classTypeFinanceSummary: Object.values(finance).sort((a, b) => b.net - a.net),
     attendanceSummary: Object.entries(attendanceTotals).map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count),

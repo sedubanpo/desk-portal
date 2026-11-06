@@ -89,6 +89,13 @@ export function createPayrollStore(firestore) {
             if(JSON.stringify(before)!==JSON.stringify(cfg))changes.push('의심 기준 변경');
             continue;
           }
+          const oldRates = before.typeHourlyRates || {}, newRates = cfg.typeHourlyRates || {};
+          for (const type of new Set([...Object.keys(oldRates), ...Object.keys(newRates)])) {
+            if (oldRates[type] !== newRates[type]) {
+              const showRate = v => v == null ? '기본 시급' : v.toLocaleString('ko-KR')+'원';
+              changes.push(name+' · '+type+' 시간당 지급액 '+showRate(oldRates[type])+' → '+showRate(newRates[type]));
+            }
+          }
           const labels={salaryMode:'급여 방식',ratioPercent:'기본 비율',hourlyRate:'시급',oneToOneSettlementMode:'1:1 방식',oneToOneRatioPercent:'1:1 비율',firstWorkDate:'근무 시작일',monthlyRules:'월별 예외',bankName:'은행',accountNumber:'계좌번호',accountHolder:'예금주',paidByMonth:'지급 상태'};
           const show=v=>v==null?'미정':v==='hourly'?'시급제':v==='ratio'?'비율제':String(v);
           for(const [key,label] of Object.entries(labels)) if(JSON.stringify(before[key])!==JSON.stringify(cfg[key])){

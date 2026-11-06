@@ -17777,7 +17777,7 @@
   <link rel="stylesheet" href="./desk-refinements.css">
 <link rel="stylesheet" href="./message-templates.css?v=20261003">
 <link rel="stylesheet" href="./payroll-settlement.css?v=20261009">
-<link rel="stylesheet" href="./payroll-center.css?v=20261104">
+<link rel="stylesheet" href="./payroll-center.css?v=type-rates-20261104">
 <link rel="stylesheet" href="./desk-calendar.css?v=20261106">
 <script defer src="./desk-calendar.js?v=20261106"></script>
 </head>
@@ -17873,7 +17873,7 @@
           <h3>급여 모드</h3>
           <ul class="bullet-list">
             <li>비율제 기본 50%</li>
-            <li>시급제: 일자별 순수 수업시간 x 시급</li>
+            <li>시급제: 수업 유형별 시간당 지급액 적용 · 중복 시간 제외</li>
             <li>일자별 매출 그래프 제공</li>
           </ul>
         </section>
@@ -20638,7 +20638,7 @@
       <div class="modal-head">
         <div>
           <h3 class="modal-title" id="payCenterTitle">강사 급여 설정 센터</h3>
-          <div class="modal-sub">강사별 급여 기준과 월별 예외를 관리합니다.</div>
+          <div class="modal-sub"><span id="pcAccessNote">강사별 급여 기준과 월별 예외를 관리합니다.</span></div>
         </div>
         <button class="modal-action ghost" id="closeSettingsBtn" type="button">닫기</button>
       </div>
@@ -43787,6 +43787,21 @@ window.SeduHubAdapter={
       return '<details><summary>'+escapeHtml(state.selectedMonth)+'월 예외 정산</summary><p>빈칸은 기본 방식, 100%는 올페이입니다.</p>'+fields+'<p>변경 이력 (최근 10건)</p>'+((rule.history||[]).map(function(h){return '<p>'+escapeHtml(new Date(h.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'})+' · '+h.by)+'<br>1명 개별정규 '+label(h.before.single)+' → '+label(h.single)+' · 1:1 '+label(h.before.private)+' → '+label(h.private)+'</p>';}).join('')||'변경 없음')+(direct?'<p><button class="refresh-btn" type="button" data-save-month-rule>이 달의 비율 저장</button> <button class="modal-action ghost" type="button" data-clear-month-rule>이 달의 예외 삭제</button></p>':'')+'</details>';
     }
 
+    function teacherHourlyRateFields_(cfg) {
+      const rates = cfg.typeHourlyRates || {};
+      const types = new Set(['개별','1:1','2:1','정규','특강','보강', ...Object.keys(rates)]);
+      for (const row of state.currentSummary?.classTypeSummary || []) {
+        const type = normalizePayrollSuspicionClassType_(row.type);
+        if (type) types.add(type);
+      }
+      const fields = Array.from(types, type => {
+        const key = escapeHtml(type), label = type === '개별' ? '개별정규/개별' : key;
+        return '<label>'+label+'<input type="number" class="modal-input" min="1" step="1" placeholder="기본 시급" data-f-key="typeHourlyRate" data-type="'+key+'" value="'+escapeHtml(String(rates[type] ?? ''))+'"></label>';
+      }).join('');
+      return '<fieldset class="pc-type-rates"><legend>수업 유형별 시간당 지급액 (원)</legend><div class="pc-details">'+fields+'</div>'+
+        '<small>빈칸은 기본 시급을 적용합니다. 단가가 다른 수업이 겹치면 겹친 시간은 기본 시급으로 한 번 지급합니다. 비율 정산 예외가 있는 수업은 지정한 비율을 적용합니다.</small></fieldset>';
+    }
+
     function buildSettingsTeacherRowHtml(name, subject) {
       var cfg = (state.teacherSettings || {})[name] || {};
       var h=escapeHtml, hourly=cfg.salaryMode==='hourly', nameHtml=h(name);
@@ -43800,7 +43815,7 @@ window.SeduHubAdapter={
         '<label>1:1 정산 비율 (%)'+input('oneToOneRatioPercent','number',cfg.oneToOneRatioPercent??50,'min="0" max="100" step="0.5"')+'</label>'+
         '<label>최초 근무 시작일'+input('firstWorkDate','date',cfg.firstWorkDate)+'</label>'+
         '<label>은행명'+input('bankName','text',cfg.bankName)+'</label><label>계좌번호'+input('accountNumber','text',cfg.accountNumber)+'</label><label>예금주'+input('accountHolder','text',cfg.accountHolder)+'</label>'+
-        '</div>'+monthlyPayrollFields(cfg)+'</td></tr>';
+        '</div>'+teacherHourlyRateFields_(cfg)+monthlyPayrollFields(cfg)+'</td></tr>';
     }
     function filterPayrollProfiles_(){
       const body=document.getElementById('settingsProfileBody'), q=document.getElementById('pcSearch').value.trim().replace(/\s/g,'');
@@ -43819,7 +43834,7 @@ window.SeduHubAdapter={
       document.getElementById('pcSearch').oninput=filterPayrollProfiles_;
       for(const row of document.querySelectorAll('#settingsProfileBody [data-teacher-row]')){
         const mode=row.querySelector('.pc-switch'),more=row.querySelector('.pc-more'),detail=row.nextElementSibling;
-        const show=()=>{const hourly=mode.value==='hourly';mode.setAttribute('aria-checked',String(hourly));row.querySelector('.pc-hour').hidden=!hourly;row.querySelector('.pc-ratio').hidden=hourly;};
+        const show=()=>{const hourly=mode.value==='hourly';mode.setAttribute('aria-checked',String(hourly));row.querySelector('.pc-hour').hidden=!hourly;row.querySelector('.pc-ratio').hidden=hourly;detail.querySelector('.pc-type-rates').hidden=!hourly;};
         show();mode.onclick=()=>{mode.value=mode.value==='hourly'?'ratio':'hourly';show();};
         more.onclick=()=>{detail.hidden=!detail.hidden;more.setAttribute('aria-expanded',String(!detail.hidden));more.textContent=detail.hidden?'상세 보기':'상세 닫기';};
         for(const el of [...row.querySelectorAll('[data-f-key]'),...detail.querySelectorAll('[data-f-key]')])el.dataset.original=el.value;
@@ -43913,6 +43928,9 @@ window.SeduHubAdapter={
     }
 
     function setSettingsTab(tab) {
+      document.getElementById('pcAccessNote').textContent = canEditPayrollRates_()
+        ? '강사별 급여 기준과 월별 예외를 관리합니다.'
+        : '강사 급여/계좌와 사용·변경 이력은 안종성 또는 홍성우 계정으로 로그인하면 열립니다.';
       state.settingsTab = tab || "profile";
       if (tab === "monthly") renderSettingsReports();
       if (tab === "weekly") renderSettingsWeekdayReport();
@@ -44060,6 +44078,7 @@ window.SeduHubAdapter={
           byTeacher[teacher] = {
             teacher: teacher,
             recognizedHours: 0,
+            hourlyPay: 0,
             netSales: 0,
             intervalsByDate: {},
             salaryMode: "ratio",
@@ -44080,6 +44099,7 @@ window.SeduHubAdapter={
         var t = byTeacher[teacher];
         t.recognizedHours += toNumber(row.recognizedHours, 0);
         t.netSales += toNumber(row.netAmount, 0);
+        t.hourlyPay += toNumber(row.hourlyPayUnrounded, 0);
         var useOneToOneRatio = row.oneToOneRatioRuleApplied || row.settlementPercentOverridden;
         if (useOneToOneRatio || t.salaryMode==="ratio") {
           t.variablePay=(t.variablePay||0)+toNumber(row.netAmount,0)*row.settlementPercentApplied/100;
@@ -44089,7 +44109,7 @@ window.SeduHubAdapter={
         var e = parseDisplayTimeToMinutes(row.end);
         if (!useOneToOneRatio && s != null && e != null && e > s) {
           if (!t.intervalsByDate[row.classDateKey]) t.intervalsByDate[row.classDateKey] = [];
-          t.intervalsByDate[row.classDateKey].push([s, e]);
+          t.intervalsByDate[row.classDateKey].push([s, row.source==="intranet" ? Math.min(e,s+row.recognizedHours*60) : e]);
         }
       });
       return Object.keys(byTeacher).map(function(name) {
@@ -44101,7 +44121,7 @@ window.SeduHubAdapter={
         item.pureHours = pureMinutes / 60;
         item.oneToOneRatioSettlement = Math.round(item.oneToOneRatioSettlement || 0);
         item.estimatedPay = item.salaryMode === "hourly"
-          ? Math.round((item.pureHours * item.hourlyRate) + item.oneToOneRatioSettlement)
+          ? Math.round(item.hourlyPay + (item.variablePay || 0))
           : Math.round(item.variablePay || 0);
         return item;
       }).sort(function(a, b) { return a.teacher.localeCompare(b.teacher, "ko"); });
@@ -44154,7 +44174,9 @@ window.SeduHubAdapter={
           if(el.value===el.dataset.original && !el.validity?.badInput)continue;
           if(el.checkValidity&&!el.checkValidity()){document.getElementById('pcSearch').value='';filterPayrollProfiles_();if(detail.contains(el)&&detail.hidden)row.querySelector('.pc-more').click();el.reportValidity();return;}
           const key=el.dataset.fKey;
-          if(key==='single'||key==='private'){
+          if(key==='typeHourlyRate'){
+            (patch.typeHourlyRates ||= {})[el.dataset.type]=el.value===''?null:Number(el.value);
+          }else if(key==='single'||key==='private'){
             const rate=k=>{const v=detail.querySelector('[data-f-key="'+k+'"]').value;return v===''?null:Number(v);};
             patch.monthRule={single:rate('single'),private:rate('private')};patch.expectedRuleAt=state.teacherSettings[teacher]?.monthlyRules?.[state.selectedMonth]?.at||'';
           }else patch[key]=el.type==='number'?(el.value===''?null:Number(el.value)):el.value;
@@ -44170,6 +44192,7 @@ window.SeduHubAdapter={
         .then(function(res) {
           if (!res || !res.success) throw new Error(res && res.message ? res.message : "저장 실패");
           state.teacherSettings = res.settings || {};
+          state.payroll.monthlyAnalysis.loaded = false;
           settingsModalEl.style.display = "none";
           applyTeacherSettingPreset();
           refreshSummary(false);
@@ -44634,7 +44657,7 @@ window.SeduHubAdapter={
         ? "강사별 급여 방식 합산"
         : (state.salaryMode === "ratio"
           ? "비율제 " + toNumber(state.ratioPercent, 50) + "% 적용"
-          : "시급제: 일자별 순수수업시간 x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide);
+          : "유형별 시급 · 중복 시간 제외" + oneToOneGuide + (kpi.missingHourlyMinutes ? " · 시급 미정 "+formatHours(kpi.missingHourlyMinutes/60)+"h" : ""));
       document.getElementById("kpiLessons").textContent = "인정 수업 " + (kpi.recognizedLessons || 0) + "건";
       document.getElementById("kpiLessonsSub").textContent = "전체 " + (kpi.totalLessons || 0) + "건";
       document.getElementById("kpiPureHours").textContent = formatHours(kpi.pureTeachingHours || 0) + "h";
@@ -44845,7 +44868,7 @@ window.SeduHubAdapter={
           ? "강사별 설정된 비율제·시급제를 합산합니다."
           : (ratioActive
 	          ? "비율제: 인정 순매출 x " + toNumber(state.ratioPercent, 50) + "%"
-	          : "시급제: 일자별 순수 수업시간(중복 제외) x " + formatWon(toNumber(state.hourlyRate, 0)) + oneToOneGuide);
+	          : "수업 유형별 단가 적용 · 기본 시급 " + (state.hourlyRate ? formatWon(state.hourlyRate) : "미정") + oneToOneGuide);
       document.getElementById("ratioField").style.opacity = mixedMode || !ratioActive ? "0.55" : "1";
       document.getElementById("hourlyField").style.opacity = mixedMode || ratioActive ? "0.55" : "1";
     }
@@ -44998,7 +45021,7 @@ window.SeduHubAdapter={
           var settleText = row.recognized
             ? (row.effectiveSalaryMode === "ratio" || row.oneToOneRatioRuleApplied || row.settlementPercentOverridden
               ? formatWon(Math.round(toNumber(row.netAmount, 0) * row.settlementPercentApplied / 100))
-              : "일자 순수시수 기준")
+              : (row.hourlyRatePending ? "시급 확인 필요" : formatWon(row.hourlyPayShare)+" (중복 시간 안분)"))
             : "0원";
           return '' +
             '<div class="day-detail-item">' +
@@ -45979,7 +46002,7 @@ window.SeduHubAdapter={
         '<div class="card"><strong>정산 기준</strong><br>' +
           (state.salaryMode === "ratio"
             ? ('비율제 ' + toNumber(state.ratioPercent, 50) + '% / 인정 시수 ' + formatHours(kpi.recognizedHours || 0) + 'h')
-            : ('시급 ' + formatWon(toNumber(state.hourlyRate, 0)) + ' / 순수 시수 ' + formatHours(kpi.pureTeachingHours || 0) + 'h')) +
+            : ('유형별 시급 적용 · 기본 시급 ' + (state.hourlyRate ? formatWon(state.hourlyRate) : '미정') + (kpi.missingHourlyMinutes ? ' · 시급 미정 '+formatHours(kpi.missingHourlyMinutes/60)+'h' : '') + ' / 순수 시수 ' + formatHours(kpi.pureTeachingHours || 0) + 'h')) +
         '</div>' +
         '<div class="card"><strong>수업유형별 금액</strong>' +
           '<table><thead><tr><th>유형</th><th>건수</th><th class="right">매출</th><th class="right">정산</th></tr></thead><tbody>' +

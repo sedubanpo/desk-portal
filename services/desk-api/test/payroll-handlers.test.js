@@ -236,3 +236,32 @@ test('filter queries reuse source while settings stay fresh; refresh and finaliz
   await api.savePayrollFinalization({monthName:'26-07',clientRequestId:'fresh-check',expectedSourceVersion:'stale'},{role:'ADMIN'});
   assert.equal(reads,3);
 });
+
+test('type hourly rates apply by time slice; conflicting rates use the base once', async () => {
+  const {applyPayrollSettingsUpdates} = await import('../src/payroll/normalizers.js');
+  const update = (settings, fields) => applyPayrollSettingsUpdates(settings, {updates:[{teacher:'김강사', ...fields}]}, '2026-11-06');
+  const settings = update({}, {salaryMode:'hourly', hourlyRate:30000, typeHourlyRates:{'1:1':70000,'개별':40000}});
+  const meta = parsePayrollMonthName('26-07');
+  const rows = parsePayrollRows(source,meta);
+  rows[1].classType = '개별정규';
+  const calc = (list, cfg=settings) => buildPayrollSummary(list,meta,{teacherSettings:cfg});
+  const summary = calc(rows);
+  assert.equal(summary.kpi.pureTeachingHours,3);
+  assert.equal(summary.kpi.estimatedPay,140000); // 70k + 30k overlap + 40k
+  assert.equal(summary.rows[0].hourlyPayShare,85000);
+  assert.equal(summary.rows[1].hourlyPayShare,55000);
+  assert.equal(summary.rows[2].hourlyPayShare,0);
+  assert.equal(summary.classTypeFinanceSummary.reduce((n,r)=>n+r.settlement,0),140000);
+  assert.equal(calc([...rows, {...rows[1]}]).kpi.estimatedPay,140000);
+  assert.equal(calc(rows,update(settings,{typeHourlyRates:{'개별':70000}})).kpi.estimatedPay,210000);
+  const cleared = update(settings,{typeHourlyRates:{'개별':null}});
+  assert.deepEqual(cleared['김강사'].typeHourlyRates,{'1:1':70000});
+  assert.equal(calc(rows,cleared).kpi.estimatedPay,130000);
+  assert.throws(()=>update(settings,{typeHourlyRates:{'2:1':-1}}));
+  const pending = calc(rows,update(settings,{hourlyRate:null}));
+  assert.equal(pending.kpi.missingHourlyMinutes,60);
+  assert.equal(pending.kpi.estimatedPay,110000);
+  const except = update(settings,{oneToOneSettlementMode:'ratio',oneToOneRatioPercent:70});
+  assert.equal(calc(rows,except).kpi.estimatedPay,220000); // 140k ratio + 2h at 40k
+  assert.equal(calc(rows,update(settings,{salaryMode:'ratio',ratioPercent:50})).kpi.estimatedPay,200000);
+});
