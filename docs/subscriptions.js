@@ -75,8 +75,7 @@
     if(!loaded || busy) return;
     editing=id; const s=services().find(s=>s.id===id),p=manualEntry(s);
     el('subEditTitle').textContent=s.name+' · '+month+' 결제 기록';
-    el('subDate').value=p.date || ''; el('subDateButton').textContent=p.date || '날짜 선택';
-    el('subCalendar').hidden=true;el('subDateButton').setAttribute('aria-expanded','false');
+    el('subDate').value=p.date || '';
     const current=entry(s),newMonth=!(s.payments&&Object.prototype.hasOwnProperty.call(s.payments,month)),card=newMonth?s.paymentCard:current.paymentCard,cycle=newMonth?(s.billingCycle||'unknown'):current.billingCycle;
     document.querySelectorAll('[name=subBillingCycle]').forEach(r=>r.checked=r.value===cycle);
     document.querySelectorAll('[name=subCardIssuer]').forEach(r=>r.checked=r.value===(card&&card.issuer||''));
