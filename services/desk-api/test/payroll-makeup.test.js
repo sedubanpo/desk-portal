@@ -34,6 +34,7 @@ test('a saved link can bridge subject labels for one canceled segment', () => {
   assert.equal(price([{...link, originalDate:replacement.classDateKey}]).sourcePending, true);
   const priced = price([link]);
   assert.equal(priced.sourcePending, false);
+  assert.equal(priced.subject, '과학');
   assert.equal(priced.payHours, 1);
   assert.equal(priced.amount, 29167);
   assert.equal(priced.billingAmount, 0);

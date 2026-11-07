@@ -40,7 +40,9 @@ export function priceCancellationMakeups(rows, evidence=rows, links=[]) {
     used.set(original.rowKey,already+consumedHours);
     const amount=Math.round(original.amount*payHours/baseHours);
     const explanation=`당취보충 자동 산출 · 원수업 ${original.classDateKey} · ${original.amount.toLocaleString('ko-KR')}원 / ${baseHours}h × 인정 ${payHours}h · 학생 추가 청구 0원`;
-    result.set(row.rowKey,{...row,hours,payHours,rate:hours>0?amount/hours:0,amount,discount:original.discount,discountReason:original.discountReason,sourcePending:false,sourceRecognized:payHours>0,sourcePendingReason:'',makeupAutoPriced:true,makeupOriginalId:original.lessonId,makeupOriginalDate:original.classDateKey,makeupPricingReason:explanation,billingAmount:0,note:[row.note,explanation].filter(Boolean).join(' / ')});
+    // Keep a linked but unclassified replacement in the original subject's payroll filter.
+    const subject = explicit.length && row.subject === '기타' ? original.subject : row.subject;
+    result.set(row.rowKey,{...row,subject,hours,payHours,rate:hours>0?amount/hours:0,amount,discount:original.discount,discountReason:original.discountReason,sourcePending:false,sourceRecognized:payHours>0,sourcePendingReason:'',makeupAutoPriced:true,makeupOriginalId:original.lessonId,makeupOriginalDate:original.classDateKey,makeupPricingReason:explanation,billingAmount:0,note:[row.note,explanation].filter(Boolean).join(' / ')});
   }
   return rows.map(r=>result.get(r.rowKey)||r);
 }
