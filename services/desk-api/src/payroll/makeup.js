@@ -24,10 +24,13 @@ export function priceCancellationMakeups(rows, evidence=rows, links=[]) {
     const original=candidates[0],baseHours=original.billingHours||span(original);
     const recoveredLegacy=row.legacyZeroMakeup&&span(row)>0;
     const hours=recoveredLegacy?span(row):row.hours, payHours=recoveredLegacy?hours:row.payHours;
-    if(!baseHours||!hours||payHours==null||payHours<0||payHours>hours||row.sourcePending){fail('당취보충 실제 수업시간·강사 인정시간 확인 필요');continue;}
+    // intranetRows sets singleIndividual only after validating the booked time against the lesson.
+    const verifiedSingle = row.singleIndividual === true;
+    if(!baseHours||!hours||payHours==null||payHours<0||(payHours>hours&&!verifiedSingle)||row.sourcePending){fail('당취보충 실제 수업시간·강사 인정시간 확인 필요');continue;}
     const already=used.get(original.rowKey)||0;
-    if(already+hours>baseHours+1e-8){fail('원수업 시간을 초과하는 보충 · 중복 연결 확인 필요');continue;}
-    used.set(original.rowKey,already+hours);
+    const consumedHours = verifiedSingle ? Math.max(hours, payHours) : hours;
+    if(already+consumedHours>baseHours+1e-8){fail('원수업 시간을 초과하는 보충 · 중복 연결 확인 필요');continue;}
+    used.set(original.rowKey,already+consumedHours);
     const amount=Math.round(original.amount*payHours/baseHours);
     const explanation=`당취보충 자동 산출 · 원수업 ${original.classDateKey} · ${original.amount.toLocaleString('ko-KR')}원 / ${baseHours}h × 인정 ${payHours}h · 학생 추가 청구 0원`;
     result.set(row.rowKey,{...row,hours,payHours,rate:hours>0?amount/hours:0,amount,discount:original.discount,discountReason:original.discountReason,sourcePending:false,sourceRecognized:payHours>0,sourcePendingReason:'',makeupAutoPriced:true,makeupOriginalId:original.lessonId,makeupOriginalDate:original.classDateKey,makeupPricingReason:explanation,billingAmount:0,note:[row.note,explanation].filter(Boolean).join(' / ')});

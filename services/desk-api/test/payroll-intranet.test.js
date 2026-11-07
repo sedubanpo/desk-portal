@@ -326,3 +326,30 @@ test('tuition teacher report counts published charges with saved corrections ind
  const handlers=createPayrollHandlers({store:{},sheets:{listPayrollMonths:async()=>[]},intranet,now:()=>new Date('2026-09-10')});
  assert.deepEqual(await handlers.getTuitionTeacherSales({monthName:'26-09'}),{success:true,teachers});
 });
+
+test('verified single-individual cancellation makeup settles the booked hours once without billing again', async () => {
+  const {priceCancellationMakeups} = await import('../src/payroll/makeup.js');
+  const original = {...lesson, kind:'cancel', end:'17:00', sourceMinutes:180, payMinutes:0, billMinutes:180, rate:87500, rateUnit:'perClass'};
+  const replacement = {...lesson, id:'solo-makeup', date:'2026-09-05', kind:'cancelMakeup', billMinutes:0, payMinutes:180,
+    singleIndividual:{bookedMinutes:180}, rateUnit:'perClass'};
+  const extra = {...replacement, id:'extra', date:'2026-09-06', end:'15:00', sourceMinutes:60, payMinutes:60, singleIndividual:null};
+  const inputs = rows([original,replacement,extra]);
+  const links = [replacement,extra].map(l=>({studentId:l.studentId, makeupId:l.id, originalId:original.id}));
+  const priced = priceCancellationMakeups(inputs,inputs,links);
+  assert.equal(priced[1].sourcePending,false);
+  assert.equal(priced[1].sourceRecognized,true);
+  assert.equal(priced[1].hours,2);
+  assert.equal(priced[1].payHours,3);
+  assert.equal(priced[1].amount,87500);
+  assert.equal(priced[1].billingAmount,0);
+  assert.match(priced[2].sourcePendingReason,/초과/);
+  const summary=buildPayrollSummary(priced,meta,{salaryMode:'ratio',ratioPercent:50});
+  assert.equal(summary.kpi.recognizedHours,3);
+  assert.equal(summary.kpi.netSales,87500);
+  assert.equal(summary.kpi.estimatedPay,43750);
+  assert.equal(summary.kpi.lessonCharges.total.net,87500);
+  for (const changed of [{singleIndividual:null},{singleIndividual:{bookedMinutes:240}}]) {
+    const invalid=rows([original,{...replacement,...changed}]);
+    assert.equal(priceCancellationMakeups(invalid,invalid,links)[1].sourcePending,true);
+  }
+});
