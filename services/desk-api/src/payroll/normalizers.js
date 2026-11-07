@@ -331,9 +331,10 @@ function suspicionMap(rows, settingsInput) {
   rows.forEach(row => {
     if (row.attendanceCode === '결석예고') return;
     const reasons = [];
-    const expected = configured.get(`${suspicionClassType(row.classType)}|${round(row.hours, 1)}`) || 0;
+    const pricingHours = row.singleIndividual === true ? row.payHours : row.hours;
+    const expected = configured.get(`${suspicionClassType(row.classType)}|${round(pricingHours, 1)}`) || 0;
     const tolerance = Math.max(settings.rateToleranceWon, expected * settings.rateTolerancePercent / 100);
-    if (expected > 0 && Math.abs(number(row.amount || row.rate * row.hours) - expected) > tolerance) reasons.push(`설정 기준 ${suspicionClassType(row.classType)} ${round(row.hours, 1)}시간 ${Math.round(expected).toLocaleString('ko-KR')}원 대비 이탈`);
+    if (expected > 0 && Math.abs(number(row.amount || row.rate * row.hours) - expected) > tolerance) reasons.push(`설정 기준 ${suspicionClassType(row.classType)} ${round(pricingHours, 1)}시간 ${Math.round(expected).toLocaleString('ko-KR')}원 대비 이탈`);
     if (row.startMinutes == null || row.endMinutes == null) reasons.push('수업 시작/종료 시간 파싱 불가');
     else if (row.endMinutes <= row.startMinutes) reasons.push('종료 시간이 시작 시간보다 빠르거나 같습니다');
     else {
@@ -342,7 +343,9 @@ function suspicionMap(rows, settingsInput) {
       if (duration > settings.maxLessonHours || row.hours > settings.maxLessonHours) reasons.push(`1회 수업 시간이 ${settings.maxLessonHours}시간 초과`);
       if (Math.abs(duration - row.hours) >= 0.25) reasons.push('시작-종료 시간과 입력 시수가 불일치');
     }
-    if (row.rate > 0 && row.hours > 0 && row.amount > 0 && Math.abs(row.amount - row.rate * row.hours) >= Math.max(1000, row.rate * row.hours * 0.03)) reasons.push('금액과 시간당 금액 x 시수 불일치');
+    // Transferred makeup amounts expose an actual-hour equivalent rate.
+    const rateHours = row.makeupAutoPriced ? row.hours : pricingHours;
+    if (row.rate > 0 && rateHours > 0 && row.amount > 0 && Math.abs(row.amount - row.rate * rateHours) >= Math.max(1000, row.rate * rateHours * 0.03)) reasons.push('금액과 시간당 금액 x 시수 불일치');
     if (discountPercent(row.discount) > 70) reasons.push('할인율이 70%를 초과합니다');
     const teacherHint = [...text(row.className).matchAll(/\(([^)]+)\)/g)].at(-1)?.[1]?.trim() || '';
     if (teacherHint && !/\d|h|H|시간|분|초|중|고|N수/.test(teacherHint) && teacherHint.replace(/\s+/g, '').toLowerCase() !== row.teacher.replace(/\s+/g, '').toLowerCase()) reasons.push(`반명 표기 강사(${teacherHint})와 TR(${row.teacher}) 불일치`);

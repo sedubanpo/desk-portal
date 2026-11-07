@@ -348,6 +348,13 @@ test('verified single-individual cancellation makeup settles the booked hours on
   assert.equal(summary.kpi.netSales,87500);
   assert.equal(summary.kpi.estimatedPay,43750);
   assert.equal(summary.kpi.lessonCharges.total.net,87500);
+  const options={salaryMode:'ratio',ratioPercent:50,teacherSettings:{__suspicionRules:{rules:[
+    {classType:'개별',hours:2,rate:62500},{classType:'개별',hours:3,rate:87500}
+  ]}}};
+  assert.equal(buildPayrollSummary(priced,meta,options).rows[1].suspectedRateMismatch,false);
+  const wrongPrice=priced.map(r=>r.lessonId===replacement.id?{...r,amount:120000,rate:60000}:r);
+  assert.equal(buildPayrollSummary(wrongPrice,meta,options).rows[1].suspectedRateMismatch,true);
+
   for (const changed of [{singleIndividual:null},{singleIndividual:{bookedMinutes:240}}]) {
     const invalid=rows([original,{...replacement,...changed}]);
     assert.equal(priceCancellationMakeups(invalid,invalid,links)[1].sourcePending,true);
