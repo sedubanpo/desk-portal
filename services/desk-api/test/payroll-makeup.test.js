@@ -23,6 +23,22 @@ test('ambiguous, mismatched and missing originals require review instead of inve
  assert.equal(priceCancellationMakeups([makeup],[makeup])[0].sourcePending,true);
  const selected=priceCancellationMakeups([makeup],[original,duplicate,makeup],[{studentId:'student',makeupId:'makeup',originalId:'original'}])[0];assert.equal(selected.amount,87500);
 });
+test('a saved link can bridge subject labels for one canceled segment', () => {
+  const segment = {...original, subject:'과학', billingHours:1, hours:1, amount:29167, discount:0};
+  const replacement = {...makeup, subject:'기타', hours:1, payHours:1};
+  const evidence = [segment, replacement];
+  const link = {studentId:segment.studentId, originalId:segment.lessonId, makeupId:replacement.lessonId,
+    originalDate:segment.classDateKey, makeupDate:replacement.classDateKey};
+  const price = links => priceCancellationMakeups([replacement], evidence, links)[0];
+  assert.equal(price([]).sourcePending, true);
+  assert.equal(price([{...link, originalDate:replacement.classDateKey}]).sourcePending, true);
+  const priced = price([link]);
+  assert.equal(priced.sourcePending, false);
+  assert.equal(priced.payHours, 1);
+  assert.equal(priced.amount, 29167);
+  assert.equal(priced.billingAmount, 0);
+});
+
 test('previous month cancellation and chained zero-charge cancellation resolve original amount only once',()=>{
  const previous={...original,classDateKey:'2026-08-23'},zero={...original,rowKey:'zero',lessonId:'zero',classDateKey:'2026-08-28',amount:0};
  const m={...makeup,note:'8/23 당취=>8/28 보충 당취=> 에 대한 보충'};assert.equal(priceCancellationMakeups([m],[previous,zero,m])[0].amount,87500);

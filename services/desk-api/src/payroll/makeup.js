@@ -1,7 +1,6 @@
 // Payroll-only transfer of an already billed cancellation to its replacement lesson.
 // This never changes intranet billing or writes source lesson data.
 const teacher = value => String(value || '').replace(/\s|T$/g, '');
-const sameCourse = (a,b) => a.studentId === b.studentId && teacher(a.teacher) === teacher(b.teacher) && a.subject === b.subject && a.classType === b.classType;
 const span = r => r.endMinutes > r.startMinutes && r.startMinutes != null ? (r.endMinutes-r.startMinutes)/60 : 0;
 function mentionedDates(row) {
   const year=Number(row.classDateKey.slice(0,4)), month=Number(row.classDateKey.slice(5,7));
@@ -16,7 +15,15 @@ export function priceCancellationMakeups(rows, evidence=rows, links=[]) {
   for(const row of makeups) {
     const explicit=links.filter(l=>l.studentId===row.studentId&&l.makeupId===row.lessonId);
     const dates=mentionedDates(row);
-    let candidates=originals.filter(o=>sameCourse(row,o)&&o.classDateKey<=row.classDateKey);
+    // A saved link identifies the two lessons even when their subject labels differ.
+    // Without a link, keep subject equality as a requirement for inferred matches.
+    let candidates = originals.filter(original =>
+      original.studentId === row.studentId &&
+      teacher(original.teacher) === teacher(row.teacher) &&
+      original.classType === row.classType &&
+      original.classDateKey <= row.classDateKey &&
+      (explicit.length > 0 || original.subject === row.subject)
+    );
     if(explicit.length)candidates=candidates.filter(o=>explicit.some(l=>l.originalId===o.lessonId&&(!l.originalDate||l.originalDate===o.classDateKey)&&(!l.makeupDate||l.makeupDate===row.classDateKey)));
     else if(dates.length)candidates=candidates.filter(o=>dates.includes(o.classDateKey));
     const fail=reason=>result.set(row.rowKey,{...row,sourcePending:true,sourceRecognized:false,sourcePendingReason:reason,amount:0});
