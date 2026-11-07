@@ -1,4 +1,5 @@
 import { paymentKind, settlementDate as paidDateKey } from '../tuition/sales.js';
+import { studentGrossCharge } from './normalizers.js';
 export { paymentKind };
 import ExcelJS from 'exceljs';
 import { readFile } from 'node:fs/promises';
@@ -29,22 +30,28 @@ export async function buildMonthlyWorkbook({month,summary,teachers,previousTeach
   const year=Number(month.slice(0,4)),m=Number(month.slice(5)),days=new Date(Date.UTC(year,m,0)).getUTCDate();
   const prior=new Map(previousTeachers.map(t=>[t.name,t]));
   const sourceRows=[...(summary.rows||[])].sort((a,b)=>a.classDateKey.localeCompare(b.classDateKey)||numeric(a.startMinutes)-numeric(b.startMinutes)||a.name.localeCompare(b.name,'ko'));
+  const studentGrossByTeacher = new Map();
   let netTotal=0,grossTotal=0;
   sourceRows.forEach((r,i)=>{
     const n=i+2,absent=r.attendanceCode==='결석예고',pending=!!r.sourcePending&&!absent;
     const hours=numeric(r.hours),gross=absent?0:numeric(r.amount),factor=1-numeric(r.discountPercent)/100;
+    const studentCharge = pending ? null : studentGrossCharge(r);
     // Per-class prices and manual amounts are converted without rounding the unit price.
     const rate=hours>0?gross/hours:0;
     const net=r.recognized&&!absent&&!pending?numeric(r.netAmount):0;
     const notes=[r.note,pending?r.sourcePendingReason:'',!r.recognized?'정산 제외':'',r.discountReason,(!pending&&hours>0&&Math.abs(rate-numeric(r.rate))>.01)?'시간당: 회당 금액을 수업시간으로 환산':''].filter(Boolean).join(' · ');
-    row(ledger,n,[student(r.name),date(r.classDateKey),r.className,r.attendanceCode||r.attendance,r.room||'반포',r.teacher,r.startMinutes==null?null:r.startMinutes/1440,r.endMinutes==null?null:r.endMinutes/1440,hours,pending?null:rate,null,notes,factor,pending?null:(r.makeupAutoPriced?0:gross)]);
+    row(ledger,n,[student(r.name),date(r.classDateKey),r.className,r.attendanceCode||r.attendance,r.room||'반포',r.teacher,r.startMinutes==null?null:r.startMinutes/1440,r.endMinutes==null?null:r.endMinutes/1440,hours,pending?null:rate,null,notes,factor,studentCharge]);
     ledger.getCell(n,2).numFmt=`m/d"(${['일','월','화','수','목','금','토'][date(r.classDateKey).getUTCDay()]})"`;ledger.getCell(n,7).numFmt=ledger.getCell(n,8).numFmt='h:mm:ss AM/PM';ledger.getCell(n,9).numFmt='0.0';
     for(const c of [10,11,14])ledger.getCell(n,c).numFmt=money;
     if(pending)ledger.getCell(n,11).value='확인 필요';
     else if(net===0&&!r.recognized)ledger.getCell(n,11).value=0;
     else if(hours>0)formula(ledger.getCell(n,11),`ROUND(I${n}*J${n}*M${n},0)`,net);
     else ledger.getCell(n,11).value=net;
-    if(!pending){netTotal+=net;grossTotal+=r.makeupAutoPriced?0:gross;}
+    if (!pending) {
+      netTotal += net;
+      grossTotal += studentCharge;
+      studentGrossByTeacher.set(r.teacher, (studentGrossByTeacher.get(r.teacher) || 0) + studentCharge);
+    }
   });
   const end=Math.max(2,sourceRows.length+1);
   ledger.autoFilter=`A1:N${end}`;ledger.pageSetup.printTitlesRow='1:1';ledger.pageSetup.printArea=`A1:N${end}`;
@@ -52,8 +59,10 @@ export async function buildMonthlyWorkbook({month,summary,teachers,previousTeach
   ledger.getColumn('L').width=42;ledger.getColumn('C').width=30;for(const c of ['G','H'])ledger.getColumn(c).width=16;
   put(ledger,'P5','금액: 할인 후 강사 정산 대상 매출');put(ledger,'P6','할인제외 총매출: 할인 전 청구액(당일취소 포함)');put(ledger,'P7','결석예고: 금액 0 · 정산 제외');
   put(teacher,'D3',`${m}월 매출`);put(teacher,'E3',`${m}월 매출`);put(teacher,'G3',`${m===1?12:m-1}월 매출`);put(teacher,'H3',`${m===1?12:m-1}월 매출`);put(teacher,'F4','전월 대비');
-  teachers.forEach((t,i)=>{
-    const n=i+5,p=prior.get(t.name),own=sourceRows.filter(r=>r.teacher===t.name),g=own.filter(r=>!r.sourcePending).reduce((s,r)=>s+numeric(r.makeupAutoPriced?0:r.amount),0);
+  const payGroup = teacher => teacher.settings?.salaryMode === 'hourly' ? 0 : teacher.settings ? 1 : 2;
+  const orderedTeachers = [...teachers].sort((a, b) => payGroup(a) - payGroup(b) || a.name.localeCompare(b.name, 'ko'));
+  orderedTeachers.forEach((t,i)=>{
+    const n=i+5,p=prior.get(t.name),g=studentGrossByTeacher.get(t.name) ?? 0;
     const config=t.settings;const net=numeric(t.kpi.netSales);const pay=config?numeric(t.kpi.estimatedPay):null;
     row(teacher,n,[null,t.name,t.subject,null,null,null,p?.kpi.netSales??null,p?.gross??null,config?(config.salaryMode==='hourly'?'시급':'비율'):'직접 입력 필요',config?(config.salaryMode==='hourly'?config.hourlyRate:config.ratioPercent/100):null,config?.salaryMode==='hourly'?`순수 ${t.kpi.pureTeachingHours}시간 · 중복 제외`:null,pay,null,t.pending?'확인 필요 수업 제외 · 잠정액':config?'저장된 급여 조건 기준 · 별도 조정 직접 입력':'급여 조건 직접 입력'],5);
     formula(teacher.getCell(n,4),`SUMIF('전체결산'!F2:F${end},B${n},'전체결산'!K2:K${end})`,net);

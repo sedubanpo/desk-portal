@@ -400,6 +400,11 @@ export function estimateAbsenceAmount(row, rows) {
 }
 
 // Student lesson charges are independent of teacher recognition and payroll overrides.
+export function studentGrossCharge(row) {
+  if (row.attendanceCode === '결석예고' || row.lessonKind === 'cancelMakeup' || row.makeupAutoPriced) return 0;
+  return Math.round(number(row.billingAmount ?? row.originalAmount ?? row.amount));
+}
+
 export function summarizeLessonCharges(rows) {
   const regular = { count: 0, gross: 0, discount: 0, net: 0 };
   const canceled = { count: 0, gross: 0, discount: 0, net: 0 };
@@ -410,7 +415,7 @@ export function summarizeLessonCharges(rows) {
     // Cancellation makeup transfers teacher pay, never creates a second student charge.
     if (row.lessonKind === 'cancelMakeup' || row.makeupAutoPriced) continue;
     if (row.sourcePending) { pendingCount += 1; continue; }
-    const gross = Math.round(number(row.billingAmount ?? row.amount));
+    const gross = studentGrossCharge(row);
     const percent = discountPercent(row.discount);
     const discount = row.source === 'intranet'
       ? Math.max(0, gross) - Math.round(Math.max(0, gross) * (1 - percent / 100))

@@ -39,3 +39,21 @@ test('abbreviated card brands and unclassified refunds are not counted as cash',
  assert.equal(paymentKind({paymentType:'이체'}),'cash');
  assert.equal(paymentKind({}),'unknown');
 });
+
+test('waived student charge stays zero in the ledger and report totals while teacher pay is retained', async () => {
+  const ratio = {name:'가강사', settings:{salaryMode:'ratio',ratioPercent:50}, kpi:{netSales:87500,estimatedPay:43750}};
+  const hourly = {name:'하강사', settings:{salaryMode:'hourly',hourlyRate:0}, kpi:{netSales:0,estimatedPay:0,pureTeachingHours:0}};
+  const unset = {name:'나강사', settings:null, kpi:{netSales:0}};
+  const waived = {...base, teacher:ratio.name, hours:3, amount:87500, billingAmount:0, netAmount:87500, discountPercent:0};
+  const result = await buildMonthlyWorkbook({month:'2026-09',summary:{rows:[waived]},teachers:[unset,ratio,hourly]});
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(result.buffer);
+  const ledger = wb.getWorksheet('전체결산'), report = wb.getWorksheet('보고_신규양식');
+  assert.equal(ledger.getCell('K2').result, 87500);
+  assert.equal(ledger.getCell('N2').value, 0);
+  assert.equal(result.stats.grossTotal, 0);
+  assert.deepEqual(['B5','B6','B7'].map(cell=>report.getCell(cell).value),[hourly.name,ratio.name,unset.name]);
+  assert.equal(report.getCell('L6').value, 43750);
+  assert.equal(report.getCell('D6').result, 87500);
+  assert.match(report.getCell('E6').formula, /B6,.*!N2:N2/);
+});
