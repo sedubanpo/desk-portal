@@ -17767,7 +17767,7 @@
   <link rel="stylesheet" href="./login.css">
 <link rel="stylesheet" href="./tuition-import.css?v=20260915-payments">
 <link rel="stylesheet" href="./tuition-redesign.css?v=20261017-office-tuition">
-<link rel="stylesheet" href="./tuition-groups.css?v=20261104-grade">
+<link rel="stylesheet" href="./tuition-groups.css?v=20261110-difficulty">
 <link rel="stylesheet" href="./mini-office.css?v=20261025-routine-bulk-status">
 <link rel="stylesheet" href="./student-rewards.css?v=20261013">
 <link rel="stylesheet" href="./subscriptions.css?v=20260925-chart">
@@ -40126,14 +40126,14 @@
 
     function renderTuitionStudentRows() {
       var rows = state.tuition.rows || [];
-      if (window.TuitionRedesign) rows = TuitionRedesign.gradeRows(rows);
+      if (window.TuitionRedesign) rows = TuitionRedesign.listRows(rows);
       tuitionRowsPillEl.textContent = rows.length + "명";
       if (!rows.length) {
         if (state.tuition.pendingSummary) {
           tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">월별 수강료 요약을 백그라운드에서 준비 중입니다.</td></tr>';
         } else {
-          if (window.TuitionRedesign && TuitionRedesign.hasGradeFilter()) {
-            tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">이 학년에 해당하는 학생이 없습니다.</td></tr>';
+          if (window.TuitionRedesign && TuitionRedesign.hasListFilter()) {
+            tuitionStudentBodyEl.innerHTML = '<tr><td colspan="10">' + escapeHtml(TuitionRedesign.listEmptyMessage()) + '</td></tr>';
             TuitionRedesign.afterRows();
             return;
           }
@@ -40649,25 +40649,36 @@
     function loadTuitionDifficulty_() {
       var month = state.tuition.selectedMonth;
       if (!month || (state.tuition.difficulty && state.tuition.difficulty.month === month)) return;
-      var entry = {month:month, grades:{}, reason:"등급 자료를 조회하고 있습니다."};
+      var entry = {month:month, grades:{}, status:"loading", reason:"등급 자료를 조회하고 있습니다."};
       state.tuition.difficulty = entry;
       runServer("getTuitionDifficulty", {monthName:month}).then(function(result) {
         if (!result || !result.success) throw Error();
         entry.grades = result.grades || {};
+        entry.status = "ready";
         entry.reason = result.reason || "전월 수강료 기록이 없습니다.";
       }).catch(function() {
+        entry.status = "error";
         entry.reason = "등급 자료를 불러오지 못했습니다. 새로고침해 주세요.";
       }).finally(function() {
         if (state.tuition.difficulty !== entry || state.tuition.selectedMonth !== month) return;
+        if (window.TuitionRedesign && TuitionRedesign.hasDifficultyFilter()) {
+          renderTuitionStudentRows();
+          return;
+        }
         tuitionStudentBodyEl.querySelectorAll("[data-difficulty-name]").forEach(function(badge) {
           badge.outerHTML = tuitionDifficultyBadge_(badge.dataset.difficultyName);
         });
       });
     }
 
+    function tuitionDifficultyItem_(name) {
+      var entry = state.tuition.difficulty;
+      return entry && entry.month === state.tuition.selectedMonth ? (entry.grades[formatStudentName(name)] || {}) : {};
+    }
+
     function tuitionDifficultyBadge_(name) {
       var entry = state.tuition.difficulty || {};
-      var item = (entry.grades || {})[formatStudentName(name)] || {};
+      var item = tuitionDifficultyItem_(name);
       var grade = item.grade || "–";
       var label = item.grade ? "수강료 난이도 " + grade : "등급 미책정 · " + (item.reason || entry.reason || "자료 조회 중");
       if (item.grade && Number.isFinite(item.score)) {
@@ -46282,7 +46293,7 @@ window.SeduHubAdapter={
   </script>
 <script src="./payment-link-parser.js?v=20261024-payment-headers"></script>
 <script src="./payment-link-upload.js?v=20261024-payment-selection"></script>
-<script src="./tuition-redesign.js?v=20261104-grade"></script>
+<script src="./tuition-redesign.js?v=20261110-difficulty"></script>
 <link rel="stylesheet" href="./tuition-sales.css?v=20261104-3">
 <script src="./tuition-sales.js?v=20261104-3"></script>
 <script src="./tuition-groups.js?v=20261104-grade"></script>

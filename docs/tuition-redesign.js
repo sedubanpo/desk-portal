@@ -94,25 +94,37 @@
     '<select aria-label="페이지당 학생 수" id="tuitionStudentPageSize"><option value="25">25명씩 보기</option><option value="50" selected>50명씩 보기</option><option value="100">100명씩 보기</option></select>';
   $('.table-head',tablePanel).appendChild(toolbar);
   var counts=document.createElement('div');counts.className='tr-list-summary';counts.setAttribute('aria-live','polite');$('.tuition-table-wrap').before(counts);
-  var selectedGrade = '전체', gradeCount = 0;
-  var gradeTabs = document.createElement('div');
-  gradeTabs.className = 'tg-list-tabs';
-  gradeTabs.setAttribute('role','group');
-  gradeTabs.setAttribute('aria-label','학교급과 학년 선택');
-  counts.before(gradeTabs);
-  var gradeLabels = ['전체','초1','초2','초3','초4','초5','초6','중1','중2','중3','고1','고2','고3','미분류'];
-  gradeTabs.innerHTML = gradeLabels.map(function(label) {
-    return button(label, 'data-school-grade="'+label+'" aria-pressed="'+(label===selectedGrade)+'"');
-  }).join('');
-  gradeTabs.onclick = function(event) {
-    var tab = event.target.closest('[data-school-grade]');
-    if (!tab) return;
-    selectedGrade = tab.dataset.schoolGrade;
-    gradeTabs.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b===tab));});
-    ui.page = 1;
-    renderTuitionStudentRows();
-    TuitionRedesign.afterRows();
-  };
+  var selectedGrade = '전체', selectedDifficulty = '전체', listCount = 0;
+  function addListFilter(title, accessibleName, labels, onSelect) {
+    var group = document.createElement('div');
+    group.className = 'tg-list-tabs';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', accessibleName);
+    group.innerHTML = '<span class="tg-filter-label">' + title + '</span>' + labels.map(function(label) {
+      return button(label, 'data-filter-value="' + label + '" aria-pressed="' + (label === '전체') + '"');
+    }).join('');
+    counts.before(group);
+    group.addEventListener('click', function(event) {
+      var tab = event.target.closest('[data-filter-value]');
+      if (!tab) return;
+      onSelect(tab.dataset.filterValue);
+      group.querySelectorAll('button').forEach(function(b) { b.setAttribute('aria-pressed', String(b === tab)); });
+      ui.page = 1;
+      renderTuitionStudentRows();
+    });
+  }
+  addListFilter('학년', '학교급과 학년 선택', ['전체','초1','초2','초3','초4','초5','초6','중1','중2','중3','고1','고2','고3','미분류'], function(value) {
+    selectedGrade = value;
+  });
+  addListFilter('수강료 난이도', '수강료 난이도 선택', ['전체','S','A','B','C','미책정'], function(value) {
+    selectedDifficulty = value;
+  });
+  function difficultyNotice() {
+    if (selectedDifficulty === '전체') return '';
+    var entry = state.tuition.difficulty;
+    if (!entry || entry.month !== state.tuition.selectedMonth || entry.status === 'loading') return '수강료 난이도를 조회하고 있습니다.';
+    return entry.status === 'error' ? entry.reason : '';
+  }
   var pager=document.createElement('nav');pager.className='tr-student-pagination';pager.setAttribute('aria-label','학생 목록 페이지');tablePanel.appendChild(pager);
   $('#tuitionStudentSort').onchange=function(){state.tuition.studentSort=this.value;ui.page=1;renderTuitionStudentRows();};
   $('#tuitionStudentPageSize').onchange=function(){ui.size=Number(this.value);ui.page=1;renderTuitionStudentRows();};
@@ -189,10 +201,17 @@
   window.TuitionRedesign={
     toast:function(text,error){var el=document.createElement('div');el.className='tr-toast'+(error?' is-error':'');el.setAttribute('role',error?'alert':'status');var label=document.createElement('span');label.textContent=text;el.appendChild(label);var close=document.createElement('button');close.type='button';close.setAttribute('aria-label','알림 닫기');close.textContent='×';close.onclick=function(){el.remove();};el.appendChild(close);toastStack.appendChild(el);setTimeout(function(){el.remove();},8000);},
     matches:function(r){var f=ui.filters;return (!f.school||String(r.school||'')===f.school)&&(!f.grade||String(r.grade||'')===f.grade)&&(f.min==null||f.min===''||Number(r.outstandingAmount||0)>=Number(f.min))&&(f.max==null||f.max===''||Number(r.outstandingAmount||0)<=Number(f.max))&&(!ui.onlySelected||ui.selected.has(r.studentName));},
-    hasGradeFilter:function(){return selectedGrade !== '전체';},
-    gradeRows:function(rows){
-      var filtered = selectedGrade === '전체' ? rows : rows.filter(function(row){return tuitionGradeLabel_(row) === selectedGrade;});
-      gradeCount = filtered.length;
+    hasListFilter:function(){return selectedGrade !== '전체' || selectedDifficulty !== '전체';},
+    hasDifficultyFilter:function(){return selectedDifficulty !== '전체';},
+    listEmptyMessage:function(){return difficultyNotice() || '선택한 조건에 해당하는 학생이 없습니다.';},
+    listRows:function(rows){
+      var notice = difficultyNotice();
+      var filtered = rows.filter(function(row) {
+        if (selectedGrade !== '전체' && tuitionGradeLabel_(row) !== selectedGrade) return false;
+        if (selectedDifficulty === '전체') return true;
+        return !notice && (tuitionDifficultyItem_(row.studentName).grade || '미책정') === selectedDifficulty;
+      });
+      listCount = filtered.length;
       return filtered;
     },
     pageRows:function(grouped){var rows=grouped.filter(function(r){return !r.__group;});var pages=Math.max(1,Math.ceil(rows.length/ui.size));ui.page=Math.min(ui.page,pages);var start=(ui.page-1)*ui.size;
@@ -207,8 +226,8 @@
       tuitionStudentBodyEl.querySelectorAll('tr').forEach(function(row){var name=row.querySelector('[data-student-history]');if(!name||row.querySelector('[data-tr-select]'))return;var cb=document.createElement('input');cb.type='checkbox';cb.dataset.trSelect=name.dataset.studentHistory;cb.setAttribute('aria-label',name.dataset.studentHistory+' 선택');cb.checked=ui.selected.has(cb.dataset.trSelect);row.cells[0].prepend(cb);cb.onchange=function(){if(cb.checked)ui.selected.add(cb.dataset.trSelect);else ui.selected.delete(cb.dataset.trSelect);if(ui.onlySelected)applyTuitionLocalFilters_();else TuitionRedesign.afterRows();};});
       $('span',selectedControl).textContent=ui.selected.size+'명';var checks=Array.from(tuitionStudentBodyEl.querySelectorAll('[data-tr-select]'));var selected=checks.filter(function(c){return c.checked;}).length;$('#tuitionSelectPage').checked=checks.length>0&&selected===checks.length;$('#tuitionSelectPage').indeterminate=selected>0&&selected<checks.length;
       var k=state.tuition.kpi||{},pct=k.expectedAmount>0?100*(k.collectedAmount||0)/k.expectedAmount:null;rate.style.setProperty('--rate',Math.max(0,Math.min(100,pct||0))+'%');$('strong',rate).textContent=pct==null?'—':pct.toFixed(1)+'%';rate.setAttribute('aria-label','안내 금액 대비 수납률 '+(pct==null?'산정 불가':pct.toFixed(1)+'%'));
-      tuitionRowsPillEl.textContent=gradeCount+'명';
-      if(!gradeCount){counts.textContent='표시할 학생이 없습니다. 필터나 검색어를 확인해 주세요.';pager.innerHTML='';}
+      tuitionRowsPillEl.textContent=(difficultyNotice() ? '—' : listCount+'명');
+      if(!listCount){counts.textContent=difficultyNotice() || '표시할 학생이 없습니다. 필터나 검색어를 확인해 주세요.';pager.innerHTML='';}
     },
     historyError:function(message){contactPanel.innerHTML='<p class="tr-empty" role="alert">'+esc(message)+' · 패널을 다시 열어 재시도해 주세요.</p>';},
     openStudent:openStudent,
