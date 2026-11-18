@@ -119,34 +119,34 @@ export function createIntranetPayrollReader(db) {
   // Keys include every freshly read source document. This caches computation,
   // never the database read, including on explicit refresh and finalization.
   const calculations = createReadCache({ttlMs: 30 * 60 * 1000, maxEntries: 4});
-  const load=async(name,month,limit=5000)=>{
-    let query=db.collection(name); if(month) query=query.where('month','==',month);
-    const snap=await query.limit(limit+1).get();
-    if(snap.size>limit) throw new Error('인트라넷 조회 한도를 초과했습니다. 일부 자료로 정산하지 않습니다.');
-    return snap;
-  };
-  // Concurrent month/teacher requests share only in-flight collection reads.
-  // Settled snapshots are not retained, so explicit refresh still reaches Firestore.
-  const sharedRead = async (name, month, limit = 5000) => {
-    const key = JSON.stringify([name, month, limit]);
-    if (!pendingReads.has(key)) {
-      pendingReads.set(key, load(name, month, limit).finally(() => pendingReads.delete(key)));
+  // Consume each complete Firestore query without retaining its document snapshots.
+  // A stream error rejects the read before its rows or digest can reach the calculator.
+  const load = async name => {
+    const rows = [];
+    const hash = createHash('sha256');
+    for await (const document of db.collection(name).stream()) {
+      const row = { ...document.data(), _documentId: document.id };
+      rows.push(row);
+      hash.update(JSON.stringify(row)).update('\n');
     }
-    const snap = await pendingReads.get(key);
-    return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
+    return { rows, digest: hash.digest('hex') };
+  };
+  const sharedRead = name => {
+    if (!pendingReads.has(name)) {
+      pendingReads.set(name, load(name).finally(() => pendingReads.delete(name)));
+    }
+    return pendingReads.get(name);
   };
   return {async readMonth(name, { forceRefresh = false, tuitionSales = false } = {}) {
     const started=performance.now();
-    const read = forceRefresh ? async (collection, month, limit = 5000) => {
-      const snap = await load(collection, month, limit);
-      return snap.docs.map(d => ({ ...d.data(), _documentId: d.id }));
-    } : sharedRead;
+    const read = forceRefresh ? load : sharedRead;
     const meta=parsePayrollMonthName(name), month=`${meta.year}-${String(meta.month).padStart(2,'0')}`;
-    const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks]=await Promise.all([
-      read('intranetStudentPeriods'),read('intranetLegacyPeriods'),read('intranetLessonDrafts'),read('intranetStudentFees'),read('intranetFeeBaselines'),read('intranetIssues'),read('students'),read('intranetStudentDiscounts'),read('intranetLessonSessionDecisions',null),read('intranetFeeApplications'),tuitionSales?[]:read('intranetMakeupLinks')
-    ]);
+    const collections = ['intranetStudentPeriods','intranetLegacyPeriods','intranetLessonDrafts','intranetStudentFees','intranetFeeBaselines','intranetIssues','students','intranetStudentDiscounts','intranetLessonSessionDecisions','intranetFeeApplications'];
+    if (!tuitionSales) collections.push('intranetMakeupLinks');
+    const sources = await Promise.all(collections.map(read));
+    const [current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks] = sources.map(source => source.rows);
     const readMs=Math.round(performance.now()-started);
-    const fingerprint=createHash('sha256').update(JSON.stringify([month,current,past,drafts,fees,baselines,issues,roster,discounts,sessionDocs,applications,makeupLinks])).digest('hex');
+    const fingerprint = [month, ...sources.map(source => source.digest)].join('|');
     const calculation=await calculations.read((tuitionSales?'sales:':'payroll:')+fingerprint,async()=>{
     let lessons=tuitionSales?[]:combineLessons(current.filter(p=>p.month===month),past.filter(p=>p.month===month),drafts.filter(d=>d.month===month||d.lesson?.date?.startsWith(month+'-')));
     const feeDatabase=snapshotDatabase({intranetStudentPeriods:current,intranetLessonDrafts:drafts,intranetLegacyPeriods:past,intranetStudentFees:fees,intranetFeeBaselines:baselines,intranetIssues:issues,intranetFeeApplications:applications});

@@ -7,6 +7,16 @@ import {createPayrollHandlers} from '../src/payroll/handlers.js';
 const meta=parsePayrollMonthName('26-09');
 const lesson={id:'one',studentId:'student',date:'2026-09-03',teacher:'강사',className:'수학-개별(강사)-2h',start:'14:00',end:'16:00',sourceMinutes:120,payMinutes:120,billMinutes:120,rate:30000,reviewed:true,kind:'regular',warnings:[]};
 const rows=ls=>intranetRows(ls,new Map([['student',{name:'학생'}]]),meta);
+function collectionFixture(data, onRead = () => {}) {
+  return { collection(name) {
+    return { async *stream() {
+      await onRead(name);
+      for (const [index, row] of (data[name] || []).entries()) {
+        yield { id:row._id || String(index), data:() => structuredClone(row) };
+      }
+    } };
+  } };
+}
 test('month cutover is KST, includes new month without Sheet tab',()=>{
  assert.deepEqual(payrollMonths(['26-08','26-09'],new Date('2026-08-31T15:00:00Z')),['26-09','26-08']);
  assert.deepEqual(payrollMonths(['26-08'],new Date('2026-09-30T15:00:00Z')),['26-10','26-09','26-08']);
@@ -57,7 +67,7 @@ test('published deletion survives draft cleanup and stale history/re-import with
 test('successive reads reflect edits, fee changes, new lessons and published deletions in totals',async()=>{
  const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
  const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[lesson]}]};
- const db={collection(name){return {where(_field,_op,month){return {...this,month};},limit(){return this;},async get(){const all=(data[name]||[]).filter(r=>!this.month||r.month===this.month);return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const db=collectionFixture(data);
  const reader=createIntranetPayrollReader(db);
  const summarize=async(overrides={})=>{const source=await reader.readMonth('26-09');return {source,...buildPayrollSummary(source.rows,meta,{ratioPercent:50,effectiveOverrides:overrides})};};
  const initial=await summarize();assert.equal(initial.kpi.netSales,60000);
@@ -102,7 +112,7 @@ test('absence estimate uses matching regular evidence and reports missing or con
 test('absence estimates recover configured fees without billing the absent lesson',async()=>{
  const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
  const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[{...lesson,kind:'absence',rate:0,billMinutes:0,payMinutes:0}]}],intranetStudentFees:[{studentId:'student',month:'2026-09',assignments:[{kind:'lesson',target:'one',amount:85000,rateUnit:'perClass'}]}]};
- const db={collection(name){return {where(){return this;},limit(){return this;},async get(){const all=data[name]||[];return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const db=collectionFixture(data);
  const source=await createIntranetPayrollReader(db).readMonth('26-09');
  const summary=buildPayrollSummary(source.rows,meta,{});
  assert.equal(summary.kpi.absenceEstimatedAmount,85000);
@@ -138,7 +148,7 @@ test('current intranet projections include inherited class fees, automatic billi
  const data={students:[{_id:'student',name:'학생'}],intranetStudentPeriods:[{studentId:'student',month:'2026-09',lessons:[{...lesson,rate:null,billMinutes:null,warnings:['특이사항 확인'],note:'학생 등원 확인'}]}],
  intranetStudentFees:[{studentId:'student',month:'2026-08',assignments:[{kind:'class',target:lesson.className,amount:30000,rateUnit:'perHour'}]}],
  intranetStudentDiscounts:[{_id:'student',policies:[{month:'2026-09',percent:10,specialHourly:null,courses:[],reason:'할인'},{month:'2026-10',percent:50,specialHourly:null,courses:[],reason:'다음 달'}]}]};
- const db={collection(name){return {where(_field,_op,month){return {...this,month};},limit(){return this;},async get(){const all=(data[name]||[]).filter(r=>!this.month||r.month===this.month);return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const db=collectionFixture(data);
  const source=await createIntranetPayrollReader(db).readMonth('26-09');
  const summary=buildPayrollSummary(source.rows,meta,{ratioPercent:50});
  assert.equal(source.rows[0].sourcePending,false);
@@ -176,7 +186,7 @@ test('teacher finalization uses stored terms, rejects stale source or changed ca
 
 function historicalReaderFixture(history, current, extra={}) {
  const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-08',lessons:history},{studentId:'student',month:'2026-09',lessons:current}],...extra};
- return {data,db:{collection(name){let field,value;return {where(f,op,v){field=f;value=v;return this;},limit(){return this;},async get(){const all=(data[name]||[]).filter(row=>!field||row[field]===value);return {size:all.length,docs:all.map((row,i)=>({id:row._id||String(i),data:()=>structuredClone(row)}))};}};}}};
+ return {data,db:collectionFixture(data)};
 }
 test('payroll inherits confirmed historical tariffs, applies destination discount once and reflects history changes',async()=>{
  const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
@@ -217,7 +227,7 @@ test('pending reasons separate missing tariff and invalid teacher minutes; midni
 test('concurrent month reads share collection I/O while force refresh starts independent reads',async()=>{
  const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
  let reads=0;const resolvers=[];
- const db={collection(){return {where(){return this;},limit(){return this;},get(){reads++;return new Promise(resolve=>resolvers.push(()=>resolve({size:0,docs:[]})));}};}};
+ const db=collectionFixture({}, () => { reads++; return new Promise(resolve => resolvers.push(resolve)); });
  const reader=createIntranetPayrollReader(db);
  const a=reader.readMonth('26-09'),b=reader.readMonth('26-10');
  assert.equal(reads,11);
@@ -225,6 +235,27 @@ test('concurrent month reads share collection I/O while force refresh starts ind
  resolvers.forEach(resolve=>resolve());await Promise.all([a,b,fresh]);
 });
 
+
+test('a draft past 5,000 documents is included, and an interrupted read can be retried', async () => {
+  const {createIntranetPayrollReader} = await import('../src/payroll/intranet.js');
+  const {data} = historicalReaderFixture([], [lesson]);
+  let fail = true;
+  const base = collectionFixture(data);
+  const db = { collection(name) {
+    if (name !== 'intranetLessonDrafts') return base.collection(name);
+    return { async *stream() {
+      for (let i = 0; i < 5000; i++) yield {id:String(i), data:() => ({})};
+      if (fail) throw new Error('stream interrupted');
+      yield {id:'last', data:() => ({month:'2026-09', lesson:{...lesson, rate:40000}})};
+    } };
+  } };
+  const reader = createIntranetPayrollReader(db);
+  await assert.rejects(reader.readMonth('26-09'), /stream interrupted/);
+  fail = false;
+  const result = await reader.readMonth('26-09');
+  assert.equal(result.rows.length, 1);
+  assert.equal(result.rows[0].amount, 80000);
+});
 
 test('indexed historical snapshot preserves query isolation and read limits',async()=>{
  const {snapshotDatabase}=await import('../src/payroll/intranet.js');
@@ -260,7 +291,7 @@ test('calculation reuse rereads source on force refresh and invalidates on edits
  const {createIntranetPayrollReader}=await import('../src/payroll/intranet.js');
  let reads=0;
  const data={students:[{_id:'student',name:'학생'}],intranetLegacyPeriods:[{studentId:'student',month:'2026-09',lessons:[lesson]}]};
- const db={collection(name){return {where(){return this;},limit(){return this;},async get(){reads++;const all=data[name]||[];return {size:all.length,docs:all.map((r,i)=>({id:r._id||String(i),data:()=>structuredClone(r)}))};}};}};
+ const db=collectionFixture(data, () => { reads++; });
  const reader=createIntranetPayrollReader(db);
  const first=await reader.readMonth('26-09');assert.equal(first.timings.calculationCacheHit,false);
  first.rows[0].amount=999;
