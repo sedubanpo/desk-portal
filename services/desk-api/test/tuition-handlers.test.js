@@ -883,15 +883,50 @@ test('before-attendance unnotified rows are hidden without mutating the ledger',
   assert.equal(store.transactionCount(),0);
 });
 
-test('explicit refund requires positive amount and reason and persists in payment ledger', async () => {
-  const seed=tuitionSeed(),store=memoryStore(seed.documents),handlers=createTuitionHandlers({store});
-  const payload={monthName:seed.month,studentName:'김재희',itemName:'환불금액',amount:20000,paidAt:'2026-07-16',paymentType:'계좌이체',clientRequestId:'refund-test'};
-  assert.equal((await handlers.appendTuitionPaymentEntry(payload)).success,false);
-  assert.equal((await handlers.appendTuitionPaymentEntry({...payload,amount:-20000,issueMemo:'중도 퇴원'})).success,false);
-  const result=await handlers.appendTuitionPaymentEntry({...payload,issueMemo:'중도 퇴원'});
-  assert.equal(result.success,true);
-  const refund=Object.entries(store.dump()).filter(([k])=>k.startsWith('tuitionPayments/')).map(([,v])=>v).find(v=>v.itemName==='환불금액');
-  assert.equal(refund.amount,20000);assert.equal(refund.issueMemo,'중도 퇴원');
+test('manual tuition entries always use the selected direction on create and edit', async () => {
+  for (const isRefund of [false, true]) {
+    for (const input of [20000, -20000]) {
+      const seed = tuitionSeed();
+      const store = memoryStore(seed.documents);
+      const handlers = createTuitionHandlers({ store });
+      const itemName = isRefund ? '환불금액' : '납부금액';
+      const expected = isRefund ? 20000 : -20000;
+      const payload = {
+        monthName: seed.month, studentName: '김재희', itemName, amount: input,
+        paidAt: '2026-07-16', paymentType: '계좌이체', clientRequestId: 'manual'
+      };
+      if (isRefund) assert.equal((await handlers.appendTuitionPaymentEntry(payload)).success, false);
+      payload.issueMemo = isRefund ? '중도 퇴원' : '';
+      assert.equal((await handlers.appendTuitionPaymentEntry({ ...payload, amount: 0 })).success, false);
+      const created = await handlers.appendTuitionPaymentEntry(payload);
+      assert.equal(created.success, true);
+      const stored = store.dump()['tuitionPayments/tp_manual'];
+      assert.equal(stored.amount, expected);
+      const edited = await handlers.updateTuitionPaymentEntry({
+        monthName: seed.month, payment: stored, updatedPayment: { amount: input * 2 },
+        reason: '금액 정정', clientRequestId: 'edit-manual'
+      });
+      assert.equal(edited.success, true);
+      assert.equal(edited.payment.amount, expected * 2);
+      assert.equal(edited.payment.itemName, itemName);
+      assert.equal(store.dump()['tuitionMonthSnapshots/tm_26-07s'].rows[0].collectedAmount, 100000 - expected * 2);
+    }
+  }
+});
+
+test('editing an imported cancellation keeps its refund direction and original item', async () => {
+  const seed = tuitionSeed();
+  const handlers = createTuitionHandlers({ store: memoryStore(seed.documents) });
+  const payload = {monthName: seed.month, studentName: '김재희', paidAt: '2026-07-16',
+    amount: 20000, approvalNo: '12341234', cardCompany: '현대카드', status: '환불',
+    originalPaidAt: '2026-07-15', cancelledAt: '2026-07-16', itemName: '7월 수강료'};
+  const created = await handlers.importTuitionPaymentLink(payload);
+  assert.equal(created.success, true, JSON.stringify(created));
+  const result = await handlers.updateTuitionPaymentEntry({ monthName: seed.month, payment: created.payment,
+    updatedPayment: {amount: -18000}, reason: '금액 정정', clientRequestId: 'edit-import' });
+  assert.equal(result.success, true, JSON.stringify(result));
+  assert.equal(result.payment.amount, 18000);
+  assert.equal(result.payment.itemName, payload.itemName);
 });
 
 test('closing groups match paid month across due dates, methods, refunds and grade levels', async () => {

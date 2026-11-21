@@ -20890,7 +20890,7 @@
         <div class="field">
           <label for="tuitionPaymentAmount">수납 금액 <span class="tuition-field-hint">원</span></label>
           <input id="tuitionPaymentAmount" class="modal-input" type="text" inputmode="numeric" autocomplete="off" aria-describedby="tuitionPaymentAmountHint">
-          <div class="tuition-field-hint" id="tuitionPaymentAmountHint">받은 금액은 음수(−), 환불은 양수(+)로 입력하세요.</div>
+          <div class="tuition-field-hint" id="tuitionPaymentAmountHint">금액을 입력하면 수납 부호(−)가 자동 적용됩니다.</div>
         </div>
         <div class="field">
           <label for="tuitionPaymentPaidAt">납부 일자</label>
@@ -38832,10 +38832,7 @@
       if (tuitionTemplateSettingsModalEl) tuitionTemplateSettingsModalEl.addEventListener("click", function(event) { if (event.target === tuitionTemplateSettingsModalEl) tuitionTemplateSettingsModalEl.style.display = "none"; });
       bindTuitionChoiceButtons_(tuitionContactChannelChoicesEl, tuitionContactChannelEl);
       bindTuitionChoiceButtons_(tuitionPaymentTypeChoicesEl, tuitionPaymentTypeEl);
-      tuitionPaymentAmountEl.addEventListener("input", function() {
-        tuitionPaymentAmountEl.value = formatSignedAmountInput(tuitionPaymentAmountEl.value);
-        updateTuitionPaymentPresentation_();
-      });
+      tuitionPaymentAmountEl.addEventListener("input", updateTuitionPaymentPresentation_);
       tuitionPaymentDueDateEl.addEventListener("input", updateTuitionPaymentPresentation_);
       tuitionPaymentPaidAtEl.addEventListener("input", updateTuitionPaymentPresentation_);
       closeTuitionAmountAdjustBtnEl.addEventListener("click", closeTuitionAmountAdjustModal_);
@@ -42585,23 +42582,30 @@
       return year + "년 " + month + "월 " + day + "일 (" + ["일", "월", "화", "수", "목", "금", "토"][date.getDay()] + ")";
     }
 
+    function signedTuitionPaymentAmount_() {
+      var magnitude = Math.abs(toNumber(formatSignedAmountInput(tuitionPaymentAmountEl.value), 0));
+      return magnitude && !state.tuition.refundMode ? -magnitude : magnitude;
+    }
+
     function updateTuitionPaymentPresentation_() {
-      var amount = toNumber(tuitionPaymentAmountEl.value, 0);
-      if (state.tuition.refundMode && amount > 0) tuitionPaymentAmountEl.value = "+" + amount.toLocaleString("ko-KR");
+      var amount = signedTuitionPaymentAmount_();
+      var value = /[0-9]/.test(tuitionPaymentAmountEl.value)
+        ? (amount > 0 ? "+" : "") + amount.toLocaleString("ko-KR") : "";
+      if (tuitionPaymentAmountEl.value !== value) tuitionPaymentAmountEl.value = value;
       tuitionPaymentAmountEl.classList.toggle("amount-negative", amount < 0);
       tuitionPaymentAmountEl.classList.toggle("amount-positive", amount > 0);
       document.getElementById("tuitionPaymentDueDateDisplay").textContent = formatTuitionInputDate_(tuitionPaymentDueDateEl.value);
       document.getElementById("tuitionPaymentPaidAtDisplay").textContent = formatTuitionInputDate_(tuitionPaymentPaidAtEl.value);
     }
 
-    function setTuitionRefundMode_(enabled) {
+    function setTuitionRefundMode_(enabled, requiresRefundReason) {
       state.tuition.refundMode = enabled;
       document.querySelector('label[for="tuitionPaymentAmount"]').textContent = enabled ? '환불 금액 (원)' : '수납 금액 (원)';
       document.querySelector('label[for="tuitionPaymentPaidAt"]').textContent = enabled ? '환불 일자' : '납부 일자';
-      document.querySelector('label[for="tuitionPaymentIssueMemo"]').textContent = enabled ? '환불 사유 (필수)' : '이슈 메모';
+      document.querySelector('label[for="tuitionPaymentIssueMemo"]').textContent = enabled ? (requiresRefundReason === false ? '환불 사유' : '환불 사유 (필수)') : '이슈 메모';
       tuitionPaymentIssueMemoEl.placeholder = enabled ? '예: 중도 퇴원에 따른 잔여 수강료 환불' : '예: 승인 지연 / 부분 환불 / 카드 재결제';
-      tuitionPaymentIssueMemoEl.required = enabled;
-      document.getElementById('tuitionPaymentAmountHint').textContent = enabled ? '환불액은 양수(+)로 저장되며 순수납액에서 차감됩니다.' : '받은 금액은 음수(−), 환불은 양수(+)로 입력하세요.';
+      tuitionPaymentIssueMemoEl.required = enabled && requiresRefundReason !== false;
+      document.getElementById('tuitionPaymentAmountHint').textContent = enabled ? '금액을 입력하면 환불 부호(+)가 자동 적용됩니다.' : '금액을 입력하면 수납 부호(−)가 자동 적용됩니다.';
     }
     function openTuitionRefundModal_(studentName) {
       openTuitionPaymentModal(studentName);
@@ -42690,15 +42694,16 @@
     }
 
     function openTuitionPaymentEditModal_(paymentKey) {
-      setTuitionRefundMode_(false);
       var target = findTuitionPaymentByClientKey_(paymentKey);
       if (!target) {
         alert("수납 내역이 갱신되었습니다. 새로고침 후 다시 선택해 주세요.");
         return;
       }
+      var isRefund = target.itemName === "환불금액" || toNumber(target.amount, 0) > 0;
+      setTuitionRefundMode_(isRefund, target.itemName === "환불금액");
       state.tuition.paymentEditTarget = target;
       state.tuition.paymentTarget = findTuitionRowByStudent(target.studentName) || { studentName: target.studentName };
-      tuitionPaymentModalTitleEl.textContent = "수납 내역 수정";
+      tuitionPaymentModalTitleEl.textContent = isRefund ? "환불 내역 수정" : "수납 내역 수정";
       tuitionPaymentTargetEl.innerHTML = escapeHtml((target.sourceDueMonth || target.sourceMonth || state.tuition.selectedMonth)) + escapeHtml(" / ") + renderStudentIdentityHtml_(formatStudentName(target.studentName));
       tuitionPaymentDueDateEl.value = target.dueDate || "";
       tuitionPaymentAmountEl.value = formatSignedAmountInput(String(toNumber(target.amount, 0)));
@@ -43055,8 +43060,14 @@
         tuitionPaymentEditReasonEl.focus();
         return;
       }
-      if (state.tuition.refundMode && (toNumber(tuitionPaymentAmountEl.value, 0) <= 0 || !String(tuitionPaymentIssueMemoEl.value || '').trim())) {
-        alert('환불 금액을 양수로 입력하고 환불 사유를 적어 주세요.');
+      var amount = signedTuitionPaymentAmount_();
+      if (!amount) {
+        alert('0원보다 큰 금액을 입력해 주세요.');
+        tuitionPaymentAmountEl.focus();
+        return;
+      }
+      if (tuitionPaymentIssueMemoEl.required && !String(tuitionPaymentIssueMemoEl.value || '').trim()) {
+        alert('환불 사유를 적어 주세요.');
         return;
       }
       state.tuition.savingPayment = true;
@@ -43073,8 +43084,8 @@
       var updatedPayment = {
         studentName: targetName,
         dueDate: tuitionPaymentDueDateEl.value,
-        itemName: state.tuition.refundMode ? "환불금액" : isEdit && editTarget.itemName ? editTarget.itemName : "납부금액",
-        amount: toNumber(tuitionPaymentAmountEl.value, 0),
+        itemName: isEdit ? editTarget.itemName : state.tuition.refundMode ? "환불금액" : "납부금액",
+        amount: amount,
         paidAt: tuitionPaymentPaidAtEl.value,
         business: tuitionPaymentBusinessEl.value || (isEdit && editTarget.business) || "",
         paymentType: tuitionPaymentTypeEl.value,

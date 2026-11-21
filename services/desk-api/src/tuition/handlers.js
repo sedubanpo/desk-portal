@@ -513,18 +513,21 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       const month = monthName(payload.monthName);
       const student = studentName(payload.studentName);
       const requestId = requiredRequestId(payload);
-      const amount = Math.round(number(payload.amount));
+      const itemName = text(payload.itemName) || '납부금액';
+      const isRefund = itemName === '환불금액';
+      const amount = signedTuitionAmount(payload.amount, isRefund);
       if (!month) return failure('월 정보가 없습니다.');
       if (!student) return failure('학생명이 없습니다.');
       if (!requestId) return failure('저장 요청 식별자가 없습니다. 다시 시도해 주세요.');
       if (!amount) return failure('금액이 0원일 수 없습니다.');
-      if (payload.itemName === '환불금액' && (amount <= 0 || !text(payload.issueMemo))) return failure('환불은 양수 금액과 환불 사유를 입력해 주세요.');
+      if (isRefund && !text(payload.issueMemo)) return failure('환불 사유를 입력해 주세요.');
       if (!text(payload.paidAt)) return failure('납부일을 입력해 주세요.');
       if (!text(payload.paymentType)) return failure('결제구분을 입력해 주세요.');
       const date = nowDate();
       const record = payment({
         ...payload,
         studentName: student,
+        itemName,
         amount,
         inputAt: formatInputAt(date, timeZone),
         originMonth: month,
@@ -566,7 +569,7 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       if (studentName(changes.studentName) !== studentName(requested.studentName)) return failure('수납 학생은 변경할 수 없습니다.');
       if (!requestId) return failure('수정 요청 식별자가 없습니다. 다시 시도해 주세요.');
       if (!reason) return failure('수정 사유를 입력해 주세요.');
-      if (!Math.round(number(changes.amount))) return failure('금액이 0원일 수 없습니다.');
+      if (!Math.round(Math.abs(number(changes.amount)))) return failure('금액이 0원일 수 없습니다.');
       if (!text(changes.paidAt)) return failure('납부일을 입력해 주세요.');
       if (!text(changes.paymentType)) return failure('결제구분을 입력해 주세요.');
       return updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate });
@@ -845,6 +848,11 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
   ] : []);
 }
 
+function signedTuitionAmount(value, isRefund) {
+  const magnitude = Math.round(Math.abs(number(value)));
+  return isRefund ? magnitude : -magnitude;
+}
+
 async function updatePayment({ store, month, requested, changes, requestId, reason, identity, nowIso, nowDate }) {
   const oldPaymentKey = key(COLLECTIONS.payments, paymentId(requested));
   const stableRequestId = requested.requestId || `edit_${requestId}`;
@@ -901,6 +909,8 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
     const updated = payment({
       ...stored,
       ...next,
+      itemName: stored.itemName,
+      amount: signedTuitionAmount(next.amount, stored.itemName === '환불금액' || stored.amount > 0),
       studentName: stored.studentName,
       requestId: stored.requestId || stableRequestId,
       originalPaymentKey: stored.originalPaymentKey || originalPaymentKey,
@@ -914,6 +924,7 @@ async function updatePayment({ store, month, requested, changes, requestId, reas
       ,importOriginalPaidAt: stored.importOriginalPaidAt
       ,importCancelledAt: stored.importCancelledAt
     });
+    if (updated.itemName === '환불금액' && !updated.issueMemo && stored.issueMemo) return { result: failure('환불 사유를 입력해 주세요.') };
     const snapshot = replaceSnapshotPayment(documents[keys.snapshot], stored, updated, month, nowDate());
     if (!snapshot) return { result: failure('월별 요약을 갱신할 수 없어 수정을 중단했습니다. 새로고침 후 다시 시도해 주세요.') };
     const writes = {
