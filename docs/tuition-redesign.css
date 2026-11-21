@@ -339,3 +339,41 @@ body #moduleTuition .tuition-previous-card:focus-visible {outline:2px solid #536
 .tuition-previous-dialog button:focus-visible {outline:2px solid #536b22;outline-offset:3px;}
 body #moduleTuition .tr-overview .tuition-metric-card:has(#tuitionExpectedAmount) .tuition-metric-icon {color:#386edc;}
 @media(max-width:760px){body #moduleTuition .tr-overview .tuition-metric-card .value{font-size:15px;white-space:normal;overflow-wrap:anywhere;}body #moduleTuition .tr-overview .tuition-metric-card:has(#tuitionExpectedAmount) .tuition-metric-icon,body #moduleTuition .tr-overview .tuition-money-card>.tuition-metric-icon{display:none;}}
+
+.tr-blacklist-icon {
+  display:inline-grid; place-items:center; box-sizing:border-box;
+  width:26px; height:26px; padding:3px; margin-inline-end:3px;
+  vertical-align:middle; border:1px solid #adb6b0; border-radius:7px;
+  background:#eff2ef; color:#33463b; cursor:pointer;
+}
+.tr-blacklist-icon:hover { background:#dfe8df; border-color:#748677; }
+.tr-blacklist-icon svg { width:19px; height:19px; }
+.tr-amount-sort {
+  padding:3px 0; border:0; font:inherit; color:inherit; background:transparent; cursor:pointer;
+}
+.tr-amount-sort::after { content:'↕'; margin-inline-start:4px; color:#607268; }
+th[aria-sort="ascending"] .tr-amount-sort::after { content:'↑'; color:currentColor; }
+th[aria-sort="descending"] .tr-amount-sort::after { content:'↓'; color:currentColor; }
+.tr-blacklist-dialog {
+  box-sizing:border-box; width:min(390px,calc(100vw - 32px)); max-height:80vh; overflow:auto;
+  padding:22px; border:1px solid #cfd8cf; border-radius:14px;
+  background:white; color:#23362b; font-family:inherit; box-shadow:0 18px 54px #18342138;
+}
+.tr-blacklist-dialog::backdrop { background:#182d2359; }
+.tr-blacklist-dialog header,.tr-stable-label,.tr-blacklist-dialog li {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.tr-blacklist-dialog h2 { margin:0; font-size:18px; }
+.tr-blacklist-dialog header button {
+  border:1px solid #cad4ca; border-radius:7px; padding:6px 10px; color:inherit;
+  font:inherit; font-size:13px; background:#f5f7f2; cursor:pointer;
+}
+.tr-blacklist-dialog p { font-size:13px; color:#506155; line-height:1.5; }
+.tr-stable-label { margin-top:20px; font-size:14px; }
+.tr-blacklist-dialog progress { width:100%; height:10px; accent-color:#587344; }
+.tr-blacklist-dialog ul { margin:15px 0 0; padding:0; list-style:none; }
+.tr-blacklist-dialog li { padding:8px 0; border-top:1px solid #dfe6df; font-size:13px; }
+.tr-blacklist-dialog :focus-visible,.tr-blacklist-icon:focus-visible,.tr-amount-sort:focus-visible {
+  outline:2px solid #486d40; outline-offset:2px;
+}
+#tuitionDetailFilter { max-height:min(75vh,610px); overflow:auto; }

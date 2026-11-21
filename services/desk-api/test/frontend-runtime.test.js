@@ -325,7 +325,7 @@ function historyHarness(source) {
     state,
     formatStudentName: (name) => String(name || '').trim(),
     tuitionStudentHistorySummaryEl: summary,
-    renderStudentIdentityHtml_: genderContext.StudentGenderIcons.render,
+    tuitionIdentity_: genderContext.StudentGenderIcons.render,
     tuitionStudentHistoryListEl: list,
     tuitionStudentHistoryModalEl: { style: {} },
     renderTuitionStudentMemoPanel_: () => {},

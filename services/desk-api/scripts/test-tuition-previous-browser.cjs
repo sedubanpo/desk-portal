@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
 const html=fs.readFileSync('docs/index.html','utf8');
 for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){if(m[2].trim()&&!/type=["'](?:module|application)/.test(m[1]))new vm.Script(m[2]);}
 function extract(name){const start=html.indexOf('    function '+name+'('),end=html.indexOf('\n    function ',start+5);return html.slice(start,end);}
-const names=['parseTuitionMonthYear_','getTuitionPrevMonthName_','buildTuitionUnpaidCarryMap_','ensureTuitionPreviousMonthUnpaidCache_','loadTuitionPreviousCard_','tuitionPreviousRows_','renderTuitionPreviousCard_','openTuitionPreviousDialog_','renderTuitionPreviousDialog_'];
+const names=['tuitionBlacklistIcon_','tuitionActionName_','parseTuitionMonthYear_','getTuitionPrevMonthName_','buildTuitionUnpaidCarryMap_','ensureTuitionPreviousMonthUnpaidCache_','loadTuitionPreviousCard_','tuitionPreviousRows_','renderTuitionPreviousCard_','openTuitionPreviousDialog_','renderTuitionPreviousDialog_'];
 const code=names.map(extract).join('\n');
 const ctx={state:{tuition:{selectedMonth:'26-10s',unpaidCacheByMonth:{}}},pad2:n=>String(n).padStart(2,'0'),formatStudentName:s=>String(s||'').trim(),toNumber:(n,d)=>Number.isFinite(Number(n))&&n!==undefined?Number(n):d,runServer:async()=>({success:true,rows:[]})};vm.createContext(ctx);vm.runInContext(code,ctx);
 assert.equal(ctx.getTuitionPrevMonthName_('26-01s'),'25-12s');

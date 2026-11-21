@@ -17,13 +17,22 @@
   // One row for year/month/search; actions below it.
   var monthBrowser = $('.tuition-month-browser');
   monthBrowser.appendChild($('.tuition-month-search'));
+  var amountFields = [
+    {key:'guideAmount', label:'안내금액'}, {key:'collectedAmount', label:'순수납액'}, {key:'outstandingAmount', label:'미납액'}
+  ];
+  var amountInputs = amountFields.map(function(field) {
+    return ['Min','Max'].map(function(bound) {
+      var label = bound === 'Min' ? '최소' : '최대';
+      return '<label>' + field.label + ' ' + label + '<input name="' + field.key + bound + '" type="number" step="1" placeholder="금액 (원)"></label>';
+    }).join('');
+  }).join('');
   var filterAnchor = document.createElement('div'); filterAnchor.className = 'tr-filter-anchor';
   filterAnchor.innerHTML = button('☷ 상세 필터', 'id="tuitionDetailFilterBtn" aria-expanded="false" aria-controls="tuitionDetailFilter"') +
     '<form id="tuitionDetailFilter" class="tr-popover" hidden><div class="tr-popover-title"><strong>상세 필터</strong>' + button('초기화','data-reset') + '</div><div class="tr-filter-grid">' +
     '<label>학교<select name="school" aria-label="학교"></select></label><label>학년<select name="grade" aria-label="학년"></select></label>' +
     '<label>상태<select name="status" aria-label="상세 상태"></select></label><label>수업 유형 <small>준비 중</small><select disabled aria-label="수업 유형 준비 중"><option>준비 중</option></select></label>' +
     '<label class="tr-span">담당 강사 <small>준비 중</small><select disabled aria-label="담당 강사 준비 중"><option>준비 중</option></select></label>' +
-    '<label>미납액 최소<input name="min" type="number" min="0" step="1" placeholder="최소 금액"></label><label>미납액 최대<input name="max" type="number" min="0" step="1" placeholder="최대 금액"></label></div>' +
+    amountInputs + '</div>' +
     '<p class="tr-filter-error" role="alert"></p><footer>' + button('취소','data-cancel') + '<button type="submit" class="tr-primary">적용</button></footer></form>';
   monthBrowser.appendChild(filterAnchor);
   var form = $('#tuitionDetailFilter');
@@ -35,14 +44,29 @@
     fillOptions(form.elements.grade,(state.tuition.allRows || []).map(function(r){return String(r.grade || '');}),ui.filters.grade);
     form.elements.status.innerHTML = $('#tuitionStatusFilter').innerHTML;
     form.elements.status.value = state.tuition.statusFilter || '';
-    form.elements.min.value=ui.filters.min || ''; form.elements.max.value=ui.filters.max || '';
+    amountFields.forEach(function(field) {
+      ['Min','Max'].forEach(function(bound) {
+        var key = field.key + bound;
+        form.elements[key].value = ui.filters[key] || '';
+      });
+    });
     form.hidden=false; this.setAttribute('aria-expanded','true'); form.elements.school.focus();
   };
   $('[data-cancel]',form).onclick=closeFilter;
   $('[data-reset]',form).onclick=function(){form.reset(); $('.tr-filter-error',form).textContent='';};
-  form.onsubmit=function(e){e.preventDefault(); var min=form.elements.min.value,max=form.elements.max.value;
-    if(min!=='' && max!=='' && Number(min)>Number(max)){ $('.tr-filter-error',form).textContent='최대 금액은 최소 금액보다 커야 합니다.';return; }
-    ui.filters={school:form.elements.school.value,grade:form.elements.grade.value,min:min,max:max};
+  form.onsubmit=function(e){e.preventDefault();
+    var filters = {school:form.elements.school.value, grade:form.elements.grade.value};
+    for (var field of amountFields) {
+      var min = form.elements[field.key + 'Min'].value, max = form.elements[field.key + 'Max'].value;
+      if (min !== '' && max !== '' && Number(min) > Number(max)) {
+        $('.tr-filter-error',form).textContent = field.label + ' 최대 금액은 최소 금액보다 커야 합니다.';
+        form.elements[field.key + 'Max'].focus();
+        return;
+      }
+      filters[field.key + 'Min'] = min;
+      filters[field.key + 'Max'] = max;
+    }
+    ui.filters = filters;
     state.tuition.statusFilter=form.elements.status.value; $('#tuitionStatusFilter').value=state.tuition.statusFilter;
     ui.page=1;closeFilter();applyTuitionLocalFilters_();$('#tuitionDetailFilterBtn').focus();
   };
@@ -90,11 +114,11 @@
   $('#tuitionSelectPage').onchange=function(){var checked=this.checked;tuitionStudentBodyEl.querySelectorAll('[data-tr-select]').forEach(function(el){el.checked=checked;if(checked)ui.selected.add(el.dataset.trSelect);else ui.selected.delete(el.dataset.trSelect);});if(ui.onlySelected)applyTuitionLocalFilters_();else TuitionRedesign.afterRows();};
   var toolbar=document.createElement('div');toolbar.className='tr-table-tools';toolbar.innerHTML=
     '<details class="tr-columns"><summary>⚙ 표시 항목 설정</summary><div>'+[ ['school','학교 / 학년'],['contact','마지막 연락'],['count','연락 횟수'] ].map(function(c){return '<label><input type="checkbox" data-column="'+c[0]+'" checked> '+c[1]+'</label>';}).join('')+'</div></details>' +
-    '<select aria-label="상태 그룹 내 정렬" id="tuitionStudentSort"><option value="name">정렬: 이름순</option><option value="outstanding">정렬: 미납액순</option><option value="previous">정렬: 전월 납부일순</option></select>'+
+    '<select aria-label="학생 목록 정렬" id="tuitionStudentSort"><option value="name">정렬: 이름순</option><option value="outstanding">상태별 미납액순</option><option value="previous">정렬: 전월 납부일순</option></select>'+
     '<select aria-label="페이지당 학생 수" id="tuitionStudentPageSize"><option value="25">25명씩 보기</option><option value="50" selected>50명씩 보기</option><option value="100">100명씩 보기</option></select>';
   $('.table-head',tablePanel).appendChild(toolbar);
   var counts=document.createElement('div');counts.className='tr-list-summary';counts.setAttribute('aria-live','polite');$('.tuition-table-wrap').before(counts);
-  var selectedGrade = '전체', selectedDifficulty = '전체', listCount = 0;
+  var selectedGrade = '전체', selectedDifficulty = '전체', blacklistOnly = false, listCount = 0;
   function addListFilter(title, accessibleName, labels, onSelect) {
     var group = document.createElement('div');
     group.className = 'tg-list-tabs';
@@ -119,6 +143,38 @@
   addListFilter('수강료 난이도', '수강료 난이도 선택', ['전체','S','A','B','C','미책정'], function(value) {
     selectedDifficulty = value;
   });
+  addListFilter('수납 관리', '블랙리스트 필터', ['전체','블랙리스트'], function(value) {
+    blacklistOnly = value === '블랙리스트';
+  });
+
+  var blacklistDialog = document.createElement('dialog');
+  blacklistDialog.className = 'tr-blacklist-dialog';
+  blacklistDialog.setAttribute('aria-labelledby','trBlacklistTitle');
+  document.body.appendChild(blacklistDialog);
+  function monthLabel(index) {
+    return Math.floor(index / 12) + '년 ' + (index % 12 + 1) + '월';
+  }
+  document.addEventListener('click',function(event) {
+    var trigger = event.target.closest('[data-tuition-blacklist]');
+    if (!trigger) return;
+    var name = trigger.dataset.tuitionBlacklist;
+    var status = state.tuition.blacklist && state.tuition.blacklist.get(name);
+    if (!status) return;
+    var entries = [];
+    for (var month = status.end; month >= status.registered; month--) {
+      var count = status.months.get(month);
+      entries.push('<li><span>' + monthLabel(month) + (month === status.current ? ' · 집계 중' : '') + '</span><strong>' +
+        (count == null ? '기록 없음' : '안내 ' + count + '회') + '</strong></li>');
+    }
+    blacklistDialog.innerHTML = '<header><h2 id="trBlacklistTitle">' + esc(name) + ' · 블랙리스트</h2><form method="dialog">' +
+      '<button autofocus aria-label="블랙리스트 상태 닫기">닫기</button></form></header><p>' + monthLabel(status.registered) + ' 안내 ' +
+      status.months.get(status.registered) + '회로 등록</p><div class="tr-stable-label"><strong>연속 안정 기간</strong><span>' +
+      status.stable + ' / 3개월</span></div><progress aria-label="해제까지 채운 안정 개월 수" max="3" value="' + status.stable +
+      '"></progress><p>월 안내가 0~2회인 달이 3개월 연속 끝나면 자동 해제됩니다.</p><ul aria-label="등록 이후 월별 안내 횟수">' +
+      entries.join('') + '</ul>';
+    blacklistDialog.showModal();
+  });
+
   function difficultyNotice() {
     if (selectedDifficulty === '전체') return '';
     var entry = state.tuition.difficulty;
@@ -126,7 +182,32 @@
     return entry.status === 'error' ? entry.reason : '';
   }
   var pager=document.createElement('nav');pager.className='tr-student-pagination';pager.setAttribute('aria-label','학생 목록 페이지');tablePanel.appendChild(pager);
-  $('#tuitionStudentSort').onchange=function(){state.tuition.studentSort=this.value;ui.page=1;renderTuitionStudentRows();};
+  var sortMenu = $('#tuitionStudentSort');
+  var sortHeaders = new Map();
+  amountFields.forEach(function(field, index) {
+    var header = tablePanel.querySelector('.tuition-table thead tr').cells[index + 2];
+    var control = document.createElement('button');
+    control.type = 'button';
+    control.className = 'tr-amount-sort';
+    control.textContent = field.label;
+    header.replaceChildren(control);
+    sortHeaders.set(field.key, header);
+    sortMenu.add(new Option(field.label + ' 높은순', field.key + '-desc'));
+    sortMenu.add(new Option(field.label + ' 낮은순', field.key + '-asc'));
+    control.onclick = function() {
+      sortMenu.value = field.key + (sortMenu.value === field.key + '-desc' ? '-asc' : '-desc');
+      sortMenu.onchange();
+    };
+  });
+  sortMenu.onchange = function() {
+    state.tuition.studentSort = sortMenu.value;
+    sortHeaders.forEach(function(header, key) {
+      var active = sortMenu.value.split('-')[0] === key;
+      header.setAttribute('aria-sort', active ? (sortMenu.value.endsWith('-asc') ? 'ascending' : 'descending') : 'none');
+    });
+    ui.page = 1;
+    renderTuitionStudentRows();
+  };
   $('#tuitionStudentPageSize').onchange=function(){ui.size=Number(this.value);ui.page=1;renderTuitionStudentRows();};
   toolbar.addEventListener('change',function(e){var c=e.target.dataset.column;if(c)tablePanel.classList.toggle('tr-hide-'+c,!e.target.checked);});
   // Existing analytics become the content of five real tabs.
@@ -168,7 +249,7 @@
   };
   drawerTabs.querySelectorAll('[data-tr-tab]').forEach(function(b){b.onclick=function(){setTuitionStudentHistoryTab_(b.dataset.trTab);};});
   function headerStudent(name){var row=(state.tuition.allRows||[]).find(function(r){return r.studentName===name;})||{};
-    $('.tuition-wide-title',drawer).innerHTML=renderStudentIdentityHtml_(name);
+    $('.tuition-wide-title',drawer).innerHTML=tuitionIdentity_(name);
     tuitionStudentHistorySummaryEl.innerHTML=StudentGenderIcons.school(row.school||'학교 미입력',row.grade||'')+' '+buildTuitionStatusBadge(row.unpaidStatus||'안내이전');
   }
   function renderReceipts(name){var row=(state.tuition.allRows||[]).find(function(r){return r.studentName===name;})||{};
@@ -200,13 +281,17 @@
   var toastStack=document.createElement('div');toastStack.className='tr-toasts';toastStack.setAttribute('aria-live','polite');document.body.appendChild(toastStack);
   window.TuitionRedesign={
     toast:function(text,error){var el=document.createElement('div');el.className='tr-toast'+(error?' is-error':'');el.setAttribute('role',error?'alert':'status');var label=document.createElement('span');label.textContent=text;el.appendChild(label);var close=document.createElement('button');close.type='button';close.setAttribute('aria-label','알림 닫기');close.textContent='×';close.onclick=function(){el.remove();};el.appendChild(close);toastStack.appendChild(el);setTimeout(function(){el.remove();},8000);},
-    matches:function(r){var f=ui.filters;return (!f.school||String(r.school||'')===f.school)&&(!f.grade||String(r.grade||'')===f.grade)&&(f.min==null||f.min===''||Number(r.outstandingAmount||0)>=Number(f.min))&&(f.max==null||f.max===''||Number(r.outstandingAmount||0)<=Number(f.max))&&(!ui.onlySelected||ui.selected.has(r.studentName));},
-    hasListFilter:function(){return selectedGrade !== '전체' || selectedDifficulty !== '전체';},
+    matches:function(r){var f=ui.filters;return (!f.school||String(r.school||'')===f.school)&&(!f.grade||String(r.grade||'')===f.grade)&&amountFields.every(function(field){
+      var amount = Number(r[field.key]) || 0, min = f[field.key+'Min'], max = f[field.key+'Max'];
+      return (!min || amount >= Number(min)) && (!max || amount <= Number(max));
+    })&&(!ui.onlySelected||ui.selected.has(r.studentName));},
+    hasListFilter:function(){return blacklistOnly || selectedGrade !== '전체' || selectedDifficulty !== '전체';},
     hasDifficultyFilter:function(){return selectedDifficulty !== '전체';},
     listEmptyMessage:function(){return difficultyNotice() || '선택한 조건에 해당하는 학생이 없습니다.';},
     listRows:function(rows){
       var notice = difficultyNotice();
       var filtered = rows.filter(function(row) {
+        if (blacklistOnly && !(state.tuition.blacklist && state.tuition.blacklist.has(formatStudentName(row.studentName)))) return false;
         if (selectedGrade !== '전체' && tuitionGradeLabel_(row) !== selectedGrade) return false;
         if (selectedDifficulty === '전체') return true;
         return !notice && (tuitionDifficultyItem_(row.studentName).grade || '미책정') === selectedDifficulty;
@@ -214,8 +299,16 @@
       listCount = filtered.length;
       return filtered;
     },
-    pageRows:function(grouped){var rows=grouped.filter(function(r){return !r.__group;});var pages=Math.max(1,Math.ceil(rows.length/ui.size));ui.page=Math.min(ui.page,pages);var start=(ui.page-1)*ui.size;
-      counts.innerHTML='<strong>전체 '+rows.length+'명</strong><span>납부완료 '+rows.filter(function(r){return isTuitionPaidStatus_(r.unpaidStatus);}).length+'명</span><span>미납 '+rows.filter(function(r){return !isTuitionPaidStatus_(r.unpaidStatus);}).length+'명</span><span>안내이전 → 안내완료 → 확인필요 → 나머지</span>';
+    pageRows:function(grouped){var rows=grouped.filter(function(r){return !r.__group;});var sort = sortMenu.value.split('-');
+      var amountSort = sortHeaders.has(sort[0]);
+      if (amountSort) {
+        rows.sort(function(a,b) {
+          var delta = (Number(a[sort[0]]) || 0) - (Number(b[sort[0]]) || 0);
+          return (sort[1] === 'asc' ? delta : -delta) || a.studentName.localeCompare(b.studentName, 'ko');
+        });
+      }
+      var pages=Math.max(1,Math.ceil(rows.length/ui.size));ui.page=Math.min(ui.page,pages);var start=(ui.page-1)*ui.size;
+      counts.innerHTML='<strong>전체 '+rows.length+'명</strong><span>납부완료 '+rows.filter(function(r){return isTuitionPaidStatus_(r.unpaidStatus);}).length+'명</span><span>미납 '+rows.filter(function(r){return !isTuitionPaidStatus_(r.unpaidStatus);}).length+'명</span><span>' + (amountSort ? sortMenu.selectedOptions[0].textContent : '안내이전 → 안내완료 → 확인필요 → 나머지') + '</span>';
       var numbers=[];for(var n=Math.max(1,ui.page-2);n<=Math.min(pages,ui.page+2);n++)numbers.push(n);
       pager.innerHTML=button('‹ 이전','data-page="'+(ui.page-1)+'"'+(ui.page===1?' disabled':''))+numbers.map(function(n){return button(n,'data-page="'+n+'"'+(ui.page===n?' aria-current="page"':''));}).join('')+button('다음 ›','data-page="'+(ui.page+1)+'"'+(ui.page===pages?' disabled':''))+'<span>'+ui.page+' / '+pages+'페이지</span>';
       pager.querySelectorAll('[data-page]').forEach(function(b){b.onclick=function(){ui.page=Number(b.dataset.page);renderTuitionStudentRows();};});
