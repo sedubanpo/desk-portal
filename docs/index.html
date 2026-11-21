@@ -23062,6 +23062,12 @@
       var draft = applyTuitionAssistantPlaceholders_(template.message, context);
       draft = ensureTuitionStudentPrefix_(draft, context);
       draft = applyTuitionAssistantTone_(draft, tuitionAssistantToneEl ? tuitionAssistantToneEl.value : "polite");
+      var delayNotice = "수강료 납부가 늦어지면 시간표를 편성할 때 배정 순서가 뒤로 밀릴 수 있습니다. 납부가 확인될 때까지는 다음 수업 계획을 확정하기 어렵습니다.";
+      if (state.tuition.blacklist && state.tuition.blacklist.has(context.student)
+          && template.situation !== "paid_thanks" && context.status !== "납부완료" && context.status !== "이월금"
+          && !draft.includes(delayNotice)) {
+        draft += "\n\n" + delayNotice;
+      }
       tuitionAssistantOutputEl.value = draft;
       setTuitionAssistantStatus_("문구 생성 완료");
     }
