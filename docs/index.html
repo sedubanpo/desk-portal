@@ -43100,7 +43100,9 @@
 	        .then(function(res) {
 	          cleanup();
 	          tuitionPaymentModalEl.style.display = "none";
-              if(window.TuitionRedesign) TuitionRedesign.toast(isEdit ? "수납 내역이 수정되었습니다." : "수납 내역이 저장되었습니다.");
+              var duplicate = !isEdit && res && res.duplicate;
+              if (duplicate) alert(res.message || "이미 입력된 수납입니다.");
+              else if (window.TuitionRedesign) TuitionRedesign.toast(isEdit ? "수납 내역이 수정되었습니다." : "수납 내역이 저장되었습니다.");
               state.tuition.paymentTarget = null;
               state.tuition.paymentEditTarget = null;
 	          state.tuition.lastWriteWarning = [
@@ -43108,7 +43110,7 @@
 	            res && res.indexWarning ? ("읽기 인덱스 확인 필요: " + res.indexWarning) : "",
 	            res && res.snapshotWarning ? res.snapshotWarning : ""
 	          ].filter(Boolean).join(" · ");
-	          if (isEdit) {
+	          if (isEdit || duplicate) {
 	            state.tuition.monthlySales = null;
 	            state.tuition.guideDashboard = null;
 	            state.tuition.studentHistoryCache = {};
@@ -46291,8 +46293,8 @@ window.SeduHubAdapter={
       };
     }
   </script>
-<script src="./payment-link-parser.js?v=20261024-payment-headers"></script>
-<script src="./payment-link-upload.js?v=20261024-payment-selection"></script>
+<script src="./payment-link-parser.js?v=20261121-due-month"></script>
+<script src="./payment-link-upload.js?v=20261121-due-month"></script>
 <script src="./tuition-redesign.js?v=20261110-difficulty"></script>
 <link rel="stylesheet" href="./tuition-sales.css?v=20261104-3">
 <script src="./tuition-sales.js?v=20261104-3"></script>

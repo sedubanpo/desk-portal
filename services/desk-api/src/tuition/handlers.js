@@ -125,6 +125,9 @@ export function createTuitionHandlers({ store, now = () => new Date(), timeZone 
       if (error) return failure(error);
       const month = monthName(payload.monthName);
       if (!month || !studentName(payload.studentName)) return failure('월 정보 또는 학생명이 없습니다.');
+      if (monthName(payload.paidAt.slice(0, 7)) !== month && monthName(payload.confirmedMonth) !== month) {
+        return failure('납부일과 귀속 월이 다릅니다. 해당 행의 귀속 월을 직접 선택해 주세요.');
+      }
       const record = payment({ ...payload, requestId: '', source: 'desk_portal_payment_link', originMonth: month, sourceMonth: month, sourceDueMonth: month,
         importFile: text(payload.fileName, 180), importEventType: payload.status, importOriginalPaidAt: text(payload.originalPaidAt || payload.paidAt,40), importCancelledAt: text(payload.cancelledAt,40), inputAt: formatInputAt(nowDate(), timeZone), createdAt: nowIso(), updatedAt: nowIso(), paymentType: '결제링크', entryKind: 'payment', countsAsPayment: true,
         originalPaymentKey: '', revision: '', importKey: '' });
@@ -758,8 +761,13 @@ async function mutatePayment({ store, action, month, record, requestId, reason =
   if (action === 'append' && normalized.approvalNo) keys.approvalGuard = key('tuitionPaymentImportGuards', paymentLinkKey(normalized));
   if (importing) keys.importReceipt = key('tuitionPaymentImports', normalized.importKey);
   return store.transaction(Object.values(keys), documents => {
-    if (action === 'append' && !importing && paymentLinkDuplicate(normalized, (documents.__studentPayments || []).concat(documents.__approvalPayments || []).filter(row => row.source === 'desk_portal_payment_link'))) {
-      return { result: { success: true, duplicate: true, message: '결제링크로 이미 입력된 수납입니다.' } };
+    if (action === 'append' && !importing) {
+      const existing = paymentLinkDuplicate(normalized, (documents.__studentPayments || []).concat(documents.__approvalPayments || []).filter(row => row.source === 'desk_portal_payment_link'));
+      if (existing) {
+        const originalMonth = monthName(existing.sourceDueMonth || existing.sourceMonth || existing.originMonth);
+        const label = originalMonth ? originalMonth.slice(0, -1) + '월에 ' : '';
+        return { result: { success: true, duplicate: true, message: label + '결제링크로 이미 입력된 수납입니다.' } };
+      }
     }
     if (importing) {
       if (documents[keys.importReceipt]) return { result: { success: true, duplicate: true, message: '이전에 처리한 결제입니다. 수정·삭제 후에도 다시 입력하지 않습니다.' } };

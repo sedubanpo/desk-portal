@@ -42,6 +42,11 @@
       if (cancelled) result.push(Object.assign({}, base, { paidAt: cancelledAt.slice(0,10), amount: amount, status: '환불', cancelledAt: cancelledAt,
         issue: issue || (!/^\d{4}-\d{2}-\d{2}$/.test(cancelledAt.slice(0,10)) ? '취소일 확인 필요' : '') }));
       return result.map(function(entry) {
+        var paidMonth = entry.paidAt.slice(2, 7) + 's';
+        if (month && (month !== selectedMonth || month !== paidMonth)) {
+          entry.monthName = '';
+          entry.monthHint = '품목은 ' + Number(month.slice(3, 5)) + '월입니다. 귀속 월을 선택해 주세요.';
+        }
         var key = [entry.approvalNo,entry.paidAt,entry.amount].join('|');
         if (seen.has(key)) entry.issue = '파일 내 중복';
         seen.add(key); return entry;

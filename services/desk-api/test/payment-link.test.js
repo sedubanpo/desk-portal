@@ -86,3 +86,15 @@ test('refund, replacement and installment receipts retain separate history and r
   assert.equal((await h.importTuitionPaymentLink({...refund,amount:-300000})).success,false);
   assert.equal((await h.importTuitionPaymentLink({...refund,cancelledAt:''})).success,false);
 });
+
+test('cross-month import requires the chosen month and a second manual entry identifies the existing month', async () => {
+  const {handlers:h, docs} = fixture();
+  const october = {...input, paidAt:'2026-10-01'};
+  assert.equal((await h.previewTuitionPaymentLink(october)).success,false);
+  assert.equal((await h.importTuitionPaymentLink({...october, confirmedMonth:'26-10s'})).success,false);
+  assert.equal((await h.importTuitionPaymentLink({...october, confirmedMonth:month})).duplicate,false);
+  const retry = await h.appendTuitionPaymentEntry({...october,monthName:'26-10s',paymentType:'결제링크',clientRequestId:'manual'});
+  assert.equal(retry.duplicate,true);
+  assert.match(retry.message,/26-09월/);
+  assert.equal([...docs.keys()].filter(k => k.startsWith('tuitionPayments/')).length,1);
+});
